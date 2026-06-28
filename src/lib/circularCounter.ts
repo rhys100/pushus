@@ -47,6 +47,11 @@ export function countToAngle(count: number): number {
   return revolutions * DEGREES_PER_REVOLUTION + withinRev * DEGREES_PER_REP - DEGREES_PER_REP / 2
 }
 
+/** Map cumulative drag angle to the centre of the current rep slot (stepped feel). */
+export function snapAngleToRep(totalAngleDegrees: number): number {
+  return countToAngle(angleToTotalCount(totalAngleDegrees))
+}
+
 export const CIRCULAR_COUNTER = {
   degreesPerRevolution: DEGREES_PER_REVOLUTION,
   repsPerRevolution: REPS_PER_REVOLUTION,

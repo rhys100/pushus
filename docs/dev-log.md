@@ -26,6 +26,17 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-06-29 (board daily progress)
+
+**Shipped**
+- Board Day view: progress bar per member toward today's personal training goal
+
+### 2026-06-29 (logger rep snap)
+
+**Fixed**
+- Ring drag snaps handle + haptic to each rep slot (1–10), matching full-lap feel
+- Backward drag mid-session keeps displayed count and bank total in sync with handle
+
 ### 2026-06-29 (release v1.1.0)
 
 **Shipped**

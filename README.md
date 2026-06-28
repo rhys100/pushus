@@ -64,7 +64,7 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 
 ### Social and group
 
-- [x] Leaderboard (day, week, month views)
+- [x] Leaderboard (day, week, month views; daily goal progress on Day view)
 - [x] Activity feed
 - [x] Emoji reactions
 - [x] Group invite tools

@@ -14,6 +14,7 @@ import {
   angleToTotalCount,
   CIRCULAR_COUNTER,
   countToAngle,
+  snapAngleToRep,
 } from '@/lib/circularCounter'
 import { isNearHandle } from '@/lib/loggerHitTest'
 import { useCircularCounter } from '@/hooks/useCircularCounter'
@@ -155,10 +156,11 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
     const handleHitRef = useRef<SVGCircleElement>(null)
     const arcRef = useRef<SVGPathElement>(null)
     const completedArcRef = useRef<SVGCircleElement>(null)
-    const dragStateRef = useRef<{ lastPointerAngle: number; cumulativeAngle: number } | null>(
+    const dragStateRef = useRef<{ lastPointerAngle: number; rawAngle: number } | null>(
       null,
     )
     const [countPulsing, setCountPulsing] = useState(false)
+    const [handleTickKey, setHandleTickKey] = useState(0)
     const [isDragging, setIsDragging] = useState(false)
     const previousCountRef = useRef(count)
 
@@ -279,20 +281,28 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
         const delta = normalizeAngleDelta(pointerAngle - dragState.lastPointerAngle)
 
         dragState.lastPointerAngle = pointerAngle
-        dragState.cumulativeAngle = Math.max(0, dragState.cumulativeAngle + delta)
+        dragState.rawAngle = Math.max(0, dragState.rawAngle + delta)
 
-        updateRingVisuals(dragState.cumulativeAngle)
+        const nextCount = angleToTotalCount(dragState.rawAngle)
+        const snappedAngle = snapAngleToRep(dragState.rawAngle)
 
-        const nextCount = angleToTotalCount(dragState.cumulativeAngle)
-
-        if (haptic) {
-          maybePulseHaptic(nextCount)
-        }
+        updateRingVisuals(snappedAngle)
 
         if (nextCount !== countRef.current) {
-          syncAngleState(dragState.cumulativeAngle)
+          if (nextCount > countRef.current) {
+            setCountPulsing(true)
+            setHandleTickKey((current) => current + 1)
+
+            if (haptic) {
+              maybePulseHaptic(nextCount)
+            }
+          } else {
+            lastHapticCountRef.current = nextCount
+          }
+
+          syncAngleState(snappedAngle)
         } else {
-          angleRef.current = dragState.cumulativeAngle
+          angleRef.current = snappedAngle
         }
 
         if (Math.abs(delta) > 0.5) {
@@ -306,7 +316,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
       const dragState = dragStateRef.current
 
       if (dragState) {
-        syncAngleState(dragState.cumulativeAngle)
+        syncAngleState(snapAngleToRep(dragState.rawAngle))
       }
 
       dragStateRef.current = null
@@ -334,7 +344,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
         setIsDragging(true)
         dragStateRef.current = {
           lastPointerAngle: getPointerAngle(clientX, clientY, rect),
-          cumulativeAngle: angleRef.current,
+          rawAngle: angleRef.current,
         }
       },
       [],
@@ -585,6 +595,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
                 <circle
                   ref={handleRef}
                   data-testid="logger-handle-visible"
+                  key={isDragging ? `tick-${handleTickKey}` : 'handle'}
                   cx={handlePoint.x}
                   cy={handlePoint.y}
                   r={HANDLE_RADIUS}
@@ -595,7 +606,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
                   className={cn(
                     showZeroHint && 'logger-handle-pulse',
                     !showZeroHint && count === 0 && !isDragging && 'logger-handle-idle',
-                    isDragging && countPulsing && 'logger-handle-tick',
+                    isDragging && handleTickKey > 0 && 'logger-handle-tick',
                   )}
                   style={{
                     willChange: isDragging ? 'transform' : undefined,

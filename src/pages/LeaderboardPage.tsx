@@ -1,15 +1,25 @@
 import { useState } from 'react'
 import { cn } from '@/lib/cn'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
+import { getMemberDayTarget, useGroupDailyTargets } from '@/hooks/useGroupDailyTargets'
 import {
   useLeaderboard,
   useLeaderboardPeriod,
   type LeaderboardEntry,
 } from '@/hooks/useLeaderboard'
+import { getGroupLocalDateString } from '@/hooks/useTodayData'
 import { formatPeriodLabel, type LeaderboardRange } from '@/lib/leaderboardCalc'
+import type { MemberDayTarget } from '@/lib/training/resolveMemberTodayTarget'
 import { useAuth } from '@/providers/AuthProvider'
 import { useTabPageMeta } from '@/components/layout/TabPageMeta'
-import { AvatarChip, Badge, EmptyState, SegmentedControl, Skeleton } from '@/components/ui'
+import {
+  AvatarChip,
+  Badge,
+  EmptyState,
+  GoalProgressBar,
+  SegmentedControl,
+  Skeleton,
+} from '@/components/ui'
 
 const RANGE_OPTIONS: { value: LeaderboardRange; label: string }[] = [
   { value: 'day', label: 'Day' },
@@ -52,9 +62,18 @@ type LeaderboardRowProps = {
   isCurrentUser: boolean
   rank: number
   allZero: boolean
+  dayTarget?: MemberDayTarget
+  showDayProgress?: boolean
 }
 
-function LeaderboardRow({ entry, isCurrentUser, rank, allZero }: LeaderboardRowProps) {
+function LeaderboardRow({
+  entry,
+  isCurrentUser,
+  rank,
+  allZero,
+  dayTarget,
+  showDayProgress = false,
+}: LeaderboardRowProps) {
   return (
     <li
       className={cn(
@@ -64,7 +83,7 @@ function LeaderboardRow({ entry, isCurrentUser, rank, allZero }: LeaderboardRowP
     >
       <RankBadge rank={rank} muted={allZero || entry.total === 0} />
 
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 space-y-2">
         <AvatarChip
           emoji={entry.avatar_emoji}
           name={entry.display_name}
@@ -72,9 +91,19 @@ function LeaderboardRow({ entry, isCurrentUser, rank, allZero }: LeaderboardRowP
           active={isCurrentUser}
           className="w-full max-w-none border-0 bg-transparent px-0 py-0"
         />
+
+        {showDayProgress && dayTarget ? (
+          <GoalProgressBar
+            current={entry.total}
+            target={dayTarget.target}
+            isRestDay={dayTarget.isRestDay}
+            showLabel
+            ariaLabel={`${entry.display_name} daily push-up progress`}
+          />
+        ) : null}
       </div>
 
-      <div className="shrink-0 text-right">
+      <div className="shrink-0 self-start text-right">
         <p className="font-mono text-xl font-bold tabular-nums text-text-primary">{entry.total}</p>
         <p className="text-[0.6875rem] font-medium uppercase tracking-wide text-text-muted">
           reps
@@ -110,6 +139,11 @@ export function LeaderboardPage() {
     activeGroup,
     range,
   )
+  const showDayProgress = range === 'day'
+  const { data: dailyTargets } = useGroupDailyTargets(activeGroup, {
+    enabled: showDayProgress,
+  })
+  const todayIso = activeGroup ? getGroupLocalDateString(activeGroup.timezone) : ''
 
   const subtitle = period
     ? formatPeriodLabel(range, period.periodStart, period.periodEnd)
@@ -177,6 +211,12 @@ export function LeaderboardPage() {
               rank={displayRank(entry, index, allZero)}
               allZero={allZero}
               isCurrentUser={entry.user_id === user?.id}
+              showDayProgress={showDayProgress}
+              dayTarget={
+                showDayProgress
+                  ? getMemberDayTarget(dailyTargets, entry.user_id, activeGroup, todayIso)
+                  : undefined
+              }
             />
           ))}
         </ul>

@@ -4,6 +4,7 @@ import {
   countToAngle,
   countWithinRevolution,
   CIRCULAR_COUNTER,
+  snapAngleToRep,
 } from '../../src/lib/circularCounter'
 
 describe('circularCounter', () => {
@@ -74,6 +75,17 @@ describe('circularCounter', () => {
     it('maps lap counts to exact revolution angles', () => {
       expect(countToAngle(10)).toBe(360)
       expect(countToAngle(20)).toBe(720)
+    })
+  })
+
+  describe('snapAngleToRep', () => {
+    it('snaps to slot centre for each rep', () => {
+      expect(snapAngleToRep(0)).toBe(0)
+      expect(snapAngleToRep(1)).toBe(18)
+      expect(snapAngleToRep(35)).toBe(18)
+      expect(snapAngleToRep(36)).toBe(54)
+      expect(snapAngleToRep(359)).toBe(360)
+      expect(snapAngleToRep(360)).toBe(360)
     })
   })
 })

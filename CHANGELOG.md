@@ -10,7 +10,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
-_(Nothing yet.)_
+### Added
+
+- Board Day view: daily goal progress bar per member (reps vs personal training target)
+
+### Fixed
+
+- Circular logger snaps handle and haptic tick to each rep (1–10) while dragging, not only at a full lap
+- Drag count stays in sync when moving the handle backward to a lower rep mid-drag
+
+_(Nothing else yet.)_
 ---
 
 ## [1.1.0] - 2026-06-29

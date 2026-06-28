@@ -1,6 +1,6 @@
 import { memo } from 'react'
-import { cn } from '@/lib/cn'
 import { Card } from '@/components/ui/Card'
+import { GoalProgressBar } from '@/components/ui/GoalProgressBar'
 import { Skeleton } from '@/components/ui/Skeleton'
 import type { TodayPrescription } from '@/lib/training/planEngine'
 import { getDefaultPlan, getTodayPrescription } from '@/lib/training/planEngine'
@@ -27,7 +27,6 @@ export const DayProgressCard = memo(function DayProgressCard({
 
   const target = dailyTarget ?? prescription.target
   const isRestDay = prescription.isRestDay || target === 0
-  const progress = target > 0 ? Math.min(bankedToday / target, 1) : 0
   const goalHit = !isRestDay && bankedToday >= target
   const remaining = Math.max(target - bankedToday, 0)
 
@@ -80,22 +79,11 @@ export const DayProgressCard = memo(function DayProgressCard({
             </p>
           ) : null}
 
-          <div
-            className="h-2 overflow-hidden rounded-[var(--radius-full)] bg-border/80"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={target}
-            aria-valuenow={bankedToday}
-            aria-label="Daily push-up progress"
-          >
-            <div
-              className={cn(
-                'h-full rounded-[var(--radius-full)] transition-[width] duration-[var(--duration-normal)] ease-[var(--ease-out)]',
-                goalHit ? 'bg-success' : 'bg-accent',
-              )}
-              style={{ width: `${progress * 100}%` }}
-            />
-          </div>
+          <GoalProgressBar
+            current={bankedToday}
+            target={target}
+            ariaLabel="Daily push-up progress"
+          />
 
           <p className="mt-2 text-xs text-text-muted">
             {loading ? (
