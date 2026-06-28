@@ -64,6 +64,7 @@ type LeaderboardRowProps = {
   allZero: boolean
   dayTarget?: MemberDayTarget
   showDayProgress?: boolean
+  targetsLoading?: boolean
 }
 
 function LeaderboardRow({
@@ -73,6 +74,7 @@ function LeaderboardRow({
   allZero,
   dayTarget,
   showDayProgress = false,
+  targetsLoading = false,
 }: LeaderboardRowProps) {
   return (
     <li
@@ -92,7 +94,11 @@ function LeaderboardRow({
           className="w-full max-w-none border-0 bg-transparent px-0 py-0"
         />
 
-        {showDayProgress && dayTarget ? (
+        {showDayProgress && targetsLoading ? (
+          <Skeleton className="h-2 w-full rounded-full" />
+        ) : null}
+
+        {showDayProgress && !targetsLoading && dayTarget ? (
           <GoalProgressBar
             current={entry.total}
             target={dayTarget.target}
@@ -140,7 +146,7 @@ export function LeaderboardPage() {
     range,
   )
   const showDayProgress = range === 'day'
-  const { data: dailyTargets } = useGroupDailyTargets(activeGroup, {
+  const { data: dailyTargets, isLoading: targetsLoading } = useGroupDailyTargets(activeGroup, {
     enabled: showDayProgress,
   })
   const todayIso = activeGroup ? getGroupLocalDateString(activeGroup.timezone) : ''
@@ -212,6 +218,7 @@ export function LeaderboardPage() {
               allZero={allZero}
               isCurrentUser={entry.user_id === user?.id}
               showDayProgress={showDayProgress}
+              targetsLoading={targetsLoading}
               dayTarget={
                 showDayProgress
                   ? getMemberDayTarget(dailyTargets, entry.user_id, activeGroup, todayIso)

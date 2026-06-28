@@ -7,6 +7,7 @@ import { useActiveGroup } from '@/hooks/useActiveGroup'
 import { useTrainingPlan } from '@/hooks/useTrainingPlan'
 import { useAuth } from '@/providers/AuthProvider'
 import { type WizardAnswers } from '@/lib/training/planEngine'
+import { getErrorMessage } from '@/lib/errors'
 
 export function TrainingSettingsPage() {
   const navigate = useNavigate()
@@ -29,7 +30,7 @@ export function TrainingSettingsPage() {
       navigate('/settings')
     } catch (error) {
       toast({
-        message: error instanceof Error ? error.message : 'Could not save training plan.',
+        message: getErrorMessage(error, 'Could not save training plan.'),
         variant: 'danger',
       })
     }

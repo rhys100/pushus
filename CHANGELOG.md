@@ -16,8 +16,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Training plan save shows the real Supabase error instead of a generic toast (helps diagnose missing migration)
 - Circular logger snaps handle and haptic tick to each rep (1–10) while dragging, not only at a full lap
 - Drag count stays in sync when moving the handle backward to a lower rep mid-drag
+
+### Database / deploy
+
+- **Required on hosted Supabase:** apply migration `0021_training_plan_v2` before saving a training plan (`npx supabase login` then `npx supabase db push`). Without it, saves fail on enum/column mismatch.
 
 _(Nothing else yet.)_
 ---

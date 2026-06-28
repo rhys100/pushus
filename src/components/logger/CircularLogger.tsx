@@ -288,8 +288,10 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
 
         updateRingVisuals(snappedAngle)
 
-        if (nextCount !== countRef.current) {
-          if (nextCount > countRef.current) {
+        const currentCount = angleToTotalCount(angleRef.current)
+
+        if (nextCount !== currentCount) {
+          if (nextCount > currentCount) {
             setCountPulsing(true)
             setHandleTickKey((current) => current + 1)
 
@@ -301,6 +303,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
           }
 
           syncAngleState(snappedAngle)
+          countRef.current = nextCount
         } else {
           angleRef.current = snappedAngle
         }

@@ -26,6 +26,15 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-06-29 (training plan save fix)
+
+**Fixed**
+- Save error toast now surfaces Supabase message (enum/column errors visible)
+- RLS test for `user_training_plans` upsert with advanced/intense + v2 columns
+
+**Deploy**
+- Hosted Supabase must run migration `0021_training_plan_v2` (`npx supabase login` then `npx supabase db push`) before training wizard save works
+
 ### 2026-06-29 (board daily progress)
 
 **Shipped**

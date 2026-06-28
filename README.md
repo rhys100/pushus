@@ -124,7 +124,7 @@ PushUS Community runs on **your** Supabase project plus a static frontend host.
 1. Clone this repository
 2. Create a Supabase project (or run Supabase locally)
 3. Copy `.env.example` to `.env` and set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
-4. Apply migrations: `supabase db reset` (local) or `supabase db push` (hosted)
+4. Apply migrations: `supabase db reset` (local) or `npx supabase login` then `npx supabase db push` (hosted). Training plan save requires migration `0021_training_plan_v2` on hosted projects.
 5. Build: `npm run build` and deploy the `dist/` folder
 
 Keep `VITE_BILLING_ENABLED=false` for Community. Never put service role or Stripe secrets in the frontend.

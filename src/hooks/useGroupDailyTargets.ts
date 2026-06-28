@@ -56,9 +56,13 @@ export function getMemberDayTarget(
   userId: string,
   group: Group,
   todayIso: string,
-): MemberDayTarget {
+): MemberDayTarget | undefined {
+  if (targets === undefined) {
+    return undefined
+  }
+
   return (
-    targets?.get(userId) ??
+    targets.get(userId) ??
     resolveMemberTodayTarget(null, todayIso, group.timezone)
   )
 }
