@@ -3,7 +3,6 @@ import type { CSSProperties } from 'react'
 import { AppHeader, BottomNav, type NavItem } from '@/components/ui'
 import { PrivateBetaBanner } from '@/components/layout/PrivateBetaBanner'
 import { cn } from '@/lib/cn'
-import { TODAY_BOTTOM_CHROME } from '@/lib/layout'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 
 const navRoutes: Record<NavItem, string> = {
@@ -62,7 +61,6 @@ export function AppLayout({
         bottomChrome === 'today'
           ? ({
               '--bank-hint-block': 'var(--bank-disabled-hint-height)',
-              '--today-bottom-chrome': TODAY_BOTTOM_CHROME,
               '--toast-bottom': 'calc(var(--today-bottom-chrome) + 0.5rem)',
             } as CSSProperties)
           : undefined
@@ -82,10 +80,10 @@ export function AppLayout({
         className={cn(
           'mx-auto w-full max-w-lg flex-1 px-4',
           showNav && bottomChrome === 'today'
-            ? 'pb-[calc(var(--today-bottom-chrome)+0.5rem)] md:pb-[calc(4.5rem+env(safe-area-inset-bottom))]'
+            ? 'pb-[calc(var(--today-bottom-chrome)+0.5rem)] md:pb-[calc(var(--bottom-nav-height)+0.5rem)]'
             : showNav
-              ? 'pb-[calc(4.5rem+env(safe-area-inset-bottom))]'
-              : 'pb-[calc(2rem+env(safe-area-inset-bottom))]',
+              ? 'pb-[calc(var(--bottom-nav-height)+0.5rem)]'
+              : 'pb-[calc(2rem+max(0.75rem,env(safe-area-inset-bottom,0px)))]',
           title !== null ? 'pt-4' : 'pt-[env(safe-area-inset-top)]',
         )}
       >

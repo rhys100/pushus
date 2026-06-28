@@ -6,7 +6,7 @@ const TAB_NAV_PATHS = ['/leaderboard', '/activity', '/group', '/settings'] as co
 
 function promptBottomClass(pathname: string): string {
   if (TAB_NAV_PATHS.some((path) => pathname.startsWith(path))) {
-    return 'bottom-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom))]'
+    return 'bottom-[var(--bottom-nav-height)]'
   }
 
   return 'bottom-0 pb-[max(1rem,env(safe-area-inset-bottom))]'

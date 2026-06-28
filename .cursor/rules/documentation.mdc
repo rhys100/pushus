@@ -21,6 +21,8 @@ When shipping a feature, fix, security patch, or deploy/config change, update:
 
 Do not wait for a “docs pass”. If the code ships, the docs ship in the same commit or PR.
 
+**Pre-commit hook:** `npm run precommit:check` (via Husky) blocks commits that change user-visible code without staging a doc file. See [docs/docs-maintenance.md](docs/docs-maintenance.md).
+
 ## README rules
 
 - Stable public-facing information only (positioning, status, high-level feature lists, links).

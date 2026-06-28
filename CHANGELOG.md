@@ -19,7 +19,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
-- Bottom nav: **Log** (hero tab), shorter labels for Board/Feed, **Settings** bottom-right
+- Bottom nav: **Log** centred as hero tab (raised circular button), shorter labels for Board/Feed, **Settings** bottom-right
 - Group tab focuses on members; admin tools (join requests, invites, billing) moved to Settings
 - Training wizard recommends a personalised daily target from max clean set (conservative formula)
 - Existing users keep once-daily reminders until they change frequency in Settings
@@ -29,6 +29,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Circular logger haptics now fire synchronously during drag (browser user-gesture requirement); slightly longer tick for easier feel on Android
 - Keyboard increment haptics use a synchronously updated count ref so rapid key repeat does not double-tick
 - Touch drag on Chrome Android uses native touch listeners for vibration (React pointer events alone were silent on some devices); stronger double-pulse pattern
+- Hero **Log** tab no longer clips to a semi-circle; clock icon stays visible when active (not a solid white dot)
+- Bottom nav label row aligned across all tabs; hero Log circle floats above without pushing its label into the system nav bar
+- Unified `--bottom-nav-height` token so **Bank Push-ups** sits above the nav instead of overlapping it (Android safe-area fallback included)
 
 ---
 

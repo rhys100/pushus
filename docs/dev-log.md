@@ -26,6 +26,12 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-06-28 (nav polish + doc automation)
+
+- Centred hero **Log** tab in bottom nav; fixed clipped semi-circle and white-dot icon on active state
+- Pre-commit hook: `version:check` + doc staging gate for user-visible code changes
+- README **Implemented** checklist updated for settings hub, training plan, and reminder frequency
+
 ### 2026-06-28 (nav + settings hub + training plan)
 
 - Bottom nav: Log (hero), Board, Feed, Group, Settings (bottom-right)

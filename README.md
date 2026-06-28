@@ -15,7 +15,7 @@ PushUS is a **private mates and group challenge app**, not a public social netwo
 It is built for **quick daily logging** on your phone: drag the ring, bank your push-ups, check the leaderboard, react to your crew's activity, and move on.
 
 - **Private groups** — invite-only, admin-controlled
-- **Mobile-first** — Today screen is the hero
+- **Mobile-first** — Log screen is the hero
 - **Open source** — self-host the Community edition on your own Supabase project
 - **Honour system** — no proof videos or photos required
 
@@ -56,7 +56,7 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 - [x] **Bank Push-ups** main CTA
 - [x] Undo after banking
 - [x] Edit and delete your entries
-- [x] Daily total and today's entries
+- [x] Daily total and today's entries on the Log screen
 - [x] Entry audit log foundation
 - [x] Per-rep haptic tick while dragging (Android and supporting browsers)
 - [x] Handle snap animation on each rep for tactile feedback
@@ -67,7 +67,14 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 - [x] Activity feed
 - [x] Emoji reactions
 - [x] Group invite tools
-- [x] Member and pending-request management
+- [x] Member list on Group tab; join requests and invites in Settings (admin)
+
+### Settings and training
+
+- [x] Settings tab in bottom nav (personal + group admin)
+- [x] Training plan wizard with saved daily target (Log progress + push reminders)
+- [x] Customisable push reminder frequency and active hours
+- [x] Injury pause for reminders
 
 ### Platform
 
@@ -76,7 +83,7 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 - [x] Cloudflare Pages–friendly static SPA build
 - [x] AGPL-3.0-only licence
 - [x] Self-hostable Community mode
-- [x] Optional web push reminders (behind goal, user timezone)
+- [x] Optional web push reminders (behind goal, user timezone, configurable frequency)
 
 ---
 
@@ -87,9 +94,8 @@ These are **directional ideas** — not all implemented yet. See [docs/product-r
 - Friend and mate connections (consent-based, not a public network)
 - 1v1 challenges and friend nudges
 - Richer challenge types (teams, weekends, custom dates)
-- Training and safety wizard
 - Streaks, XP, and achievements
-- Expanded push reminders and banter notifications
+- Banter notifications (opt-in)
 - Hosted **PushUS Cloud** (group billing)
 - Better admin and moderation tools
 
@@ -132,6 +138,7 @@ npm install
 npm run dev          # http://localhost:5173
 npm test             # unit tests
 npm run build        # production build
+npm run version:check   # semver + README/CHANGELOG alignment (also runs on pre-commit)
 ```
 
 **Integration tests** (RLS and billing gates) need a running Supabase instance and env vars:

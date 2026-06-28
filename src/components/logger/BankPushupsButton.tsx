@@ -23,7 +23,7 @@ export function BankPushupsButton({
     <div
       className={cn(
         'pointer-events-none z-50 mx-auto max-w-lg',
-        'fixed inset-x-0 bottom-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom))]',
+        'fixed inset-x-0 bottom-[var(--bottom-nav-height)]',
         'border-t border-border bg-bg px-4 pt-2',
         'md:relative md:inset-auto md:bottom-auto md:mt-6 md:border-t-0 md:bg-transparent md:px-0 md:pt-0',
         className,

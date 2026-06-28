@@ -61,9 +61,19 @@ How we keep public docs clean while the project moves fast.
 ### Commands
 
 ```bash
+npm run precommit:check  # local pre-commit hook (version + doc staging)
 npm run version:check    # CI gate — all of the above except git tag
 npm run version:bump -- patch   # or minor / major
 ```
+
+### Pre-commit hook (local)
+
+After `npm install`, Husky runs `npm run precommit:check` before each commit:
+
+1. **`version:check`** — package, lockfile, CHANGELOG latest heading, and README status row must match.
+2. **`check-docs-staged`** — if you stage user-visible code (`src/pages`, `src/components`, `src/hooks`, `supabase/migrations`, `supabase/functions`), you must also stage at least one doc file (`CHANGELOG.md`, `docs/dev-log.md`, `README.md`, etc.) in the same commit.
+
+This does **not** bump semver on every commit — only enforces alignment and doc pairing. Use `version:bump` when cutting a release.
 
 `version:bump` runs `npm version`, resets CHANGELOG Unreleased, and inserts a stub release section. You still fill in notes and update README / roadmap / dev-log before commit.
 

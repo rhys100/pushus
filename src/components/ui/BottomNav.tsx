@@ -77,7 +77,7 @@ const navItems: NavConfig[] = [
     id: 'log',
     label: 'Log',
     hero: true,
-    icon: () => <LogIcon className="h-8 w-8" />,
+    icon: () => <LogIcon className="h-7 w-7" />,
   },
   {
     id: 'group',
@@ -137,6 +137,15 @@ function NavButton({
   isActive: boolean
   onNavigate: (item: NavItem) => void
 }) {
+  const labelClass = cn(
+    'text-[0.625rem] font-medium leading-none',
+    isActive
+      ? item.hero
+        ? 'font-semibold text-accent'
+        : 'text-accent'
+      : 'text-text-muted hover:text-text-primary',
+  )
+
   if (item.hero) {
     return (
       <button
@@ -145,32 +154,27 @@ function NavButton({
         aria-current={isActive ? 'page' : undefined}
         aria-label="Log push-ups"
         className={cn(
-          'relative flex flex-col items-center justify-end gap-1 pb-1',
+          'relative flex flex-col items-center gap-1 px-0.5 pb-1 pt-2',
           'transition-transform duration-[var(--duration-fast)]',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-inset',
           'active:scale-95',
         )}
       >
-        <span
-          className={cn(
-            'relative z-10 flex h-16 w-16 -translate-y-5 items-center justify-center rounded-full',
-            'border-2 bg-bg shadow-[0_4px_20px_rgba(255,107,74,0.35)]',
-            'transition-colors duration-[var(--duration-fast)]',
-            isActive
-              ? 'border-accent bg-accent text-white'
-              : 'border-accent text-accent hover:bg-accent/10',
-          )}
-        >
-          {item.icon()}
+        <span className="relative flex h-7 w-full items-end justify-center overflow-visible">
+          <span
+            className={cn(
+              'absolute bottom-0 left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full',
+              'border-2 bg-bg shadow-[0_4px_20px_rgba(255,107,74,0.35)]',
+              'transition-colors duration-[var(--duration-fast)]',
+              isActive
+                ? 'border-accent bg-accent text-white'
+                : 'border-accent text-accent hover:bg-accent/10',
+            )}
+          >
+            {item.icon()}
+          </span>
         </span>
-        <span
-          className={cn(
-            'relative z-10 text-xs font-semibold',
-            isActive ? 'text-accent' : 'text-text-primary',
-          )}
-        >
-          {item.label}
-        </span>
+        <span className={labelClass}>{item.label}</span>
       </button>
     )
   }
@@ -181,14 +185,13 @@ function NavButton({
       onClick={() => onNavigate(item.id)}
       aria-current={isActive ? 'page' : undefined}
       className={cn(
-        'flex min-h-[3.25rem] flex-col items-center justify-center gap-0.5 px-0.5 py-2',
-        'text-[0.625rem] font-medium transition-colors duration-[var(--duration-fast)]',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50',
-        isActive ? 'text-accent' : 'text-text-muted hover:text-text-primary',
+        'flex flex-col items-center gap-1 px-0.5 pb-1 pt-2',
+        'transition-colors duration-[var(--duration-fast)]',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-inset',
       )}
     >
-      {item.icon()}
-      <span>{item.label}</span>
+      <span className="flex h-7 w-full items-center justify-center">{item.icon()}</span>
+      <span className={labelClass}>{item.label}</span>
     </button>
   )
 }
@@ -198,12 +201,12 @@ export function BottomNav({ active, onNavigate, className }: BottomNavProps) {
     <nav
       className={cn(
         'fixed inset-x-0 bottom-0 z-40 overflow-visible border-t border-border bg-bg',
-        'pb-[env(safe-area-inset-bottom)] pt-2',
+        'pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]',
         className,
       )}
       aria-label="Main navigation"
     >
-      <div className="mx-auto grid max-w-lg grid-cols-5 items-end overflow-visible">
+      <div className="mx-auto grid max-w-lg grid-cols-5 overflow-visible">
         {navItems.map((item) => (
           <NavButton
             key={item.id}

@@ -37,16 +37,20 @@
   --duration-slow: 350ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
-  --bottom-nav-height: 4.5rem;
+  /* Icon row + label row + top/bottom padding inside the nav bar */
+  --bottom-nav-content: 3.75rem;
+  --bottom-nav-height: calc(
+    var(--bottom-nav-content) + max(0.75rem, env(safe-area-inset-bottom, 0px))
+  );
   --bank-cta-height: 3.25rem;
   --bank-cta-gap: 0.75rem;
   --bank-disabled-hint-height: 2rem;
   --bank-hint-block: 0px;
   --today-bottom-chrome: calc(
     var(--bottom-nav-height) + var(--bank-cta-gap) + var(--bank-hint-block) +
-      var(--bank-cta-height) + env(safe-area-inset-bottom)
+      var(--bank-cta-height)
   );
-  --toast-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  --toast-bottom: calc(var(--bottom-nav-height) + 0.5rem);
 }
 
 * {
