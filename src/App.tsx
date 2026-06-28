@@ -181,6 +181,7 @@ export default function App() {
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/activity" element={<ActivityPage />} />
           <Route path="/group" element={<GroupPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Route>
 
         <Route
@@ -194,16 +195,6 @@ export default function App() {
           }
         />
 
-        <Route
-          path="/settings"
-          element={
-            <LazyPage>
-              <RequireAuth mode="onboarded">
-                <SettingsPage />
-              </RequireAuth>
-            </LazyPage>
-          }
-        />
         <Route
           path="/settings/training"
           element={

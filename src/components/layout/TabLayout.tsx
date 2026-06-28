@@ -6,16 +6,18 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import type { NavItem } from '@/components/ui/BottomNav'
 
 const navRoutes: Record<NavItem, string> = {
-  today: '/today',
+  log: '/today',
   leaderboard: '/leaderboard',
   activity: '/activity',
   group: '/group',
+  settings: '/settings',
 }
 
 const tabChunkPrefetches: Partial<Record<NavItem, () => Promise<unknown>>> = {
   leaderboard: () => import('@/pages/LeaderboardPage'),
   activity: () => import('@/pages/ActivityPage'),
   group: () => import('@/pages/GroupPage'),
+  settings: () => import('@/pages/SettingsPage'),
 }
 
 function TabPageLoader() {
@@ -48,12 +50,13 @@ function TabLayoutShell() {
     void import('@/pages/LeaderboardPage')
     void import('@/pages/ActivityPage')
     void import('@/pages/GroupPage')
+    void import('@/pages/SettingsPage')
   }, [])
 
   return (
     <AppLayout
-      title={meta.title}
-      subtitle={meta.subtitle}
+      title={isToday ? null : meta.title}
+      subtitle={isToday ? undefined : meta.subtitle}
       headerTrailing={meta.headerTrailing}
       bottomChrome={isToday ? 'today' : 'nav'}
       onNavigate={handleNavigate}

@@ -1,6 +1,6 @@
 import { cn } from '@/lib/cn'
 
-export type NavItem = 'today' | 'leaderboard' | 'activity' | 'group'
+export type NavItem = 'log' | 'leaderboard' | 'activity' | 'group' | 'settings'
 
 export type BottomNavProps = {
   active: NavItem
@@ -11,17 +11,19 @@ export type BottomNavProps = {
 type NavConfig = {
   id: NavItem
   label: string
+  hero?: boolean
   icon: (active: boolean) => JSX.Element
 }
 
 const navItems: NavConfig[] = [
   {
-    id: 'today',
-    label: 'Today',
+    id: 'log',
+    label: 'Log',
+    hero: true,
     icon: (active) => (
       <svg
         viewBox="0 0 24 24"
-        className="h-6 w-6"
+        className={cn('h-7 w-7', active && 'drop-shadow-[0_0_8px_rgba(255,107,74,0.35)]')}
         fill={active ? 'currentColor' : 'none'}
         stroke="currentColor"
         strokeWidth={active ? 0 : 1.75}
@@ -40,11 +42,11 @@ const navItems: NavConfig[] = [
   },
   {
     id: 'leaderboard',
-    label: 'Leaderboard',
+    label: 'Board',
     icon: () => (
       <svg
         viewBox="0 0 24 24"
-        className="h-6 w-6"
+        className="h-5 w-5"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.75"
@@ -61,11 +63,11 @@ const navItems: NavConfig[] = [
   },
   {
     id: 'activity',
-    label: 'Activity',
+    label: 'Feed',
     icon: () => (
       <svg
         viewBox="0 0 24 24"
-        className="h-6 w-6"
+        className="h-5 w-5"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.75"
@@ -85,7 +87,7 @@ const navItems: NavConfig[] = [
     icon: () => (
       <svg
         viewBox="0 0 24 24"
-        className="h-6 w-6"
+        className="h-5 w-5"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.75"
@@ -97,6 +99,31 @@ const navItems: NavConfig[] = [
           strokeLinecap="round"
           strokeLinejoin="round"
           d="M4.5 18.5c.6-2.5 2.4-4 4.5-4s3.9 1.5 4.5 4M14 18.5c.4-1.8 1.6-3 3-3"
+        />
+      </svg>
+    ),
+  },
+  {
+    id: 'settings',
+    label: 'Settings',
+    icon: () => (
+      <svg
+        viewBox="0 0 24 24"
+        className="h-5 w-5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 15a3 3 0 100-6 3 3 0 000 6z"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"
         />
       </svg>
     ),
@@ -113,7 +140,7 @@ export function BottomNav({ active, onNavigate, className }: BottomNavProps) {
       )}
       aria-label="Main navigation"
     >
-      <div className="mx-auto grid max-w-lg grid-cols-4">
+      <div className="mx-auto grid max-w-lg grid-cols-5">
         {navItems.map((item) => {
           const isActive = active === item.id
 
@@ -124,10 +151,18 @@ export function BottomNav({ active, onNavigate, className }: BottomNavProps) {
               onClick={() => onNavigate(item.id)}
               aria-current={isActive ? 'page' : undefined}
               className={cn(
-                'flex min-h-[3.25rem] flex-col items-center justify-center gap-0.5 px-1 py-2',
-                'text-[0.6875rem] font-medium transition-colors duration-[var(--duration-fast)]',
+                'flex min-h-[3.25rem] flex-col items-center justify-center gap-0.5 px-0.5 py-2',
+                'transition-colors duration-[var(--duration-fast)]',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50',
-                isActive ? 'text-accent' : 'text-text-muted hover:text-text-primary',
+                item.hero
+                  ? cn(
+                      isActive ? 'text-accent' : 'text-text-primary hover:text-accent',
+                      'text-xs font-semibold',
+                    )
+                  : cn(
+                      'text-[0.625rem] font-medium',
+                      isActive ? 'text-accent' : 'text-text-muted hover:text-text-primary',
+                    ),
               )}
             >
               {item.icon(isActive)}

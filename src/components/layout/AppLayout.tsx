@@ -7,22 +7,24 @@ import { TODAY_BOTTOM_CHROME } from '@/lib/layout'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 
 const navRoutes: Record<NavItem, string> = {
-  today: '/today',
+  log: '/today',
   leaderboard: '/leaderboard',
   activity: '/activity',
   group: '/group',
+  settings: '/settings',
 }
 
 function navItemFromPath(pathname: string): NavItem | null {
-  if (pathname.startsWith('/today')) return 'today'
+  if (pathname.startsWith('/today')) return 'log'
   if (pathname.startsWith('/leaderboard')) return 'leaderboard'
   if (pathname.startsWith('/activity')) return 'activity'
   if (pathname.startsWith('/group')) return 'group'
+  if (pathname.startsWith('/settings')) return 'settings'
   return null
 }
 
 type AppLayoutProps = {
-  title?: string
+  title?: string | null
   subtitle?: string
   showNav?: boolean
   bottomChrome?: 'nav' | 'today'

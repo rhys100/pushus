@@ -110,7 +110,34 @@ export function recommendFromWizardDraft(answers: WizardAnswers): PlanRecommenda
   }
 }
 
-/** Returns conservative static defaults unless draft formulas are explicitly requested. */
+/** Personalised but conservative plan from wizard answers (safe for beta). */
+export function recommendFromWizardConservative(answers: WizardAnswers): PlanRecommendation {
+  const trainingDays = answers.preferredTrainingDays.length || 4
+  const dailyTarget = roundToNearestFive(
+    Math.min(50, Math.max(10, answers.maxCleanSet)),
+  )
+  const recommendedSetSize = roundToNearestFive(
+    Math.min(15, Math.max(5, Math.floor(answers.maxCleanSet / 2))),
+  )
+  const restDays = deriveRestDays(answers.preferredTrainingDays)
+
+  const plan: TrainingPlan = {
+    dailyTarget,
+    recommendedSetSize,
+    trainingDaysPerWeek: trainingDays,
+    restDays: restDays.length > 0 ? restDays : [0, 6],
+    sorenessWarning: !answers.sorenessWarningAcknowledged,
+    disclaimer: DEFAULT_DISCLAIMER,
+  }
+
+  return {
+    plan,
+    summary: `Recommended plan: ${dailyTarget} reps per day in sets of ${recommendedSetSize}.`,
+    isPlaceholder: false,
+  }
+}
+
+/** Returns conservative personalised plan unless draft formulas are explicitly requested. */
 export function recommendFromWizard(
   answers: WizardAnswers,
   options: RecommendOptions = {},
@@ -121,12 +148,7 @@ export function recommendFromWizard(
     return recommendFromWizardDraft(answers)
   }
 
-  return {
-    plan: getDefaultPlan(),
-    summary:
-      'Conservative starter plan: 20 reps per day in sets of 10, with rest on weekends.',
-    isPlaceholder: true,
-  }
+  return recommendFromWizardConservative(answers)
 }
 
 /** Estimate weekly volume from a plan (FOR REVIEW). */

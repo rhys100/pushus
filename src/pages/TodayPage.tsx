@@ -8,7 +8,6 @@ import {
   useUndoLastEntry,
 } from '@/hooks/useTodayData'
 import { useGroupBillingStatus, useGroupSubscription } from '@/hooks/useBilling'
-import { useTabPageMeta } from '@/components/layout/TabPageMeta'
 import { BillingBanner } from '@/components/billing/BillingBanner'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useToast } from '@/components/ui/Toast'
@@ -21,11 +20,13 @@ import { BankPushupsButton } from '@/components/logger/BankPushupsButton'
 import { DayProgressCard } from '@/components/today/DayProgressCard'
 import { TodayEntriesList } from '@/components/today/TodayEntriesList'
 import { useAuth } from '@/providers/AuthProvider'
+import { useTrainingPlan } from '@/hooks/useTrainingPlan'
 
 export function TodayPage() {
   const { toast } = useToast()
   const { user, profile } = useAuth()
   const { activeGroup, loading: groupLoading, role } = useActiveGroup()
+  const { dailyTarget, loading: planLoading } = useTrainingPlan(user?.id, activeGroup?.id)
   const { showHint, dismissHint } = useLoggerDragHint()
   const billingStatusQuery = useGroupBillingStatus(activeGroup?.id)
   const subscriptionQuery = useGroupSubscription(activeGroup?.id)
@@ -40,8 +41,6 @@ export function TodayPage() {
   const loggerRef = useRef<CircularLoggerHandle>(null)
   const [canBank, setCanBank] = useState(false)
   const [dragCount, setDragCount] = useState(0)
-
-  useTabPageMeta({ subtitle: 'Today' })
 
   const handleBank = useCallback(async () => {
     if (!activeGroup || !canBank || bankPushups.isPending || !user || !profile) {

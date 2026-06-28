@@ -17,10 +17,11 @@ const DEFAULT_ANSWERS: WizardAnswers = {
 }
 
 type TrainingWizardProps = {
-  onComplete?: (answers: WizardAnswers) => void
+  saving?: boolean
+  onComplete?: (answers: WizardAnswers) => void | Promise<void>
 }
 
-export function TrainingWizard({ onComplete }: TrainingWizardProps) {
+export function TrainingWizard({ saving = false, onComplete }: TrainingWizardProps) {
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<WizardAnswers>(DEFAULT_ANSWERS)
 
@@ -209,8 +210,8 @@ export function TrainingWizard({ onComplete }: TrainingWizardProps) {
             Continue
           </Button>
         ) : (
-          <Button fullWidth onClick={handleFinish}>
-            Save plan (stub)
+          <Button fullWidth loading={saving} onClick={() => void handleFinish()}>
+            Save plan
           </Button>
         )}
       </div>
