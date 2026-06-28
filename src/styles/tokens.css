@@ -38,8 +38,8 @@
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
   /* Icon row + label row + padding inside the nav bar (flat — no overflow FAB) */
-  --bottom-nav-content: 3.75rem;
-  --bottom-nav-safe: max(3rem, env(safe-area-inset-bottom, 0px));
+  --bottom-nav-content: 3.25rem;
+  --bottom-nav-safe: max(0.75rem, env(safe-area-inset-bottom, 0px));
   --bottom-nav-height: calc(var(--bottom-nav-content) + var(--bottom-nav-safe));
   --bank-cta-height: 3.25rem;
   --bank-hint-height: 1.25rem;

@@ -10,6 +10,7 @@ import App from './App'
 import { APP_BUILD_ID } from '@/lib/buildId'
 import { confirmAppBuildAfterReload } from '@/lib/reloadApp'
 import './index.css'
+import 'ios-vibrator-pro-max'
 
 confirmAppBuildAfterReload(APP_BUILD_ID)
 

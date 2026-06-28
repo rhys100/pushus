@@ -52,11 +52,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 - Flat bottom nav — Log accent pill contained in bar; no overflow FAB stealing scroll touches
 - Log page: sticky bank bar above nav, entries list scrolls cleanly below
-- Rep feedback via **bzzz** (`output: both`) — native haptics + audio tick per rep
+- Rep feedback via **ios-vibrator-pro-max** — stepped-slider notch (8ms) per rep, major stop `[12,8,12]` at 5, 10, 15…
 
 #### Notes
 
-- Rep feedback now uses **bzzz** (MIT) — haptics when available, audio tick otherwise
+- Rep feedback uses [ios-vibrator-pro-max](https://vibrator.dev/) — same patterns as the [Haptic Playground stepped slider](https://haptic-sliders.vercel.app/)
 - iOS still has no web vibration API; audio tick is the fallback there too
 - Redeploy required for layout + `_headers` changes
 

@@ -1,63 +1,60 @@
 /**
  * Per-rep feedback while dragging the circular logger.
- * Uses [bzzz](https://pavlito.github.io/bzzz/) — native haptics when available, audio fallback otherwise.
+ * Patterns from the [Haptic Playground stepped slider](https://haptic-sliders.vercel.app/)
+ * via [ios-vibrator-pro-max](https://vibrator.dev/).
  */
 
-import { createHaptics, type PatternBlock } from 'bzzz'
+/** Stepped-slider notch tick (ms). */
+export const REP_NOTCH_MS = 8
 
-const MAX_PATTERN_TICKS = 6
+/** Stepped-slider major stop every 5 steps — [vibrate, pause, vibrate]. */
+export const REP_MAJOR_STOP_PATTERN = [12, 8, 12] as const
 
-const repFeedback = createHaptics({
-  output: 'both',
-  patterns: {
-    repTick: [
-      { type: 'pulse', duration: 10, intensity: 0.55 },
-      { type: 'gap', duration: 14 },
-      { type: 'pulse', duration: 12, intensity: 0.7 },
-    ],
-  },
-})
+export function isRepMajorStop(count: number): boolean {
+  return count > 0 && count % 5 === 0
+}
+
+export function repHapticPatternForCount(count: number): number | number[] {
+  return isRepMajorStop(count) ? [...REP_MAJOR_STOP_PATTERN] : REP_NOTCH_MS
+}
 
 export function isRepHapticSupported(): boolean {
-  if (typeof window === 'undefined') {
+  if (typeof navigator === 'undefined') {
     return false
   }
 
-  const caps = repFeedback.getCapabilities()
-  return caps.haptics || caps.audio
+  return typeof navigator.vibrate === 'function'
 }
 
-/** Warm audio output on first touch so drag ticks can play during touchmove. */
+/** Reserved for touch-start warm-up; polyfill authorizes on touchend/click. */
 export function primeRepFeedback(): void {
-  repFeedback.setOutput('both')
+  // no-op — ios-vibrator-pro-max hooks global interaction events
 }
 
-function buildMultiRepPattern(ticks: number): PatternBlock[] {
-  const count = Math.min(ticks, MAX_PATTERN_TICKS)
-  const pattern: PatternBlock[] = []
-
-  for (let i = 0; i < count; i++) {
-    pattern.push({ type: 'pulse', duration: 10, intensity: 0.5 + i * 0.08 })
-
-    if (i < count - 1) {
-      pattern.push({ type: 'gap', duration: 18 })
-    }
+function pulseRepAtCount(count: number): boolean {
+  if (!isRepHapticSupported()) {
+    return false
   }
 
-  return pattern
+  return navigator.vibrate(repHapticPatternForCount(count))
 }
 
 /**
  * Pulse once per rep crossed when count increases (e.g. drag from 3 → 7 → four ticks).
+ * Multiples of 5 use the stronger major-stop pattern (5, 10, 15…).
  */
 export function pulseRepHapticDelta(prevCount: number, nextCount: number): boolean {
   if (nextCount <= prevCount) {
     return false
   }
 
-  const delta = nextCount - prevCount
-  const result =
-    delta === 1 ? repFeedback.play('repTick') : repFeedback.play(buildMultiRepPattern(delta))
+  let fired = false
 
-  return result.haptics || result.audio
+  for (let count = prevCount + 1; count <= nextCount; count += 1) {
+    if (pulseRepAtCount(count)) {
+      fired = true
+    }
+  }
+
+  return fired
 }

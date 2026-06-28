@@ -32,7 +32,7 @@ Shared constants in `src/lib/layout.ts`:
 Rules:
 
 - Bottom nav stays fixed and flat (no overflow FAB)
-- Log page: bank CTA is sticky above nav; entries scroll below
+- Log page: bank CTA fixed above nav; entries scroll above bank strip
 - No fixed element may cover interactive content
 - Long URLs use `break-all` inside cards
 - Minimum 44px touch targets (`min-h-11`, `--bank-cta-height`)
