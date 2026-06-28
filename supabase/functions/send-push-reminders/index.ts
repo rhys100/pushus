@@ -20,6 +20,7 @@ type NotificationPreferencesRow = {
 
 type TrainingPlanRow = {
   user_id: string
+  group_id: string
   max_clean_set: number
   training_level: string
   challenge_intensity: string
@@ -28,6 +29,11 @@ type TrainingPlanRow = {
   plan_baseline: number
   wizard_completed: boolean
   updated_at: string
+}
+
+type GroupRow = {
+  id: string
+  timezone: string
 }
 
 type PushSubscriptionRow = {
@@ -164,14 +170,21 @@ async function getBankedToday(
   supabase: ReturnType<typeof createClient>,
   userId: string,
   localDate: string,
+  groupId?: string,
 ): Promise<number> {
-  const { data, error } = await supabase
+  let query = supabase
     .from('pushup_entries')
     .select('count')
     .eq('user_id', userId)
     .eq('logged_for', localDate)
     .is('deleted_at', null)
     .in('review_status', ['none', 'approved'])
+
+  if (groupId) {
+    query = query.eq('group_id', groupId)
+  }
+
+  const { data, error } = await query
 
   if (error) {
     throw error
@@ -272,7 +285,7 @@ Deno.serve(async (req) => {
     const { data: planRows, error: planError } = await supabase
       .from('user_training_plans')
       .select(
-        'user_id, max_clean_set, training_level, challenge_intensity, preferred_training_days, mesocycle_started_at, plan_baseline, wizard_completed, updated_at',
+        'user_id, group_id, max_clean_set, training_level, challenge_intensity, preferred_training_days, mesocycle_started_at, plan_baseline, wizard_completed, updated_at',
       )
       .in('user_id', userIds)
       .eq('wizard_completed', true)
@@ -289,16 +302,46 @@ Deno.serve(async (req) => {
       }
     }
 
+    const planGroupIds = [
+      ...new Set(
+        [...planByUser.values()].map((plan) => plan.group_id).filter(Boolean),
+      ),
+    ]
+
+    const timezoneByGroup = new Map<string, string>()
+    if (planGroupIds.length > 0) {
+      const { data: groupRows, error: groupError } = await supabase
+        .from('groups')
+        .select('id, timezone')
+        .in('id', planGroupIds)
+
+      if (groupError) {
+        throw groupError
+      }
+
+      for (const group of (groupRows ?? []) as GroupRow[]) {
+        timezoneByGroup.set(group.id, group.timezone || 'UTC')
+      }
+    }
+
     let sent = 0
     let skipped = 0
     let failed = 0
     let disabled = 0
 
     for (const prefs of prefsList) {
-      const timezone = timezoneByUser.get(prefs.user_id) ?? 'UTC'
-      const localDate = getZonedTimeParts(timezone, now).dateKey
-      const bankedToday = await getBankedToday(supabase, prefs.user_id, localDate)
+      const profileTimezone = timezoneByUser.get(prefs.user_id) ?? 'UTC'
       const planRow = planByUser.get(prefs.user_id) ?? null
+      const timezone = planRow
+        ? timezoneByGroup.get(planRow.group_id) ?? profileTimezone
+        : profileTimezone
+      const localDate = getZonedTimeParts(timezone, now).dateKey
+      const bankedToday = await getBankedToday(
+        supabase,
+        prefs.user_id,
+        localDate,
+        planRow?.group_id,
+      )
       const todayTarget = resolveTodayTarget(planRow, localDate, timezone, prefs.daily_target)
 
       if (!isEligibleForReminder(prefs, timezone, bankedToday, todayTarget, now)) {

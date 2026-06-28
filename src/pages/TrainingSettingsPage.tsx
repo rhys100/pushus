@@ -16,6 +16,7 @@ export function TrainingSettingsPage() {
   const { savePlan, saving, wizardCompleted, savedWizardAnswers } = useTrainingPlan(
     user?.id,
     activeGroup?.id,
+    activeGroup?.timezone,
   )
 
   async function handleComplete(answers: WizardAnswers) {

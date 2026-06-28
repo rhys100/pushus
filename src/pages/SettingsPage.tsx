@@ -34,7 +34,7 @@ export function SettingsPage() {
     weeklySchedule,
     peakDayTarget,
     wizardCompleted,
-  } = useTrainingPlan(user?.id, activeGroup?.id)
+  } = useTrainingPlan(user?.id, activeGroup?.id, activeGroup?.timezone)
   const {
     prefs,
     loading: prefsLoading,

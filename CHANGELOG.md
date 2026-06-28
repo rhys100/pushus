@@ -43,6 +43,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Touch drag no longer double-counts reps when pointer and touch move events both fire
 - Interrupted pointer drags release scroll lock via `pointercancel`
 - Training plan “week N of 4” label matches the schedule multipliers in use
+- Push reminders use group timezone and group-scoped banked totals for plan users
 - Scrolling today's entries no longer accidentally taps the Log tab (removed overlapping hero FAB)
 - Circular logger rep feedback via [ios-vibrator-pro-max](https://vibrator.dev/) — stepped-slider notch tick per rep, major stop at 5, 10, 15…
 - Keyboard increment haptics use a synchronously updated count ref so rapid key repeat does not double-tick

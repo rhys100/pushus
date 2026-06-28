@@ -26,7 +26,11 @@ export function TodayPage() {
   const { toast } = useToast()
   const { user, profile } = useAuth()
   const { activeGroup, loading: groupLoading, role } = useActiveGroup()
-  const { dailyTarget, todayPrescription, loading: planLoading } = useTrainingPlan(user?.id, activeGroup?.id)
+  const { dailyTarget, todayPrescription, loading: planLoading } = useTrainingPlan(
+    user?.id,
+    activeGroup?.id,
+    activeGroup?.timezone,
+  )
   const { showHint, dismissHint } = useLoggerDragHint()
   const billingStatusQuery = useGroupBillingStatus(activeGroup?.id)
   const subscriptionQuery = useGroupSubscription(activeGroup?.id)

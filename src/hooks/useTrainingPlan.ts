@@ -15,7 +15,6 @@ import {
   wizardAnswersFromPlanRow,
 } from '@/lib/training/planEngine'
 import type { TrainingPlanRow } from '@/types/gamification'
-import { useProfile } from '@/hooks/useProfile'
 
 const trainingPlanQueryKey = (userId: string | undefined, groupId: string | undefined) =>
   ['training-plan', userId, groupId] as const
@@ -93,10 +92,13 @@ function resolveTrainingPlan(
   )
 }
 
-export function useTrainingPlan(userId: string | undefined, groupId: string | undefined) {
+export function useTrainingPlan(
+  userId: string | undefined,
+  groupId: string | undefined,
+  groupTimezone = 'UTC',
+) {
   const queryClient = useQueryClient()
-  const { profile } = useProfile()
-  const timezone = profile?.timezone ?? 'UTC'
+  const timezone = groupTimezone || 'UTC'
 
   const query = useQuery({
     queryKey: trainingPlanQueryKey(userId, groupId),

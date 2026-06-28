@@ -45,6 +45,7 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 **Fixed**
 - Bugbot: touch drag double-delta, missing pointercancel, mesocycle week label vs schedule mismatch
+- Training plan and push reminders use group timezone; reminders scope banked totals to plan group
 
 **Next**
 - Rhys spot-check drag feel on real device

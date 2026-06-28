@@ -92,6 +92,23 @@ function assignDayTypes(trainingDays: number[], trainingLevel: string): Map<numb
   return assignment
 }
 
+function enforceChallengeSpacing(assignment: Map<number, DayType>): void {
+  const trainingDays = [...assignment.keys()].sort((a, b) => a - b)
+
+  for (let i = 0; i < trainingDays.length; i++) {
+    const day = trainingDays[i]
+    if (assignment.get(day) !== 'challenge') continue
+
+    if (i > 0) {
+      const prev = trainingDays[i - 1]
+      const prevType = assignment.get(prev)
+      if (prevType === 'challenge' || prevType === 'moderate') {
+        assignment.set(prev, 'easy')
+      }
+    }
+  }
+}
+
 function buildWeeklySchedule(
   row: TrainingPlanRow,
   mesocycleWeek: number,
@@ -107,6 +124,7 @@ function buildWeeklySchedule(
   if (trainingDays.length === 0) trainingDays = [1, 2, 3, 4]
 
   const assignment = assignDayTypes(trainingDays, row.training_level)
+  enforceChallengeSpacing(assignment)
   const schedule: WeeklySchedule = {}
 
   for (const day of ALL_DAYS) {
