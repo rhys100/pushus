@@ -15,31 +15,29 @@ type NavConfig = {
   icon: (active: boolean) => JSX.Element
 }
 
-const navItems: NavConfig[] = [
-  {
-    id: 'log',
-    label: 'Log',
-    hero: true,
-    icon: (active) => (
-      <svg
-        viewBox="0 0 24 24"
-        className={cn('h-7 w-7', active && 'drop-shadow-[0_0_8px_rgba(255,107,74,0.35)]')}
-        fill={active ? 'currentColor' : 'none'}
+function LogIcon({ className, active }: { className?: string; active: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill={active ? 'currentColor' : 'none'}
+      stroke="currentColor"
+      strokeWidth={active ? 0 : 2}
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path
+        d="M12 7v5l3 2"
         stroke="currentColor"
-        strokeWidth={active ? 0 : 1.75}
-        aria-hidden="true"
-      >
-        <circle cx="12" cy="12" r="9" />
-        <path
-          d="M12 7v5l3 2"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          fill="none"
-        />
-      </svg>
-    ),
-  },
+        strokeWidth="2"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </svg>
+  )
+}
+
+const navItems: NavConfig[] = [
   {
     id: 'leaderboard',
     label: 'Board',
@@ -80,6 +78,12 @@ const navItems: NavConfig[] = [
         />
       </svg>
     ),
+  },
+  {
+    id: 'log',
+    label: 'Log',
+    hero: true,
+    icon: (active) => <LogIcon className="h-8 w-8" active={active} />,
   },
   {
     id: 'group',
@@ -130,6 +134,71 @@ const navItems: NavConfig[] = [
   },
 ]
 
+function NavButton({
+  item,
+  isActive,
+  onNavigate,
+}: {
+  item: NavConfig
+  isActive: boolean
+  onNavigate: (item: NavItem) => void
+}) {
+  if (item.hero) {
+    return (
+      <button
+        type="button"
+        onClick={() => onNavigate(item.id)}
+        aria-current={isActive ? 'page' : undefined}
+        aria-label="Log push-ups"
+        className={cn(
+          'relative -mt-5 flex flex-col items-center justify-end gap-1 pb-1',
+          'transition-transform duration-[var(--duration-fast)]',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
+          'active:scale-95',
+        )}
+      >
+        <span
+          className={cn(
+            'flex h-[3.75rem] w-[3.75rem] items-center justify-center rounded-full',
+            'border-2 shadow-[0_4px_20px_rgba(255,107,74,0.35)]',
+            'transition-colors duration-[var(--duration-fast)]',
+            isActive
+              ? 'border-accent bg-accent text-white'
+              : 'border-accent/80 bg-surface text-accent hover:bg-accent/10',
+          )}
+        >
+          {item.icon(isActive)}
+        </span>
+        <span
+          className={cn(
+            'text-xs font-semibold',
+            isActive ? 'text-accent' : 'text-text-primary',
+          )}
+        >
+          {item.label}
+        </span>
+      </button>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => onNavigate(item.id)}
+      aria-current={isActive ? 'page' : undefined}
+      className={cn(
+        'flex min-h-[3.25rem] flex-col items-center justify-center gap-0.5 px-0.5 py-2',
+        'text-[0.625rem] font-medium transition-colors duration-[var(--duration-fast)]',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50',
+        isActive ? 'text-accent' : 'text-text-muted hover:text-text-primary',
+      )}
+    >
+      {item.icon(isActive)}
+      <span>{item.label}</span>
+    </button>
+  )
+}
+
 export function BottomNav({ active, onNavigate, className }: BottomNavProps) {
   return (
     <nav
@@ -140,36 +209,15 @@ export function BottomNav({ active, onNavigate, className }: BottomNavProps) {
       )}
       aria-label="Main navigation"
     >
-      <div className="mx-auto grid max-w-lg grid-cols-5">
-        {navItems.map((item) => {
-          const isActive = active === item.id
-
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onNavigate(item.id)}
-              aria-current={isActive ? 'page' : undefined}
-              className={cn(
-                'flex min-h-[3.25rem] flex-col items-center justify-center gap-0.5 px-0.5 py-2',
-                'transition-colors duration-[var(--duration-fast)]',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50',
-                item.hero
-                  ? cn(
-                      isActive ? 'text-accent' : 'text-text-primary hover:text-accent',
-                      'text-xs font-semibold',
-                    )
-                  : cn(
-                      'text-[0.625rem] font-medium',
-                      isActive ? 'text-accent' : 'text-text-muted hover:text-text-primary',
-                    ),
-              )}
-            >
-              {item.icon(isActive)}
-              <span>{item.label}</span>
-            </button>
-          )
-        })}
+      <div className="mx-auto grid max-w-lg grid-cols-5 items-end">
+        {navItems.map((item) => (
+          <NavButton
+            key={item.id}
+            item={item}
+            isActive={active === item.id}
+            onNavigate={onNavigate}
+          />
+        ))}
       </div>
     </nav>
   )
