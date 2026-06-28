@@ -226,10 +226,16 @@ For exploratory ideas without locked rules, see [product-roadmap.md](./product-r
 | 3. Shoulder/elbow/wrist soreness warning acknowledgement | Phase 2 |
 | 4. Challenge intensity | Phase 2 |
 | 5. Preferred training days | Phase 2 |
-| **Multiple submaximal sets preferred** over one huge set | Phase 2 |
+| **Multiple submaximal sets preferred** over one huge set | Beta |
 | **General fitness guidance — not medical advice** | Beta / Phase 2 |
 | **Do not encourage overtraining** in copy or UX | Beta / Phase 2 |
-| Draft progression formulas **FOR REVIEW** — off until sign-off | Beta |
+| **Science-based plan formulas (signed off):** | Beta |
+| Submaximal set size ≈ 45% of max clean set | Beta |
+| Daily volume cap = min(2× max, max + 15) | Beta |
+| Weekly microcycle: rest / easy / moderate / challenge days | Beta |
+| 4-week mesocycle: W1 70% → W2 85% → W3 100% → W4 deload 55% | Beta |
+| Auto-advance baseline +5% after mesocycle if hit rate ≥ 80% on training days | Beta |
+| Rest days = 0 daily target, streak-protected | Beta |
 | Conservative defaults when wizard not completed | Beta |
 
 ---

@@ -171,9 +171,26 @@ test.describe('today mobile layout', () => {
     await gotoTodayReady(page)
 
     const ring = page.locator('svg[role="slider"]')
-    await expect(ring.locator('circle[r="10"]')).toHaveCount(1)
+    await expect(ring.locator('[data-testid="logger-handle-visible"]')).toHaveCount(1)
     await expect(page.getByText('Drag the ring', { exact: true })).toHaveCount(0)
     await expect(page.getByText('Drag the ring to bank more')).toBeVisible()
     await assertTodayLayoutNoOverlap(page)
+  })
+
+  test('log page scrolls when swiping outside the ring', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await gotoTodayReady(page)
+
+    const entriesHeading = page.getByRole('heading', { name: /Today's entries/i })
+    await entriesHeading.scrollIntoViewIfNeeded()
+
+    const scrollBefore = await page.evaluate(() => window.scrollY)
+    await page.mouse.move(195, 500)
+    await page.mouse.down()
+    await page.mouse.move(195, 350, { steps: 8 })
+    await page.mouse.up()
+
+    const scrollAfter = await page.evaluate(() => window.scrollY)
+    expect(scrollAfter).not.toBe(scrollBefore)
   })
 })

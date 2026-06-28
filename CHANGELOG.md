@@ -12,21 +12,37 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Science-based training plan: weekly microcycle with rest, easy, moderate, and challenge days
+- 4-week mesocycle (ramp in → build → peak → deload) with automatic volume progression
+- Per-day targets on Log screen and Settings (rest days show recovery, not a flat daily number)
+- Training wizard week preview table and mesocycle explainer on save
+- Board tab day/week/month selector (defaults to today); all group members shown even at zero reps
 - Customisable push reminder frequency: every hour, every 2 hours, or once per day
 - Default reminder window for new users: 7am–7pm, hourly
 - Settings tab in bottom nav with personal and group admin sections
-- Training plan wizard saves daily target and syncs to Log screen and push reminders
+- Training plan wizard saves plan and syncs to Log screen and push reminders
 
 ### Changed
 
+- Training plan engine replaces flat daily target (= max clean set) with submaximal set prescriptions
+- Push reminders resolve today's target from the training plan; skipped on rest days
+- Weekly board totals now cover full Mon–Sun calendar week (was Mon–today)
 - **Log page overhaul:** progress and ring at top, bank bar above nav, today's entries scroll below
+- Circular logger: larger grab handle, handle-only drag start, smoother drag performance, centred rep count, even rep tick marks on ring
 - Bottom nav flattened — Log stays centred with accent pill but no longer floats over page content
 - Group tab focuses on members; admin tools (join requests, invites, billing) moved to Settings
-- Training wizard recommends a personalised daily target from max clean set (conservative formula)
 - Existing users keep once-daily reminders until they change frequency in Settings
+
+### Database
+
+- Migration `0021_training_plan_v2`: `weekly_schedule`, mesocycle fields, enum alignment for wizard values
 
 ### Fixed
 
+- Circular logger no longer blocks page scroll when touching outside the ring handle
+- Touch drag no longer double-counts reps when pointer and touch move events both fire
+- Interrupted pointer drags release scroll lock via `pointercancel`
+- Training plan “week N of 4” label matches the schedule multipliers in use
 - Scrolling today's entries no longer accidentally taps the Log tab (removed overlapping hero FAB)
 - Circular logger rep feedback via [ios-vibrator-pro-max](https://vibrator.dev/) — stepped-slider notch tick per rep, major stop at 5, 10, 15…
 - Keyboard increment haptics use a synchronously updated count ref so rapid key repeat does not double-tick

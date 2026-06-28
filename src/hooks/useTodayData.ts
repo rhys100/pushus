@@ -9,7 +9,12 @@ import {
   removeActivityFeedItem,
   type UserProfileSnapshot,
 } from '@/lib/cacheUpdates'
-import { getWeeklyLeaderboardPeriod } from '@/lib/leaderboardCalc'
+import {
+  getLeaderboardPeriod,
+  isDateInLeaderboardPeriod,
+  LEADERBOARD_RANGES,
+  type LeaderboardRange,
+} from '@/lib/leaderboardCalc'
 import { supabase } from '@/lib/supabase'
 import type { Group } from '@/types/database'
 import type { PushupEntry } from '@/types/pushupEntry'
@@ -112,14 +117,20 @@ type DeleteEntryInput = {
   entryId: string
 }
 
+type LeaderboardSnapshot = {
+  key: ReturnType<typeof leaderboardKeys.period>
+  previous: LeaderboardEntry[] | undefined
+}
+
 type TodayMutationContext = {
   previousTotal?: number
   previousEntries?: PushupEntry[]
   previousLeaderboard?: LeaderboardEntry[]
+  previousLeaderboards?: LeaderboardSnapshot[]
   previousActivityFeed?: ActivityFeedItem[]
   totalKey: ReturnType<typeof todayKeys.dayTotal>
   entriesKey: ReturnType<typeof todayKeys.entries>
-  leaderboardKey?: ReturnType<typeof leaderboardKeys.weekly>
+  leaderboardKey?: ReturnType<typeof leaderboardKeys.period>
   activityFeedKey?: ReturnType<typeof activityFeedKeys.feed>
 }
 
@@ -143,18 +154,72 @@ function createOptimisticEntry(group: Group, count: number): PushupEntry {
   }
 }
 
+function getLeaderboardQueryKey(group: Group, range: LeaderboardRange) {
+  const period = getLeaderboardPeriod(group, range)
+  return leaderboardKeys.period(group.id, range, period.periodStart, period.periodEnd)
+}
+
+function invalidateLeaderboardQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+  group: Group,
+) {
+  for (const range of LEADERBOARD_RANGES) {
+    const key = getLeaderboardQueryKey(group, range)
+    queryClient.invalidateQueries({ queryKey: key })
+  }
+}
+
+function applyLeaderboardDeltaForToday(
+  queryClient: ReturnType<typeof useQueryClient>,
+  group: Group,
+  userId: string,
+  delta: number,
+  profile?: UserProfileSnapshot,
+): LeaderboardSnapshot[] {
+  const loggedFor = getGroupLocalDateString(group.timezone)
+  const snapshots: LeaderboardSnapshot[] = []
+
+  for (const range of LEADERBOARD_RANGES) {
+    const period = getLeaderboardPeriod(group, range)
+
+    if (!isDateInLeaderboardPeriod(loggedFor, period)) {
+      continue
+    }
+
+    const key = leaderboardKeys.period(group.id, range, period.periodStart, period.periodEnd)
+    const previous = queryClient.getQueryData<LeaderboardEntry[]>(key)
+
+    snapshots.push({ key, previous })
+    queryClient.setQueryData<LeaderboardEntry[]>(key, (current) =>
+      applyLeaderboardDelta(current, userId, delta, profile),
+    )
+  }
+
+  return snapshots
+}
+
+function restoreLeaderboardSnapshots(
+  queryClient: ReturnType<typeof useQueryClient>,
+  snapshots: LeaderboardSnapshot[] | undefined,
+) {
+  if (!snapshots) {
+    return
+  }
+
+  for (const snapshot of snapshots) {
+    queryClient.setQueryData(snapshot.key, snapshot.previous)
+  }
+}
+
 function invalidateTodayRelatedQueries(
   queryClient: ReturnType<typeof useQueryClient>,
   group: Group,
 ) {
   const loggedFor = getGroupLocalDateString(group.timezone)
-  const period = getWeeklyLeaderboardPeriod(group)
 
   queryClient.invalidateQueries({ queryKey: todayKeys.dayTotal(group.id, loggedFor) })
   queryClient.invalidateQueries({ queryKey: todayKeys.entries(group.id, loggedFor) })
-  queryClient.invalidateQueries({
-    queryKey: leaderboardKeys.weekly(group.id, period.periodStart, period.periodEnd),
-  })
+  invalidateLeaderboardQueries(queryClient, group)
   queryClient.invalidateQueries({ queryKey: activityFeedKeys.feed(group.id) })
 }
 
@@ -178,23 +243,26 @@ export function useBankPushups() {
       const loggedFor = getGroupLocalDateString(group.timezone)
       const totalKey = todayKeys.dayTotal(group.id, loggedFor)
       const entriesKey = todayKeys.entries(group.id, loggedFor)
-      const period = getWeeklyLeaderboardPeriod(group)
-      const leaderboardKey = leaderboardKeys.weekly(
-        group.id,
-        period.periodStart,
-        period.periodEnd,
-      )
       const activityFeedKey = activityFeedKeys.feed(group.id)
 
       await queryClient.cancelQueries({ queryKey: totalKey })
       await queryClient.cancelQueries({ queryKey: entriesKey })
-      await queryClient.cancelQueries({ queryKey: leaderboardKey })
       await queryClient.cancelQueries({ queryKey: activityFeedKey })
+
+      for (const range of LEADERBOARD_RANGES) {
+        await queryClient.cancelQueries({ queryKey: getLeaderboardQueryKey(group, range) })
+      }
 
       const previousTotal = queryClient.getQueryData<number>(totalKey)
       const previousEntries = queryClient.getQueryData<PushupEntry[]>(entriesKey)
-      const previousLeaderboard = queryClient.getQueryData<LeaderboardEntry[]>(leaderboardKey)
       const previousActivityFeed = queryClient.getQueryData<ActivityFeedItem[]>(activityFeedKey)
+      const previousLeaderboards = applyLeaderboardDeltaForToday(
+        queryClient,
+        group,
+        userId,
+        count,
+        profile,
+      )
       const optimisticEntry = createOptimisticEntry(group, count)
 
       queryClient.setQueryData<number>(totalKey, (current = 0) => current + count)
@@ -202,9 +270,6 @@ export function useBankPushups() {
         optimisticEntry,
         ...current,
       ])
-      queryClient.setQueryData<LeaderboardEntry[]>(leaderboardKey, (current) =>
-        applyLeaderboardDelta(current, userId, count, profile),
-      )
       queryClient.setQueryData<ActivityFeedItem[]>(activityFeedKey, (current) =>
         prependActivityFeedItem(
           current,
@@ -215,11 +280,10 @@ export function useBankPushups() {
       return {
         previousTotal,
         previousEntries,
-        previousLeaderboard,
+        previousLeaderboards: previousLeaderboards,
         previousActivityFeed,
         totalKey,
         entriesKey,
-        leaderboardKey,
         activityFeedKey,
       } satisfies TodayMutationContext
     },
@@ -230,10 +294,7 @@ export function useBankPushups() {
 
       queryClient.setQueryData(context.totalKey, context.previousTotal)
       queryClient.setQueryData(context.entriesKey, context.previousEntries)
-
-      if (context.leaderboardKey) {
-        queryClient.setQueryData(context.leaderboardKey, context.previousLeaderboard)
-      }
+      restoreLeaderboardSnapshots(queryClient, context.previousLeaderboards)
 
       if (context.activityFeedKey) {
         queryClient.setQueryData(context.activityFeedKey, context.previousActivityFeed)
@@ -286,34 +347,35 @@ export function useUndoLastEntry() {
       const loggedFor = getGroupLocalDateString(group.timezone)
       const totalKey = todayKeys.dayTotal(group.id, loggedFor)
       const entriesKey = todayKeys.entries(group.id, loggedFor)
-      const period = getWeeklyLeaderboardPeriod(group)
-      const leaderboardKey = leaderboardKeys.weekly(
-        group.id,
-        period.periodStart,
-        period.periodEnd,
-      )
       const activityFeedKey = activityFeedKeys.feed(group.id)
 
       await queryClient.cancelQueries({ queryKey: totalKey })
       await queryClient.cancelQueries({ queryKey: entriesKey })
-      await queryClient.cancelQueries({ queryKey: leaderboardKey })
       await queryClient.cancelQueries({ queryKey: activityFeedKey })
+
+      for (const range of LEADERBOARD_RANGES) {
+        await queryClient.cancelQueries({ queryKey: getLeaderboardQueryKey(group, range) })
+      }
 
       const previousTotal = queryClient.getQueryData<number>(totalKey)
       const previousEntries = queryClient.getQueryData<PushupEntry[]>(entriesKey)
-      const previousLeaderboard = queryClient.getQueryData<LeaderboardEntry[]>(leaderboardKey)
       const previousActivityFeed = queryClient.getQueryData<ActivityFeedItem[]>(activityFeedKey)
       const removedEntry = previousEntries?.[0]
+      let previousLeaderboards: LeaderboardSnapshot[] | undefined
 
       if (removedEntry) {
+        previousLeaderboards = applyLeaderboardDeltaForToday(
+          queryClient,
+          group,
+          userId,
+          -removedEntry.count,
+        )
+
         queryClient.setQueryData<number>(totalKey, (current = 0) =>
           Math.max(0, current - removedEntry.count),
         )
         queryClient.setQueryData<PushupEntry[]>(entriesKey, (current = []) =>
           current.filter((entry) => entry.id !== removedEntry.id),
-        )
-        queryClient.setQueryData<LeaderboardEntry[]>(leaderboardKey, (current) =>
-          applyLeaderboardDelta(current, userId, -removedEntry.count),
         )
         queryClient.setQueryData<ActivityFeedItem[]>(activityFeedKey, (current) =>
           removeActivityFeedItem(current, removedEntry.id),
@@ -323,11 +385,10 @@ export function useUndoLastEntry() {
       return {
         previousTotal,
         previousEntries,
-        previousLeaderboard,
+        previousLeaderboards,
         previousActivityFeed,
         totalKey,
         entriesKey,
-        leaderboardKey,
         activityFeedKey,
       } satisfies TodayMutationContext
     },
@@ -338,10 +399,7 @@ export function useUndoLastEntry() {
 
       queryClient.setQueryData(context.totalKey, context.previousTotal)
       queryClient.setQueryData(context.entriesKey, context.previousEntries)
-
-      if (context.leaderboardKey) {
-        queryClient.setQueryData(context.leaderboardKey, context.previousLeaderboard)
-      }
+      restoreLeaderboardSnapshots(queryClient, context.previousLeaderboards)
 
       if (context.activityFeedKey) {
         queryClient.setQueryData(context.activityFeedKey, context.previousActivityFeed)

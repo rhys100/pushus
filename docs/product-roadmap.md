@@ -26,7 +26,7 @@ Public-friendly view of where PushUS is today and where it may go.
 
 ### Social and group
 
-- Weekly leaderboard
+- Leaderboard (day, week, month)
 - Activity feed with emoji reactions (🔥 💪 👏 in beta)
 - Invite tools and member management
 

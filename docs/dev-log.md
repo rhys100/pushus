@@ -26,6 +26,29 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-06-29 (science-based training plan)
+
+**Shipped**
+- Replaced flat daily target engine with weekly microcycle (rest/easy/moderate/challenge) and 4-week mesocycle
+- Per-day targets on Log, Settings, and push reminders; rest days show recovery
+- Migration `0021_training_plan_v2` for schedule JSON, mesocycle fields, enum fix
+- Wizard step 3: 7-day schedule table, mesocycle copy, pre-fill from saved plan
+
+**Tests**
+- `npm test` — 160 passed
+
+### 2026-06-29 (log ring UX + leaderboard periods)
+
+**Shipped**
+- Circular logger UX: bigger handle (13px), 44px hit target, handle-only drag start, DOM-updated visuals during drag, HTML-centred rep count, butt-cap progress arc, rep tick marks, page scroll restored outside handle
+- Board tab: Day / Week / Month selector (default Day); all group members shown even at 0 reps; week view is full Mon–Sun
+
+**Fixed**
+- Bugbot: touch drag double-delta, missing pointercancel, mesocycle week label vs schedule mismatch
+
+**Next**
+- Rhys spot-check drag feel on real device
+
 ### 2026-06-28 (nav polish + doc automation)
 
 - Centred hero **Log** tab in bottom nav; fixed clipped semi-circle and white-dot icon on active state

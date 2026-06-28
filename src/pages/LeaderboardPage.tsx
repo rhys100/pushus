@@ -1,4 +1,4 @@
-import { format, parseISO } from 'date-fns'
+import { useState } from 'react'
 import { cn } from '@/lib/cn'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 import {
@@ -6,18 +6,21 @@ import {
   useLeaderboardPeriod,
   type LeaderboardEntry,
 } from '@/hooks/useLeaderboard'
+import { formatPeriodLabel, type LeaderboardRange } from '@/lib/leaderboardCalc'
 import { useAuth } from '@/providers/AuthProvider'
 import { useTabPageMeta } from '@/components/layout/TabPageMeta'
-import { AvatarChip, Badge, EmptyState, Skeleton } from '@/components/ui'
+import { AvatarChip, Badge, EmptyState, SegmentedControl, Skeleton } from '@/components/ui'
 
-function formatPeriodLabel(periodStart: string, periodEnd: string): string {
-  try {
-    const start = format(parseISO(periodStart), 'd MMM')
-    const end = format(parseISO(periodEnd), 'd MMM')
-    return `${start} – ${end}`
-  } catch {
-    return 'This week'
-  }
+const RANGE_OPTIONS: { value: LeaderboardRange; label: string }[] = [
+  { value: 'day', label: 'Day' },
+  { value: 'week', label: 'Week' },
+  { value: 'month', label: 'Month' },
+]
+
+const RANGE_ARIA_LABELS: Record<LeaderboardRange, string> = {
+  day: 'Daily leaderboard rankings',
+  week: 'Weekly leaderboard rankings',
+  month: 'Monthly leaderboard rankings',
 }
 
 function rankBadgeVariant(rank: number): 'accent' | 'warning' | 'neutral' {
@@ -26,12 +29,19 @@ function rankBadgeVariant(rank: number): 'accent' | 'warning' | 'neutral' {
   return 'neutral'
 }
 
-function RankBadge({ rank }: { rank: number }) {
+function displayRank(entry: LeaderboardEntry, index: number, allZero: boolean): number {
+  return allZero ? index + 1 : entry.rank
+}
+
+function RankBadge({ rank, muted }: { rank: number; muted?: boolean }) {
   const labels: Record<number, string> = { 1: '1st', 2: '2nd', 3: '3rd' }
-  const label = labels[rank] ?? `#${rank}`
+  const label = muted ? `#${rank}` : (labels[rank] ?? `#${rank}`)
 
   return (
-    <Badge variant={rankBadgeVariant(rank)} className="min-w-[2.75rem] justify-center tabular-nums">
+    <Badge
+      variant={muted ? 'neutral' : rankBadgeVariant(rank)}
+      className="min-w-[2.75rem] justify-center tabular-nums"
+    >
       {label}
     </Badge>
   )
@@ -40,9 +50,11 @@ function RankBadge({ rank }: { rank: number }) {
 type LeaderboardRowProps = {
   entry: LeaderboardEntry
   isCurrentUser: boolean
+  rank: number
+  allZero: boolean
 }
 
-function LeaderboardRow({ entry, isCurrentUser }: LeaderboardRowProps) {
+function LeaderboardRow({ entry, isCurrentUser, rank, allZero }: LeaderboardRowProps) {
   return (
     <li
       className={cn(
@@ -50,7 +62,7 @@ function LeaderboardRow({ entry, isCurrentUser }: LeaderboardRowProps) {
         isCurrentUser && 'bg-accent-muted/30',
       )}
     >
-      <RankBadge rank={entry.rank} />
+      <RankBadge rank={rank} muted={allZero || entry.total === 0} />
 
       <div className="min-w-0 flex-1">
         <AvatarChip
@@ -92,12 +104,18 @@ function LeaderboardSkeleton() {
 export function LeaderboardPage() {
   const { user } = useAuth()
   const { activeGroup, loading: groupLoading } = useActiveGroup()
-  const period = useLeaderboardPeriod(activeGroup)
-  const { data: entries = [], isLoading, isError, isFetching } = useLeaderboard(activeGroup)
+  const [range, setRange] = useState<LeaderboardRange>('day')
+  const period = useLeaderboardPeriod(activeGroup, range)
+  const { data: entries = [], isLoading, isError, isFetching } = useLeaderboard(
+    activeGroup,
+    range,
+  )
 
-  const subtitle = period ? formatPeriodLabel(period.periodStart, period.periodEnd) : 'This week'
-  const hasLoggedReps = entries.some((entry) => entry.total > 0)
+  const subtitle = period
+    ? formatPeriodLabel(range, period.periodStart, period.periodEnd)
+    : 'Today'
   const showInitialSkeleton = isLoading && entries.length === 0
+  const allZero = entries.length > 0 && entries.every((entry) => entry.total === 0)
 
   useTabPageMeta({
     title: 'Leaderboard',
@@ -110,6 +128,14 @@ export function LeaderboardPage() {
 
   return (
     <>
+      <SegmentedControl
+        className="mb-4"
+        options={RANGE_OPTIONS}
+        value={range}
+        onChange={setRange}
+        ariaLabel="Leaderboard time range"
+      />
+
       {isFetching && entries.length > 0 ? (
         <p className="mb-3 text-xs text-text-muted" aria-live="polite">
           Refreshing…
@@ -126,10 +152,10 @@ export function LeaderboardPage() {
         />
       ) : null}
 
-      {!showInitialSkeleton && !isError && !hasLoggedReps ? (
+      {!showInitialSkeleton && !isError && entries.length === 0 ? (
         <EmptyState
-          title="Leaderboard empty"
-          description="Once your crew starts logging, rankings will show here."
+          title="No members yet"
+          description="Invite your crew to start competing on the board."
           icon={
             <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.75">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8 20V10M12 20V4M16 20v-6" />
@@ -139,20 +165,20 @@ export function LeaderboardPage() {
         />
       ) : null}
 
-      {!showInitialSkeleton && !isError && hasLoggedReps ? (
+      {!showInitialSkeleton && !isError && entries.length > 0 ? (
         <ul
           className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface"
-          aria-label="Weekly leaderboard rankings"
+          aria-label={RANGE_ARIA_LABELS[range]}
         >
-          {entries
-            .filter((entry) => entry.total > 0)
-            .map((entry) => (
-              <LeaderboardRow
-                key={entry.user_id}
-                entry={entry}
-                isCurrentUser={entry.user_id === user?.id}
-              />
-            ))}
+          {entries.map((entry, index) => (
+            <LeaderboardRow
+              key={entry.user_id}
+              entry={entry}
+              rank={displayRank(entry, index, allZero)}
+              allZero={allZero}
+              isCurrentUser={entry.user_id === user?.id}
+            />
+          ))}
         </ul>
       ) : null}
     </>

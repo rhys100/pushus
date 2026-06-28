@@ -30,6 +30,10 @@
   }
 }
 
+.logger-count-pulse {
+  animation: logger-count-pulse var(--duration-fast) var(--ease-out);
+}
+
 @keyframes logger-handle-pulse {
   0%,
   100% {

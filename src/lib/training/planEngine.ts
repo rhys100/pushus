@@ -1,15 +1,39 @@
 /**
- * Training plan engine — conservative defaults + draft progression formulas.
- * Draft formulas are marked FOR REVIEW; enable via `useDraftFormulas` cautiously in UI.
+ * Science-based training plan engine — weekly microcycle + 4-week mesocycle.
+ * Submaximal sets, tiered rest/easy/moderate/challenge days, progressive volume.
  */
 
+export type DayType = 'rest' | 'easy' | 'moderate' | 'challenge'
+
+export type DayPrescription = {
+  dayType: DayType
+  target: number
+  setSize: number
+  sets: number
+  label: string
+}
+
+export type WeeklySchedule = Record<0 | 1 | 2 | 3 | 4 | 5 | 6, DayPrescription>
+
+export type MesocycleWeek = 1 | 2 | 3 | 4
+
 export type TrainingPlan = {
-  dailyTarget: number
-  recommendedSetSize: number
-  trainingDaysPerWeek: number
+  weeklySchedule: WeeklySchedule
+  setSize: number
+  mesocycleWeek: MesocycleWeek
+  mesocycleStartedAt: string
+  planBaseline: number
   restDays: number[]
+  easyDays: number[]
+  challengeDays: number[]
+  peakDayTarget: number
+  trainingDaysPerWeek: number
   sorenessWarning: boolean
   disclaimer: string
+  /** @deprecated Use peakDayTarget or getTodayPrescription().target */
+  dailyTarget: number
+  /** @deprecated Use setSize */
+  recommendedSetSize: number
 }
 
 export type WizardAnswers = {
@@ -26,139 +50,459 @@ export type PlanRecommendation = {
   isPlaceholder: boolean
 }
 
-export type RecommendOptions = {
-  /** When true, uses draft formulas (FOR REVIEW — not clinically validated). */
-  useDraftFormulas?: boolean
+export type TodayPrescription = DayPrescription & {
+  isRestDay: boolean
+  mesocycleWeek: MesocycleWeek
 }
 
-/** Set to true only after product review sign-off. UI should pass useDraftFormulas explicitly. */
-export const DRAFT_FORMULAS_ENABLED = false
+export type MesocycleAdvanceResult = {
+  plan: TrainingPlan
+  advanced: boolean
+  progressionNote: string | null
+}
 
 const DEFAULT_DISCLAIMER =
   'General fitness guidance only — not medical advice. Stop if you feel pain.'
 
-const CONSERVATIVE_DEFAULTS = {
-  dailyTarget: 20,
-  recommendedSetSize: 10,
-  trainingDaysPerWeek: 4,
-  restDays: [0, 6] as number[],
-  sorenessWarning: true,
-} as const
-
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6] as const
 
-const LEVEL_MULTIPLIER: Record<WizardAnswers['trainingLevel'], number> = {
-  beginner: 0.6,
-  intermediate: 0.85,
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
+
+const MESOCYCLE_MULTIPLIER: Record<MesocycleWeek, number> = {
+  1: 0.7,
+  2: 0.85,
+  3: 1.0,
+  4: 0.55,
+}
+
+const LEVEL_VOLUME_FACTOR: Record<WizardAnswers['trainingLevel'], number> = {
+  beginner: 0.85,
+  intermediate: 0.95,
   advanced: 1.0,
 }
 
-const INTENSITY_MULTIPLIER: Record<WizardAnswers['challengeIntensity'], number> = {
-  light: 0.8,
+const INTENSITY_VOLUME_FACTOR: Record<WizardAnswers['challengeIntensity'], number> = {
+  light: 0.85,
   moderate: 1.0,
-  intense: 1.2,
+  intense: 1.1,
+}
+
+/** @deprecated Draft formulas removed — kept for test compatibility */
+export const DRAFT_FORMULAS_ENABLED = false
+
+export type RecommendOptions = {
+  useDraftFormulas?: boolean
+}
+
+export type ProgressionDecision = 'hold' | 'increase' | 'reduce'
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value))
+}
+
+function roundReps(value: number): number {
+  return Math.max(0, Math.round(value))
+}
+
+export function computeSetSize(maxCleanSet: number): number {
+  return clamp(Math.round(maxCleanSet * 0.45), 5, Math.min(maxCleanSet, 15))
+}
+
+export function dailyVolumeCap(maxCleanSet: number): number {
+  return Math.min(maxCleanSet * 2, maxCleanSet + 15)
+}
+
+function setsForDayType(
+  dayType: DayType,
+  trainingLevel: WizardAnswers['trainingLevel'],
+): number {
+  if (dayType === 'rest') return 0
+  if (dayType === 'easy') return 2
+  if (dayType === 'moderate') return 3
+  return trainingLevel === 'beginner' ? 3 : 4
+}
+
+function dayTypeLabel(dayType: DayType, sets: number, setSize: number): string {
+  if (dayType === 'rest') return 'Rest — recovery'
+  const typeName = dayType.charAt(0).toUpperCase() + dayType.slice(1)
+  return `${typeName} — ${sets} sets of ${setSize}`
+}
+
+function assignDayTypes(
+  trainingDays: number[],
+  trainingLevel: WizardAnswers['trainingLevel'],
+): Map<number, DayType> {
+  const sorted = [...trainingDays].sort((a, b) => a - b)
+  const assignment = new Map<number, DayType>()
+
+  if (sorted.length === 0) {
+    return assignment
+  }
+
+  const patterns: Record<number, DayType[]> = {
+    1: ['moderate'],
+    2: ['easy', 'challenge'],
+    3: ['easy', 'moderate', 'challenge'],
+    4: ['easy', 'moderate', 'moderate', 'challenge'],
+    5: ['easy', 'moderate', 'moderate', 'challenge', 'easy'],
+    6: ['easy', 'easy', 'moderate', 'moderate', 'challenge', 'moderate'],
+    7: ['easy', 'moderate', 'easy', 'moderate', 'challenge', 'moderate', 'easy'],
+  }
+
+  let pattern = patterns[Math.min(sorted.length, 7)] ?? patterns[4]
+
+  if (trainingLevel === 'beginner' && sorted.length > 5) {
+    pattern = patterns[5]
+    sorted.splice(5)
+  }
+
+  sorted.forEach((day, index) => {
+    assignment.set(day, pattern[index] ?? 'moderate')
+  })
+
+  return assignment
+}
+
+function enforceChallengeSpacing(assignment: Map<number, DayType>): void {
+  const trainingDays = [...assignment.keys()].sort((a, b) => a - b)
+
+  for (let i = 0; i < trainingDays.length; i++) {
+    const day = trainingDays[i]
+    if (assignment.get(day) !== 'challenge') continue
+
+    if (i > 0) {
+      const prev = trainingDays[i - 1]
+      const prevType = assignment.get(prev)
+      if (prevType === 'challenge' || prevType === 'moderate') {
+        assignment.set(prev, 'easy')
+      }
+    }
+  }
+}
+
+export function buildWeeklySchedule(
+  answers: WizardAnswers,
+  mesocycleWeek: MesocycleWeek = 3,
+  planBaseline = 1,
+): WeeklySchedule {
+  const setSize = computeSetSize(answers.maxCleanSet)
+  const volumeCap = dailyVolumeCap(answers.maxCleanSet)
+  const levelFactor = LEVEL_VOLUME_FACTOR[answers.trainingLevel]
+  const intensityFactor = INTENSITY_VOLUME_FACTOR[answers.challengeIntensity]
+  const mesoFactor = MESOCYCLE_MULTIPLIER[mesocycleWeek]
+
+  let trainingDays = [...answers.preferredTrainingDays].sort((a, b) => a - b)
+
+  if (trainingDays.length === 0) {
+    trainingDays = [1, 2, 3, 4]
+  }
+
+  if (answers.trainingLevel === 'beginner') {
+    const maxTrainingDays = 5
+    if (trainingDays.length > maxTrainingDays) {
+      trainingDays = trainingDays.slice(0, maxTrainingDays)
+    }
+  }
+
+  const assignment = assignDayTypes(trainingDays, answers.trainingLevel)
+  enforceChallengeSpacing(assignment)
+
+  const schedule = {} as WeeklySchedule
+
+  for (const day of ALL_DAYS) {
+    const dayType = assignment.get(day) ?? 'rest'
+    const sets = setsForDayType(dayType, answers.trainingLevel)
+    let target = sets * setSize
+    target = roundReps(target * levelFactor * intensityFactor * mesoFactor * planBaseline)
+    target = Math.min(target, volumeCap)
+
+    schedule[day] = {
+      dayType,
+      target,
+      setSize,
+      sets,
+      label: dayTypeLabel(dayType, sets, setSize),
+    }
+  }
+
+  return schedule
+}
+
+export function deriveDayLists(schedule: WeeklySchedule): {
+  restDays: number[]
+  easyDays: number[]
+  challengeDays: number[]
+} {
+  const restDays: number[] = []
+  const easyDays: number[] = []
+  const challengeDays: number[] = []
+
+  for (const day of ALL_DAYS) {
+    const prescription = schedule[day]
+    if (prescription.dayType === 'rest') restDays.push(day)
+    if (prescription.dayType === 'easy') easyDays.push(day)
+    if (prescription.dayType === 'challenge') challengeDays.push(day)
+  }
+
+  return { restDays, easyDays, challengeDays }
+}
+
+export function getPeakDayTarget(schedule: WeeklySchedule): number {
+  return Math.max(0, ...ALL_DAYS.map((day) => schedule[day].target))
+}
+
+export function trainingDaysCount(schedule: WeeklySchedule): number {
+  return ALL_DAYS.filter((day) => schedule[day].dayType !== 'rest').length
+}
+
+function planFromAnswers(
+  answers: WizardAnswers,
+  mesocycleWeek: MesocycleWeek = 1,
+  mesocycleStartedAt?: string,
+  planBaseline = 1,
+): TrainingPlan {
+  const weeklySchedule = buildWeeklySchedule(answers, mesocycleWeek, planBaseline)
+  const { restDays, easyDays, challengeDays } = deriveDayLists(weeklySchedule)
+  const setSize = computeSetSize(answers.maxCleanSet)
+  const peakDayTarget = getPeakDayTarget(weeklySchedule)
+  const trainingDaysPerWeek = trainingDaysCount(weeklySchedule)
+
+  return {
+    weeklySchedule,
+    setSize,
+    mesocycleWeek,
+    mesocycleStartedAt: mesocycleStartedAt ?? todayIsoDate(),
+    planBaseline,
+    restDays,
+    easyDays,
+    challengeDays,
+    peakDayTarget,
+    trainingDaysPerWeek,
+    sorenessWarning: !answers.sorenessWarningAcknowledged,
+    disclaimer: DEFAULT_DISCLAIMER,
+    dailyTarget: peakDayTarget,
+    recommendedSetSize: setSize,
+  }
+}
+
+export function todayIsoDate(date: Date = new Date()): string {
+  return date.toISOString().slice(0, 10)
+}
+
+export function dayOfWeekFromIso(date: string, timezone = 'UTC'): number {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    weekday: 'short',
+  })
+  const weekday = formatter.format(new Date(`${date}T12:00:00Z`))
+  const index = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(weekday)
+  return index >= 0 ? index : new Date(`${date}T12:00:00Z`).getUTCDay()
+}
+
+export function getCurrentMesocycleWeek(
+  mesocycleStartedAt: string,
+  today: string,
+): MesocycleWeek {
+  const start = new Date(`${mesocycleStartedAt}T12:00:00Z`)
+  const current = new Date(`${today}T12:00:00Z`)
+  const days = Math.max(0, Math.floor((current.getTime() - start.getTime()) / 86_400_000))
+  const weekIndex = Math.floor(days / 7) % 4
+  return (weekIndex + 1) as MesocycleWeek
+}
+
+export function getTodayPrescription(
+  plan: TrainingPlan,
+  date: string,
+  timezone = 'UTC',
+): TodayPrescription {
+  const dayOfWeek = dayOfWeekFromIso(date, timezone) as 0 | 1 | 2 | 3 | 4 | 5 | 6
+  const prescription = plan.weeklySchedule[dayOfWeek]
+
+  return {
+    ...prescription,
+    isRestDay: prescription.dayType === 'rest' || prescription.target === 0,
+    mesocycleWeek: plan.mesocycleWeek,
+  }
+}
+
+export function rebuildScheduleForMesocycleWeek(
+  plan: TrainingPlan,
+  answers: WizardAnswers,
+  mesocycleWeek: MesocycleWeek,
+): TrainingPlan {
+  const weeklySchedule = buildWeeklySchedule(answers, mesocycleWeek, plan.planBaseline)
+  const { restDays, easyDays, challengeDays } = deriveDayLists(weeklySchedule)
+  const peakDayTarget = getPeakDayTarget(weeklySchedule)
+
+  return {
+    ...plan,
+    weeklySchedule,
+    mesocycleWeek,
+    restDays,
+    easyDays,
+    challengeDays,
+    peakDayTarget,
+    trainingDaysPerWeek: trainingDaysCount(weeklySchedule),
+    dailyTarget: peakDayTarget,
+  }
+}
+
+export function advanceMesocycleIfDue(
+  plan: TrainingPlan,
+  answers: WizardAnswers,
+  today: string,
+  hitRate: number,
+): MesocycleAdvanceResult {
+  if (plan.mesocycleStartedAt > today) {
+    return { plan, advanced: false, progressionNote: null }
+  }
+
+  const start = new Date(`${plan.mesocycleStartedAt}T12:00:00Z`)
+  const current = new Date(`${today}T12:00:00Z`)
+  const daysElapsed = Math.floor((current.getTime() - start.getTime()) / 86_400_000)
+  const completedWeeks = Math.floor(daysElapsed / 7)
+
+  if (completedWeeks < 1) {
+    const currentWeek = getCurrentMesocycleWeek(plan.mesocycleStartedAt, today)
+    if (currentWeek === plan.mesocycleWeek) {
+      return { plan, advanced: false, progressionNote: null }
+    }
+    const updated = rebuildScheduleForMesocycleWeek(plan, answers, currentWeek)
+    return { plan: updated, advanced: true, progressionNote: null }
+  }
+
+  let planBaseline = plan.planBaseline
+  let progressionNote: string | null = null
+
+  if (completedWeeks >= 4) {
+    if (hitRate >= 0.8) {
+      planBaseline = Math.round(planBaseline * 1.05 * 100) / 100
+      progressionNote = 'Strong month — volume increased 5% for the next block.'
+    } else if (hitRate < 0.5) {
+      progressionNote = 'Tough month — holding current volume for the next block.'
+    } else {
+      progressionNote = 'Steady progress — starting a fresh 4-week build at the same level.'
+    }
+
+    const newStart = new Date(current)
+    newStart.setUTCDate(newStart.getUTCDate() - (daysElapsed % 7))
+
+    const refreshed = planFromAnswers(answers, 1, newStart.toISOString().slice(0, 10), planBaseline)
+    return {
+      plan: { ...refreshed, planBaseline },
+      advanced: true,
+      progressionNote,
+    }
+  }
+
+  const currentWeek = getCurrentMesocycleWeek(plan.mesocycleStartedAt, today)
+  if (currentWeek === plan.mesocycleWeek) {
+    return { plan, advanced: false, progressionNote: null }
+  }
+
+  const updated = rebuildScheduleForMesocycleWeek(plan, answers, currentWeek)
+  return { plan: updated, advanced: true, progressionNote: null }
+}
+
+export function formatWeeklyScheduleSummary(schedule: WeeklySchedule): string {
+  return ALL_DAYS.map((day) => {
+    const rx = schedule[day]
+    if (rx.dayType === 'rest') {
+      return `${DAY_LABELS[day]}: Rest`
+    }
+    return `${DAY_LABELS[day]}: ${rx.target} (${rx.sets}×${rx.setSize})`
+  }).join(' · ')
+}
+
+export function recommendFromWizard(answers: WizardAnswers): PlanRecommendation {
+  const plan = planFromAnswers(answers, 1)
+
+  const summary = [
+    `4-week build starting at ${Math.round(MESOCYCLE_MULTIPLIER[1] * 100)}% volume.`,
+    `Peak day: ${plan.peakDayTarget} reps in submaximal sets of ${plan.setSize}.`,
+    formatWeeklyScheduleSummary(plan.weeklySchedule),
+  ].join(' ')
+
+  return {
+    plan,
+    summary,
+    isPlaceholder: false,
+  }
 }
 
 export function getDefaultPlan(): TrainingPlan {
-  return {
-    ...CONSERVATIVE_DEFAULTS,
-    disclaimer: DEFAULT_DISCLAIMER,
-  }
-}
-
-function deriveRestDays(preferredTrainingDays: number[]): number[] {
-  const preferred = new Set(preferredTrainingDays)
-  return ALL_DAYS.filter((day) => !preferred.has(day))
-}
-
-function roundToNearestFive(value: number): number {
-  return Math.max(5, Math.round(value / 5) * 5)
-}
-
-/**
- * FOR REVIEW — draft progression from wizard answers.
- * Do not enable in production without Rhys / ChatGPT review sign-off.
- */
-export function recommendFromWizardDraft(answers: WizardAnswers): PlanRecommendation {
-  const levelMultiplier = LEVEL_MULTIPLIER[answers.trainingLevel]
-  const intensityMultiplier = INTENSITY_MULTIPLIER[answers.challengeIntensity]
-  const trainingDays = answers.preferredTrainingDays.length || 4
-
-  const dailyTarget = roundToNearestFive(
-    answers.maxCleanSet * levelMultiplier * intensityMultiplier * 0.75,
+  return planFromAnswers(
+    {
+      maxCleanSet: 15,
+      trainingLevel: 'beginner',
+      preferredTrainingDays: [1, 2, 3, 4],
+      sorenessWarningAcknowledged: false,
+      challengeIntensity: 'moderate',
+    },
+    1,
   )
+}
 
-  const recommendedSetSize = roundToNearestFive(
-    Math.min(answers.maxCleanSet, answers.maxCleanSet * 0.5),
-  )
-
-  const restDays = deriveRestDays(answers.preferredTrainingDays)
-
-  const plan: TrainingPlan = {
-    dailyTarget,
-    recommendedSetSize,
-    trainingDaysPerWeek: trainingDays,
-    restDays: restDays.length > 0 ? restDays : [0, 6],
-    sorenessWarning: !answers.sorenessWarningAcknowledged,
-    disclaimer: DEFAULT_DISCLAIMER,
-  }
+export function wizardAnswersFromPlanRow(row: {
+  max_clean_set: number
+  training_level: string
+  challenge_intensity: string
+  preferred_training_days: number[]
+}): WizardAnswers {
+  const level = row.training_level as WizardAnswers['trainingLevel']
+  const intensity = row.challenge_intensity as WizardAnswers['challengeIntensity']
 
   return {
-    plan,
-    summary: `Draft plan (FOR REVIEW): ${dailyTarget} reps/day in sets of ${recommendedSetSize}, ${trainingDays} training days per week.`,
-    isPlaceholder: false,
+    maxCleanSet: row.max_clean_set,
+    trainingLevel: ['beginner', 'intermediate', 'advanced'].includes(level)
+      ? level
+      : 'beginner',
+    preferredTrainingDays: row.preferred_training_days ?? [1, 2, 3, 4, 5],
+    sorenessWarningAcknowledged: true,
+    challengeIntensity: ['light', 'moderate', 'intense'].includes(intensity)
+      ? intensity
+      : 'moderate',
   }
 }
 
-/** Personalised but conservative plan from wizard answers (safe for beta). */
-export function recommendFromWizardConservative(answers: WizardAnswers): PlanRecommendation {
-  const trainingDays = answers.preferredTrainingDays.length || 4
-  const dailyTarget = roundToNearestFive(
-    Math.min(50, Math.max(10, answers.maxCleanSet)),
-  )
-  const recommendedSetSize = roundToNearestFive(
-    Math.min(15, Math.max(5, Math.floor(answers.maxCleanSet / 2))),
-  )
-  const restDays = deriveRestDays(answers.preferredTrainingDays)
+export function planFromRow(row: {
+  max_clean_set: number
+  training_level: string
+  challenge_intensity: string
+  preferred_training_days: number[]
+  weekly_schedule?: WeeklySchedule | null
+  mesocycle_week?: number | null
+  mesocycle_started_at?: string | null
+  plan_baseline?: number | null
+}, today: string = todayIsoDate()): TrainingPlan {
+  const answers = wizardAnswersFromPlanRow(row)
+  const mesocycleStartedAt = row.mesocycle_started_at ?? today
+  const planBaseline = row.plan_baseline ?? 1
+  const mesocycleWeek = getCurrentMesocycleWeek(mesocycleStartedAt, today)
 
-  const plan: TrainingPlan = {
-    dailyTarget,
-    recommendedSetSize,
-    trainingDaysPerWeek: trainingDays,
-    restDays: restDays.length > 0 ? restDays : [0, 6],
-    sorenessWarning: !answers.sorenessWarningAcknowledged,
-    disclaimer: DEFAULT_DISCLAIMER,
-  }
-
-  return {
-    plan,
-    summary: `Recommended plan: ${dailyTarget} reps per day in sets of ${recommendedSetSize}.`,
-    isPlaceholder: false,
-  }
+  return planFromAnswers(answers, mesocycleWeek, mesocycleStartedAt, planBaseline)
 }
 
-/** Returns conservative personalised plan unless draft formulas are explicitly requested. */
-export function recommendFromWizard(
-  answers: WizardAnswers,
-  options: RecommendOptions = {},
-): PlanRecommendation {
-  const useDraft = options.useDraftFormulas ?? DRAFT_FORMULAS_ENABLED
-
-  if (useDraft) {
-    return recommendFromWizardDraft(answers)
-  }
-
-  return recommendFromWizardConservative(answers)
-}
-
-/** Estimate weekly volume from a plan (FOR REVIEW). */
+/** Estimate weekly volume from a plan. */
 export function estimateWeeklyVolume(plan: TrainingPlan): number {
-  return plan.dailyTarget * plan.trainingDaysPerWeek
+  let total = 0
+  for (const day of ALL_DAYS) {
+    total += plan.weeklySchedule[day].target
+  }
+  return total
 }
 
-/** Suggested daily target adjustment after a week (FOR REVIEW — hold / increase / reduce). */
-export type ProgressionDecision = 'hold' | 'increase' | 'reduce'
+/** @deprecated Use recommendFromWizard — kept for legacy tests */
+export function recommendFromWizardConservative(answers: WizardAnswers): PlanRecommendation {
+  return recommendFromWizard(answers)
+}
 
+/** @deprecated Draft formulas removed */
+export function recommendFromWizardDraft(answers: WizardAnswers): PlanRecommendation {
+  return recommendFromWizard(answers)
+}
+
+/** @deprecated Use advanceMesocycleIfDue */
 export function suggestProgression(
   currentPlan: TrainingPlan,
   daysGoalMet: number,
@@ -167,26 +511,26 @@ export function suggestProgression(
   const hitRate = daysLogged > 0 ? daysGoalMet / daysLogged : 0
 
   if (hitRate >= 0.85) {
-    const next = roundToNearestFive(currentPlan.dailyTarget * 1.1)
     return {
       decision: 'increase',
-      nextDailyTarget: next,
-      rationale: 'FOR REVIEW: high goal completion — modest 10% increase suggested.',
+      nextDailyTarget: roundReps(currentPlan.peakDayTarget * 1.1),
+      rationale: 'High goal completion — modest increase suggested.',
     }
   }
 
   if (hitRate < 0.5) {
-    const next = roundToNearestFive(currentPlan.dailyTarget * 0.85)
     return {
       decision: 'reduce',
-      nextDailyTarget: Math.max(10, next),
-      rationale: 'FOR REVIEW: low goal completion — 15% reduction suggested.',
+      nextDailyTarget: Math.max(10, roundReps(currentPlan.peakDayTarget * 0.85)),
+      rationale: 'Low goal completion — volume reduction suggested.',
     }
   }
 
   return {
     decision: 'hold',
-    nextDailyTarget: currentPlan.dailyTarget,
-    rationale: 'FOR REVIEW: steady progress — hold current target.',
+    nextDailyTarget: currentPlan.peakDayTarget,
+    rationale: 'Steady progress — hold current target.',
   }
 }
+
+export { DAY_LABELS, MESOCYCLE_MULTIPLIER }

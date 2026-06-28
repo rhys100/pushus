@@ -28,7 +28,13 @@ export function SettingsPage() {
   const { signOut, user } = useAuth()
   const { profile } = useProfile()
   const { activeGroup } = useActiveGroup()
-  const { dailyTarget, wizardCompleted } = useTrainingPlan(user?.id, activeGroup?.id)
+  const {
+    dailyTarget,
+    todayPrescription,
+    weeklySchedule,
+    peakDayTarget,
+    wizardCompleted,
+  } = useTrainingPlan(user?.id, activeGroup?.id)
   const {
     prefs,
     loading: prefsLoading,
@@ -46,7 +52,7 @@ export function SettingsPage() {
   const hours = hourOptions()
   const pushConfigured = pushSupport === 'supported'
   const displayError = localError ?? prefsError
-  const resolvedDailyTarget = prefs?.daily_target ?? dailyTarget
+  const isRestDay = todayPrescription.isRestDay || dailyTarget === 0
 
   useTabPageMeta({
     title: 'Settings',
@@ -110,24 +116,59 @@ export function SettingsPage() {
       <Card padding="md" className="space-y-3">
         <p className="text-sm font-medium text-text-primary">Training plan</p>
         <p className="text-xs text-text-muted">
-          Set your daily push-up target based on your current level.
+          Science-based weekly plan with rest, easy, moderate, and challenge days.
         </p>
         <div className="rounded-[var(--radius-md)] border border-border bg-bg px-3 py-3">
-          <p className="text-xs text-text-muted">Daily target</p>
+          <p className="text-xs text-text-muted">
+            {isRestDay ? 'Today — rest day' : "Today's target"}
+          </p>
           <p className="mt-1 font-mono text-2xl font-bold text-text-primary">
-            {resolvedDailyTarget}
-            <span className="ml-1.5 text-sm font-medium text-text-muted">push-ups</span>
+            {isRestDay ? (
+              'Recovery'
+            ) : (
+              <>
+                {dailyTarget}
+                <span className="ml-1.5 text-sm font-medium text-text-muted">push-ups</span>
+              </>
+            )}
           </p>
-          <p className="mt-1 text-xs text-text-muted">
-            {wizardCompleted
-              ? 'Plan saved — update anytime if your level changes.'
-              : 'Complete the wizard to set a personalised target.'}
-          </p>
+          {!isRestDay && todayPrescription.sets > 0 ? (
+            <p className="mt-1 text-xs text-text-muted">
+              {todayPrescription.sets} sets of {todayPrescription.setSize}
+            </p>
+          ) : null}
+          {wizardCompleted ? (
+            <p className="mt-2 text-xs text-text-muted">
+              Peak day this week: {peakDayTarget} · Week {todayPrescription.mesocycleWeek} of 4
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-text-muted">
+              Complete the wizard to set a personalised plan.
+            </p>
+          )}
         </div>
+        {wizardCompleted ? (
+          <div className="grid grid-cols-7 gap-1">
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((label, index) => {
+              const day = weeklySchedule[index as 0 | 1 | 2 | 3 | 4 | 5 | 6]
+              return (
+                <div
+                  key={`${label}-${index}`}
+                  className="flex flex-col items-center rounded-[var(--radius-sm)] border border-border px-1 py-1.5 text-center"
+                >
+                  <span className="text-[10px] font-medium text-text-muted">{label}</span>
+                  <span className="font-mono text-xs font-semibold text-text-primary">
+                    {day.target > 0 ? day.target : '—'}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        ) : null}
         <SettingsLinkRow
           to="/settings/training"
           title={wizardCompleted ? 'Update training plan' : 'Set up training plan'}
-          description="Max set, training days, and recommended daily goal"
+          description="Max set, training days, and your 4-week build"
         />
       </Card>
 

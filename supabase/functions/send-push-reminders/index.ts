@@ -2,6 +2,7 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4'
 import webpush from 'npm:web-push@3.6.7'
+import { resolveTodayTarget } from '../_shared/planResolve.ts'
 
 // Eligibility rules mirror src/lib/notificationEligibility.ts
 
@@ -15,6 +16,18 @@ type NotificationPreferencesRow = {
   injury_paused: boolean
   injury_paused_until: string | null
   last_reminder_sent_at: string | null
+}
+
+type TrainingPlanRow = {
+  user_id: string
+  max_clean_set: number
+  training_level: string
+  challenge_intensity: string
+  preferred_training_days: number[]
+  mesocycle_started_at: string
+  plan_baseline: number
+  wizard_completed: boolean
+  updated_at: string
 }
 
 type PushSubscriptionRow = {
@@ -108,6 +121,7 @@ function isEligibleForReminder(
   prefs: NotificationPreferencesRow,
   timezone: string,
   bankedToday: number,
+  todayTarget: number,
   now: Date,
 ): boolean {
   const { hour } = getZonedTimeParts(timezone, now)
@@ -115,7 +129,8 @@ function isEligibleForReminder(
   if (!prefs.push_enabled) return false
   if (isInjuryPaused(prefs, timezone, now)) return false
   if (!isWithinActiveHours(hour, prefs.active_hours_start, prefs.active_hours_end)) return false
-  if (bankedToday >= prefs.daily_target) return false
+  if (todayTarget === 0) return false
+  if (bankedToday >= todayTarget) return false
   if (
     wasReminderSentWithinInterval(
       prefs.last_reminder_sent_at,
@@ -254,6 +269,26 @@ Deno.serve(async (req) => {
       subscriptionsByUser.set(sub.user_id, list)
     }
 
+    const { data: planRows, error: planError } = await supabase
+      .from('user_training_plans')
+      .select(
+        'user_id, max_clean_set, training_level, challenge_intensity, preferred_training_days, mesocycle_started_at, plan_baseline, wizard_completed, updated_at',
+      )
+      .in('user_id', userIds)
+      .eq('wizard_completed', true)
+      .order('updated_at', { ascending: false })
+
+    if (planError) {
+      throw planError
+    }
+
+    const planByUser = new Map<string, TrainingPlanRow>()
+    for (const plan of (planRows ?? []) as TrainingPlanRow[]) {
+      if (!planByUser.has(plan.user_id)) {
+        planByUser.set(plan.user_id, plan)
+      }
+    }
+
     let sent = 0
     let skipped = 0
     let failed = 0
@@ -263,8 +298,10 @@ Deno.serve(async (req) => {
       const timezone = timezoneByUser.get(prefs.user_id) ?? 'UTC'
       const localDate = getZonedTimeParts(timezone, now).dateKey
       const bankedToday = await getBankedToday(supabase, prefs.user_id, localDate)
+      const planRow = planByUser.get(prefs.user_id) ?? null
+      const todayTarget = resolveTodayTarget(planRow, localDate, timezone, prefs.daily_target)
 
-      if (!isEligibleForReminder(prefs, timezone, bankedToday, now)) {
+      if (!isEligibleForReminder(prefs, timezone, bankedToday, todayTarget, now)) {
         skipped += 1
         continue
       }
@@ -275,7 +312,7 @@ Deno.serve(async (req) => {
         continue
       }
 
-      const remaining = Math.max(prefs.daily_target - bankedToday, 0)
+      const remaining = Math.max(todayTarget - bankedToday, 0)
       const payload = JSON.stringify({
         title: 'PushUS reminder',
         body: `You still have ${remaining} push-up${remaining === 1 ? '' : 's'} to bank today.`,

@@ -62,12 +62,19 @@ export type TrainingPlanRow = {
   preferred_training_days: number[]
   rest_days: number[]
   easy_days: number[]
+  challenge_days: number[]
   recommended_set_size: number
   overage_soft_cap: number
   warning_cap: number
   plan_status: string
   ramp_back_week: number
   estimated_capacity: number
+  weekly_schedule: Record<string, unknown>
+  mesocycle_week: number
+  mesocycle_started_at: string
+  plan_baseline: number
+  last_progression_at: string | null
+  progression_note: string | null
   created_at: string
   updated_at: string
 }

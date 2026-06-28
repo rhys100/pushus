@@ -1,5 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { getWeeklyLeaderboardPeriod } from '@/lib/leaderboardCalc'
+import {
+  getLeaderboardPeriod,
+  type LeaderboardRange,
+} from '@/lib/leaderboardCalc'
 import { supabase } from '@/lib/supabase'
 import type { Group } from '@/types/database'
 
@@ -14,8 +17,12 @@ export type LeaderboardEntry = {
 
 export const leaderboardKeys = {
   all: ['leaderboard'] as const,
-  weekly: (groupId: string, periodStart: string, periodEnd: string) =>
-    ['leaderboard', 'weekly', groupId, periodStart, periodEnd] as const,
+  period: (
+    groupId: string,
+    range: LeaderboardRange,
+    periodStart: string,
+    periodEnd: string,
+  ) => ['leaderboard', range, groupId, periodStart, periodEnd] as const,
 }
 
 async function fetchLeaderboardTotal(
@@ -43,12 +50,16 @@ async function fetchLeaderboardTotal(
   }))
 }
 
-export function useLeaderboard(group: Group | null | undefined) {
-  const period = group ? getWeeklyLeaderboardPeriod(group) : null
+export function useLeaderboard(
+  group: Group | null | undefined,
+  range: LeaderboardRange = 'day',
+) {
+  const period = group ? getLeaderboardPeriod(group, range) : null
 
   return useQuery({
-    queryKey: leaderboardKeys.weekly(
+    queryKey: leaderboardKeys.period(
       group?.id ?? '',
+      range,
       period?.periodStart ?? '',
       period?.periodEnd ?? '',
     ),
@@ -58,6 +69,9 @@ export function useLeaderboard(group: Group | null | undefined) {
   })
 }
 
-export function useLeaderboardPeriod(group: Group | null | undefined) {
-  return group ? getWeeklyLeaderboardPeriod(group) : null
+export function useLeaderboardPeriod(
+  group: Group | null | undefined,
+  range: LeaderboardRange = 'day',
+) {
+  return group ? getLeaderboardPeriod(group, range) : null
 }

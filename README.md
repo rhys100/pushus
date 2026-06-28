@@ -63,7 +63,7 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 
 ### Social and group
 
-- [x] Weekly leaderboard
+- [x] Leaderboard (day, week, month views)
 - [x] Activity feed
 - [x] Emoji reactions
 - [x] Group invite tools
@@ -72,7 +72,8 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 ### Settings and training
 
 - [x] Settings tab in bottom nav (personal + group admin)
-- [x] Training plan wizard with saved daily target (Log progress + push reminders)
+- [x] Science-based training plan: weekly microcycle + 4-week mesocycle with per-day targets
+- [x] Training plan wizard with saved plan (Log progress + push reminders; rest days skipped)
 - [x] Customisable push reminder frequency and active hours
 - [x] Injury pause for reminders
 

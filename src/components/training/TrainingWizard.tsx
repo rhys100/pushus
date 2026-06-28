@@ -1,12 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Badge, Button, Card } from '@/components/ui'
 import {
-  DRAFT_FORMULAS_ENABLED,
+  DAY_LABELS,
+  MESOCYCLE_MULTIPLIER,
   recommendFromWizard,
   type WizardAnswers,
 } from '@/lib/training/planEngine'
-
-const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 const DEFAULT_ANSWERS: WizardAnswers = {
   maxCleanSet: 15,
@@ -18,16 +17,34 @@ const DEFAULT_ANSWERS: WizardAnswers = {
 
 type TrainingWizardProps = {
   saving?: boolean
+  initialAnswers?: WizardAnswers | null
   onComplete?: (answers: WizardAnswers) => void | Promise<void>
 }
 
-export function TrainingWizard({ saving = false, onComplete }: TrainingWizardProps) {
-  const [step, setStep] = useState(0)
-  const [answers, setAnswers] = useState<WizardAnswers>(DEFAULT_ANSWERS)
+function dayTypeBadgeVariant(dayType: string): 'neutral' | 'accent' | 'warning' | 'success' {
+  if (dayType === 'challenge') return 'accent'
+  if (dayType === 'easy') return 'success'
+  if (dayType === 'moderate') return 'neutral'
+  return 'neutral'
+}
 
-  const recommendation = recommendFromWizard(answers, {
-    useDraftFormulas: DRAFT_FORMULAS_ENABLED,
-  })
+export function TrainingWizard({
+  saving = false,
+  initialAnswers = null,
+  onComplete,
+}: TrainingWizardProps) {
+  const [step, setStep] = useState(0)
+  const [answers, setAnswers] = useState<WizardAnswers>(initialAnswers ?? DEFAULT_ANSWERS)
+  const [hydratedFromSaved, setHydratedFromSaved] = useState(initialAnswers != null)
+
+  useEffect(() => {
+    if (initialAnswers && !hydratedFromSaved) {
+      setAnswers(initialAnswers)
+      setHydratedFromSaved(true)
+    }
+  }, [initialAnswers, hydratedFromSaved])
+
+  const recommendation = recommendFromWizard(answers)
 
   function toggleDay(day: number) {
     setAnswers((current) => {
@@ -111,7 +128,9 @@ export function TrainingWizard({ saving = false, onComplete }: TrainingWizardPro
         <Card padding="md" className="space-y-4">
           <div>
             <p className="text-sm font-medium text-text-primary">Training days</p>
-            <p className="mt-1 text-xs text-text-muted">Pick the days you want to train.</p>
+            <p className="mt-1 text-xs text-text-muted">
+              Pick the days you want to train. Rest days are built in automatically.
+            </p>
           </div>
           <div className="grid grid-cols-7 gap-1">
             {DAY_LABELS.map((label, index) => (
@@ -156,28 +175,71 @@ export function TrainingWizard({ saving = false, onComplete }: TrainingWizardPro
       {step === 2 ? (
         <Card padding="md" className="space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-medium text-text-primary">Recommended plan</p>
-            {recommendation.isPlaceholder ? (
-              <Badge variant="warning">Conservative default</Badge>
-            ) : (
-              <Badge variant="accent">Draft — for review</Badge>
-            )}
+            <p className="text-sm font-medium text-text-primary">Your 4-week plan</p>
+            <Badge variant="accent">Week 1 · {Math.round(MESOCYCLE_MULTIPLIER[1] * 100)}% volume</Badge>
           </div>
+
           <p className="text-sm text-text-muted">{recommendation.summary}</p>
+
+          <div className="overflow-hidden rounded-[var(--radius-md)] border border-border">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-bg text-text-muted">
+                <tr>
+                  <th className="px-3 py-2 font-medium">Day</th>
+                  <th className="px-3 py-2 font-medium">Type</th>
+                  <th className="px-3 py-2 text-right font-medium">Target</th>
+                </tr>
+              </thead>
+              <tbody>
+                {DAY_LABELS.map((label, index) => {
+                  const day = recommendation.plan.weeklySchedule[index as 0 | 1 | 2 | 3 | 4 | 5 | 6]
+                  return (
+                    <tr key={label} className="border-t border-border">
+                      <td className="px-3 py-2 font-medium text-text-primary">{label}</td>
+                      <td className="px-3 py-2 capitalize text-text-muted">
+                        <Badge variant={dayTypeBadgeVariant(day.dayType)} className="capitalize">
+                          {day.dayType}
+                        </Badge>
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono text-text-primary">
+                        {day.target > 0 ? (
+                          <>
+                            {day.target}
+                            <span className="ml-1 text-text-muted">
+                              ({day.sets}×{day.setSize})
+                            </span>
+                          </>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <div>
-              <dt className="text-text-muted">Daily target</dt>
+              <dt className="text-text-muted">Peak day</dt>
               <dd className="font-mono text-lg font-bold text-text-primary">
-                {recommendation.plan.dailyTarget}
+                {recommendation.plan.peakDayTarget}
               </dd>
             </div>
             <div>
               <dt className="text-text-muted">Set size</dt>
               <dd className="font-mono text-lg font-bold text-text-primary">
-                {recommendation.plan.recommendedSetSize}
+                {recommendation.plan.setSize}
               </dd>
             </div>
           </dl>
+
+          <p className="text-xs text-text-muted">
+            Volume builds over 4 weeks: ramp in, peak, then deload. Targets adjust automatically
+            each week based on your progress.
+          </p>
+
           <label className="flex items-start gap-3 rounded-[var(--radius-md)] border border-border bg-surface p-3">
             <input
               type="checkbox"

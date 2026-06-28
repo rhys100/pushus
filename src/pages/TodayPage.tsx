@@ -26,7 +26,7 @@ export function TodayPage() {
   const { toast } = useToast()
   const { user, profile } = useAuth()
   const { activeGroup, loading: groupLoading, role } = useActiveGroup()
-  const { dailyTarget, loading: planLoading } = useTrainingPlan(user?.id, activeGroup?.id)
+  const { dailyTarget, todayPrescription, loading: planLoading } = useTrainingPlan(user?.id, activeGroup?.id)
   const { showHint, dismissHint } = useLoggerDragHint()
   const billingStatusQuery = useGroupBillingStatus(activeGroup?.id)
   const subscriptionQuery = useGroupSubscription(activeGroup?.id)
@@ -139,6 +139,7 @@ export function TodayPage() {
           bankedToday={dayTotal}
           loading={(totalLoading && dayTotal === 0) || planLoading}
           dailyTarget={dailyTarget}
+          todayPrescription={todayPrescription}
         />
 
         <CircularLogger
