@@ -83,7 +83,7 @@ export function AppLayout({
             ? 'pb-[calc(var(--today-bottom-chrome)+0.5rem)] md:pb-[calc(var(--bottom-nav-height)+0.5rem)]'
             : showNav
               ? 'pb-[calc(var(--bottom-nav-height)+0.5rem)]'
-              : 'pb-[calc(2rem+max(0.75rem,env(safe-area-inset-bottom,0px)))]',
+              : 'pb-[calc(2rem+max(3rem,env(safe-area-inset-bottom,0px)))]',
           title !== null ? 'pt-4' : 'pt-[env(safe-area-inset-top)]',
         )}
       >

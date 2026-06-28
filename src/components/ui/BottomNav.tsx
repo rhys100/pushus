@@ -163,7 +163,7 @@ function NavButton({
         <span className="relative flex h-7 w-full items-end justify-center overflow-visible">
           <span
             className={cn(
-              'absolute bottom-0 left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full',
+              'absolute bottom-0 left-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-2 items-center justify-center rounded-full',
               'border-2 bg-bg shadow-[0_4px_20px_rgba(255,107,74,0.35)]',
               'transition-colors duration-[var(--duration-fast)]',
               isActive
@@ -201,7 +201,7 @@ export function BottomNav({ active, onNavigate, className }: BottomNavProps) {
     <nav
       className={cn(
         'fixed inset-x-0 bottom-0 z-40 overflow-visible border-t border-border bg-bg',
-        'pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]',
+        'pb-[var(--bottom-nav-safe)]',
         className,
       )}
       aria-label="Main navigation"

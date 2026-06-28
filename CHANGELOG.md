@@ -32,6 +32,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Hero **Log** tab no longer clips to a semi-circle; clock icon stays visible when active (not a solid white dot)
 - Bottom nav label row aligned across all tabs; hero Log circle floats above without pushing its label into the system nav bar
 - Unified `--bottom-nav-height` token so **Bank Push-ups** sits above the nav instead of overlapping it (Android safe-area fallback included)
+- Bottom nav clears Android 3-button system navigation when `safe-area-inset-bottom` is zero (3rem minimum inset)
 
 ---
 
