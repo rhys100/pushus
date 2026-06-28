@@ -33,6 +33,17 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 - Default active hours for new users: 7am–7pm; existing users unchanged until they edit Settings
 - Eligibility logic updated in `notificationEligibility.ts` and `send-push-reminders` edge function
 
+### 2026-06-28 (haptic fix)
+
+#### Fixed
+
+- Circular logger haptics fire in `pointermove` / keyboard handlers instead of RAF batch (Chrome user-gesture requirement)
+- Tick duration 12ms → 24ms for clearer feel on Android
+
+#### Notes
+
+- iOS Safari still has no web vibration API; visual handle snap remains the fallback
+
 ### 2026-06-28 (v1.0.1)
 
 #### Shipped

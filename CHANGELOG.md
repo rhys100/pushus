@@ -19,6 +19,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 - Existing users keep once-daily reminders until they change frequency in Settings
 
+### Fixed
+
+- Circular logger haptics now fire synchronously during drag (browser user-gesture requirement); slightly longer tick for easier feel on Android
+
 ---
 
 ## [1.0.1] - 2026-06-28

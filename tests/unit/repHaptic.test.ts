@@ -17,7 +17,7 @@ describe('repHaptic', () => {
 
     pulseRepHapticDelta(2, 3)
 
-    expect(vibrate).toHaveBeenCalledWith(12)
+    expect(vibrate).toHaveBeenCalledWith(24)
   })
 
   it('pattern when multiple reps crossed', () => {
@@ -26,7 +26,7 @@ describe('repHaptic', () => {
 
     pulseRepHapticDelta(1, 4)
 
-    expect(vibrate).toHaveBeenCalledWith([12, 16, 12, 16, 12])
+    expect(vibrate).toHaveBeenCalledWith([24, 16, 24, 16, 24])
   })
 
   it('does not vibrate when count decreases or unchanged', () => {

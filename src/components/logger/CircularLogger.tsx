@@ -10,10 +10,12 @@ import {
 } from 'react'
 import { cn } from '@/lib/cn'
 import {
+  angleToTotalCount,
   CIRCULAR_COUNTER,
   countToAngle,
 } from '@/lib/circularCounter'
 import { useCircularCounter } from '@/hooks/useCircularCounter'
+import { pulseRepHapticDelta } from '@/lib/repHaptic'
 
 const RING_SIZE = 280
 const RING_CENTER = RING_SIZE / 2
@@ -113,6 +115,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
   ) {
     const { angle, count, setAngle, reset, canBank } = useCircularCounter({
       onRepTick,
+      enableHaptic: false,
     })
     const countRef = useRef(count)
     const canBankRef = useRef(canBank)
@@ -231,9 +234,18 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
 
       const pointerAngle = getPointerAngle(event.clientX, event.clientY, rect)
       const delta = normalizeAngleDelta(pointerAngle - dragState.lastPointerAngle)
+      const angleBefore = dragState.cumulativeAngle
 
       dragState.lastPointerAngle = pointerAngle
       dragState.cumulativeAngle = Math.max(0, dragState.cumulativeAngle + delta)
+
+      const prevCount = angleToTotalCount(angleBefore)
+      const nextCount = angleToTotalCount(dragState.cumulativeAngle)
+
+      if (nextCount > prevCount) {
+        pulseRepHapticDelta(prevCount, nextCount)
+      }
+
       scheduleAngle(dragState.cumulativeAngle)
 
       if (Math.abs(delta) > 0.5) {
@@ -268,6 +280,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
       if (event.key === 'ArrowUp' || event.key === 'ArrowRight') {
         event.preventDefault()
         onHintDismiss?.()
+        pulseRepHapticDelta(count, count + 1)
         setAngle(countToAngle(count + 1))
         return
       }

@@ -1,6 +1,6 @@
 /** Short tick per rep while dragging the logger (Android Chrome; no-op on unsupported browsers). */
 
-const REP_TICK_MS = 12
+const REP_TICK_MS = 24
 const REP_GAP_MS = 16
 const MAX_PATTERN_TICKS = 6
 
