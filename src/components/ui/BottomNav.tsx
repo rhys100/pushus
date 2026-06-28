@@ -12,27 +12,21 @@ type NavConfig = {
   id: NavItem
   label: string
   hero?: boolean
-  icon: (active: boolean) => JSX.Element
+  icon: () => JSX.Element
 }
 
-function LogIcon({ className, active }: { className?: string; active: boolean }) {
+function LogIcon({ className }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 24 24"
       className={className}
-      fill={active ? 'currentColor' : 'none'}
+      fill="none"
       stroke="currentColor"
-      strokeWidth={active ? 0 : 2}
+      strokeWidth="2"
       aria-hidden="true"
     >
       <circle cx="12" cy="12" r="9" />
-      <path
-        d="M12 7v5l3 2"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        fill="none"
-      />
+      <path d="M12 7v5l3 2" strokeLinecap="round" />
     </svg>
   )
 }
@@ -83,7 +77,7 @@ const navItems: NavConfig[] = [
     id: 'log',
     label: 'Log',
     hero: true,
-    icon: (active) => <LogIcon className="h-8 w-8" active={active} />,
+    icon: () => <LogIcon className="h-8 w-8" />,
   },
   {
     id: 'group',
@@ -151,7 +145,7 @@ function NavButton({
         aria-current={isActive ? 'page' : undefined}
         aria-label="Log push-ups"
         className={cn(
-          'relative -mt-5 flex flex-col items-center justify-end gap-1 pb-1',
+          'relative flex flex-col items-center justify-end gap-1 pb-1',
           'transition-transform duration-[var(--duration-fast)]',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
           'active:scale-95',
@@ -159,19 +153,19 @@ function NavButton({
       >
         <span
           className={cn(
-            'flex h-[3.75rem] w-[3.75rem] items-center justify-center rounded-full',
-            'border-2 shadow-[0_4px_20px_rgba(255,107,74,0.35)]',
+            'relative z-10 flex h-16 w-16 -translate-y-5 items-center justify-center rounded-full',
+            'border-2 bg-bg shadow-[0_4px_20px_rgba(255,107,74,0.35)]',
             'transition-colors duration-[var(--duration-fast)]',
             isActive
               ? 'border-accent bg-accent text-white'
-              : 'border-accent/80 bg-surface text-accent hover:bg-accent/10',
+              : 'border-accent text-accent hover:bg-accent/10',
           )}
         >
-          {item.icon(isActive)}
+          {item.icon()}
         </span>
         <span
           className={cn(
-            'text-xs font-semibold',
+            'relative z-10 text-xs font-semibold',
             isActive ? 'text-accent' : 'text-text-primary',
           )}
         >
@@ -193,7 +187,7 @@ function NavButton({
         isActive ? 'text-accent' : 'text-text-muted hover:text-text-primary',
       )}
     >
-      {item.icon(isActive)}
+      {item.icon()}
       <span>{item.label}</span>
     </button>
   )
@@ -203,13 +197,13 @@ export function BottomNav({ active, onNavigate, className }: BottomNavProps) {
   return (
     <nav
       className={cn(
-        'fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg',
-        'pb-[env(safe-area-inset-bottom)]',
+        'fixed inset-x-0 bottom-0 z-40 overflow-visible border-t border-border bg-bg',
+        'pb-[env(safe-area-inset-bottom)] pt-2',
         className,
       )}
       aria-label="Main navigation"
     >
-      <div className="mx-auto grid max-w-lg grid-cols-5 items-end">
+      <div className="mx-auto grid max-w-lg grid-cols-5 items-end overflow-visible">
         {navItems.map((item) => (
           <NavButton
             key={item.id}
