@@ -10,6 +10,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+_(Nothing yet.)_
+---
+
+## [1.1.0] - 2026-06-29
+
 ### Added
 
 - Science-based training plan: weekly microcycle with rest, easy, moderate, and challenge days

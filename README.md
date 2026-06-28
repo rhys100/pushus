@@ -27,7 +27,8 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 
 | Label | Meaning |
 |-------|---------|
-| **v1.0.1** | Per-rep haptic feedback on circular logger (latest) |
+| **v1.1.0** | Training plan v2, Board day/week/month views, Log ring UX polish, Settings tab (latest) |
+| **v1.0.1** | Per-rep haptic feedback on circular logger |
 | **v1.0.0** | First public release (Community beta) |
 | **Private beta** | Invite and allowlist-controlled access on the official deployment |
 | **Community edition** | Free, self-hosted; billing disabled by default |

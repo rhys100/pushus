@@ -22,7 +22,15 @@ Public-friendly view of where PushUS is today and where it may go.
 - Direct-drag circular logger (no plus button); one lap = 10 push-ups
 - Bank Push-ups, undo, edit/delete entries, daily total, entry audit foundation
 - Per-rep haptic tick while dragging (where the browser supports vibration)
-- Handle snap animation on each rep during drag
+- Handle-only drag with larger grab target; smoother ring interaction on mobile
+- Log page layout: progress card, ring, scrollable entries, fixed bank strip above nav
+
+### Training and settings
+
+- Science-based training plan: weekly microcycle + 4-week mesocycle with per-day targets
+- Training wizard with week preview; rest days show recovery on Log
+- Settings tab (personal prefs, training plan, group admin tools)
+- Customisable push reminder frequency and active hours
 
 ### Social and group
 
@@ -35,7 +43,7 @@ Public-friendly view of where PushUS is today and where it may go.
 - Supabase + RLS; Community mode (billing off)
 - Static SPA deployable to Cloudflare Pages (and similar hosts)
 - AGPL-3.0-only
-- Optional web push reminders (once per day when behind goal)
+- Optional web push reminders (plan-aware; skipped on rest days; configurable frequency)
 
 ---
 
@@ -61,9 +69,7 @@ Not all implemented — see [product-decisions.md](./product-decisions.md) for r
 - Friend profile cards and mate-vs-mate views
 - **1v1 challenges** and friend nudges
 - Richer challenge types (one-day, weekend, 7/14/30-day, custom; team totals)
-- Training and safety wizard (skippable; five questions; caps and ramp-back)
 - Streaks, XP, achievements, admin banter badges
-- Expanded push reminders (frequency options, banter opt-in)
 - Better group admin and moderation tools
 - **PushUS Cloud** — official hosted edition with group billing
 

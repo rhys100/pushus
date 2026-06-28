@@ -26,6 +26,14 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-06-29 (release v1.1.0)
+
+**Shipped**
+- Released v1.1.0: training plan v2, Board periods, Log ring UX, Settings tab, push reminder frequency
+
+**Next**
+- Push tag and deploy; Rhys spot-check logger drag on device
+
 ### 2026-06-29 (science-based training plan)
 
 **Shipped**
