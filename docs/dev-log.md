@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-06-29 (board progress layout)
+
+**Changed**
+- Board Day rows: full-width progress bar + clean `0/25` fraction; removed duplicate rep column
+
 ### 2026-06-29 (log daily set planner)
 
 **Shipped**

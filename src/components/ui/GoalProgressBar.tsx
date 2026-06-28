@@ -7,6 +7,7 @@ export type GoalProgressBarProps = {
   showLabel?: boolean
   className?: string
   ariaLabel?: string
+  barClassName?: string
 }
 
 export function GoalProgressBar({
@@ -15,11 +16,12 @@ export function GoalProgressBar({
   isRestDay = false,
   showLabel = false,
   className,
+  barClassName,
   ariaLabel = 'Daily push-up progress',
 }: GoalProgressBarProps) {
   if (isRestDay || target === 0) {
     return (
-      <p className={cn('text-[0.6875rem] text-text-muted', className)}>Rest day</p>
+      <p className={cn('text-xs text-text-muted', className)}>Rest day</p>
     )
   }
 
@@ -27,31 +29,59 @@ export function GoalProgressBar({
   const goalHit = current >= target
 
   return (
-    <div className={cn('space-y-1', className)}>
-      <div className="flex items-center gap-2">
-        <div
-          className="h-2 min-w-0 flex-1 overflow-hidden rounded-[var(--radius-full)] bg-border/80"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={target}
-          aria-valuenow={current}
-          aria-label={ariaLabel}
-        >
-          <div
-            className={cn(
-              'h-full rounded-[var(--radius-full)] transition-[width] duration-[var(--duration-normal)] ease-[var(--ease-out)]',
-              goalHit ? 'bg-success' : 'bg-accent',
-            )}
-            style={{ width: `${progress * 100}%` }}
-          />
-        </div>
-
-        {showLabel ? (
-          <p className="shrink-0 font-mono text-[0.6875rem] tabular-nums text-text-muted">
-            {current}/{target}
+    <div className={cn('space-y-1.5', className)}>
+      {showLabel ? (
+        <div className="flex items-center justify-end">
+          <p className="font-mono text-xs tabular-nums text-text-muted">
+            <span className="font-semibold text-text-primary">{current}</span>/{target}
           </p>
-        ) : null}
+        </div>
+      ) : null}
+
+      <div
+        className={cn(
+          'h-2.5 w-full overflow-hidden rounded-[var(--radius-full)] bg-border/80',
+          barClassName,
+        )}
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={target}
+        aria-valuenow={current}
+        aria-label={ariaLabel}
+      >
+        <div
+          className={cn(
+            'h-full rounded-[var(--radius-full)] transition-[width] duration-[var(--duration-normal)] ease-[var(--ease-out)]',
+            goalHit ? 'bg-success' : 'bg-accent',
+          )}
+          style={{ width: `${Math.max(progress * 100, current > 0 ? 4 : 0)}%` }}
+        />
       </div>
     </div>
+  )
+}
+
+export function GoalProgressFraction({
+  current,
+  target,
+  isRestDay = false,
+  className,
+}: {
+  current: number
+  target: number
+  isRestDay?: boolean
+  className?: string
+}) {
+  if (isRestDay || target === 0) {
+    return (
+      <span className={cn('text-xs font-medium text-text-muted', className)}>Rest</span>
+    )
+  }
+
+  return (
+    <span className={cn('font-mono text-sm font-semibold tabular-nums', className)}>
+      <span className="text-text-primary">{current}</span>
+      <span className="text-text-muted">/{target}</span>
+    </span>
   )
 }

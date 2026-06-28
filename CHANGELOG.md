@@ -12,6 +12,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- Board Day view: cleaner progress layout with full-width bar and `current/target` fraction (removed duplicate rep column)
 - Group invite message: richer two-paragraph copy describing PushUS (leaderboards, training plan) without naming the group
 
 ### Added
