@@ -29,8 +29,10 @@ describe('buildInviteLink', () => {
 
 describe('buildInviteMessage', () => {
   it('uses auto-join copy that matches invite link behaviour', () => {
-    const message = buildInviteMessage('https://www.pushus.app/join/d95d7fba', 'Mates Who Rep')
+    const message = buildInviteMessage('https://www.pushus.app/join/d95d7fba')
+
     expect(message.toLowerCase()).toContain('join the group')
+    expect(message.toLowerCase()).toContain('science-based training plan')
     expect(message.toLowerCase()).not.toContain('you are in')
     expect(message.toLowerCase()).not.toContain('join straight away')
     expect(message.toLowerCase()).not.toContain('approve you')

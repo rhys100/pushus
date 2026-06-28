@@ -10,8 +10,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Changed
+
+- Group invite message: richer two-paragraph copy describing PushUS (leaderboards, training plan) without naming the group
+
 ### Added
 
+- Log page daily set planner: bank-about target, set N of M, and sets remaining (updates after each bank)
 - Board Day view: daily goal progress bar per member (reps vs personal training target)
 
 ### Fixed

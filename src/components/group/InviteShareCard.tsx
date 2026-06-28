@@ -6,7 +6,6 @@ import { cn } from '@/lib/cn'
 
 type InviteShareCardProps = {
   inviteCode: string
-  groupName?: string
   className?: string
 }
 
@@ -19,10 +18,10 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
-export function InviteShareCard({ inviteCode, groupName, className }: InviteShareCardProps) {
+export function InviteShareCard({ inviteCode, className }: InviteShareCardProps) {
   const { toast } = useToast()
   const inviteLink = buildInviteLink(inviteCode)
-  const inviteMessage = buildInviteMessage(inviteLink, groupName)
+  const inviteMessage = buildInviteMessage(inviteLink)
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 
   const [copiedLink, setCopiedLink] = useState(false)
@@ -75,7 +74,7 @@ export function InviteShareCard({ inviteCode, groupName, className }: InviteShar
     if (!canShare) return
     try {
       await navigator.share({
-        title: groupName ? `Join ${groupName} on PushUS` : 'Join my PushUS group',
+        title: 'Join my push-up group on PushUS',
         text: inviteMessage,
       })
     } catch (error) {

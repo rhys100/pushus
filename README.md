@@ -58,6 +58,7 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 - [x] Undo after banking
 - [x] Edit and delete your entries
 - [x] Daily total and today's entries on the Log screen
+- [x] Log daily set planner (bank-about target, set N of M, sets remaining)
 - [x] Entry audit log foundation
 - [x] Per-rep tick while dragging the ring (stepped-slider haptics via ios-vibrator-pro-max on supporting browsers)
 - [x] Handle snap animation on each rep for tactile feedback

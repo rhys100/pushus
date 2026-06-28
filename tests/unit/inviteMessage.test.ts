@@ -2,20 +2,20 @@ import { describe, expect, it } from 'vitest'
 import { buildInviteMessage } from '../../src/lib/inviteMessage'
 
 describe('buildInviteMessage', () => {
-  it('includes group name when provided', () => {
-    const message = buildInviteMessage('https://www.pushus.app/join/abc123', 'Morning Crew')
-    expect(message).toContain('Morning Crew')
-    expect(message).toContain('https://www.pushus.app/join/abc123')
-  })
-
-  it('uses generic copy without group name', () => {
+  it('describes PushUS without a group name', () => {
     const message = buildInviteMessage('https://www.pushus.app/join/abc123')
-    expect(message).toContain('Join my PushUS group')
+
+    expect(message).toContain("You're invited to PushUS")
+    expect(message).toContain('daily, weekly, and monthly leaderboards')
+    expect(message).toContain('science-based training plan')
+    expect(message).not.toContain('Morning Crew')
+    expect(message).not.toContain('Mates Who Rep')
     expect(message).toContain('https://www.pushus.app/join/abc123')
   })
 
   it('uses auto-join copy that matches invite link behaviour', () => {
-    const message = buildInviteMessage('https://www.pushus.app/join/abc123', 'Mates Who Rep')
+    const message = buildInviteMessage('https://www.pushus.app/join/abc123')
+
     expect(message.toLowerCase()).toContain('join the group')
     expect(message.toLowerCase()).not.toContain('you are in')
     expect(message.toLowerCase()).not.toContain('join straight away')

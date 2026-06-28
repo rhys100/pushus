@@ -141,6 +141,7 @@ export function TodayPage() {
 
         <DayProgressCard
           bankedToday={dayTotal}
+          banksLogged={entries.length}
           loading={(totalLoading && dayTotal === 0) || planLoading}
           dailyTarget={dailyTarget}
           todayPrescription={todayPrescription}

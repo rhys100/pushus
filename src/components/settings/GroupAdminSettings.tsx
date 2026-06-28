@@ -100,7 +100,7 @@ export function GroupAdminSettings() {
       </div>
 
       {isAdmin && activeGroup.invite_code_enabled && activeGroup.invite_code ? (
-        <InviteShareCard inviteCode={activeGroup.invite_code} groupName={activeGroup.name} />
+        <InviteShareCard inviteCode={activeGroup.invite_code} />
       ) : null}
 
       {isOwner && billingConfig.enabled ? (

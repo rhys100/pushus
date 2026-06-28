@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-06-29 (log daily set planner)
+
+**Shipped**
+- Log page shows today's plan: day type, bank-about reps, set N of M, sets remaining (updates after each bank)
+
 ### 2026-06-29 (training plan save fix)
 
 **Fixed**
