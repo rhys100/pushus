@@ -1,30 +1,54 @@
-/** Per-rep tick while dragging the logger (Android Chrome; no-op on unsupported browsers). */
+/**
+ * Per-rep feedback while dragging the circular logger.
+ * Uses [bzzz](https://pavlito.github.io/bzzz/) — native haptics when available, audio fallback otherwise.
+ */
 
-const REP_TICK_MS = 60
-const REP_GAP_MS = 30
-const REP_ECHO_MS = 35
-const REP_ECHO_GAP_MS = 20
+import { createHaptics, type PatternBlock } from 'bzzz'
+
 const MAX_PATTERN_TICKS = 6
 
+const repFeedback = createHaptics({
+  output: 'both',
+  patterns: {
+    repTick: [
+      { type: 'pulse', duration: 10, intensity: 0.55 },
+      { type: 'gap', duration: 14 },
+      { type: 'pulse', duration: 12, intensity: 0.7 },
+    ],
+  },
+})
+
 export function isRepHapticSupported(): boolean {
-  return typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function'
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  const caps = repFeedback.getCapabilities()
+  return caps.haptics || caps.audio
 }
 
-function vibratePattern(pattern: number | number[]): boolean {
-  if (!isRepHapticSupported()) {
-    return false
+/** Warm audio output on first touch so drag ticks can play during touchmove. */
+export function primeRepFeedback(): void {
+  repFeedback.setOutput('both')
+}
+
+function buildMultiRepPattern(ticks: number): PatternBlock[] {
+  const count = Math.min(ticks, MAX_PATTERN_TICKS)
+  const pattern: PatternBlock[] = []
+
+  for (let i = 0; i < count; i++) {
+    pattern.push({ type: 'pulse', duration: 10, intensity: 0.5 + i * 0.08 })
+
+    if (i < count - 1) {
+      pattern.push({ type: 'gap', duration: 18 })
+    }
   }
 
-  try {
-    return navigator.vibrate(pattern)
-  } catch {
-    return false
-  }
+  return pattern
 }
 
 /**
  * Pulse once per rep crossed when count increases (e.g. drag from 3 → 7 → four ticks).
- * Uses a double-pulse for single reps — many Android motors ignore very short vibrations.
  */
 export function pulseRepHapticDelta(prevCount: number, nextCount: number): boolean {
   if (nextCount <= prevCount) {
@@ -32,21 +56,8 @@ export function pulseRepHapticDelta(prevCount: number, nextCount: number): boole
   }
 
   const delta = nextCount - prevCount
+  const result =
+    delta === 1 ? repFeedback.play('repTick') : repFeedback.play(buildMultiRepPattern(delta))
 
-  if (delta === 1) {
-    return vibratePattern([REP_TICK_MS, REP_ECHO_GAP_MS, REP_ECHO_MS])
-  }
-
-  const ticks = Math.min(delta, MAX_PATTERN_TICKS)
-  const pattern: number[] = []
-
-  for (let i = 0; i < ticks; i++) {
-    pattern.push(REP_TICK_MS, REP_GAP_MS)
-  }
-
-  if (pattern.length > 0) {
-    pattern.pop()
-  }
-
-  return vibratePattern(pattern)
+  return result.haptics || result.audio
 }

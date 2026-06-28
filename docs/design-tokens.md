@@ -27,14 +27,12 @@ Shared constants in `src/lib/layout.ts`:
 | Constant | Use |
 |----------|-----|
 | `PAGE_BOTTOM_PADDING` | Long-scroll pages without bottom nav (Settings, About) |
-| `PAGE_BOTTOM_PADDING_WITH_NAV` | Standard tab pages |
-| `TODAY_BOTTOM_CHROME` | Today page: nav + bank CTA + hint + safe area |
-| `TODAY_CONTENT_PADDING` | Main scroll padding on Today |
+| `PAGE_BOTTOM_PADDING_WITH_NAV` | Standard tab pages including Log |
 
 Rules:
 
-- Bottom nav stays fixed; page headers scroll with content (not sticky)
-- Pages with a fixed CTA reserve CTA height + gap in flow and in main padding
+- Bottom nav stays fixed and flat (no overflow FAB)
+- Log page: bank CTA is sticky above nav; entries scroll below
 - No fixed element may cover interactive content
 - Long URLs use `break-all` inside cards
 - Minimum 44px touch targets (`min-h-11`, `--bank-cta-height`)

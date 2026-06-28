@@ -1,5 +1,4 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import type { CSSProperties } from 'react'
 import { AppHeader, BottomNav, type NavItem } from '@/components/ui'
 import { PrivateBetaBanner } from '@/components/layout/PrivateBetaBanner'
 import { cn } from '@/lib/cn'
@@ -26,7 +25,6 @@ type AppLayoutProps = {
   title?: string | null
   subtitle?: string
   showNav?: boolean
-  bottomChrome?: 'nav' | 'today'
   headerLeading?: React.ReactNode
   headerTrailing?: React.ReactNode
   onNavigate?: (item: NavItem) => void
@@ -37,7 +35,6 @@ export function AppLayout({
   title,
   subtitle,
   showNav = true,
-  bottomChrome = 'nav',
   headerLeading,
   headerTrailing,
   onNavigate,
@@ -55,17 +52,7 @@ export function AppLayout({
   const handleNavigate = onNavigate ?? ((item: NavItem) => navigate(navRoutes[item]))
 
   return (
-    <div
-      className="flex min-h-screen flex-col bg-bg"
-      style={
-        bottomChrome === 'today'
-          ? ({
-              '--bank-hint-block': 'var(--bank-disabled-hint-height)',
-              '--toast-bottom': 'calc(var(--today-bottom-chrome) + 0.5rem)',
-            } as CSSProperties)
-          : undefined
-      }
-    >
+    <div className="flex min-h-[100dvh] flex-col bg-bg">
       <PrivateBetaBanner />
       {title !== null ? (
         <AppHeader
@@ -79,11 +66,9 @@ export function AppLayout({
       <main
         className={cn(
           'mx-auto w-full max-w-lg flex-1 px-4',
-          showNav && bottomChrome === 'today'
-            ? 'pb-[calc(var(--today-bottom-chrome)+0.5rem)] md:pb-[calc(var(--bottom-nav-height)+0.5rem)]'
-            : showNav
-              ? 'pb-[calc(var(--bottom-nav-height)+0.5rem)]'
-              : 'pb-[calc(2rem+max(3rem,env(safe-area-inset-bottom,0px)))]',
+          showNav
+            ? 'pb-[calc(var(--bottom-nav-height)+0.5rem)]'
+            : 'pb-[calc(2rem+max(3rem,env(safe-area-inset-bottom,0px)))]',
           title !== null ? 'pt-4' : 'pt-[env(safe-area-inset-top)]',
         )}
       >

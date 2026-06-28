@@ -46,18 +46,19 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 - Default active hours for new users: 7am–7pm; existing users unchanged until they edit Settings
 - Eligibility logic updated in `notificationEligibility.ts` and `send-push-reminders` edge function
 
-### 2026-06-28 (haptic fix)
+### 2026-06-28 (Log page + nav)
 
 #### Fixed
 
-- Circular logger haptics fire in `pointermove` / keyboard handlers instead of RAF batch (Chrome user-gesture requirement)
-- Tick duration 12ms → 24ms for clearer feel on Android
-- Touch drag uses native `touchmove` listeners for haptics on Chrome Android; double-pulse pattern (60ms) for motors that ignore short ticks
-- Explicit `vibrate=(self)` in Permissions-Policy headers
+- Flat bottom nav — Log accent pill contained in bar; no overflow FAB stealing scroll touches
+- Log page: sticky bank bar above nav, entries list scrolls cleanly below
+- Rep feedback via **bzzz** (`output: both`) — native haptics + audio tick per rep
 
 #### Notes
 
-- iOS Safari still has no web vibration API; visual handle snap remains the fallback
+- Rep feedback now uses **bzzz** (MIT) — haptics when available, audio tick otherwise
+- iOS still has no web vibration API; audio tick is the fallback there too
+- Redeploy required for layout + `_headers` changes
 
 ### 2026-06-28 (v1.0.1)
 

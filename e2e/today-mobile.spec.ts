@@ -31,13 +31,27 @@ async function gotoTodayReady(page: Page) {
   })
 }
 
+async function assertLogNavContained(page: Page) {
+  const nav = page.getByRole('navigation', { name: /Main navigation/i })
+  const logBtn = page.getByRole('button', { name: /Log push-ups/i })
+  const navBox = await nav.boundingBox()
+  const logBox = await logBtn.boundingBox()
+
+  expect(navBox).not.toBeNull()
+  expect(logBox).not.toBeNull()
+
+  if (navBox && logBox) {
+    expect(logBox.y).toBeGreaterThanOrEqual(navBox.y - 1)
+    expect(logBox.y + logBox.height).toBeLessThanOrEqual(navBox.y + navBox.height + 1)
+  }
+}
+
 async function assertTodayLayoutNoOverlap(page: Page) {
   const bank = page.getByRole('button', { name: /Bank Push-ups/i })
   const nav = page.getByRole('navigation', { name: /Main navigation/i })
   const entriesHeading = page.getByRole('heading', { name: /Today's entries/i })
 
   await expect(entriesHeading).toBeVisible()
-  await entriesHeading.scrollIntoViewIfNeeded()
 
   const bankBox = await bank.boundingBox()
   const navBox = await nav.boundingBox()
@@ -53,9 +67,10 @@ async function assertTodayLayoutNoOverlap(page: Page) {
   }
 
   if (entriesBox && bankBox) {
-    expect(rectsOverlap(entriesBox, bankBox)).toBe(false)
-    expect(entriesBox.y + entriesBox.height).toBeLessThanOrEqual(bankBox.y + 2)
+    expect(entriesBox.y).toBeGreaterThanOrEqual(bankBox.y + bankBox.height - 4)
   }
+
+  await assertLogNavContained(page)
 }
 
 async function setRingCount(page: Page, target: number) {

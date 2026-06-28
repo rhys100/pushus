@@ -19,20 +19,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
-- Bottom nav: **Log** centred as hero tab (raised circular button), shorter labels for Board/Feed, **Settings** bottom-right
+- **Log page overhaul:** progress and ring at top, sticky bank bar above nav, today's entries scroll below without fighting fixed chrome
+- Bottom nav flattened — Log stays centred with accent pill but no longer floats over page content
 - Group tab focuses on members; admin tools (join requests, invites, billing) moved to Settings
 - Training wizard recommends a personalised daily target from max clean set (conservative formula)
 - Existing users keep once-daily reminders until they change frequency in Settings
 
 ### Fixed
 
-- Circular logger haptics now fire synchronously during drag (browser user-gesture requirement); slightly longer tick for easier feel on Android
+- Scrolling today's entries no longer accidentally taps the Log tab (removed overlapping hero FAB)
+- Circular logger rep feedback via [bzzz](https://pavlito.github.io/bzzz/) — haptics when available, audio tick fallback on Chrome mobile and iOS
 - Keyboard increment haptics use a synchronously updated count ref so rapid key repeat does not double-tick
-- Touch drag on Chrome Android uses native touch listeners for vibration (React pointer events alone were silent on some devices); stronger double-pulse pattern
-- Hero **Log** tab no longer clips to a semi-circle; clock icon stays visible when active (not a solid white dot)
-- Bottom nav label row aligned across all tabs; hero Log circle floats above without pushing its label into the system nav bar
-- Unified `--bottom-nav-height` token so **Bank Push-ups** sits above the nav instead of overlapping it (Android safe-area fallback included)
-- Bottom nav clears Android 3-button system navigation when `safe-area-inset-bottom` is zero (3rem minimum inset)
+- Bottom nav height token matches flat bar (no overflow FAB padding)
 
 ---
 

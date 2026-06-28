@@ -58,7 +58,7 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 - [x] Edit and delete your entries
 - [x] Daily total and today's entries on the Log screen
 - [x] Entry audit log foundation
-- [x] Per-rep haptic tick while dragging (Android and supporting browsers)
+- [x] Per-rep tick while dragging the ring (haptics + audio via bzzz on supporting browsers)
 - [x] Handle snap animation on each rep for tactile feedback
 
 ### Social and group

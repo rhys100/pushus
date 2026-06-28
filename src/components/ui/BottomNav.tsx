@@ -11,8 +11,7 @@ export type BottomNavProps = {
 type NavConfig = {
   id: NavItem
   label: string
-  hero?: boolean
-  icon: () => JSX.Element
+  icon: (active: boolean) => JSX.Element
 }
 
 function LogIcon({ className }: { className?: string }) {
@@ -35,10 +34,10 @@ const navItems: NavConfig[] = [
   {
     id: 'leaderboard',
     label: 'Board',
-    icon: () => (
+    icon: (active) => (
       <svg
         viewBox="0 0 24 24"
-        className="h-5 w-5"
+        className={cn('h-5 w-5', active && 'text-accent')}
         fill="none"
         stroke="currentColor"
         strokeWidth="1.75"
@@ -56,10 +55,10 @@ const navItems: NavConfig[] = [
   {
     id: 'activity',
     label: 'Feed',
-    icon: () => (
+    icon: (active) => (
       <svg
         viewBox="0 0 24 24"
-        className="h-5 w-5"
+        className={cn('h-5 w-5', active && 'text-accent')}
         fill="none"
         stroke="currentColor"
         strokeWidth="1.75"
@@ -76,16 +75,26 @@ const navItems: NavConfig[] = [
   {
     id: 'log',
     label: 'Log',
-    hero: true,
-    icon: () => <LogIcon className="h-7 w-7" />,
+    icon: (active) => (
+      <span
+        className={cn(
+          'flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-[var(--duration-fast)]',
+          active
+            ? 'bg-accent text-white shadow-[0_0_12px_rgba(255,107,74,0.35)]'
+            : 'border-2 border-accent/80 text-accent',
+        )}
+      >
+        <LogIcon className="h-5 w-5" />
+      </span>
+    ),
   },
   {
     id: 'group',
     label: 'Group',
-    icon: () => (
+    icon: (active) => (
       <svg
         viewBox="0 0 24 24"
-        className="h-5 w-5"
+        className={cn('h-5 w-5', active && 'text-accent')}
         fill="none"
         stroke="currentColor"
         strokeWidth="1.75"
@@ -104,10 +113,10 @@ const navItems: NavConfig[] = [
   {
     id: 'settings',
     label: 'Settings',
-    icon: () => (
+    icon: (active) => (
       <svg
         viewBox="0 0 24 24"
-        className="h-5 w-5"
+        className={cn('h-5 w-5', active && 'text-accent')}
         fill="none"
         stroke="currentColor"
         strokeWidth="1.75"
@@ -128,93 +137,47 @@ const navItems: NavConfig[] = [
   },
 ]
 
-function NavButton({
-  item,
-  isActive,
-  onNavigate,
-}: {
-  item: NavConfig
-  isActive: boolean
-  onNavigate: (item: NavItem) => void
-}) {
-  const labelClass = cn(
-    'text-[0.625rem] font-medium leading-none',
-    isActive
-      ? item.hero
-        ? 'font-semibold text-accent'
-        : 'text-accent'
-      : 'text-text-muted hover:text-text-primary',
-  )
-
-  if (item.hero) {
-    return (
-      <button
-        type="button"
-        onClick={() => onNavigate(item.id)}
-        aria-current={isActive ? 'page' : undefined}
-        aria-label="Log push-ups"
-        className={cn(
-          'relative flex flex-col items-center gap-1 px-0.5 pb-1 pt-2',
-          'transition-transform duration-[var(--duration-fast)]',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-inset',
-          'active:scale-95',
-        )}
-      >
-        <span className="relative flex h-7 w-full items-end justify-center overflow-visible">
-          <span
-            className={cn(
-              'absolute bottom-0 left-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-2 items-center justify-center rounded-full',
-              'border-2 bg-bg shadow-[0_4px_20px_rgba(255,107,74,0.35)]',
-              'transition-colors duration-[var(--duration-fast)]',
-              isActive
-                ? 'border-accent bg-accent text-white'
-                : 'border-accent text-accent hover:bg-accent/10',
-            )}
-          >
-            {item.icon()}
-          </span>
-        </span>
-        <span className={labelClass}>{item.label}</span>
-      </button>
-    )
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => onNavigate(item.id)}
-      aria-current={isActive ? 'page' : undefined}
-      className={cn(
-        'flex flex-col items-center gap-1 px-0.5 pb-1 pt-2',
-        'transition-colors duration-[var(--duration-fast)]',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-inset',
-      )}
-    >
-      <span className="flex h-7 w-full items-center justify-center">{item.icon()}</span>
-      <span className={labelClass}>{item.label}</span>
-    </button>
-  )
-}
-
 export function BottomNav({ active, onNavigate, className }: BottomNavProps) {
   return (
     <nav
       className={cn(
-        'fixed inset-x-0 bottom-0 z-40 overflow-visible border-t border-border bg-bg',
+        'fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/95 backdrop-blur-sm',
         'pb-[var(--bottom-nav-safe)]',
         className,
       )}
       aria-label="Main navigation"
     >
-      <div className="mx-auto grid max-w-lg grid-cols-5 overflow-visible">
-        {navItems.map((item) => (
-          <NavButton
-            key={item.id}
-            item={item}
-            isActive={active === item.id}
-            onNavigate={onNavigate}
-          />
-        ))}
+      <div className="mx-auto grid max-w-lg grid-cols-5">
+        {navItems.map((item) => {
+          const isActive = active === item.id
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onNavigate(item.id)}
+              aria-current={isActive ? 'page' : undefined}
+              aria-label={item.id === 'log' ? 'Log push-ups' : item.label}
+              className={cn(
+                'flex min-h-[var(--bottom-nav-content)] flex-col items-center justify-center gap-0.5 px-1 py-1.5',
+                'transition-colors duration-[var(--duration-fast)]',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50',
+                'active:scale-[0.97]',
+                isActive ? 'text-accent' : 'text-text-muted hover:text-text-primary',
+              )}
+            >
+              {item.icon(isActive)}
+              <span
+                className={cn(
+                  'text-[0.625rem] font-medium leading-none',
+                  isActive && 'font-semibold',
+                )}
+              >
+                {item.label}
+              </span>
+            </button>
+          )
+        })}
       </div>
     </nav>
   )

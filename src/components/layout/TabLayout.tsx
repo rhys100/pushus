@@ -58,7 +58,6 @@ function TabLayoutShell() {
       title={isToday ? null : meta.title}
       subtitle={isToday ? undefined : meta.subtitle}
       headerTrailing={meta.headerTrailing}
-      bottomChrome={isToday ? 'today' : 'nav'}
       onNavigate={handleNavigate}
     >
       <Suspense fallback={<TabPageLoader />}>

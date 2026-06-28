@@ -15,7 +15,7 @@ import {
   countToAngle,
 } from '@/lib/circularCounter'
 import { useCircularCounter } from '@/hooks/useCircularCounter'
-import { pulseRepHapticDelta } from '@/lib/repHaptic'
+import { primeRepFeedback, pulseRepHapticDelta } from '@/lib/repHaptic'
 
 const RING_SIZE = 280
 const RING_CENTER = RING_SIZE / 2
@@ -124,6 +124,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
     const lastHapticCountRef = useRef(count)
 
     const ringRef = useRef<SVGSVGElement>(null)
+    const ringContainerRef = useRef<HTMLDivElement>(null)
     const dragStateRef = useRef<{ lastPointerAngle: number; cumulativeAngle: number } | null>(
       null,
     )
@@ -271,13 +272,15 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
     }, [])
 
     useEffect(() => {
-      const ring = ringRef.current
+      const ring = ringContainerRef.current
 
       if (!ring) {
         return
       }
 
       const onTouchStart = (event: TouchEvent) => {
+        primeRepFeedback()
+
         const touch = event.changedTouches[0]
 
         if (!touch) {
@@ -394,7 +397,11 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
     }
 
     return (
-      <div className={cn('flex justify-center px-4 py-1', className)}>
+      <div
+        ref={ringContainerRef}
+        className={cn('flex justify-center px-4 py-1', className)}
+        style={{ touchAction: 'none' }}
+      >
         <svg
           ref={ringRef}
           role="slider"

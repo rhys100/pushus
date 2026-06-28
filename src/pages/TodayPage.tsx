@@ -124,7 +124,7 @@ export function TodayPage() {
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col pb-2">
       {billingConfig.enabled ? (
         <BillingBanner
           className="mb-4"
@@ -151,17 +151,24 @@ export function TodayPage() {
         className="mt-1"
       />
 
+      <section
+        aria-label="Bank push-ups"
+        className="sticky z-20 -mx-4 mt-4 border-y border-border bg-bg/95 px-4 py-3 backdrop-blur-sm"
+        style={{ bottom: 'var(--bottom-nav-height)' }}
+      >
+        <BankPushupsButton
+          disabled={!canBank}
+          loading={bankPushups.isPending}
+          showDisabledHint={dragCount === 0}
+          onBank={handleBank}
+        />
+      </section>
+
       <TodayEntriesList
         group={activeGroup}
         entries={entries}
         loading={entriesLoading && entries.length === 0}
-      />
-
-      <BankPushupsButton
-        disabled={!canBank}
-        loading={bankPushups.isPending}
-        showDisabledHint={dragCount === 0}
-        onBank={handleBank}
+        className="mt-4 pb-[var(--bank-sticky-scroll-pad)]"
       />
     </div>
   )

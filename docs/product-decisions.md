@@ -176,7 +176,7 @@ For exploratory ideas without locked rules, see [product-roadmap.md](./product-r
 | **Audit log** records entry changes (see Entry rules) | Beta |
 | Local-state drag — no network calls while dragging | Beta |
 | Pointer capture and `touch-action: none` on ring | Beta |
-| Optional per-rep haptic tick while dragging (`navigator.vibrate`; Android Chrome; no-op on iOS Safari web) | Beta |
+| Optional per-rep feedback while dragging (bzzz: native haptics + audio fallback on iOS/Chrome web) | Beta |
 | Handle snap animation on each rep during drag | Beta |
 | Hint affordance at zero reps (drag handle visible) | Beta |
 | Manual **create-entry** flow hidden — edit existing entries only | Beta |

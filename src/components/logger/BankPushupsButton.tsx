@@ -20,27 +20,15 @@ export function BankPushupsButton({
   const showHint = isInactive && showDisabledHint
 
   return (
-    <div
-      className={cn(
-        'pointer-events-none z-50 mx-auto max-w-lg',
-        'fixed inset-x-0 bottom-[var(--bottom-nav-height)]',
-        'border-t border-border bg-bg px-4 pt-2',
-        'md:relative md:inset-auto md:bottom-auto md:mt-6 md:border-t-0 md:bg-transparent md:px-0 md:pt-0',
-        className,
-      )}
-    >
-      <div
-        className="pointer-events-none mb-2 flex min-h-[var(--bank-disabled-hint-height)] items-center justify-center md:min-h-0 md:mb-0"
-        aria-hidden={!showHint}
-      >
-        {showHint ? (
-          <p data-testid="bank-disabled-hint" className="text-center text-xs text-text-muted">
-            Drag the ring to bank more
-          </p>
-        ) : (
-          <span className="md:hidden" />
-        )}
-      </div>
+    <div className={cn('w-full', className)}>
+      {showHint ? (
+        <p
+          data-testid="bank-disabled-hint"
+          className="mb-2 text-center text-xs text-text-muted"
+        >
+          Drag the ring to bank more
+        </p>
+      ) : null}
 
       <Button
         type="button"
@@ -51,7 +39,7 @@ export function BankPushupsButton({
         aria-label="Bank Push-ups"
         aria-busy={loading || undefined}
         className={cn(
-          'pointer-events-auto mb-2 min-h-[var(--bank-cta-height)] text-base md:mb-0',
+          'min-h-[var(--bank-cta-height)] text-base',
           'transition-[background-color,border-color,opacity,transform,box-shadow] duration-[var(--duration-fast)] active:scale-[0.98]',
           isInactive
             ? 'border border-border bg-surface text-text-muted shadow-none hover:brightness-100'
