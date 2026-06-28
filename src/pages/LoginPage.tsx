@@ -1,0 +1,189 @@
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { Button, Card, useToast } from '@/components/ui'
+import { InviteCodeEntry } from '@/components/group/InviteCodeEntry'
+import { appConfig } from '@/lib/config'
+import { supabase } from '@/lib/supabase'
+import { setPendingInviteCode } from '@/lib/storage'
+import { normalizeInviteCode } from '@/lib/postAuthRouting'
+import { cn } from '@/lib/cn'
+
+const authCallbackUrl = () => `${window.location.origin}/auth/callback`
+
+function friendlyAuthError(message: string): string {
+  const lower = message.toLowerCase()
+  if (lower.includes('provider') && lower.includes('not enabled')) {
+    return 'Google sign-in is not enabled on this deployment. Use email magic link instead.'
+  }
+  if (lower.includes('oauth') || lower.includes('google')) {
+    return 'Google sign-in failed. Try email magic link, or check that Google OAuth is configured in Supabase.'
+  }
+  return message
+}
+
+export function LoginPage() {
+  const { toast } = useToast()
+  const [searchParams] = useSearchParams()
+  const [email, setEmail] = useState('')
+  const [sending, setSending] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
+  const [linkSent, setLinkSent] = useState(false)
+  const authErrorShownRef = useRef(false)
+
+  useEffect(() => {
+    const joinCode = normalizeInviteCode(searchParams.get('join'))
+    if (joinCode) {
+      setPendingInviteCode(joinCode)
+    }
+
+    const authError = searchParams.get('error_description') ?? searchParams.get('error')
+    if (authError && !authErrorShownRef.current) {
+      authErrorShownRef.current = true
+      toast({ message: friendlyAuthError(authError), variant: 'danger' })
+      window.history.replaceState({}, '', '/login')
+    }
+  }, [searchParams, toast])
+
+  async function handleMagicLink(event: React.FormEvent) {
+    event.preventDefault()
+    const trimmed = email.trim()
+    if (!trimmed) return
+
+    setSending(true)
+    const { error } = await supabase.auth.signInWithOtp({
+      email: trimmed,
+      options: { emailRedirectTo: authCallbackUrl() },
+    })
+    setSending(false)
+
+    if (error) {
+      toast({ message: friendlyAuthError(error.message), variant: 'danger' })
+      return
+    }
+
+    setLinkSent(true)
+  }
+
+  async function handleGoogleSignIn() {
+    if (!appConfig.googleAuthEnabled) {
+      toast({
+        message: 'Google sign-in is disabled on this deployment. Use email magic link.',
+        variant: 'danger',
+      })
+      return
+    }
+
+    setGoogleLoading(true)
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: authCallbackUrl() },
+    })
+    if (error) {
+      setGoogleLoading(false)
+      toast({ message: friendlyAuthError(error.message), variant: 'danger' })
+    }
+  }
+
+  return (
+    <div
+      className="flex min-h-screen flex-col bg-bg px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))]"
+      style={{ '--toast-bottom': 'calc(1.5rem + env(safe-area-inset-bottom))' } as CSSProperties}
+    >
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
+        <div className="mb-8 text-center">
+          <p className="text-sm uppercase tracking-[0.2em] text-text-muted">Welcome to</p>
+          <h1 className="mt-2 text-3xl font-bold text-text-primary">{appConfig.name}</h1>
+          <p className="mt-2 text-sm leading-relaxed text-text-muted">
+            Bank push-ups with your mates. Sign in to get started.
+          </p>
+          {appConfig.deploymentName.toLowerCase().includes('beta') ? (
+            <p className="mt-3 rounded-[var(--radius-md)] bg-accent-muted px-3 py-2 text-xs text-text-muted">
+              Private beta — you need an invite link or approved access after sign-in.
+            </p>
+          ) : null}
+        </div>
+
+        <Card padding="lg" className="space-y-5">
+          {linkSent ? (
+            <div className="space-y-3 text-center">
+              <p className="text-4xl" aria-hidden="true">
+                ✉️
+              </p>
+              <p className="text-sm font-medium text-text-primary">Magic link sent</p>
+              <p className="text-sm text-text-muted">
+                Open the link in your email to sign in. You can close this tab.
+              </p>
+              <Button variant="ghost" fullWidth onClick={() => setLinkSent(false)}>
+                Use a different email
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={handleMagicLink} className="space-y-4">
+              <div className="space-y-1.5">
+                <label htmlFor="email" className="text-sm font-medium text-text-primary">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  inputMode="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className={cn(
+                    'w-full rounded-[var(--radius-md)] border border-border bg-bg px-4 py-3',
+                    'text-sm text-text-primary placeholder:text-text-muted',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                  )}
+                />
+              </div>
+              <Button type="submit" fullWidth loading={sending} disabled={sending}>
+                Send magic link
+              </Button>
+            </form>
+          )}
+
+          {!linkSent && appConfig.googleAuthEnabled ? (
+            <>
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-xs text-text-muted">or</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+
+              <Button
+                variant="secondary"
+                fullWidth
+                loading={googleLoading}
+                disabled={googleLoading}
+                onClick={() => void handleGoogleSignIn()}
+              >
+                Continue with Google
+              </Button>
+            </>
+          ) : null}
+
+          {!linkSent ? (
+            <>
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-xs text-text-muted">invite</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              <InviteCodeEntry />
+            </>
+          ) : null}
+        </Card>
+
+        <p className="mt-6 text-center text-xs text-text-muted">
+          By signing in you agree to train hard and log honestly.{' '}
+          <Link to="/about" className="text-accent hover:brightness-110">
+            About PushUS
+          </Link>
+        </p>
+      </div>
+    </div>
+  )
+}

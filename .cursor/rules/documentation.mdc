@@ -1,0 +1,19 @@
+---
+description: Where to update PushUS documentation when making changes
+alwaysApply: true
+---
+
+# Documentation updates
+
+When making changes, update documentation intentionally:
+
+- **README.md** — stable public-facing information only (positioning, status, high-level feature lists, links). Do not bloat with implementation noise or daily notes.
+- **CHANGELOG.md** — meaningful user-facing, operational, or security changes (under Unreleased until a release tag).
+- **docs/dev-log.md** — daily build progress; roll up to weekly/monthly summaries per docs/docs-maintenance.md.
+- **docs/product-decisions.md** — locked product rules from Rhys / planning Q&A.
+- **docs/product-roadmap.md** — future ideas and non-goals.
+- **docs/docs-maintenance.md** — doc workflow reference.
+
+Do not duplicate product-decisions or roadmap content into README.
+
+Never commit secrets or real env values in docs.

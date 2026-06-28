@@ -1,0 +1,78 @@
+﻿import { execSync } from 'node:child_process'
+import path from 'node:path'
+import { defineConfig, type Plugin } from 'vite'
+import react from '@vitejs/plugin-react'
+
+function getBuildId(): string {
+  try {
+    return execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim()
+  } catch {
+    return String(Date.now())
+  }
+}
+
+function appVersionPlugin(buildId: string): Plugin {
+  const bootstrapScript = `(function(){if(typeof fetch==="undefined")return;var m=document.querySelector('meta[name="pushus-build-id"]');if(!m)return;var c=m.getAttribute("content");if(!c||c==="dev")return;try{var u0=new URL(location.href);var requested=u0.searchParams.get("_v");if(requested){u0.searchParams.delete("_v");history.replaceState({},"",u0.toString());if(requested===c){sessionStorage.removeItem("pushus-reload-attempts-"+requested);return}}}catch(e){}fetch("/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(p){if(!p||!p.buildId||p.buildId===c)return;var attemptsKey="pushus-reload-attempts-"+p.buildId;var attempts=0;try{attempts=parseInt(sessionStorage.getItem(attemptsKey)||"0",10)||0}catch(e){}if(attempts>=3)return;try{sessionStorage.setItem(attemptsKey,String(attempts+1))}catch(e){}function go(){var u=new URL(location.href);u.searchParams.set("_v",p.buildId);location.replace(u.toString())}if("serviceWorker" in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){Promise.all(rs.map(function(r){return r.unregister()})).finally(go)})}else go()}).catch(function(){})})();`
+
+  return {
+    name: 'app-version',
+    transformIndexHtml(html) {
+      return html.replace(
+        '<head>',
+        `<head>\n    <meta name="pushus-build-id" content="${buildId}" />\n    <script>${bootstrapScript}</script>`,
+      )
+    },
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'version.json',
+        source: `${JSON.stringify({ buildId }, null, 2)}\n`,
+      })
+    },
+  }
+}
+
+export default defineConfig(({ mode }) => {
+  const buildId = mode === 'development' ? 'dev' : getBuildId()
+
+  return {
+    plugins: [react(), appVersionPlugin(buildId)],
+    define: {
+      __APP_BUILD_ID__: JSON.stringify(buildId),
+    },
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      },
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) {
+              return undefined
+            }
+
+            if (id.includes('react-dom') || id.includes('/react/')) {
+              return 'vendor-react'
+            }
+
+            if (id.includes('@tanstack/react-query')) {
+              return 'vendor-query'
+            }
+
+            if (id.includes('@supabase/supabase-js')) {
+              return 'vendor-supabase'
+            }
+
+            if (id.includes('date-fns')) {
+              return 'vendor-date'
+            }
+
+            return undefined
+          },
+        },
+      },
+    },
+  }
+})

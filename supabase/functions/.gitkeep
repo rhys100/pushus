@@ -1,0 +1,4 @@
+﻿# Slice 1B Stripe Edge Functions (deferred):
+# - create-checkout-session
+# - create-customer-portal-session
+# - stripe-webhook

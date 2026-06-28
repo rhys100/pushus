@@ -1,0 +1,24 @@
+name: Push reminders cron
+
+on:
+  schedule:
+    # Hourly at :05 past the hour (UTC)
+    - cron: '5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  send-push-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invoke send-push-reminders edge function
+        env:
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$SUPABASE_PROJECT_REF" ] || [ -z "$CRON_SECRET" ]; then
+            echo "Skipping: SUPABASE_PROJECT_REF and CRON_SECRET must be set in GitHub Actions secrets."
+            exit 0
+          fi
+          curl -sf -X POST "https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/send-push-reminders" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json"

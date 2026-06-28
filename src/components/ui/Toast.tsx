@@ -1,0 +1,149 @@
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
+import { cn } from '@/lib/cn'
+
+export type ToastVariant = 'default' | 'success' | 'danger'
+
+export type ToastInput = {
+  id?: string
+  message: string
+  variant?: ToastVariant
+  durationMs?: number
+  actionLabel?: string
+  onAction?: () => void
+  onDismiss?: () => void
+}
+
+type ToastRecord = Required<Pick<ToastInput, 'message'>> &
+  Omit<ToastInput, 'message'> & {
+    id: string
+  }
+
+type ToastContextValue = {
+  toast: (input: ToastInput) => string
+  dismiss: (id: string) => void
+}
+
+const ToastContext = createContext<ToastContextValue | null>(null)
+
+const DEFAULT_DURATION_MS = 5000
+
+const variantStyles: Record<ToastVariant, string> = {
+  default: 'border-border bg-surface text-text-primary',
+  success: 'border-success/30 bg-success/10 text-text-primary',
+  danger: 'border-danger/30 bg-danger/10 text-text-primary',
+}
+
+function ToastItem({
+  toast,
+  onDismiss,
+}: {
+  toast: ToastRecord
+  onDismiss: (id: string) => void
+}) {
+  const variant = toast.variant ?? 'default'
+
+  useEffect(() => {
+    const duration = toast.durationMs ?? DEFAULT_DURATION_MS
+    const timer = window.setTimeout(() => {
+      toast.onDismiss?.()
+      onDismiss(toast.id)
+    }, duration)
+    return () => window.clearTimeout(timer)
+  }, [onDismiss, toast.durationMs, toast.id, toast.onDismiss])
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className={cn(
+        'pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-[var(--radius-md)] border px-4 py-3 shadow-lg',
+        'animate-[toast-in_200ms_var(--ease-out)]',
+        variantStyles[variant],
+      )}
+    >
+      <p className="flex-1 text-sm leading-snug">{toast.message}</p>
+
+      {toast.actionLabel && toast.onAction ? (
+        <button
+          type="button"
+          onClick={() => {
+            toast.onAction?.()
+            toast.onDismiss?.()
+            onDismiss(toast.id)
+          }}
+          className="shrink-0 text-sm font-semibold text-accent hover:brightness-110"
+        >
+          {toast.actionLabel}
+        </button>
+      ) : null}
+
+      <button
+        type="button"
+        aria-label="Dismiss"
+        onClick={() => {
+          toast.onDismiss?.()
+          onDismiss(toast.id)
+        }}
+        className="shrink-0 text-text-muted transition-colors hover:text-text-primary"
+      >
+        ×
+      </button>
+    </div>
+  )
+}
+
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const [toasts, setToasts] = useState<ToastRecord[]>([])
+  const idRef = useRef(0)
+
+  const dismiss = useCallback((id: string) => {
+    setToasts((current) => current.filter((toast) => toast.id !== id))
+  }, [])
+
+  const toast = useCallback((input: ToastInput) => {
+    const id = input.id ?? `toast-${++idRef.current}`
+    const record: ToastRecord = { ...input, id }
+
+    setToasts((current) => [...current, record])
+    return id
+  }, [])
+
+  const value = useMemo(() => ({ toast, dismiss }), [toast, dismiss])
+
+  return (
+    <ToastContext.Provider value={value}>
+      {children}
+
+      <div
+        aria-label="Notifications"
+        className={cn(
+          'pointer-events-none fixed inset-x-0 bottom-[var(--toast-bottom)] z-[60]',
+          'mx-auto flex max-w-lg flex-col gap-2 px-4',
+        )}
+      >
+        {toasts.map((item) => (
+          <ToastItem key={item.id} toast={item} onDismiss={dismiss} />
+        ))}
+      </div>
+    </ToastContext.Provider>
+  )
+}
+
+export function useToast(): ToastContextValue {
+  const context = useContext(ToastContext)
+
+  if (!context) {
+    throw new Error('useToast must be used within a ToastProvider')
+  }
+
+  return context
+}

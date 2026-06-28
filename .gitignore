@@ -1,0 +1,52 @@
+﻿# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+*.local
+*.timestamp-*.mjs
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment and secrets — never commit
+.env
+.env.*
+!.env.example
+!.env.e2e
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Editor and OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Test and coverage
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+e2e/.auth/
+scripts/.qa-session.json
+
+# Supabase local
+supabase/.branches
+supabase/.temp
+supabase/.env
+.branches
+.temp
+
+# Vite / TypeScript cache
+*.tsbuildinfo
+.vite/
