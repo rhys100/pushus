@@ -67,7 +67,8 @@ async function assertTodayLayoutNoOverlap(page: Page) {
   }
 
   if (entriesBox && bankBox) {
-    expect(entriesBox.y).toBeGreaterThanOrEqual(bankBox.y + bankBox.height - 4)
+    expect(rectsOverlap(entriesBox, bankBox)).toBe(false)
+    expect(entriesBox.y + entriesBox.height).toBeLessThanOrEqual(bankBox.y + 2)
   }
 
   await assertLogNavContained(page)

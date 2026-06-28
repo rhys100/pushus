@@ -124,53 +124,49 @@ export function TodayPage() {
   }
 
   return (
-    <div className="flex flex-col pb-2">
-      {billingConfig.enabled ? (
-        <BillingBanner
-          className="mb-4"
-          billingStatus={billingStatusQuery.data ?? activeGroup.billing_status}
-          subscription={subscriptionQuery.data}
-          isOwner={role === 'owner'}
+    <>
+      <div className="flex flex-col pb-[var(--log-page-scroll-pad)]">
+        {billingConfig.enabled ? (
+          <BillingBanner
+            className="mb-4"
+            billingStatus={billingStatusQuery.data ?? activeGroup.billing_status}
+            subscription={subscriptionQuery.data}
+            isOwner={role === 'owner'}
+          />
+        ) : null}
+
+        <DayProgressCard
+          bankedToday={dayTotal}
+          loading={(totalLoading && dayTotal === 0) || planLoading}
+          dailyTarget={dailyTarget}
         />
-      ) : null}
 
-      <DayProgressCard
-        bankedToday={dayTotal}
-        loading={(totalLoading && dayTotal === 0) || planLoading}
-        dailyTarget={dailyTarget}
-      />
-
-      <CircularLogger
-        ref={loggerRef}
-        onCountChange={setDragCount}
-        onCanBankChange={setCanBank}
-        onBank={handleBank}
-        disabled={bankPushups.isPending}
-        showDragHint={showHint}
-        onHintDismiss={dismissHint}
-        className="mt-1"
-      />
-
-      <section
-        aria-label="Bank push-ups"
-        className="sticky z-20 -mx-4 mt-4 border-y border-border bg-bg/95 px-4 py-3 backdrop-blur-sm"
-        style={{ bottom: 'var(--bottom-nav-height)' }}
-      >
-        <BankPushupsButton
-          disabled={!canBank}
-          loading={bankPushups.isPending}
-          showDisabledHint={dragCount === 0}
+        <CircularLogger
+          ref={loggerRef}
+          onCountChange={setDragCount}
+          onCanBankChange={setCanBank}
           onBank={handleBank}
+          disabled={bankPushups.isPending}
+          showDragHint={showHint}
+          onHintDismiss={dismissHint}
+          className="mt-1"
         />
-      </section>
 
-      <TodayEntriesList
-        group={activeGroup}
-        entries={entries}
-        loading={entriesLoading && entries.length === 0}
-        className="mt-4 pb-[var(--bank-sticky-scroll-pad)]"
+        <TodayEntriesList
+          group={activeGroup}
+          entries={entries}
+          loading={entriesLoading && entries.length === 0}
+          className="mt-5"
+        />
+      </div>
+
+      <BankPushupsButton
+        disabled={!canBank}
+        loading={bankPushups.isPending}
+        showDisabledHint={dragCount === 0}
+        onBank={handleBank}
       />
-    </div>
+    </>
   )
 }
 

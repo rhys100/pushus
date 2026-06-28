@@ -78,13 +78,13 @@ const navItems: NavConfig[] = [
     icon: (active) => (
       <span
         className={cn(
-          'flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-[var(--duration-fast)]',
+          'flex h-8 w-8 items-center justify-center rounded-full transition-colors duration-[var(--duration-fast)]',
           active
             ? 'bg-accent text-white shadow-[0_0_12px_rgba(255,107,74,0.35)]'
             : 'border-2 border-accent/80 text-accent',
         )}
       >
-        <LogIcon className="h-5 w-5" />
+        <LogIcon className="h-4 w-4" />
       </span>
     ),
   },

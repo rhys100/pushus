@@ -31,6 +31,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Circular logger rep feedback via [bzzz](https://pavlito.github.io/bzzz/) — haptics when available, audio tick fallback on Chrome mobile and iOS
 - Keyboard increment haptics use a synchronously updated count ref so rapid key repeat does not double-tick
 - Bottom nav height token matches flat bar (no overflow FAB padding)
+- Restored Android safe-area inset on bottom nav (3rem minimum) after layout regression
+- Log page uses fixed bank strip above nav with scroll padding instead of sticky mid-page block
+- CI: Node 22 on GitHub Actions; dependency bumps (Vite 6, ESLint 9, typescript-eslint 8.62, Supabase, react-router, Playwright, Vitest) clear high-severity `npm audit` failures
 
 ---
 
