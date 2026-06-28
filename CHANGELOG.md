@@ -27,6 +27,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ### Fixed
 
 - Circular logger haptics now fire synchronously during drag (browser user-gesture requirement); slightly longer tick for easier feel on Android
+- Keyboard increment haptics use a synchronously updated count ref so rapid key repeat does not double-tick
+- Touch drag on Chrome Android uses native touch listeners for vibration (React pointer events alone were silent on some devices); stronger double-pulse pattern
 
 ---
 

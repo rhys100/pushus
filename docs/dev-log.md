@@ -46,6 +46,8 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 - Circular logger haptics fire in `pointermove` / keyboard handlers instead of RAF batch (Chrome user-gesture requirement)
 - Tick duration 12ms → 24ms for clearer feel on Android
+- Touch drag uses native `touchmove` listeners for haptics on Chrome Android; double-pulse pattern (60ms) for motors that ignore short ticks
+- Explicit `vibrate=(self)` in Permissions-Policy headers
 
 #### Notes
 

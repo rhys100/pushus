@@ -119,6 +119,9 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
     })
     const countRef = useRef(count)
     const canBankRef = useRef(canBank)
+    const angleRef = useRef(angle)
+    const disabledRef = useRef(disabled)
+    const lastHapticCountRef = useRef(count)
 
     const ringRef = useRef<SVGSVGElement>(null)
     const dragStateRef = useRef<{ lastPointerAngle: number; cumulativeAngle: number } | null>(
@@ -129,6 +132,9 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
     const [pulseKey, setPulseKey] = useState(0)
     const [isDragging, setIsDragging] = useState(false)
     const previousCountRef = useRef(count)
+
+    angleRef.current = angle
+    disabledRef.current = disabled
 
     useImperativeHandle(
       ref,
@@ -141,6 +147,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
 
     useEffect(() => {
       countRef.current = count
+      lastHapticCountRef.current = count
 
       if (count !== previousCountRef.current) {
         onCountChange?.(count)
@@ -200,66 +207,145 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
       }
     }, [])
 
-    const handlePointerDown = (event: ReactPointerEvent<SVGSVGElement>) => {
-      if (disabled) {
+    const maybePulseHaptic = useCallback((nextCount: number) => {
+      if (nextCount > lastHapticCountRef.current) {
+        pulseRepHapticDelta(lastHapticCountRef.current, nextCount)
+        lastHapticCountRef.current = nextCount
+      }
+    }, [])
+
+    const applyDragAt = useCallback(
+      (clientX: number, clientY: number, haptic: boolean) => {
+        const dragState = dragStateRef.current
+
+        if (!dragState || disabledRef.current) {
+          return
+        }
+
+        const rect = ringRef.current?.getBoundingClientRect()
+
+        if (!rect) {
+          return
+        }
+
+        const pointerAngle = getPointerAngle(clientX, clientY, rect)
+        const delta = normalizeAngleDelta(pointerAngle - dragState.lastPointerAngle)
+
+        dragState.lastPointerAngle = pointerAngle
+        dragState.cumulativeAngle = Math.max(0, dragState.cumulativeAngle + delta)
+
+        if (haptic) {
+          maybePulseHaptic(angleToTotalCount(dragState.cumulativeAngle))
+        }
+
+        scheduleAngle(dragState.cumulativeAngle)
+
+        if (Math.abs(delta) > 0.5) {
+          onHintDismiss?.()
+        }
+      },
+      [maybePulseHaptic, onHintDismiss, scheduleAngle],
+    )
+
+    const beginDragAt = useCallback((clientX: number, clientY: number) => {
+      if (disabledRef.current) {
         return
       }
 
       const rect = ringRef.current?.getBoundingClientRect()
 
       if (!rect) {
+        return
+      }
+
+      setIsDragging(true)
+      dragStateRef.current = {
+        lastPointerAngle: getPointerAngle(clientX, clientY, rect),
+        cumulativeAngle: angleRef.current,
+      }
+    }, [])
+
+    const endDragSession = useCallback(() => {
+      dragStateRef.current = null
+      setIsDragging(false)
+    }, [])
+
+    useEffect(() => {
+      const ring = ringRef.current
+
+      if (!ring) {
+        return
+      }
+
+      const onTouchStart = (event: TouchEvent) => {
+        const touch = event.changedTouches[0]
+
+        if (!touch) {
+          return
+        }
+
+        beginDragAt(touch.clientX, touch.clientY)
+      }
+
+      const onTouchMove = (event: TouchEvent) => {
+        if (!dragStateRef.current) {
+          return
+        }
+
+        const touch = event.touches[0]
+
+        if (!touch) {
+          return
+        }
+
+        event.preventDefault()
+        applyDragAt(touch.clientX, touch.clientY, true)
+      }
+
+      const onTouchEnd = () => {
+        endDragSession()
+      }
+
+      ring.addEventListener('touchstart', onTouchStart, { passive: true })
+      ring.addEventListener('touchmove', onTouchMove, { passive: false })
+      ring.addEventListener('touchend', onTouchEnd)
+      ring.addEventListener('touchcancel', onTouchEnd)
+
+      return () => {
+        ring.removeEventListener('touchstart', onTouchStart)
+        ring.removeEventListener('touchmove', onTouchMove)
+        ring.removeEventListener('touchend', onTouchEnd)
+        ring.removeEventListener('touchcancel', onTouchEnd)
+      }
+    }, [applyDragAt, beginDragAt, endDragSession])
+
+    const handlePointerDown = (event: ReactPointerEvent<SVGSVGElement>) => {
+      if (disabled || event.pointerType === 'touch') {
         return
       }
 
       event.currentTarget.setPointerCapture(event.pointerId)
-      setIsDragging(true)
-      dragStateRef.current = {
-        lastPointerAngle: getPointerAngle(event.clientX, event.clientY, rect),
-        cumulativeAngle: angle,
-      }
+      beginDragAt(event.clientX, event.clientY)
     }
 
     const handlePointerMove = (event: ReactPointerEvent<SVGSVGElement>) => {
-      const dragState = dragStateRef.current
-
-      if (!dragState || disabled) {
+      if (event.pointerType === 'touch') {
         return
       }
 
-      const rect = ringRef.current?.getBoundingClientRect()
-
-      if (!rect) {
-        return
-      }
-
-      const pointerAngle = getPointerAngle(event.clientX, event.clientY, rect)
-      const delta = normalizeAngleDelta(pointerAngle - dragState.lastPointerAngle)
-      const angleBefore = dragState.cumulativeAngle
-
-      dragState.lastPointerAngle = pointerAngle
-      dragState.cumulativeAngle = Math.max(0, dragState.cumulativeAngle + delta)
-
-      const prevCount = angleToTotalCount(angleBefore)
-      const nextCount = angleToTotalCount(dragState.cumulativeAngle)
-
-      if (nextCount > prevCount) {
-        pulseRepHapticDelta(prevCount, nextCount)
-      }
-
-      scheduleAngle(dragState.cumulativeAngle)
-
-      if (Math.abs(delta) > 0.5) {
-        onHintDismiss?.()
-      }
+      applyDragAt(event.clientX, event.clientY, true)
     }
 
     const endDrag = (event: ReactPointerEvent<SVGSVGElement>) => {
+      if (event.pointerType === 'touch') {
+        return
+      }
+
       if (event.currentTarget.hasPointerCapture(event.pointerId)) {
         event.currentTarget.releasePointerCapture(event.pointerId)
       }
 
-      dragStateRef.current = null
-      setIsDragging(false)
+      endDragSession()
     }
 
     const handleKeyDown = (event: KeyboardEvent<SVGSVGElement>) => {
@@ -280,16 +366,29 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
       if (event.key === 'ArrowUp' || event.key === 'ArrowRight') {
         event.preventDefault()
         onHintDismiss?.()
-        pulseRepHapticDelta(count, count + 1)
-        setAngle(countToAngle(count + 1))
+
+        const currentCount = countRef.current
+        const nextCount = currentCount + 1
+        const nextAngle = countToAngle(nextCount)
+
+        if (angleToTotalCount(nextAngle) > currentCount) {
+          pulseRepHapticDelta(currentCount, nextCount)
+          setAngle(nextAngle)
+          countRef.current = nextCount
+          lastHapticCountRef.current = nextCount
+        }
+
         return
       }
 
       if (event.key === 'ArrowDown' || event.key === 'ArrowLeft') {
         event.preventDefault()
 
-        if (count > 0) {
-          setAngle(countToAngle(count - 1))
+        const currentCount = countRef.current
+
+        if (currentCount > 0) {
+          setAngle(countToAngle(currentCount - 1))
+          countRef.current = currentCount - 1
         }
       }
     }
