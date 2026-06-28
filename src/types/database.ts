@@ -62,6 +62,7 @@ export type NotificationPreferences = {
   push_enabled: boolean
   active_hours_start: number
   active_hours_end: number
+  reminder_interval_hours: 1 | 2 | 24
   daily_target: number
   injury_paused: boolean
   injury_paused_until: string | null

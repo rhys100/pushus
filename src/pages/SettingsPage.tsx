@@ -5,6 +5,7 @@ import { Button, Card } from '@/components/ui'
 import { appConfig } from '@/lib/config'
 import { useAuth } from '@/providers/AuthProvider'
 import { useProfile } from '@/hooks/useProfile'
+import type { ReminderIntervalHours } from '@/lib/notificationEligibility'
 import { useNotificationPreferences } from '@/providers/NotificationPreferencesProvider'
 
 function hourOptions() {
@@ -13,6 +14,12 @@ function hourOptions() {
     label: `${String(hour).padStart(2, '0')}:00`,
   }))
 }
+
+const REMINDER_INTERVAL_OPTIONS: { value: ReminderIntervalHours; label: string }[] = [
+  { value: 1, label: 'Every hour' },
+  { value: 2, label: 'Every 2 hours' },
+  { value: 24, label: 'Once per day' },
+]
 
 export function SettingsPage() {
   const { signOut } = useAuth()
@@ -58,6 +65,11 @@ export function SettingsPage() {
     await updatePreferences({ [field]: value })
   }
 
+  async function handleIntervalChange(value: ReminderIntervalHours) {
+    setLocalError(null)
+    await updatePreferences({ reminder_interval_hours: value })
+  }
+
   async function handleInjuryToggle(checked: boolean) {
     setLocalError(null)
     await updatePreferences({
@@ -88,7 +100,7 @@ export function SettingsPage() {
           <div>
             <p className="text-sm font-medium text-text-primary">Push reminders</p>
             <p className="mt-1 text-xs text-text-muted">
-              One reminder per day when you are behind your daily goal during your chosen hours.
+              Reminders when you are behind your daily goal during your chosen hours and frequency.
               Beta — reminders may be delayed.
             </p>
           </div>
@@ -139,7 +151,7 @@ export function SettingsPage() {
                       <span className="text-xs font-medium text-text-muted">From</span>
                       <select
                         className="w-full rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-sm text-text-primary"
-                        value={prefs?.active_hours_start ?? 9}
+                        value={prefs?.active_hours_start ?? 7}
                         disabled={!prefs?.push_enabled || saving}
                         onChange={(event) =>
                           void handleHoursChange('active_hours_start', Number(event.target.value))
@@ -171,6 +183,24 @@ export function SettingsPage() {
                       </select>
                     </label>
                   </div>
+
+                  <label className="space-y-1">
+                    <span className="text-xs font-medium text-text-muted">Frequency</span>
+                    <select
+                      className="w-full rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-sm text-text-primary"
+                      value={prefs?.reminder_interval_hours ?? 1}
+                      disabled={!prefs?.push_enabled || saving}
+                      onChange={(event) =>
+                        void handleIntervalChange(Number(event.target.value) as ReminderIntervalHours)
+                      }
+                    >
+                      {REMINDER_INTERVAL_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
 
                   <label className="flex items-start gap-3 rounded-[var(--radius-md)] border border-border bg-bg px-3 py-3">
                     <input

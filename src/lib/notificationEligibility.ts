@@ -3,10 +3,13 @@
  * Used by the settings UI; mirrored in send-push-reminders edge function.
  */
 
+export type ReminderIntervalHours = 1 | 2 | 24
+
 export type NotificationPreferencesInput = {
   push_enabled: boolean
   active_hours_start: number
   active_hours_end: number
+  reminder_interval_hours: ReminderIntervalHours
   daily_target: number
   injury_paused: boolean
   injury_paused_until: string | null
@@ -112,6 +115,45 @@ export function wasReminderSentToday(
   return today === lastDay
 }
 
+function parseLastReminderSentAt(
+  lastReminderSentAt: Date | string | null | undefined,
+): Date | null {
+  if (!lastReminderSentAt) {
+    return null
+  }
+
+  const last =
+    typeof lastReminderSentAt === 'string'
+      ? new Date(lastReminderSentAt)
+      : lastReminderSentAt
+
+  if (Number.isNaN(last.getTime())) {
+    return null
+  }
+
+  return last
+}
+
+/** True when a reminder was sent too recently for the chosen interval. */
+export function wasReminderSentWithinInterval(
+  lastReminderSentAt: Date | string | null | undefined,
+  intervalHours: ReminderIntervalHours,
+  timezone: string,
+  now: Date = new Date(),
+): boolean {
+  if (intervalHours >= 24) {
+    return wasReminderSentToday(lastReminderSentAt, timezone, now)
+  }
+
+  const last = parseLastReminderSentAt(lastReminderSentAt)
+  if (!last) {
+    return false
+  }
+
+  const elapsedMs = now.getTime() - last.getTime()
+  return elapsedMs < intervalHours * 60 * 60 * 1000
+}
+
 export function evaluateReminderEligibility(
   context: ReminderEligibilityContext,
 ): ReminderEligibilityResult {
@@ -136,8 +178,15 @@ export function evaluateReminderEligibility(
     reasons.push('goal_met')
   }
 
-  if (wasReminderSentToday(context.lastReminderSentAt, timezone, now)) {
-    reasons.push('already_reminded_today')
+  if (
+    wasReminderSentWithinInterval(
+      context.lastReminderSentAt,
+      prefs.reminder_interval_hours,
+      timezone,
+      now,
+    )
+  ) {
+    reasons.push('reminder_sent_recently')
   }
 
   return {

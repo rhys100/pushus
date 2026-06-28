@@ -10,6 +10,7 @@ type NotificationPreferencesRow = {
   push_enabled: boolean
   active_hours_start: number
   active_hours_end: number
+  reminder_interval_hours: 1 | 2 | 24
   daily_target: number
   injury_paused: boolean
   injury_paused_until: string | null
@@ -85,6 +86,24 @@ function wasReminderSentToday(
   return today === lastDay
 }
 
+function wasReminderSentWithinInterval(
+  lastReminderSentAt: string | null,
+  intervalHours: 1 | 2 | 24,
+  timezone: string,
+  now: Date,
+): boolean {
+  if (intervalHours >= 24) {
+    return wasReminderSentToday(lastReminderSentAt, timezone, now)
+  }
+
+  if (!lastReminderSentAt) return false
+  const last = new Date(lastReminderSentAt)
+  if (Number.isNaN(last.getTime())) return false
+
+  const elapsedMs = now.getTime() - last.getTime()
+  return elapsedMs < intervalHours * 60 * 60 * 1000
+}
+
 function isEligibleForReminder(
   prefs: NotificationPreferencesRow,
   timezone: string,
@@ -97,7 +116,16 @@ function isEligibleForReminder(
   if (isInjuryPaused(prefs, timezone, now)) return false
   if (!isWithinActiveHours(hour, prefs.active_hours_start, prefs.active_hours_end)) return false
   if (bankedToday >= prefs.daily_target) return false
-  if (wasReminderSentToday(prefs.last_reminder_sent_at, timezone, now)) return false
+  if (
+    wasReminderSentWithinInterval(
+      prefs.last_reminder_sent_at,
+      prefs.reminder_interval_hours,
+      timezone,
+      now,
+    )
+  ) {
+    return false
+  }
 
   return true
 }

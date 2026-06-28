@@ -6,13 +6,15 @@ import {
   isInjuryPaused,
   isWithinActiveHours,
   wasReminderSentToday,
+  wasReminderSentWithinInterval,
   type NotificationPreferencesInput,
 } from '../../src/lib/notificationEligibility'
 
 const basePrefs: NotificationPreferencesInput = {
   push_enabled: true,
-  active_hours_start: 9,
+  active_hours_start: 7,
   active_hours_end: 20,
+  reminder_interval_hours: 1,
   daily_target: 20,
   injury_paused: false,
   injury_paused_until: null,
@@ -98,6 +100,32 @@ describe('notificationEligibility', () => {
     })
   })
 
+  describe('wasReminderSentWithinInterval', () => {
+    it('blocks hourly reminders within one hour', () => {
+      const now = new Date('2024-06-01T10:30:00Z')
+      const last = new Date('2024-06-01T10:00:00Z')
+      expect(wasReminderSentWithinInterval(last, 1, 'UTC', now)).toBe(true)
+    })
+
+    it('allows hourly reminders after one hour', () => {
+      const now = new Date('2024-06-01T11:05:00Z')
+      const last = new Date('2024-06-01T10:05:00Z')
+      expect(wasReminderSentWithinInterval(last, 1, 'UTC', now)).toBe(false)
+    })
+
+    it('blocks every-2-hours reminders within two hours', () => {
+      const now = new Date('2024-06-01T11:30:00Z')
+      const last = new Date('2024-06-01T10:00:00Z')
+      expect(wasReminderSentWithinInterval(last, 2, 'UTC', now)).toBe(true)
+    })
+
+    it('uses once-daily rules for 24-hour interval', () => {
+      const now = new Date('2024-06-01T18:00:00Z')
+      const last = new Date('2024-06-01T09:00:00Z')
+      expect(wasReminderSentWithinInterval(last, 24, 'UTC', now)).toBe(true)
+    })
+  })
+
   describe('evaluateReminderEligibility', () => {
     it('marks eligible users behind goal during active hours', () => {
       const result = evaluateReminderEligibility({
@@ -135,10 +163,24 @@ describe('notificationEligibility', () => {
       expect(result.reasons).toContain('goal_met')
     })
 
-    it('blocks when already reminded today', () => {
-      const now = new Date('2024-06-01T18:00:00Z')
+    it('blocks when reminded within the hourly interval', () => {
+      const now = new Date('2024-06-01T10:30:00Z')
       const result = evaluateReminderEligibility({
         prefs: basePrefs,
+        timezone: 'UTC',
+        bankedToday: 5,
+        now,
+        lastReminderSentAt: new Date('2024-06-01T10:00:00Z'),
+      })
+
+      expect(result.eligible).toBe(false)
+      expect(result.reasons).toContain('reminder_sent_recently')
+    })
+
+    it('blocks when already reminded today on once-daily frequency', () => {
+      const now = new Date('2024-06-01T18:00:00Z')
+      const result = evaluateReminderEligibility({
+        prefs: { ...basePrefs, reminder_interval_hours: 24 },
         timezone: 'UTC',
         bankedToday: 5,
         now,
@@ -146,7 +188,7 @@ describe('notificationEligibility', () => {
       })
 
       expect(result.eligible).toBe(false)
-      expect(result.reasons).toContain('already_reminded_today')
+      expect(result.reasons).toContain('reminder_sent_recently')
     })
   })
 })

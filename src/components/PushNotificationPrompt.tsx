@@ -30,8 +30,8 @@ export function PushNotificationPrompt() {
     >
       <p className="text-sm font-semibold text-text-primary">Stay on track with push reminders</p>
       <p className="mt-1 text-sm text-text-muted">
-        We send one reminder per day if you are behind your goal, between 9am and 8pm in your
-        timezone. Change hours or pause in Settings.
+        We send hourly reminders if you are behind your goal, between 7am and 7pm in your
+        timezone. Change hours, frequency, or pause in Settings.
       </p>
       {error ? (
         <p className="mt-2 text-xs text-danger" role="alert">

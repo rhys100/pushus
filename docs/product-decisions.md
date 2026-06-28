@@ -313,8 +313,9 @@ For exploratory ideas without locked rules, see [product-roadmap.md](./product-r
 | **User timezone** for reminder timing | Beta |
 | **Group timezone** for competitions and leaderboards | Beta / Phase 2 |
 | **Injury/sub-out stops push reminders** | Beta |
-| Beta frequency: **at most one reminder per local day** | Beta |
-| Future reminder frequency: **hourly**, **every 2 hours**, **custom** | Future |
+| Beta frequency: **hourly**, **every 2 hours**, or **once per local day** (user-configurable) | Beta |
+| Default active hours for new users: **7am–7pm** | Beta |
+| Future reminder frequency: **custom intervals** | Future |
 | **Banter notifications:** opt-in only | Future |
 | **Weekly gentle check-in** while injury-paused | Future |
 | Friend nudge notifications | Future (mate graph) |

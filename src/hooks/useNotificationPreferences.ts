@@ -21,8 +21,9 @@ const DEFAULT_PREFERENCES: Omit<
   'user_id' | 'created_at' | 'updated_at' | 'last_reminder_sent_at'
 > = {
   push_enabled: false,
-  active_hours_start: 9,
+  active_hours_start: 7,
   active_hours_end: 20,
+  reminder_interval_hours: 1,
   daily_target: 20,
   injury_paused: false,
   injury_paused_until: null,
@@ -45,6 +46,7 @@ function preferencesPayload(
     push_enabled: next.push_enabled,
     active_hours_start: next.active_hours_start,
     active_hours_end: next.active_hours_end,
+    reminder_interval_hours: next.reminder_interval_hours,
     daily_target: next.daily_target,
     injury_paused: next.injury_paused,
     injury_paused_until: next.injury_paused_until,

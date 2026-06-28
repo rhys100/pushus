@@ -2,7 +2,7 @@
 
 **Status:** Phase 3 — web push reminders shipped.
 
-PushUS sends optional daily reminders when you are behind your goal during your chosen active hours. Reminders respect injury pause and only fire once per local day.
+PushUS sends optional reminders when you are behind your goal during your chosen active hours and frequency. Reminders respect injury pause. Frequency can be hourly, every 2 hours, or once per local day.
 
 ## Architecture
 
@@ -13,13 +13,18 @@ PushUS sends optional daily reminders when you are behind your goal during your 
 
 ## Eligibility rules
 
-A user receives at most one reminder per local day when all of the following are true:
+A user receives a reminder when all of the following are true:
 
 1. `push_enabled` is true and at least one enabled push subscription exists.
 2. Current local hour is within `[active_hours_start, active_hours_end)`.
 3. Injury pause is off, or `injury_paused_until` is in the past.
 4. Banked push-ups for today (across all groups) are below `daily_target`.
-5. No reminder has already been sent today (`last_reminder_sent_at`).
+5. Enough time has passed since the last reminder for the chosen `reminder_interval_hours`:
+   - **1** — at least one hour since `last_reminder_sent_at`
+   - **2** — at least two hours
+   - **24** — no reminder yet today (local timezone)
+
+Default for new users: hourly reminders between **7:00** and **20:00** (7pm inclusive). Existing users keep once-daily until they change frequency in Settings.
 
 Shared logic lives in `src/lib/notificationEligibility.ts` and is mirrored in the edge function.
 
@@ -96,7 +101,7 @@ curl -X POST "http://127.0.0.1:54321/functions/v1/send-push-reminders" \
 
 1. Open **Settings → Push reminders**.
 2. Tap **Turn on** — the browser asks for notification permission.
-3. Adjust active hours or enable **Injury pause** as needed.
+3. Adjust active hours, reminder frequency, or enable **Injury pause** as needed.
 
 ## Operations
 

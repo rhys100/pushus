@@ -10,7 +10,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
-_(Nothing yet.)_
+### Added
+
+- Customisable push reminder frequency: every hour, every 2 hours, or once per day
+- Default reminder window for new users: 7am–7pm, hourly
+
+### Changed
+
+- Existing users keep once-daily reminders until they change frequency in Settings
 
 ---
 

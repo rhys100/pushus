@@ -82,6 +82,7 @@ describe('notification_preferences RLS', () => {
           push_enabled: true,
           active_hours_start: 10,
           active_hours_end: 18,
+          reminder_interval_hours: 2,
           daily_target: 20,
           injury_paused: false,
           injury_paused_until: null,
