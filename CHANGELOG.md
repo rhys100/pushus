@@ -16,6 +16,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Board Day targets refresh immediately after saving a training plan (no stale 60s cache)
+- Logger handle tick animation resets after banking so later drags only tick on rep boundaries
 - Training plan save shows the real Supabase error instead of a generic toast (helps diagnose missing migration)
 - Circular logger snaps handle and haptic tick to each rep (1–10) while dragging, not only at a full lap
 - Drag count stays in sync when moving the handle backward to a lower rep mid-drag

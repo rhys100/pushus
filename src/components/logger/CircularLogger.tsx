@@ -167,13 +167,18 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
     angleRef.current = angle
     disabledRef.current = disabled
 
+    const resetLogger = useCallback(() => {
+      setHandleTickKey(0)
+      reset()
+    }, [reset])
+
     useImperativeHandle(
       ref,
       () => ({
         getCount: () => countRef.current,
-        reset,
+        reset: resetLogger,
       }),
-      [reset],
+      [resetLogger],
     )
 
     const updateRingVisuals = useCallback((totalAngle: number) => {

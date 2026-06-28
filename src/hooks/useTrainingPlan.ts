@@ -15,6 +15,7 @@ import {
   wizardAnswersFromPlanRow,
 } from '@/lib/training/planEngine'
 import type { TrainingPlanRow } from '@/types/gamification'
+import { groupDailyTargetsKeys } from '@/hooks/useGroupDailyTargets'
 
 const trainingPlanQueryKey = (userId: string | undefined, groupId: string | undefined) =>
   ['training-plan', userId, groupId] as const
@@ -131,6 +132,9 @@ export function useTrainingPlan(
     onSuccess: async (data) => {
       await queryClient.invalidateQueries({
         queryKey: trainingPlanQueryKey(userId, groupId),
+      })
+      await queryClient.invalidateQueries({
+        queryKey: groupDailyTargetsKeys.all,
       })
       queryClient.setQueryData(trainingPlanQueryKey(userId, groupId), data)
     },
