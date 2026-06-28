@@ -1,7 +1,19 @@
 ﻿import { execSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+
+function readAppVersion(): string {
+  try {
+    const pkg = JSON.parse(
+      readFileSync(path.resolve(__dirname, 'package.json'), 'utf8'),
+    ) as { version?: string }
+    return typeof pkg.version === 'string' ? pkg.version : '0.0.0'
+  } catch {
+    return '0.0.0'
+  }
+}
 
 function getBuildId(): string {
   try {
@@ -11,7 +23,7 @@ function getBuildId(): string {
   }
 }
 
-function appVersionPlugin(buildId: string): Plugin {
+function appVersionPlugin(buildId: string, version: string): Plugin {
   const bootstrapScript = `(function(){if(typeof fetch==="undefined")return;var m=document.querySelector('meta[name="pushus-build-id"]');if(!m)return;var c=m.getAttribute("content");if(!c||c==="dev")return;try{var u0=new URL(location.href);var requested=u0.searchParams.get("_v");if(requested){u0.searchParams.delete("_v");history.replaceState({},"",u0.toString());if(requested===c){sessionStorage.removeItem("pushus-reload-attempts-"+requested);return}}}catch(e){}fetch("/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(p){if(!p||!p.buildId||p.buildId===c)return;var attemptsKey="pushus-reload-attempts-"+p.buildId;var attempts=0;try{attempts=parseInt(sessionStorage.getItem(attemptsKey)||"0",10)||0}catch(e){}if(attempts>=3)return;try{sessionStorage.setItem(attemptsKey,String(attempts+1))}catch(e){}function go(){var u=new URL(location.href);u.searchParams.set("_v",p.buildId);location.replace(u.toString())}if("serviceWorker" in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){Promise.all(rs.map(function(r){return r.unregister()})).finally(go)})}else go()}).catch(function(){})})();`
 
   return {
@@ -26,7 +38,7 @@ function appVersionPlugin(buildId: string): Plugin {
       this.emitFile({
         type: 'asset',
         fileName: 'version.json',
-        source: `${JSON.stringify({ buildId }, null, 2)}\n`,
+        source: `${JSON.stringify({ version, buildId }, null, 2)}\n`,
       })
     },
   }
@@ -34,11 +46,13 @@ function appVersionPlugin(buildId: string): Plugin {
 
 export default defineConfig(({ mode }) => {
   const buildId = mode === 'development' ? 'dev' : getBuildId()
+  const appVersion = readAppVersion()
 
   return {
-    plugins: [react(), appVersionPlugin(buildId)],
+    plugins: [react(), appVersionPlugin(buildId, appVersion)],
     define: {
       __APP_BUILD_ID__: JSON.stringify(buildId),
+      __APP_VERSION__: JSON.stringify(appVersion),
     },
     resolve: {
       alias: {

@@ -26,6 +26,13 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-06-28 (reminder frequency)
+
+- Added `reminder_interval_hours` to `notification_preferences` (1, 2, or 24)
+- Settings: frequency picker (hourly / every 2 hours / once per day)
+- Default active hours for new users: 7am–7pm; existing users unchanged until they edit Settings
+- Eligibility logic updated in `notificationEligibility.ts` and `send-push-reminders` edge function
+
 ### 2026-06-28 (v1.0.1)
 
 #### Shipped

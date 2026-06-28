@@ -1,0 +1,46 @@
+---
+description: Semver, release docs, and version consistency checks for PushUS
+alwaysApply: true
+---
+
+# Versioning and releases
+
+PushUS uses **semver** (`MAJOR.MINOR.PATCH`) in `package.json` as the source of truth.
+
+## Files that must stay aligned
+
+On every **release** (not every tiny commit), these must match:
+
+- `package.json` → `version`
+- `package-lock.json` → root `version`
+- `CHANGELOG.md` → latest `## [x.y.z]` heading
+- `README.md` → `**v{x.y.z}**` row in **Current status** (mark as latest)
+- Git tag `v{x.y.z}` on the release commit
+- GitHub Release (optional but preferred for public releases)
+
+`public/version.json` and the built `version.json` asset include `version` + `buildId` (git short SHA) at build time.
+
+## During development
+
+- Log changes under **CHANGELOG → Unreleased**.
+- Keep README / roadmap / product-decisions in sync as features land (see `documentation.mdc`).
+
+## Releasing a version
+
+1. `npm run version:bump -- patch` (or `minor` / `major`) — bumps `package.json` + lockfile and stubs a CHANGELOG section.
+2. Fill in CHANGELOG, README status row, roadmap, product-decisions, dev-log.
+3. `npm run version:check` — must pass (also runs in CI).
+4. `npm test` — must pass.
+5. Commit, push, `git tag -a vX.Y.Z`, push tag, create GitHub Release.
+
+## Bump guidance
+
+| Bump | Use when |
+|------|----------|
+| **patch** | Bug fixes, small UX polish, docs-only release tagging |
+| **minor** | New user-visible features, no breaking change for self-hosters |
+| **major** | Breaking API, migration, or self-host deploy change |
+
+## CI gate
+
+`npm run version:check` fails if package, lockfile, CHANGELOG latest heading, and README status row disagree.

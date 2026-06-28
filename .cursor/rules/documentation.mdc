@@ -1,19 +1,40 @@
 ---
-description: Where to update PushUS documentation when making changes
+description: Keep README, roadmap, CHANGELOG, and dev-log updated as work ships
 alwaysApply: true
 ---
 
-# Documentation updates
+# Documentation updates (ongoing)
 
-When making changes, update documentation intentionally:
+Update docs **in the same work batch** as the code change — not as a separate cleanup later.
 
-- **README.md** — stable public-facing information only (positioning, status, high-level feature lists, links). Do not bloat with implementation noise or daily notes.
-- **CHANGELOG.md** — meaningful user-facing, operational, or security changes (under Unreleased until a release tag).
-- **docs/dev-log.md** — daily build progress; roll up to weekly/monthly summaries per docs/docs-maintenance.md.
-- **docs/product-decisions.md** — locked product rules from Rhys / planning Q&A.
-- **docs/product-roadmap.md** — future ideas and non-goals.
-- **docs/docs-maintenance.md** — doc workflow reference.
+## Every user-visible or operational change
 
-Do not duplicate product-decisions or roadmap content into README.
+When shipping a feature, fix, security patch, or deploy/config change, update:
 
-Never commit secrets or real env values in docs.
+| File | When |
+|------|------|
+| **CHANGELOG.md** | Always — under `## Unreleased` until a version bump; then move into the release section |
+| **docs/dev-log.md** | Short daily note (Shipped / Fixed / Security / Notes / Next) |
+| **README.md** | New or changed user-facing capability — `Implemented` checklist and/or `Current status` table |
+| **docs/product-roadmap.md** | Item moved from future → implemented, or scope changed |
+| **docs/product-decisions.md** | Rhys locks a new product rule in planning |
+
+Do not wait for a “docs pass”. If the code ships, the docs ship in the same commit or PR.
+
+## README rules
+
+- Stable public-facing information only (positioning, status, high-level feature lists, links).
+- Do not bloat with implementation noise or daily notes.
+- Do not duplicate full product-decisions or roadmap content.
+
+## What does not need README
+
+Internal refactors, test-only changes, comment edits — unless user-visible.
+
+## Secrets
+
+Never commit secrets or real env values in docs. Use placeholders.
+
+## Reference
+
+Full workflow and versioning: [docs/docs-maintenance.md](docs/docs-maintenance.md)

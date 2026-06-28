@@ -3,6 +3,10 @@ import { isNewerBuild, parseAppVersionPayload } from '@/lib/appVersion'
 
 test('parseAppVersionPayload accepts valid payload', () => {
   expect(parseAppVersionPayload({ buildId: 'abc123' })).toEqual({ buildId: 'abc123' })
+  expect(parseAppVersionPayload({ buildId: 'abc123', version: '1.0.1' })).toEqual({
+    buildId: 'abc123',
+    version: '1.0.1',
+  })
 })
 
 test('parseAppVersionPayload rejects invalid payload', () => {

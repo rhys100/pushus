@@ -17,6 +17,8 @@
     "test:billing": "vitest run --config vitest.billing.config.ts",
     "test:integration": "node scripts/run-integration-tests.mjs",
     "test:e2e": "playwright test",
+    "version:check": "node scripts/check-version.mjs",
+    "version:bump": "node scripts/bump-version.mjs",
     "licenses:generate": "license-checker --production --out THIRD_PARTY_NOTICES.md"
   },
   "dependencies": {

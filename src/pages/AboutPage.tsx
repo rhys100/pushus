@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Button, Card } from '@/components/ui'
 import { appConfig } from '@/lib/config'
 import { APP_BUILD_ID } from '@/lib/buildId'
+import { APP_VERSION } from '@/lib/appVersionLabel'
 import { PAGE_BOTTOM_PADDING } from '@/lib/layout'
 
 function licenseUrl(): string {
@@ -36,7 +37,13 @@ export function AboutPage() {
           <section className="space-y-2">
             <h2 className="text-sm font-semibold text-text-primary">Deployment</h2>
             <p className="text-sm text-text-muted">
-              You are using <span className="text-text-primary">{deploymentLabel}</span>.
+              You are using <span className="text-text-primary">{deploymentLabel}</span>
+              {APP_VERSION !== '0.0.0' ? (
+                <>
+                  {' '}
+                  (<span className="font-mono text-text-primary">v{APP_VERSION}</span>)
+                </>
+              ) : null}
             </p>
             {APP_BUILD_ID !== 'dev' ? (
               <p className="text-xs text-text-muted">

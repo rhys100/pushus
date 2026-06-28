@@ -2,31 +2,85 @@
 
 How we keep public docs clean while the project moves fast.
 
+**Rule for Cursor and humans:** update README, CHANGELOG, roadmap, and dev-log **as you go** — in the same batch as the code. See also `.cursor/rules/documentation.mdc` and `.cursor/rules/versioning.mdc`.
+
 ---
 
 ## File roles
 
 | File | Use for | Do not use for |
 |------|---------|----------------|
-| [README.md](../README.md) | Stable public-facing overview | Daily fixes, Cursor task noise |
-| [CHANGELOG.md](../CHANGELOG.md) | Meaningful user-facing or ops changes | Every tiny commit |
+| [README.md](../README.md) | Stable public-facing overview; implemented checklist; release status table | Daily fixes, Cursor task noise |
+| [CHANGELOG.md](../CHANGELOG.md) | Meaningful user-facing or ops changes (Unreleased → release section) | Every tiny commit |
 | [docs/dev-log.md](./dev-log.md) | Daily progress; weekly/monthly rollups | Locked product law |
 | [docs/product-decisions.md](./product-decisions.md) | Locked Q&A decisions | Speculative ideas |
-| [docs/product-roadmap.md](./product-roadmap.md) | Future direction and non-goals | Implementation tickets |
+| [docs/product-roadmap.md](./product-roadmap.md) | Future direction and non-goals; mark items implemented | Implementation tickets |
 | [docs/implementation-plan.md](./implementation-plan.md) | Engineering slices and test gates | Marketing copy |
 
 ---
 
-## Workflow for Cursor and humans
+## Workflow (ongoing — not end-of-week only)
 
-1. **Do not dump every tiny fix into README.**
-2. **CHANGELOG** — add entries when something matters to users, operators, or security (grouped under Unreleased until a release tag).
-3. **dev-log** — add a short daily note when useful (Shipped / Fixed / Security / Notes / Next).
-4. **End of week** — summarise daily notes into **Weekly summaries** in dev-log; trim redundant daily detail.
-5. **End of month** — summarise weeks into **Monthly summaries**; archive or delete noise that is fully captured upstream.
-6. **product-decisions** — when Rhys locks a rule in planning, add it there (not README).
-7. **product-roadmap** — when exploring future ideas, add there (not README).
-8. **README** — update only when public positioning, status labels, or top-level feature lists change.
+### On every meaningful change
+
+1. **CHANGELOG** — add under `## Unreleased` (or the active release section if mid-release).
+2. **dev-log** — short daily note when useful (Shipped / Fixed / Security / Notes / Next).
+3. **README** — tick `Implemented` items and update status when users would notice.
+4. **product-roadmap** — move shipped ideas from future lists to implemented.
+5. **product-decisions** — when Rhys locks a rule in planning.
+
+### Rollups
+
+6. **End of week** — summarise daily notes into **Weekly summaries** in dev-log.
+7. **End of month** — summarise weeks into **Monthly summaries**.
+
+### README discipline
+
+- Do not dump every tiny fix into README.
+- Update when public positioning, status labels, or top-level feature lists change.
+
+---
+
+## Versioning
+
+### Source of truth
+
+`package.json` `version` field (semver).
+
+### Must match on release
+
+| File | Check |
+|------|-------|
+| `package.json` | `version` |
+| `package-lock.json` | root `version` |
+| `CHANGELOG.md` | latest `## [x.y.z]` heading |
+| `README.md` | `**v{x.y.z}**` in Current status |
+| Git tag | `v{x.y.z}` |
+| Built `version.json` | `version` + `buildId` (from Vite build) |
+
+### Commands
+
+```bash
+npm run version:check    # CI gate — all of the above except git tag
+npm run version:bump -- patch   # or minor / major
+```
+
+`version:bump` runs `npm version`, resets CHANGELOG Unreleased, and inserts a stub release section. You still fill in notes and update README / roadmap / dev-log before commit.
+
+### Release checklist
+
+1. `npm run version:bump -- patch` (or minor/major)
+2. Edit CHANGELOG release section
+3. README — new `**vX.Y.Z**` status row (latest)
+4. roadmap / product-decisions / dev-log as needed
+5. `npm run version:check && npm test`
+6. Commit, push, tag `vX.Y.Z`, GitHub Release
+
+### Semver
+
+- **patch** — fixes, polish, non-breaking tweaks
+- **minor** — new features, backward compatible for self-hosters
+- **major** — breaking migrations or deploy assumptions
 
 ---
 

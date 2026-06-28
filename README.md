@@ -186,3 +186,4 @@ Day-to-day notes do not live in this README.
 - **Release-worthy changes:** [CHANGELOG.md](CHANGELOG.md)
 - **Build progress and summaries:** [docs/dev-log.md](docs/dev-log.md)
 - **How we maintain docs:** [docs/docs-maintenance.md](docs/docs-maintenance.md)
+- **Version checks:** `npm run version:check` before release; `npm run version:bump -- patch` to start a new version
