@@ -61,3 +61,21 @@
 .logger-handle-idle {
   animation: logger-handle-idle 2.4s var(--ease-out) infinite;
 }
+
+@keyframes logger-handle-tick {
+  0% {
+    transform: scale(1);
+  }
+
+  35% {
+    transform: scale(1.22);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.logger-handle-tick {
+  animation: logger-handle-tick var(--duration-fast) var(--ease-out);
+}

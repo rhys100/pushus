@@ -351,19 +351,19 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
 
           {showHandle ? (
             <circle
+              key={isDragging ? `tick-${pulseKey}` : 'handle'}
               cx={handlePoint.x}
               cy={handlePoint.y}
               r={HANDLE_RADIUS}
               fill="var(--color-accent)"
               stroke="var(--color-bg)"
               strokeWidth={3}
-              className={
-                showZeroHint
-                  ? 'logger-handle-pulse origin-center'
-                  : count === 0
-                    ? 'logger-handle-idle origin-center'
-                    : undefined
-              }
+              className={cn(
+                'origin-center',
+                showZeroHint && 'logger-handle-pulse',
+                !showZeroHint && count === 0 && !isDragging && 'logger-handle-idle',
+                isDragging && pulseKey > 0 && 'logger-handle-tick',
+              )}
               style={{
                 transformOrigin: `${handlePoint.x}px ${handlePoint.y}px`,
                 willChange: isDragging ? 'transform' : undefined,

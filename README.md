@@ -27,6 +27,7 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 
 | Label | Meaning |
 |-------|---------|
+| **v1.0.1** | Per-rep haptic feedback on circular logger (latest) |
 | **v1.0.0** | First public release (Community beta) |
 | **Private beta** | Invite and allowlist-controlled access on the official deployment |
 | **Community edition** | Free, self-hosted; billing disabled by default |
@@ -57,6 +58,8 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 - [x] Edit and delete your entries
 - [x] Daily total and today's entries
 - [x] Entry audit log foundation
+- [x] Per-rep haptic tick while dragging (Android and supporting browsers)
+- [x] Handle snap animation on each rep for tactile feedback
 
 ### Social and group
 

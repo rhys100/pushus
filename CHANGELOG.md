@@ -14,6 +14,19 @@ _(Nothing yet.)_
 
 ---
 
+## [1.0.1] - 2026-06-28
+
+### Added
+
+- Per-rep haptic feedback while dragging the circular logger (one tick per push-up; pattern when crossing multiple reps quickly)
+- Handle snap animation on each rep during drag for clearer tactile feedback
+
+### Notes
+
+- Haptics use the Web Vibration API where supported (typically Android Chrome). iOS Safari often does not vibrate for web apps; visual handle snap still applies.
+
+---
+
 ## [1.0.0] - 2026-06-28
 
 First public release — PushUS Community beta.
@@ -50,4 +63,5 @@ First public release — PushUS Community beta.
 
 ## Release history
 
+- **1.0.1** (2026-06-28) — Per-rep haptic feedback and handle snap on circular logger drag
 - **1.0.0** (2026-06-28) — Community beta: core loop, private beta, push reminders, open-source release

@@ -26,6 +26,31 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-06-28 (v1.0.1)
+
+#### Shipped
+
+- Per-rep haptic feedback on circular logger drag (`repHaptic.ts`, `useCircularCounter`)
+- Handle snap animation on each rep while dragging
+- Docs: README, CHANGELOG 1.0.1, roadmap, product-decisions
+
+#### Fixed
+
+- (none)
+
+#### Security
+
+- (none)
+
+#### Notes / decisions
+
+- Multi-rep fast drags now pulse up to six ticks; single rep = one short vibrate
+- iOS Safari web typically has no vibration API — visual snap is the fallback
+
+#### Next
+
+- Deploy and phone spot-check on Android
+
 ### 2026-06-28 (v1.0.0)
 
 #### Shipped

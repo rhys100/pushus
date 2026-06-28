@@ -21,6 +21,8 @@ Public-friendly view of where PushUS is today and where it may go.
 
 - Direct-drag circular logger (no plus button); one lap = 10 push-ups
 - Bank Push-ups, undo, edit/delete entries, daily total, entry audit foundation
+- Per-rep haptic tick while dragging (where the browser supports vibration)
+- Handle snap animation on each rep during drag
 
 ### Social and group
 

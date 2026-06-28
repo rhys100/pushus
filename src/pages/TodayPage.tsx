@@ -22,12 +22,6 @@ import { DayProgressCard } from '@/components/today/DayProgressCard'
 import { TodayEntriesList } from '@/components/today/TodayEntriesList'
 import { useAuth } from '@/providers/AuthProvider'
 
-function vibrateOnRepTick() {
-  if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-    navigator.vibrate(10)
-  }
-}
-
 export function TodayPage() {
   const { toast } = useToast()
   const { user, profile } = useAuth()
@@ -145,7 +139,6 @@ export function TodayPage() {
 
       <CircularLogger
         ref={loggerRef}
-        onRepTick={vibrateOnRepTick}
         onCountChange={setDragCount}
         onCanBankChange={setCanBank}
         onBank={handleBank}
