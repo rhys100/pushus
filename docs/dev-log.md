@@ -26,6 +26,13 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-06-28 (nav + settings hub + training plan)
+
+- Bottom nav: Log (hero), Board, Feed, Group, Settings (bottom-right)
+- Settings hub: Personal (profile, training plan, push reminders) + Group admin (invites, join requests, billing)
+- Training wizard persists to `user_training_plans` and updates daily target on Log + notifications
+- Group tab simplified to members list
+
 ### 2026-06-28 (reminder frequency)
 
 - Added `reminder_interval_hours` to `notification_preferences` (1, 2, or 24)

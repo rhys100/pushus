@@ -2,7 +2,7 @@ import { Button } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { usePushNotificationPrompt } from '@/hooks/usePushNotificationPrompt'
 
-const TAB_NAV_PATHS = ['/leaderboard', '/activity', '/group'] as const
+const TAB_NAV_PATHS = ['/leaderboard', '/activity', '/group', '/settings'] as const
 
 function promptBottomClass(pathname: string): string {
   if (TAB_NAV_PATHS.some((path) => pathname.startsWith(path))) {

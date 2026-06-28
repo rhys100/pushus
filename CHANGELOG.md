@@ -14,9 +14,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 - Customisable push reminder frequency: every hour, every 2 hours, or once per day
 - Default reminder window for new users: 7am–7pm, hourly
+- Settings tab in bottom nav with personal and group admin sections
+- Training plan wizard saves daily target and syncs to Log screen and push reminders
 
 ### Changed
 
+- Bottom nav: **Log** (hero tab), shorter labels for Board/Feed, **Settings** bottom-right
+- Group tab focuses on members; admin tools (join requests, invites, billing) moved to Settings
+- Training wizard recommends a personalised daily target from max clean set (conservative formula)
 - Existing users keep once-daily reminders until they change frequency in Settings
 
 ### Fixed

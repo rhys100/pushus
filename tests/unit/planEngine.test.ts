@@ -20,7 +20,7 @@ describe('planEngine', () => {
     expect(plan.disclaimer).toMatch(/not medical advice/i)
   })
 
-  it('recommendFromWizard returns placeholder recommendation with static defaults', () => {
+  it('recommendFromWizard returns conservative personalised recommendation', () => {
     const answers: WizardAnswers = {
       maxCleanSet: 40,
       trainingLevel: 'advanced',
@@ -31,14 +31,14 @@ describe('planEngine', () => {
 
     const recommendation = recommendFromWizard(answers)
 
-    expect(recommendation.isPlaceholder).toBe(true)
-    expect(recommendation.plan).toEqual(getDefaultPlan())
-    expect(recommendation.summary).toMatch(/20 reps/)
+    expect(recommendation.isPlaceholder).toBe(false)
+    expect(recommendation.plan.dailyTarget).toBe(40)
+    expect(recommendation.summary).toMatch(/40 reps/)
   })
 
-  it('ignores wizard inputs when draft formulas are disabled', () => {
+  it('varies conservative recommendations from max clean set', () => {
     const beginner = recommendFromWizard({
-      maxCleanSet: 5,
+      maxCleanSet: 10,
       trainingLevel: 'beginner',
       preferredTrainingDays: [1, 3, 5],
       sorenessWarningAcknowledged: false,
@@ -53,7 +53,7 @@ describe('planEngine', () => {
       challengeIntensity: 'intense',
     })
 
-    expect(beginner.plan).toEqual(advanced.plan)
+    expect(beginner.plan.dailyTarget).toBeLessThan(advanced.plan.dailyTarget)
   })
 
   it('satisfies TrainingPlan interface for downstream consumers', () => {

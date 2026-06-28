@@ -14,7 +14,7 @@ export function TrainingSettingsPage() {
   const { toast } = useToast()
   const { user } = useAuth()
   const { activeGroup } = useActiveGroup()
-  const { savePlan, saving, wizardCompleted, dailyTarget } = useTrainingPlan(
+  const { savePlan, saving, wizardCompleted } = useTrainingPlan(
     user?.id,
     activeGroup?.id,
   )

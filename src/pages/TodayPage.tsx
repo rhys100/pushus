@@ -134,7 +134,11 @@ export function TodayPage() {
         />
       ) : null}
 
-      <DayProgressCard bankedToday={dayTotal} loading={totalLoading && dayTotal === 0} />
+      <DayProgressCard
+        bankedToday={dayTotal}
+        loading={(totalLoading && dayTotal === 0) || planLoading}
+        dailyTarget={dailyTarget}
+      />
 
       <CircularLogger
         ref={loggerRef}
