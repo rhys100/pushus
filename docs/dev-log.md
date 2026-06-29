@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-06-29 (ring arc spacing)
+
+**Fixed**
+- Log ring progress arc now ends at rep slot boundaries (36° each) instead of handle centre angles, so reps 1–10 look evenly spaced
+
 ### 2026-06-29 (mate names slice)
 
 **Shipped**

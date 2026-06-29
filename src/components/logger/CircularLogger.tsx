@@ -14,6 +14,7 @@ import {
   angleToTotalCount,
   CIRCULAR_COUNTER,
   countToAngle,
+  countToProgressArcEnd,
   normalizeAngleDelta,
   rawAngleFromPointerDown,
   ringAngleToRawAngle,
@@ -190,7 +191,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
     const handlePoint = polarToCartesian(RING_CENTER, RING_CENTER, RING_RADIUS, handleAngle)
     const showZeroHint = showDragHint && displayCount === 0 && !disabled && !isDragging
     const showHandle = !disabled
-    const progressEnd = completedLap ? 360 : displayAngle
+    const progressEnd = countToProgressArcEnd(displayCount)
     const arcPath =
       !completedLap && progressEnd > 0
         ? describeArc(RING_CENTER, RING_CENTER, RING_RADIUS, 0, progressEnd)

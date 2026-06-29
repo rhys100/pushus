@@ -17,6 +17,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Circular logger ring progress uses even 36° segments for reps 1–10 (first wedge no longer half-sized)
 - `update_my_profile` now checks private-beta app access (same gate as onboarding profile save)
 ---
 

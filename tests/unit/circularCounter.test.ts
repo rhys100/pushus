@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   angleToTotalCount,
   countToAngle,
+  countToProgressArcEnd,
   countWithinRevolution,
   CIRCULAR_COUNTER,
   normalizeAngleDelta,
@@ -60,6 +61,35 @@ describe('circularCounter', () => {
     it('supports multi-revolution totals', () => {
       expect(angleToTotalCount(1080)).toBe(30)
       expect(angleToTotalCount(1116)).toBe(32)
+    })
+  })
+
+  describe('countToProgressArcEnd', () => {
+    it('returns 0 for zero or negative counts', () => {
+      expect(countToProgressArcEnd(0)).toBe(0)
+      expect(countToProgressArcEnd(-1)).toBe(0)
+    })
+
+    it('maps each rep to an equal 36° slot boundary', () => {
+      for (let rep = 1; rep <= 9; rep++) {
+        expect(countToProgressArcEnd(rep)).toBe(rep * 36)
+      }
+    })
+
+    it('adds exactly 36° per rep step within a lap', () => {
+      for (let rep = 2; rep <= 9; rep++) {
+        expect(countToProgressArcEnd(rep) - countToProgressArcEnd(rep - 1)).toBe(36)
+      }
+    })
+
+    it('returns full lap at multiples of 10', () => {
+      expect(countToProgressArcEnd(10)).toBe(360)
+      expect(countToProgressArcEnd(20)).toBe(360)
+    })
+
+    it('wraps within-lap progress for multi-lap counts', () => {
+      expect(countToProgressArcEnd(11)).toBe(36)
+      expect(countToProgressArcEnd(15)).toBe(180)
     })
   })
 

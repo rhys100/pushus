@@ -52,6 +52,21 @@ export function snapAngleToRep(totalAngleDegrees: number): number {
   return countToAngle(angleToTotalCount(totalAngleDegrees))
 }
 
+/** Map rep count to progress arc end angle (slot boundary, not handle centre). */
+export function countToProgressArcEnd(count: number): number {
+  if (count <= 0) {
+    return 0
+  }
+
+  const withinLap = count % REPS_PER_REVOLUTION
+
+  if (withinLap === 0) {
+    return DEGREES_PER_REVOLUTION
+  }
+
+  return withinLap * DEGREES_PER_REP
+}
+
 /** Snap a pointer ring angle (0–360°) to the first-lap rep slot centre. */
 export function rawAngleFromPointerDown(ringAngle: number): number {
   return Math.max(0, snapAngleToRep(ringAngle))
