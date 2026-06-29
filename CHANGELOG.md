@@ -29,7 +29,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Log page layout:** ring and inline Bank CTA at top; compact today's plan below; removed top private-beta banner strip (~32px reclaimed)
 - Circular logger: drag from anywhere on the ring with snap-to-rep on touch; aligned pointer/ring angle math; handle stays on track (no scale flash)
 - Stronger tiered drag haptics (18ms notch; stronger pulses at reps 5 and 10)
-- Board Day view: cleaner progress layout with full-width bar and `current/target` fraction (removed duplicate rep column)
+- Board Day view: single-line rows with inline progress bar and `current/target` fraction
 - Group invite message: richer two-paragraph copy describing PushUS (leaderboards, training plan) without naming the group
 
 ### Fixed

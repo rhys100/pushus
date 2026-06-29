@@ -4,6 +4,7 @@ import { AppUpdateChecker } from '@/components/AppUpdateChecker'
 import { RequireAuth } from '@/components/auth/RequireAuth'
 import { TabLayout } from '@/components/layout/TabLayout'
 import { Skeleton } from '@/components/ui'
+import { useNotificationClickNavigation } from '@/hooks/useNotificationClickNavigation'
 import { TodayPage } from '@/pages/TodayPage'
 
 const PushNotificationPrompt = lazy(() =>
@@ -78,9 +79,15 @@ function LazyPage({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<PageLoader />}>{children}</Suspense>
 }
 
+function NotificationClickNavigation() {
+  useNotificationClickNavigation()
+  return null
+}
+
 export default function App() {
   return (
     <>
+      <NotificationClickNavigation />
       <AppUpdateChecker />
       <Suspense fallback={null}>
         <PushNotificationPrompt />

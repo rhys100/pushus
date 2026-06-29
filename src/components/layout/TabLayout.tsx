@@ -4,7 +4,6 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { TabPageMetaProvider, useTabPageMetaContext } from '@/components/layout/TabPageMeta'
 import { Skeleton } from '@/components/ui/Skeleton'
 import type { NavItem } from '@/components/ui/BottomNav'
-import { useNotificationClickNavigation } from '@/hooks/useNotificationClickNavigation'
 
 const navRoutes: Record<NavItem, string> = {
   log: '/today',
@@ -35,8 +34,6 @@ function TabLayoutShell() {
   const navigate = useNavigate()
   const { meta } = useTabPageMetaContext()
   const isToday = location.pathname.startsWith('/today')
-
-  useNotificationClickNavigation()
 
   const handleNavigate = useCallback(
     (item: NavItem) => {

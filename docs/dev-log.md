@@ -117,6 +117,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 **Deploy**
 - Hosted Supabase needs migration `0022_entry_reps_in_reserve` (`npx supabase db push`)
 
+### 2026-06-29 (board single-line rows)
+
+**Changed**
+- Board Day rows collapsed to one line: rank, emoji, name, inline bar, fraction
+
 ### 2026-06-29 (board progress layout)
 
 **Changed**

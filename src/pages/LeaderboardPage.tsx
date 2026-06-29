@@ -68,45 +68,6 @@ type LeaderboardRowProps = {
   targetsLoading?: boolean
 }
 
-function MemberIdentity({
-  entry,
-  isCurrentUser,
-  compact = false,
-}: {
-  entry: LeaderboardEntry
-  isCurrentUser: boolean
-  compact?: boolean
-}) {
-  if (compact) {
-    return (
-      <div className="flex min-w-0 items-center gap-2">
-        <span
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bg text-lg leading-none"
-          aria-hidden="true"
-        >
-          {entry.avatar_emoji}
-        </span>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-text-primary">{entry.display_name}</p>
-          {isCurrentUser ? (
-            <p className="truncate text-xs text-text-muted">You</p>
-          ) : null}
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <AvatarChip
-      emoji={entry.avatar_emoji}
-      name={entry.display_name}
-      subtitle={isCurrentUser ? 'You' : undefined}
-      active={isCurrentUser}
-      className="w-full max-w-none border-0 bg-transparent px-0 py-0"
-    />
-  )
-}
-
 function LeaderboardRow({
   entry,
   isCurrentUser,
@@ -120,43 +81,47 @@ function LeaderboardRow({
     return (
       <li
         className={cn(
-          'px-4 py-3.5',
+          'flex items-center gap-2 px-4 py-2.5',
           isCurrentUser && 'bg-accent-muted/30',
         )}
       >
-        <div className="flex items-start gap-3">
-          <RankBadge rank={rank} muted={allZero || entry.total === 0} />
+        <RankBadge rank={rank} muted={allZero || entry.total === 0} />
 
-          <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-3">
-              <MemberIdentity entry={entry} isCurrentUser={isCurrentUser} compact />
+        <span
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bg text-base leading-none"
+          aria-hidden="true"
+        >
+          {entry.avatar_emoji}
+        </span>
 
-              {targetsLoading ? (
-                <Skeleton className="mt-1 h-4 w-12 shrink-0" />
-              ) : dayTarget ? (
-                <GoalProgressFraction
-                  current={entry.total}
-                  target={dayTarget.target}
-                  isRestDay={dayTarget.isRestDay}
-                  className="mt-1 shrink-0"
-                />
-              ) : null}
-            </div>
+        <p className="w-[4.5rem] shrink-0 truncate text-sm font-medium text-text-primary">
+          {entry.display_name}
+        </p>
 
-            <div className="mt-2.5 pl-10">
-              {targetsLoading ? (
-                <Skeleton className="h-2.5 w-full rounded-full" />
-              ) : dayTarget ? (
-                <GoalProgressBar
-                  current={entry.total}
-                  target={dayTarget.target}
-                  isRestDay={dayTarget.isRestDay}
-                  ariaLabel={`${entry.display_name} daily push-up progress`}
-                />
-              ) : null}
-            </div>
-          </div>
-        </div>
+        {targetsLoading ? (
+          <Skeleton className="h-2 min-w-12 flex-1 rounded-full" />
+        ) : dayTarget && !dayTarget.isRestDay ? (
+          <GoalProgressBar
+            inline
+            current={entry.total}
+            target={dayTarget.target}
+            className="min-w-12 flex-1"
+            ariaLabel={`${entry.display_name} daily push-up progress`}
+          />
+        ) : (
+          <span className="min-w-12 flex-1" aria-hidden="true" />
+        )}
+
+        {targetsLoading ? (
+          <Skeleton className="h-4 w-12 shrink-0" />
+        ) : dayTarget ? (
+          <GoalProgressFraction
+            current={entry.total}
+            target={dayTarget.target}
+            isRestDay={dayTarget.isRestDay}
+            className="shrink-0"
+          />
+        ) : null}
       </li>
     )
   }
@@ -171,7 +136,13 @@ function LeaderboardRow({
       <RankBadge rank={rank} muted={allZero || entry.total === 0} />
 
       <div className="min-w-0 flex-1">
-        <MemberIdentity entry={entry} isCurrentUser={isCurrentUser} />
+        <AvatarChip
+          emoji={entry.avatar_emoji}
+          name={entry.display_name}
+          subtitle={isCurrentUser ? 'You' : undefined}
+          active={isCurrentUser}
+          className="w-full max-w-none border-0 bg-transparent px-0 py-0"
+        />
       </div>
 
       <div className="shrink-0 text-right">
