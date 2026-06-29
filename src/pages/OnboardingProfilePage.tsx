@@ -23,6 +23,7 @@ export function OnboardingProfilePage() {
   const { refreshGroup } = useActiveGroup()
 
   const [displayName, setDisplayName] = useState('')
+  const [nameInitial, setNameInitial] = useState('')
   const [emoji, setEmoji] = useState<string>(AVATAR_EMOJIS[0])
   const [timezone, setTimezone] = useState(detectTimezone)
   const [saving, setSaving] = useState(false)
@@ -31,6 +32,7 @@ export function OnboardingProfilePage() {
   useEffect(() => {
     if (!profile) return
     setDisplayName(profile.display_name)
+    setNameInitial(profile.name_initial ?? '')
     setEmoji(profile.avatar_emoji)
     setTimezone(profile.timezone || detectTimezone())
   }, [profile])
@@ -63,6 +65,7 @@ export function OnboardingProfilePage() {
       p_avatar_emoji: emoji,
       p_timezone: timezone,
       p_invite_code: inviteCode,
+      p_name_initial: nameInitial.trim() || null,
     })
 
     if (error) {
@@ -139,6 +142,30 @@ export function OnboardingProfilePage() {
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
                 )}
               />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="nameInitial" className="text-sm font-medium text-text-primary">
+                Initial <span className="font-normal text-text-muted">(optional)</span>
+              </label>
+              <input
+                id="nameInitial"
+                type="text"
+                maxLength={1}
+                inputMode="text"
+                autoComplete="off"
+                value={nameInitial}
+                onChange={(e) => setNameInitial(e.target.value.replace(/[^A-Za-z]/g, '').slice(0, 1))}
+                placeholder="E"
+                className={cn(
+                  'w-20 rounded-[var(--radius-md)] border border-border bg-bg px-4 py-3',
+                  'text-sm text-text-primary placeholder:text-text-muted',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                )}
+              />
+              <p className="text-xs text-text-muted">
+                Add a letter so mates can tell you apart — e.g. Sam T.
+              </p>
             </div>
 
             <div className="space-y-2">

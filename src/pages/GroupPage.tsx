@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -7,13 +7,19 @@ import {
   Card,
   EmptyState,
   Skeleton,
+  useToast,
 } from '@/components/ui'
 import { BillingBanner } from '@/components/billing/BillingBanner'
+import { MemberAliasSheet } from '@/components/group/MemberAliasSheet'
 import { useTabPageMeta } from '@/components/layout/TabPageMeta'
 import { supabase } from '@/lib/supabase'
 import { billingConfig } from '@/lib/billing'
+import { formatMemberListName } from '@/lib/memberDisplayName'
+import { getErrorMessage } from '@/lib/errors'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 import { useGroupBillingStatus, useGroupSubscription } from '@/hooks/useBilling'
+import { useMemberAlias } from '@/hooks/useMemberAlias'
+import { useAuth } from '@/providers/AuthProvider'
 import type { GroupMemberWithProfile } from '@/types/database'
 
 async function fetchMembers(groupId: string): Promise<GroupMemberWithProfile[]> {
@@ -39,11 +45,15 @@ function roleLabel(role: string): string {
 
 export function GroupPage() {
   const navigate = useNavigate()
+  const { toast } = useToast()
+  const { user } = useAuth()
   const { activeGroup, role } = useActiveGroup()
   const groupId = activeGroup?.id
   const isOwner = role === 'owner'
   const billingStatusQuery = useGroupBillingStatus(groupId)
   const subscriptionQuery = useGroupSubscription(groupId)
+  const aliasMutation = useMemberAlias(groupId)
+  const [aliasTarget, setAliasTarget] = useState<GroupMemberWithProfile | null>(null)
 
   const membersQuery = useQuery({
     queryKey: ['group-members', groupId],
@@ -67,6 +77,42 @@ export function GroupPage() {
     subtitle: memberSubtitle,
   })
 
+  async function handleSaveAlias(alias: string) {
+    if (!aliasTarget) return
+
+    try {
+      await aliasMutation.mutateAsync({
+        memberUserId: aliasTarget.user_id,
+        alias,
+      })
+      toast({ message: 'Mate label saved.', variant: 'success' })
+      setAliasTarget(null)
+    } catch (error) {
+      toast({
+        message: getErrorMessage(error, 'Could not save label.'),
+        variant: 'danger',
+      })
+    }
+  }
+
+  async function handleClearAlias() {
+    if (!aliasTarget) return
+
+    try {
+      await aliasMutation.mutateAsync({
+        memberUserId: aliasTarget.user_id,
+        alias: null,
+      })
+      toast({ message: 'Mate label cleared.', variant: 'success' })
+      setAliasTarget(null)
+    } catch (error) {
+      toast({
+        message: getErrorMessage(error, 'Could not clear label.'),
+        variant: 'danger',
+      })
+    }
+  }
+
   if (!activeGroup) {
     return (
       <EmptyState
@@ -79,6 +125,7 @@ export function GroupPage() {
   }
 
   const showMembersSkeleton = membersQuery.isLoading && members.length === 0
+  const aliasProfile = aliasTarget?.profiles
 
   return (
     <div className="space-y-4 pb-4">
@@ -97,7 +144,10 @@ export function GroupPage() {
       ) : null}
 
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-text-primary">Members</h2>
+        <div className="flex items-baseline justify-between gap-2">
+          <h2 className="text-sm font-semibold text-text-primary">Members</h2>
+          <p className="text-xs text-text-muted">Tap a mate to rename for yourself</p>
+        </div>
         {showMembersSkeleton ? (
           <div className="space-y-2">
             <Skeleton className="h-14 w-full rounded-[var(--radius-lg)]" />
@@ -108,33 +158,72 @@ export function GroupPage() {
           </p>
         ) : members.length > 0 ? (
           <div className="space-y-2">
-            {members.map((member) => (
-              <Card key={member.id} padding="sm">
-                <div className="flex items-center justify-between gap-3">
-                  <AvatarChip
-                    emoji={member.profiles?.avatar_emoji ?? '💪'}
-                    name={member.profiles?.display_name ?? 'Member'}
-                    className="flex-1 border-0 bg-transparent p-0"
-                  />
-                  <Badge
-                    variant={
-                      member.role === 'owner'
-                        ? 'accent'
-                        : member.role === 'admin'
-                          ? 'warning'
-                          : 'neutral'
-                    }
-                  >
-                    {roleLabel(member.role)}
-                  </Badge>
-                </div>
-              </Card>
-            ))}
+            {members.map((member) => {
+              const profile = member.profiles
+              const displayName = profile
+                ? formatMemberListName(profile, member.viewer_alias)
+                : 'Member'
+              const isSelf = member.user_id === user?.id
+              const canRename = !isSelf && Boolean(profile)
+
+              return (
+                <Card
+                  key={member.id}
+                  padding="sm"
+                  className={canRename ? 'cursor-pointer transition-colors hover:border-accent/30' : undefined}
+                  onClick={canRename ? () => setAliasTarget(member) : undefined}
+                  onKeyDown={
+                    canRename
+                      ? (event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault()
+                            setAliasTarget(member)
+                          }
+                        }
+                      : undefined
+                  }
+                  role={canRename ? 'button' : undefined}
+                  tabIndex={canRename ? 0 : undefined}
+                  aria-label={canRename ? `Rename ${displayName}` : undefined}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <AvatarChip
+                      emoji={profile?.avatar_emoji ?? '💪'}
+                      name={displayName}
+                      className="flex-1 border-0 bg-transparent p-0"
+                    />
+                    <Badge
+                      variant={
+                        member.role === 'owner'
+                          ? 'accent'
+                          : member.role === 'admin'
+                            ? 'warning'
+                            : 'neutral'
+                      }
+                    >
+                      {roleLabel(member.role)}
+                    </Badge>
+                  </div>
+                </Card>
+              )
+            })}
           </div>
         ) : (
           <EmptyState title="No members yet" description="Invite someone to get started." />
         )}
       </section>
+
+      {aliasProfile ? (
+        <MemberAliasSheet
+          open={Boolean(aliasTarget)}
+          saving={aliasMutation.isPending}
+          profile={aliasProfile}
+          currentAlias={aliasTarget?.viewer_alias}
+          onSave={(alias) => void handleSaveAlias(alias)}
+          onClear={() => void handleClearAlias()}
+          onClose={() => setAliasTarget(null)}
+        />
+      ) : null}
     </div>
   )
 }

@@ -10,7 +10,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
-_(Nothing yet.)_
+### Added
+
+- Optional profile **name initial** (single letter, e.g. Rhys E) on onboarding and in Settings
+- **Personal mate labels** on the Group Members list — tap a mate to rename for yourself; synced to your account; shown as `Your label (their name)`
+
+### Fixed
+
+- `update_my_profile` now checks private-beta app access (same gate as onboarding profile save)
 ---
 
 ## [1.2.0] - 2026-06-29

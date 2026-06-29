@@ -44,7 +44,9 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 
 - [x] Magic link auth
 - [x] Optional Google auth (when configured in Supabase)
-- [x] Profile onboarding (display name, emoji, timezone)
+- [x] Profile onboarding (display name, optional initial, emoji, timezone)
+- [x] Edit profile in Settings (display name, initial, emoji, timezone)
+- [x] Personal mate labels on Group Members list (tap a mate to rename for yourself)
 - [x] Private beta allowlist
 - [x] Private groups
 - [x] Invite links and invite codes
@@ -132,7 +134,7 @@ PushUS Community runs on **your** Supabase project plus a static frontend host.
 1. Clone this repository
 2. Create a Supabase project (or run Supabase locally)
 3. Copy `.env.example` to `.env` and set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
-4. Apply migrations: `supabase db reset` (local) or `npx supabase login` then `npx supabase db push` (hosted). Training plan features require migrations through `0027_volume_stats_last_log` on hosted projects (includes `0026_training_plan_v2` for max check-in / effort fields).
+4. Apply migrations: `supabase db reset` (local) or `npx supabase login` then `npx supabase db push` (hosted). Hosted projects need migrations through `0028_profile_initial_and_aliases` (includes mate labels and profile initials).
 5. Build: `npm run build` and deploy the `dist/` folder
 
 Keep `VITE_BILLING_ENABLED=false` for Community. Never put service role or Stripe secrets in the frontend.

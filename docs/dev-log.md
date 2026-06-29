@@ -26,6 +26,17 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-06-29 (mate names slice)
+
+**Shipped**
+
+- Profile name initial (optional single letter) — onboarding + Settings edit profile
+- Per-viewer mate labels on Group Members list (`Michael M (mk)`); tap mate row to set/clear; migration `0028_profile_initial_and_aliases`
+
+**Next**
+
+- Consider showing initials on leaderboard if two Sams still confuse people
+
 ### 2026-06-29 (release v1.2.0)
 
 **Shipped**

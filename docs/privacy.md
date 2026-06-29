@@ -5,7 +5,8 @@ PushUS is built for **private groups of mates**, not public social networks.
 ## What we collect
 
 - **Auth:** Email address (via Supabase Auth) for login
-- **Profile:** Display name, optional emoji/colour, timezone preference
+- **Profile:** Display name, optional single-letter initial, optional emoji/colour, timezone preference
+- **Personal mate labels:** Optional names you set for group members — visible only to you, on the Members list
 - **Group data:** Pushup entries, reactions, group membership — scoped to groups you join
 - **Billing (Cloud only, Slice 1B):** Stripe customer/subscription metadata linked to group owner
 

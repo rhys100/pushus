@@ -441,4 +441,17 @@ describe('security hardening — private beta onboarding', () => {
 
     expect(error?.message).toMatch(/private beta|invite link|approved access/i)
   })
+
+  it('denies update_my_profile without beta access', async () => {
+    const client = await signIn(email, password)
+
+    const { error } = await client.rpc('update_my_profile', {
+      p_display_name: 'Blocked User',
+      p_avatar_emoji: '💪',
+      p_timezone: 'UTC',
+      p_name_initial: null,
+    })
+
+    expect(error?.message).toMatch(/private beta|invite link|approved access/i)
+  })
 })

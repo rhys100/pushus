@@ -871,4 +871,72 @@ describe('private beta access', () => {
     await admin.auth.admin.deleteUser(ownerId)
     await admin.auth.admin.deleteUser(mateId)
   })
+
+  it('allows viewer to set and clear a private member alias', async () => {
+    const ownerEmail = `beta-alias-owner-${runId}@pushus.test`
+    const mateEmail = `beta-alias-mate-${runId}@pushus.test`
+    const inviteCode = `als${runId}`.slice(0, 12)
+
+    await admin.from('beta_allowed_emails').upsert({ email: ownerEmail.toLowerCase() })
+    const ownerId = await createAuthUser(admin, ownerEmail, password)
+    const mateId = await createAuthUser(admin, mateEmail, password)
+
+    const ownerClient = await signIn(ownerEmail, password)
+    const { data: groupId, error: createError } = await ownerClient.rpc('create_group', {
+      p_name: `Alias Group ${runId}`,
+      p_timezone: 'UTC',
+    })
+    expect(createError).toBeNull()
+
+    await admin.from('groups').update({ invite_code: inviteCode }).eq('id', groupId as string)
+
+    const mateClient = await signIn(mateEmail, password)
+    const { error: joinError } = await mateClient.rpc('request_join_group', {
+      p_invite_code: inviteCode,
+    })
+    expect(joinError).toBeNull()
+
+    const { error: aliasError } = await ownerClient.rpc('upsert_member_alias', {
+      p_group_id: groupId as string,
+      p_member_user_id: mateId,
+      p_alias: 'Michael M',
+    })
+    expect(aliasError).toBeNull()
+
+    const { data: members, error: listError } = await ownerClient.rpc('list_group_members', {
+      p_group_id: groupId as string,
+    })
+    expect(listError).toBeNull()
+    const mateRow = (members as { user_id: string; viewer_alias: string | null }[]).find(
+      (member) => member.user_id === mateId,
+    )
+    expect(mateRow?.viewer_alias).toBe('Michael M')
+
+    const { error: selfAliasError } = await ownerClient.rpc('upsert_member_alias', {
+      p_group_id: groupId as string,
+      p_member_user_id: ownerId,
+      p_alias: 'Me',
+    })
+    expect(selfAliasError).not.toBeNull()
+
+    const { error: clearError } = await ownerClient.rpc('upsert_member_alias', {
+      p_group_id: groupId as string,
+      p_member_user_id: mateId,
+      p_alias: null,
+    })
+    expect(clearError).toBeNull()
+
+    const { data: membersAfterClear } = await ownerClient.rpc('list_group_members', {
+      p_group_id: groupId as string,
+    })
+    const mateAfterClear = (membersAfterClear as { user_id: string; viewer_alias: string | null }[]).find(
+      (member) => member.user_id === mateId,
+    )
+    expect(mateAfterClear?.viewer_alias).toBeNull()
+
+    await admin.from('groups').delete().eq('id', groupId as string)
+    await admin.from('beta_allowed_emails').delete().eq('email', ownerEmail)
+    await admin.auth.admin.deleteUser(ownerId)
+    await admin.auth.admin.deleteUser(mateId)
+  })
 })

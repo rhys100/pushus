@@ -5,6 +5,7 @@ export type JoinRequestStatus = 'pending' | 'approved' | 'rejected'
 export type Profile = {
   id: string
   display_name: string
+  name_initial: string | null
   avatar_emoji: string
   avatar_color: string
   timezone: string
@@ -40,7 +41,8 @@ export type GroupMember = {
 }
 
 export type GroupMemberWithProfile = GroupMember & {
-  profiles: Pick<Profile, 'display_name' | 'avatar_emoji' | 'avatar_color'>
+  viewer_alias?: string | null
+  profiles: Pick<Profile, 'display_name' | 'name_initial' | 'avatar_emoji' | 'avatar_color'>
 }
 
 export type JoinRequest = {

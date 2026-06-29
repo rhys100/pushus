@@ -9,6 +9,7 @@ const activeMemberSnapshot: PostAuthSnapshot = {
   profile: {
     id: 'user-1',
     display_name: 'Rhys',
+    name_initial: null,
     avatar_emoji: '💪',
     timezone: 'Australia/Sydney',
     onboarding_completed_at: '2026-01-01T00:00:00Z',

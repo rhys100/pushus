@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Button, Card } from '@/components/ui'
+import { Button, Card, useToast } from '@/components/ui'
 import { GroupAdminSettings } from '@/components/settings/GroupAdminSettings'
 import { SettingsLinkRow } from '@/components/settings/SettingsLinkRow'
 import { useTabPageMeta } from '@/components/layout/TabPageMeta'
 import { appConfig } from '@/lib/config'
+import { AVATAR_EMOJIS } from '@/lib/emojis'
+import { cn } from '@/lib/cn'
+import { formatProfileName } from '@/lib/memberDisplayName'
+import { supabase } from '@/lib/supabase'
+import { timezoneOptions } from '@/lib/timezones'
 import { useAuth } from '@/providers/AuthProvider'
 import { useProfile } from '@/hooks/useProfile'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
@@ -13,7 +18,6 @@ import { capPlanMaxUpdate } from '@/lib/training/maxCleanUpdate'
 import { formatDayTargetSetsDetail } from '@/lib/training/planEngine'
 import type { ReminderIntervalHours } from '@/lib/notificationEligibility'
 import { useNotificationPreferences } from '@/providers/NotificationPreferencesProvider'
-import { useToast } from '@/components/ui/Toast'
 import { getErrorMessage } from '@/lib/errors'
 
 function hourOptions() {
@@ -37,7 +41,7 @@ type SettingsLocationState = {
 export function SettingsPage() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { signOut, user } = useAuth()
+  const { signOut, user, refreshProfile } = useAuth()
   const { profile } = useProfile()
   const { activeGroup } = useActiveGroup()
   const { toast } = useToast()
@@ -69,6 +73,12 @@ export function SettingsPage() {
 
   const [localError, setLocalError] = useState<string | null>(null)
   const [planSavedMessage, setPlanSavedMessage] = useState<string | null>(null)
+  const [editingProfile, setEditingProfile] = useState(false)
+  const [profileDisplayName, setProfileDisplayName] = useState('')
+  const [profileInitial, setProfileInitial] = useState('')
+  const [profileEmoji, setProfileEmoji] = useState<string>(AVATAR_EMOJIS[0])
+  const [profileTimezone, setProfileTimezone] = useState('UTC')
+  const [savingProfile, setSavingProfile] = useState(false)
   const hours = hourOptions()
   const pushConfigured = pushSupport === 'supported'
   const displayError = localError ?? prefsError
@@ -106,6 +116,14 @@ export function SettingsPage() {
     title: 'Settings',
     subtitle: 'Personal and group options',
   })
+
+  useEffect(() => {
+    if (!profile) return
+    setProfileDisplayName(profile.display_name)
+    setProfileInitial(profile.name_initial ?? '')
+    setProfileEmoji(profile.avatar_emoji)
+    setProfileTimezone(profile.timezone || 'UTC')
+  }, [profile])
 
   useEffect(() => {
     const state = location.state as SettingsLocationState | null
@@ -155,6 +173,32 @@ export function SettingsPage() {
     })
   }
 
+  async function handleSaveProfile() {
+    const trimmed = profileDisplayName.trim()
+    if (!trimmed) {
+      toast({ message: 'Display name is required.', variant: 'danger' })
+      return
+    }
+
+    setSavingProfile(true)
+    const { error } = await supabase.rpc('update_my_profile', {
+      p_display_name: trimmed,
+      p_avatar_emoji: profileEmoji,
+      p_timezone: profileTimezone,
+      p_name_initial: profileInitial.trim() || null,
+    })
+    setSavingProfile(false)
+
+    if (error) {
+      toast({ message: error.message, variant: 'danger' })
+      return
+    }
+
+    await refreshProfile()
+    setEditingProfile(false)
+    toast({ message: 'Profile updated.', variant: 'success' })
+  }
+
   return (
     <div className="space-y-4 pb-4">
       {planSavedMessage ? (
@@ -176,15 +220,140 @@ export function SettingsPage() {
 
       <Card padding="md" className="space-y-3">
         <p className="text-xs font-medium uppercase tracking-wide text-text-muted">Personal</p>
-        <p className="text-sm font-medium text-text-primary">Profile</p>
-        {profile ? (
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-sm font-medium text-text-primary">Profile</p>
+          {profile && !editingProfile ? (
+            <Button
+              variant="secondary"
+              className="min-h-9 shrink-0 px-3 text-sm"
+              onClick={() => setEditingProfile(true)}
+            >
+              Edit
+            </Button>
+          ) : null}
+        </div>
+        {profile && !editingProfile ? (
           <div className="flex items-center gap-3">
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-bg text-2xl">
               {profile.avatar_emoji}
             </span>
             <div>
-              <p className="font-semibold text-text-primary">{profile.display_name}</p>
+              <p className="font-semibold text-text-primary">
+                {formatProfileName(profile)}
+              </p>
               <p className="text-xs text-text-muted">{profile.timezone}</p>
+            </div>
+          </div>
+        ) : profile ? (
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <label htmlFor="settingsDisplayName" className="text-xs font-medium text-text-muted">
+                Display name
+              </label>
+              <input
+                id="settingsDisplayName"
+                type="text"
+                maxLength={40}
+                value={profileDisplayName}
+                onChange={(event) => setProfileDisplayName(event.target.value)}
+                className={cn(
+                  'w-full rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2.5',
+                  'text-sm text-text-primary',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                )}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="settingsNameInitial" className="text-xs font-medium text-text-muted">
+                Initial (optional)
+              </label>
+              <input
+                id="settingsNameInitial"
+                type="text"
+                maxLength={1}
+                value={profileInitial}
+                onChange={(event) =>
+                  setProfileInitial(event.target.value.replace(/[^A-Za-z]/g, '').slice(0, 1))
+                }
+                className={cn(
+                  'w-20 rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2.5',
+                  'text-sm text-text-primary',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                )}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-xs font-medium text-text-muted">Avatar emoji</span>
+              <div className="grid grid-cols-8 gap-2">
+                {AVATAR_EMOJIS.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    aria-label={`Select ${option}`}
+                    aria-pressed={profileEmoji === option}
+                    onClick={() => setProfileEmoji(option)}
+                    className={cn(
+                      'flex h-10 w-full items-center justify-center rounded-[var(--radius-md)] text-xl',
+                      'border transition-colors',
+                      profileEmoji === option
+                        ? 'border-accent bg-accent-muted'
+                        : 'border-border bg-bg hover:border-accent/30',
+                    )}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="settingsTimezone" className="text-xs font-medium text-text-muted">
+                Timezone
+              </label>
+              <select
+                id="settingsTimezone"
+                value={profileTimezone}
+                onChange={(event) => setProfileTimezone(event.target.value)}
+                className={cn(
+                  'w-full rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2.5',
+                  'text-sm text-text-primary',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                )}
+              >
+                {timezoneOptions().map((tz) => (
+                  <option key={tz} value={tz}>
+                    {tz}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                className="min-h-10 flex-1"
+                loading={savingProfile}
+                onClick={() => void handleSaveProfile()}
+              >
+                Save profile
+              </Button>
+              <Button
+                variant="secondary"
+                className="min-h-10 flex-1"
+                disabled={savingProfile}
+                onClick={() => {
+                  if (profile) {
+                    setProfileDisplayName(profile.display_name)
+                    setProfileInitial(profile.name_initial ?? '')
+                    setProfileEmoji(profile.avatar_emoji)
+                    setProfileTimezone(profile.timezone || 'UTC')
+                  }
+                  setEditingProfile(false)
+                }}
+              >
+                Cancel
+              </Button>
             </div>
           </div>
         ) : null}
