@@ -27,6 +27,7 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 ## Daily notes
 
 **Fixed**
+- Training average confirm control: checkbox shows when manual avg entered and logs not trusted (partial PushUS history no longer blocks it); confirmed manual uses manual anchor over sparse logs; Hardest day copy in wizard summary; CI lint clean on training modules
 - Training wizard trust UX: live manual avg in preview, confirm checkbox, tiered extreme mismatch, trust pills/copy, hardest-day labels, 6-day warnings, removed Back to settings card
 - Bugbot slice 13: trust mode persisted in `calibration_note` metadata; partial no longer upgrades to trusted on rebuild; off-app flag wired on save; soreness restored from row; planResolve patterns + partial anchor cap aligned
 - Trusted volume path: `resolveVolumeContext()` centralises trust; wizard gates preview on history load; log-first trusted rules + stale partial promotion on rebuild; separate off-app confirm checkbox; honest preview copy and trust mode badge

@@ -200,6 +200,27 @@ describe('trusted volume calibration (slice 13)', () => {
     expect(dayTarget(confirmedManualAnswers, 1, ctx, 'challenge')).toBeLessThanOrEqual(60)
   })
 
+  it('manual confirmed with partial sparse logs uses manual anchor', () => {
+    const sparseStats: VolumeHistoryStats = {
+      sampleDays: 5,
+      avgDailyTotal: 50,
+      peakDailyTotal: 70,
+      peakBank: 25,
+      estimatedMaxClean: 22,
+      lastLogDate: '2026-06-28',
+      daysSinceLastLog: 1,
+    }
+    const ctx = resolveVolumeContext(caseCAnswers, sparseStats, {
+      manualConfirmedRegularTraining: true,
+    })
+
+    expect(ctx.trustMode).toBe('trusted')
+    expect(ctx.volumeAnchorSource).toBe('manual')
+    expect(ctx.volumeAnchor).toBe(65)
+    expect(buildTrustModeLabel(ctx)).toBe('TRUSTED · CONFIRMED AVERAGE')
+    expect(dayTarget(caseCAnswers, 1, ctx, 'challenge')).toBeGreaterThanOrEqual(45)
+  })
+
   it('extreme confirmed manual stays partial despite checkbox', () => {
     const extremeAnswers: WizardAnswers = {
       maxCleanSet: 5,

@@ -27,6 +27,7 @@ import {
 import {
   getTrainingDayWarnings,
   shouldNormalizeLegacyTrainingDays,
+  shouldShowManualAverageConfirm,
   WIZARD_PREVIEW_LABELS,
 } from '@/lib/training/wizardUi'
 
@@ -95,8 +96,6 @@ export function TrainingWizard({
   const savedInitialAvgRef = useRef<number | null>(null)
 
   const logsTrusted = logsQualifyTrusted(historyStats)
-  const logSampleDays = historyStats?.sampleDays ?? 0
-  const manualOnlyVolume = logSampleDays === 0
   const savedManualConfirmed =
     initialAnswers?.manualConfirmedRegularTraining ??
     parseCalibrationNote(initialAnswers?.storedCalibrationNote).manualConfirmed
@@ -182,9 +181,9 @@ export function TrainingWizard({
   const calibration = useMemo(
     () =>
       derivePlanCalibration(calibrationAnswers, historyLoading ? null : historyStats, {
-        manualConfirmedRegularTraining: offAppConfirmed && !logsTrusted && manualOnlyVolume,
+        manualConfirmedRegularTraining: offAppConfirmed && !logsTrusted,
       }),
-    [calibrationAnswers, historyStats, historyLoading, offAppConfirmed, logsTrusted, manualOnlyVolume],
+    [calibrationAnswers, historyStats, historyLoading, offAppConfirmed, logsTrusted],
   )
 
   const historyPrefill = useMemo(
@@ -215,11 +214,10 @@ export function TrainingWizard({
   const dayWarnings = getTrainingDayWarnings(daysSelected, answers.challengeIntensity)
   const suggestedSetsSummary = formatDayTypeSetsSummary(recommendation.plan.weeklySchedule)
   const hardestDayTarget = recommendation.plan.peakDayTarget
-  const showManualConfirmCheckbox =
-    answers.recentDailyAverage != null &&
-    answers.recentDailyAverage > 0 &&
-    !logsTrusted &&
-    manualOnlyVolume
+  const showManualConfirmCheckbox = shouldShowManualAverageConfirm(
+    answers.recentDailyAverage,
+    historyLoading ? null : historyStats,
+  )
 
   const showLogSuggestion =
     logSuggestedDailyAvg != null &&
@@ -248,7 +246,7 @@ export function TrainingWizard({
     }
     onComplete?.({
       ...answers,
-      manualConfirmedRegularTraining: offAppConfirmed && !logsTrusted && manualOnlyVolume,
+      manualConfirmedRegularTraining: offAppConfirmed && !logsTrusted,
     })
   }
 

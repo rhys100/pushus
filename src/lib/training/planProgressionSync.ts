@@ -152,10 +152,8 @@ export async function computePlanProgressionSync(
   const answers = wizardAnswersFromPlanRow(row)
 
   const effortSince28 = addDays(todayIso, -27)
-  const effortSince7 = addDays(todayIso, -6)
   const effortEntries = await fetchEffortEntries(groupId, userId, effortSince28)
   const effortSummary = effortSummarySince(effortEntries, effortSince28)
-  const weekEffortSummary = effortSummarySince(effortEntries, effortSince7)
 
   const logTemplates = buildRecentDailyLogs(todayIso, 7, (date) => {
     const prescription = getTodayPrescription(trainingPlan, date, timezone)
@@ -192,9 +190,9 @@ export async function computePlanProgressionSync(
     row.week_one_last_adjusted_at,
   )
 
-  let workingPlan = weekOneResult.plan
+  const workingPlan = weekOneResult.plan
   let progressionNote = weekOneResult.progressionNote
-  let weekOneAdapted = weekOneResult.adapted
+  const weekOneAdapted = weekOneResult.adapted
 
   const result = advanceMesocycleIfDue(
     workingPlan,
@@ -202,7 +200,6 @@ export async function computePlanProgressionSync(
     todayIso,
     hitRate,
     effortSummary,
-    weekEffortSummary,
   )
 
   if (result.progressionNote) {

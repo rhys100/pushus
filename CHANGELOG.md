@@ -35,7 +35,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
-- **Training wizard trust mode:** live manual average in preview (no stale saved value); explicit confirm checkbox for off-app/training average; tiered mismatch (70/max 20 trusted when confirmed, extreme values stay partial); preview pills and copy by trust mode; Hardest day / Suggested sets labels; 6-day training warnings; removed redundant Back to settings card
+- **Training wizard trust mode:** live manual average in preview (no stale saved value); explicit confirm checkbox for off-app/training average (including when partial PushUS logs exist); tiered mismatch (70/max 20 trusted when confirmed, extreme values stay partial); preview pills and copy by trust mode; Hardest day / Suggested sets labels; 6-day training warnings; removed redundant Back to settings card
+- CI lint: unused params and prefer-const in plan engine / progression sync
 - **Trusted volume path:** training wizard waits for PushUS log stats before preview; 14+ logged days (or 7+ recent) resolve trusted instead of partial fallback; stale `@vt:partial` rows promote to trusted on rebuild when logs qualify; separate off-app confirmation checkbox; preview copy explains trust mode and capped anchors
 - Off-app confirm (`mc:1`) restored when re-editing the wizard; leaderboard daily targets use live log stats for trusted promotion; progression sync waits for history stats before first run
 - Plan calibration baseline no longer stuck at 1.0 when structured peak hits the volume cap edge

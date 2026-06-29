@@ -220,7 +220,7 @@ export function resolveVolumeContext(
   } else if (
     userEnteredAverage != null &&
     manualConfirmed &&
-    (stats?.sampleDays ?? 0) === 0
+    !logsQualifyTrusted(stats)
   ) {
     if (isExtremeManualMismatch(answers, userEnteredAverage)) {
       trustMode = 'partial'
@@ -266,7 +266,7 @@ export function resolveVolumeContext(
   let volumeAnchorSource: VolumeAnchorSource = 'none'
   let volumeAnchor: number | null = null
 
-  if (trustMode === 'trusted' && stats && stats.sampleDays >= 7) {
+  if (trustMode === 'trusted' && logsQualifyTrusted(stats) && stats) {
     volumeAnchor = roundReps(stats.avgDailyTotal)
     volumeAnchorSource = 'logs'
   } else if (userEnteredAverage != null) {
@@ -645,7 +645,6 @@ export function buildTrustPreviewCopy(
 /** @deprecated Use buildTrustPreviewCopy */
 export function previewExplanationForContext(
   ctx: VolumeCalibrationContext,
-  _anchor: number | null,
 ): string | null {
   return buildTrustPreviewCopy(ctx, null)
 }

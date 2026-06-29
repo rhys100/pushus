@@ -252,7 +252,7 @@ describe('planEngine v2', () => {
   it('recommendFromWizard summary mentions 4-week build', () => {
     const { summary } = recommendFromWizard(advancedMax20)
     expect(summary).toMatch(/4-week/)
-    expect(summary).toMatch(/Peak day/)
+    expect(summary).toMatch(/Hardest day this week/)
   })
 
   it('formatDayTarget shows scaled volume honestly', () => {

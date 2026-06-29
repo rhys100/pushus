@@ -492,10 +492,9 @@ export function advanceMesocycleIfDue(
   today: string,
   hitRate: number,
   effortSummary?: EffortSummary | null,
-  _weekEffortSummary?: EffortSummary | null,
 ): MesocycleAdvanceResult {
-  let nextAnswers = { ...answers }
-  let maxCleanSet = answers.maxCleanSet
+  const nextAnswers = { ...answers }
+  const maxCleanSet = answers.maxCleanSet
 
   if (plan.mesocycleStartedAt > today) {
     return { plan, advanced: false, progressionNote: null, maxCleanSet }
@@ -691,7 +690,7 @@ export function recommendFromWizard(
 
   const summary = [
     `4-week build starting at ${Math.round(MESOCYCLE_MULTIPLIER[startWeek] * 100)}% volume.`,
-    `Peak day: ${plan.peakDayTarget} reps in submaximal sets of ${plan.setSize}.`,
+    `Hardest day this week: ${plan.peakDayTarget} reps in submaximal sets of ${plan.setSize}.`,
     formatWeeklyScheduleSummary(plan.weeklySchedule),
   ].join(' ')
 

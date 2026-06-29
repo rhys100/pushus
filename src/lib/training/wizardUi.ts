@@ -1,5 +1,6 @@
 import type { WizardAnswers } from '@/lib/training/planEngine'
-import { parseCalibrationNote } from '@/lib/training/trustedVolume'
+import type { VolumeHistoryStats } from '@/lib/training/volumeCalibration'
+import { logsQualifyTrusted, parseCalibrationNote } from '@/lib/training/trustedVolume'
 
 export const LEGACY_MON_SAT_DAYS = [1, 2, 3, 4, 5, 6] as const
 
@@ -48,3 +49,24 @@ export const WIZARD_PREVIEW_LABELS = {
   hardestDay: 'Hardest day this week',
   suggestedSets: 'Suggested sets',
 } as const
+
+/** Show confirm checkbox when user entered manual avg and PushUS logs are not yet trusted. */
+export function shouldShowManualAverageConfirm(
+  recentDailyAverage: number | null | undefined,
+  stats: VolumeHistoryStats | null,
+): boolean {
+  return (
+    recentDailyAverage != null &&
+    recentDailyAverage > 0 &&
+    !logsQualifyTrusted(stats)
+  )
+}
+
+export function formatWizardPlanSummaryParagraph(
+  startWeekPercent: number,
+  hardestDayTarget: number,
+  setSize: number,
+  weeklySummary: string,
+): string {
+  return `4-week build starting at ${startWeekPercent}% volume. ${WIZARD_PREVIEW_LABELS.hardestDay}: ${hardestDayTarget} reps in submaximal sets of ${setSize}. ${weeklySummary}`
+}

@@ -3,10 +3,38 @@ import {
   getTrainingDayWarnings,
   isLegacyMonSatTrainingDays,
   shouldNormalizeLegacyTrainingDays,
+  shouldShowManualAverageConfirm,
   WIZARD_PREVIEW_LABELS,
 } from '../../src/lib/training/wizardUi'
 
 describe('wizardUi', () => {
+  it('shows manual average confirm when logs are not trusted', () => {
+    expect(shouldShowManualAverageConfirm(65, null)).toBe(true)
+    expect(
+      shouldShowManualAverageConfirm(65, {
+        sampleDays: 5,
+        avgDailyTotal: 50,
+        peakDailyTotal: 70,
+        peakBank: 25,
+        estimatedMaxClean: 22,
+        lastLogDate: '2026-06-28',
+        daysSinceLastLog: 1,
+      }),
+    ).toBe(true)
+    expect(
+      shouldShowManualAverageConfirm(65, {
+        sampleDays: 24,
+        avgDailyTotal: 65,
+        peakDailyTotal: 95,
+        peakBank: 25,
+        estimatedMaxClean: 22,
+        lastLogDate: '2026-06-28',
+        daysSinceLastLog: 1,
+      }),
+    ).toBe(false)
+    expect(shouldShowManualAverageConfirm(null, null)).toBe(false)
+  })
+
   it('uses hardest day and suggested sets preview labels', () => {
     expect(WIZARD_PREVIEW_LABELS.hardestDay).toBe('Hardest day this week')
     expect(WIZARD_PREVIEW_LABELS.suggestedSets).toBe('Suggested sets')
