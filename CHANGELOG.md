@@ -25,6 +25,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ### Changed
 
 - **Log page layout:** ring and inline Bank CTA at top; compact today's plan below; removed top private-beta banner strip (~32px reclaimed)
+- Stronger tiered drag haptics on the circular logger (14ms notch; stronger pulses at reps 5 and 10)
 - Board Day view: cleaner progress layout with full-width bar and `current/target` fraction (removed duplicate rep column)
 - Group invite message: richer two-paragraph copy describing PushUS (leaderboards, training plan) without naming the group
 
@@ -40,6 +41,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Training plan save shows the real Supabase error instead of a generic toast (helps diagnose missing migration)
 - Circular logger snaps handle and haptic tick to each rep (1–10) while dragging, not only at a full lap
 - Drag count stays in sync when moving the handle backward to a lower rep mid-drag
+- Backward drag during an active session no longer leaves centre count, bank state, and `getCount()` ahead of the handle until drag ends
 
 ### Database / deploy
 

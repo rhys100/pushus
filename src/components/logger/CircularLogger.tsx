@@ -205,6 +205,10 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
     }, [angle, isDragging, updateRingVisuals])
 
     useEffect(() => {
+      if (isDragging) {
+        return
+      }
+
       countRef.current = count
       lastHapticCountRef.current = count
 
@@ -217,7 +221,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
       }
 
       previousCountRef.current = count
-    }, [count, onCountChange])
+    }, [count, isDragging, onCountChange])
 
     useEffect(() => {
       if (!countPulsing) {
@@ -241,10 +245,12 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
     }, [canBank, onCanBankChange])
 
     const displayAngle = angle % CIRCULAR_COUNTER.degreesPerRevolution
-    const completedLap = count > 0 && count % CIRCULAR_COUNTER.repsPerRevolution === 0
+    const displayCount = isDragging ? countRef.current : count
+    const completedLap =
+      displayCount > 0 && displayCount % CIRCULAR_COUNTER.repsPerRevolution === 0
     const handleAngle = completedLap ? 0 : displayAngle || 0
     const handlePoint = polarToCartesian(RING_CENTER, RING_CENTER, RING_RADIUS, handleAngle)
-    const showZeroHint = showDragHint && count === 0 && !disabled && !isDragging
+    const showZeroHint = showDragHint && displayCount === 0 && !disabled && !isDragging
     const showHandle = !disabled
     const progressEnd = completedLap ? 360 : displayAngle
     const arcPath =
@@ -266,6 +272,25 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
         setAngle(clamped)
       },
       [setAngle],
+    )
+
+    const notifyCountChange = useCallback(
+      (nextCount: number) => {
+        countRef.current = nextCount
+
+        if (nextCount !== previousCountRef.current) {
+          onCountChange?.(nextCount)
+          previousCountRef.current = nextCount
+        }
+
+        const nextCanBank = nextCount > 0
+
+        if (nextCanBank !== canBankRef.current) {
+          canBankRef.current = nextCanBank
+          onCanBankChange?.(nextCanBank)
+        }
+      },
+      [onCanBankChange, onCountChange],
     )
 
     const applyDragAt = useCallback(
@@ -293,7 +318,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
 
         updateRingVisuals(snappedAngle)
 
-        const currentCount = angleToTotalCount(angleRef.current)
+        const currentCount = countRef.current
 
         if (nextCount !== currentCount) {
           if (nextCount > currentCount) {
@@ -308,7 +333,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
           }
 
           syncAngleState(snappedAngle)
-          countRef.current = nextCount
+          notifyCountChange(nextCount)
         } else {
           angleRef.current = snappedAngle
         }
@@ -317,19 +342,21 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
           onHintDismiss?.()
         }
       },
-      [maybePulseHaptic, onHintDismiss, syncAngleState, updateRingVisuals],
+      [maybePulseHaptic, notifyCountChange, onHintDismiss, syncAngleState, updateRingVisuals],
     )
 
     const endDragSession = useCallback(() => {
       const dragState = dragStateRef.current
 
       if (dragState) {
-        syncAngleState(snapAngleToRep(dragState.rawAngle))
+        const finalAngle = snapAngleToRep(dragState.rawAngle)
+        syncAngleState(finalAngle)
+        notifyCountChange(angleToTotalCount(finalAngle))
       }
 
       dragStateRef.current = null
       setIsDragging(false)
-    }, [syncAngleState])
+    }, [notifyCountChange, syncAngleState])
 
     const beginDragAt = useCallback(
       (clientX: number, clientY: number) => {
@@ -508,8 +535,8 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
             aria-label="Push-up counter"
             aria-valuemin={0}
             aria-valuemax={999}
-            aria-valuenow={count}
-            aria-valuetext={`${count} push-ups`}
+            aria-valuenow={displayCount}
+            aria-valuetext={`${displayCount} push-ups`}
             aria-disabled={disabled || undefined}
             viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
             className={cn(
@@ -648,7 +675,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
               )}
               style={{ fontSize: 'var(--text-hero)' }}
             >
-              {count}
+              {displayCount}
             </span>
             <span className="mt-2 text-[0.8125rem] font-medium uppercase tracking-[0.18em] text-text-muted">
               reps

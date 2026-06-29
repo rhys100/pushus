@@ -33,6 +33,9 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 - Removed top private-beta banner strip for ~32px vertical space
 - Stronger tiered drag haptics (14ms notch, stronger 5 and 10 lap stops)
 
+**Fixed**
+- Logger backward drag keeps centre count, bank enablement, and parent `dragCount` in sync mid-drag (Bugbot)
+
 ### 2026-06-29 (post-challenge plan calibration)
 
 **Shipped**
