@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Button, Card, useToast } from '@/components/ui'
 import { InviteCodeEntry } from '@/components/group/InviteCodeEntry'
+import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { appConfig } from '@/lib/config'
 import { supabase } from '@/lib/supabase'
 import { setPendingInviteCode } from '@/lib/storage'
@@ -22,6 +23,7 @@ function friendlyAuthError(message: string): string {
 }
 
 export function LoginPage() {
+  useDocumentTitle('Sign in')
   const { toast } = useToast()
   const [searchParams] = useSearchParams()
   const [email, setEmail] = useState('')

@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
 import { GoalProgressBar } from '@/components/ui/GoalProgressBar'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { cn } from '@/lib/cn'
 import { computeDailySetPlan } from '@/lib/training/dailySetPlan'
 import type { TodayPrescription } from '@/lib/training/planEngine'
 import { getDefaultPlan, getTodayPrescription } from '@/lib/training/planEngine'
@@ -13,6 +14,7 @@ export type DayProgressCardProps = {
   loading?: boolean
   dailyTarget?: number
   todayPrescription?: TodayPrescription
+  variant?: 'default' | 'compact'
   className?: string
 }
 
@@ -31,6 +33,7 @@ export const DayProgressCard = memo(function DayProgressCard({
   loading = false,
   dailyTarget,
   todayPrescription,
+  variant = 'default',
   className,
 }: DayProgressCardProps) {
   const defaultPlan = getDefaultPlan()
@@ -56,6 +59,68 @@ export const DayProgressCard = memo(function DayProgressCard({
       ),
     [prescription, target, isRestDay, bankedToday, banksLogged],
   )
+
+  if (variant === 'compact') {
+    return (
+      <Card
+        padding="sm"
+        data-testid="day-progress-card"
+        className={cn('mt-3', className)}
+      >
+        <div className="flex items-center justify-between gap-2">
+          {loading ? (
+            <Skeleton className="h-5 w-24" />
+          ) : isRestDay ? (
+            <p className="font-mono text-sm font-semibold tabular-nums text-text-primary">
+              {bankedToday}
+              <span className="ml-1 text-xs font-medium text-text-muted">banked</span>
+            </p>
+          ) : (
+            <p className="font-mono text-sm font-semibold tabular-nums text-text-primary">
+              {bankedToday}
+              <span className="text-text-muted"> / {target}</span>
+              <span className="ml-1.5 text-xs font-medium text-text-muted">today</span>
+            </p>
+          )}
+
+          {!loading && !isRestDay ? (
+            <Badge variant={dayTypeBadgeVariant(setPlan.dayType)} className="shrink-0 capitalize">
+              {setPlan.dayTypeLabel}
+            </Badge>
+          ) : null}
+
+          {!loading && isRestDay ? (
+            <span className="text-xs font-medium text-text-muted">Recovery</span>
+          ) : null}
+        </div>
+
+        {!isRestDay ? (
+          <>
+            <GoalProgressBar
+              current={bankedToday}
+              target={target}
+              ariaLabel="Daily push-up progress"
+              className="mt-2"
+              barClassName="h-1.5"
+            />
+
+            {!loading ? (
+              <p className="mt-1.5 line-clamp-1 text-xs text-text-muted">
+                {setPlan.headline}
+                {!setPlan.goalHit && setPlan.currentSetNumber && setPlan.setsPlanned > 0
+                  ? ` · set ${setPlan.currentSetNumber} of ${setPlan.setsPlanned}`
+                  : ''}
+              </p>
+            ) : (
+              <Skeleton className="mt-2 h-3 w-full" />
+            )}
+          </>
+        ) : (
+          <p className="mt-1.5 text-xs text-text-muted">{setPlan.headline}</p>
+        )}
+      </Card>
+    )
+  }
 
   return (
     <Card padding="md" className={className}>

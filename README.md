@@ -59,6 +59,7 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 - [x] Edit and delete your entries
 - [x] Daily total and today's entries on the Log screen
 - [x] Log daily set planner (bank-about target, set N of M, sets remaining)
+- [x] Reps-in-reserve effort feedback on training-day banks (plan auto-tunes from RIR)
 - [x] Entry audit log foundation
 - [x] Per-rep tick while dragging the ring (stepped-slider haptics via ios-vibrator-pro-max on supporting browsers)
 - [x] Handle snap animation on each rep for tactile feedback
@@ -69,6 +70,7 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 - [x] Activity feed
 - [x] Emoji reactions
 - [x] Group invite tools
+- [x] Branded social share previews for invite links (Cloudflare Pages Functions)
 - [x] Member list on Group tab; join requests and invites in Settings (admin)
 
 ### Settings and training
@@ -76,6 +78,7 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 - [x] Settings tab in bottom nav (personal + group admin)
 - [x] Science-based training plan: weekly microcycle + 4-week mesocycle with per-day targets
 - [x] Training plan wizard with saved plan (Log progress + push reminders; rest days skipped)
+- [x] Training wizard calibrates starting volume from recent PushUS log history (structured build, not challenge grind)
 - [x] Customisable push reminder frequency and active hours
 - [x] Injury pause for reminders
 
@@ -84,6 +87,7 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 - [x] Supabase backend (Auth, Postgres, RLS, Edge Functions)
 - [x] Row Level Security on group data
 - [x] Cloudflare Pages–friendly static SPA build
+- [x] Per-route browser titles and Open Graph meta for public pages
 - [x] AGPL-3.0-only licence
 - [x] Self-hostable Community mode
 - [x] Optional web push reminders (behind goal, user timezone, configurable frequency)
@@ -125,7 +129,7 @@ PushUS Community runs on **your** Supabase project plus a static frontend host.
 1. Clone this repository
 2. Create a Supabase project (or run Supabase locally)
 3. Copy `.env.example` to `.env` and set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
-4. Apply migrations: `supabase db reset` (local) or `npx supabase login` then `npx supabase db push` (hosted). Training plan save requires migration `0021_training_plan_v2` on hosted projects.
+4. Apply migrations: `supabase db reset` (local) or `npx supabase login` then `npx supabase db push` (hosted). Training plan save requires migrations through `0023_plan_calibration` on hosted projects.
 5. Build: `npm run build` and deploy the `dist/` folder
 
 Keep `VITE_BILLING_ENABLED=false` for Community. Never put service role or Stripe secrets in the frontend.

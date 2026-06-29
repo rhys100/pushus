@@ -11,19 +11,6 @@ async function seedAuthSession(page: Page) {
   }, memberSession)
 }
 
-function rectsOverlap(
-  a: { x: number; y: number; width: number; height: number },
-  b: { x: number; y: number; width: number; height: number },
-  gap = 2,
-) {
-  return !(
-    a.x + a.width <= b.x + gap ||
-    b.x + b.width <= a.x + gap ||
-    a.y + a.height <= b.y + gap ||
-    b.y + b.height <= a.y + gap
-  )
-}
-
 async function gotoTodayReady(page: Page) {
   await page.goto('/today', { waitUntil: 'networkidle' })
   await expect(page.getByRole('button', { name: /Bank Push-ups/i })).toBeVisible({
@@ -46,29 +33,26 @@ async function assertLogNavContained(page: Page) {
   }
 }
 
-async function assertTodayLayoutNoOverlap(page: Page) {
+async function assertLogPageHeroOrder(page: Page) {
+  const ring = page.locator('svg[role="slider"]')
   const bank = page.getByRole('button', { name: /Bank Push-ups/i })
-  const nav = page.getByRole('navigation', { name: /Main navigation/i })
-  const entriesHeading = page.getByRole('heading', { name: /Today's entries/i })
+  const plan = page.getByTestId('day-progress-card')
+  const entries = page.getByRole('heading', { name: /Today's entries/i })
 
-  await expect(entriesHeading).toBeVisible()
-
+  const ringBox = await ring.boundingBox()
   const bankBox = await bank.boundingBox()
-  const navBox = await nav.boundingBox()
-  const entriesBox = await entriesHeading.boundingBox()
+  const planBox = await plan.boundingBox()
+  const entriesBox = await entries.boundingBox()
 
+  expect(ringBox).not.toBeNull()
   expect(bankBox).not.toBeNull()
-  expect(navBox).not.toBeNull()
+  expect(planBox).not.toBeNull()
   expect(entriesBox).not.toBeNull()
 
-  if (bankBox && navBox) {
-    expect(rectsOverlap(bankBox, navBox)).toBe(false)
-    expect(bankBox.y + bankBox.height).toBeLessThanOrEqual(navBox.y + 1)
-  }
-
-  if (entriesBox && bankBox) {
-    expect(rectsOverlap(entriesBox, bankBox)).toBe(false)
-    expect(entriesBox.y + entriesBox.height).toBeLessThanOrEqual(bankBox.y + 2)
+  if (ringBox && bankBox && planBox && entriesBox) {
+    expect(ringBox.y + ringBox.height).toBeLessThanOrEqual(bankBox.y + 2)
+    expect(bankBox.y + bankBox.height).toBeLessThanOrEqual(planBox.y + 2)
+    expect(planBox.y + planBox.height).toBeLessThanOrEqual(entriesBox.y + 2)
   }
 
   await assertLogNavContained(page)
@@ -116,7 +100,7 @@ test.describe('today mobile layout', () => {
     { width: 390, height: 844 },
     { width: 430, height: 932 },
   ]) {
-    test(`layout at ${viewport.width}x${viewport.height} — count 0 shows hint and no overlap`, async ({
+    test(`layout at ${viewport.width}x${viewport.height} — count 0 shows hint and hero order`, async ({
       page,
     }) => {
       await page.setViewportSize(viewport)
@@ -125,10 +109,11 @@ test.describe('today mobile layout', () => {
       const bank = page.getByRole('button', { name: /Bank Push-ups/i })
       await expect(page.getByText('Drag the ring to bank more')).toBeVisible()
       await expect(bank).toBeDisabled()
-      await assertTodayLayoutNoOverlap(page)
+      await expect(page.getByText('Private beta')).toHaveCount(0)
+      await assertLogPageHeroOrder(page)
     })
 
-    test(`layout at ${viewport.width}x${viewport.height} — count 1 enables bank without overlap`, async ({
+    test(`layout at ${viewport.width}x${viewport.height} — count 1 enables bank with hero order`, async ({
       page,
     }) => {
       await page.setViewportSize(viewport)
@@ -139,27 +124,27 @@ test.describe('today mobile layout', () => {
       const bank = page.getByRole('button', { name: /Bank Push-ups/i })
       await expect(bank).toBeEnabled()
       await expect(page.getByTestId('bank-disabled-hint')).toHaveCount(0)
-      await assertTodayLayoutNoOverlap(page)
+      await assertLogPageHeroOrder(page)
     })
 
-    test(`layout at ${viewport.width}x${viewport.height} — count 7 has no overlap`, async ({
+    test(`layout at ${viewport.width}x${viewport.height} — count 7 keeps hero order`, async ({
       page,
     }) => {
       await page.setViewportSize(viewport)
       await gotoTodayReady(page)
 
       await setRingCount(page, 7)
-      await assertTodayLayoutNoOverlap(page)
+      await assertLogPageHeroOrder(page)
     })
 
-    test(`layout at ${viewport.width}x${viewport.height} — count 10 has no overlap`, async ({
+    test(`layout at ${viewport.width}x${viewport.height} — count 10 keeps hero order`, async ({
       page,
     }) => {
       await page.setViewportSize(viewport)
       await gotoTodayReady(page)
 
       await setRingCount(page, 10)
-      await assertTodayLayoutNoOverlap(page)
+      await assertLogPageHeroOrder(page)
     })
   }
 
@@ -174,7 +159,7 @@ test.describe('today mobile layout', () => {
     await expect(ring.locator('[data-testid="logger-handle-visible"]')).toHaveCount(1)
     await expect(page.getByText('Drag the ring', { exact: true })).toHaveCount(0)
     await expect(page.getByText('Drag the ring to bank more')).toBeVisible()
-    await assertTodayLayoutNoOverlap(page)
+    await assertLogPageHeroOrder(page)
   })
 
   test('log page scrolls when swiping outside the ring', async ({ page }) => {

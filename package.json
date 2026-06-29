@@ -7,7 +7,8 @@
   "license": "AGPL-3.0-only",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "npm run og:generate && tsc -b && vite build",
+    "og:generate": "node --experimental-strip-types scripts/generate-og-assets.ts",
     "build:stats": "npm run build && node scripts/build-stats.mjs",
     "preview": "vite preview",
     "lint": "eslint .",
@@ -24,6 +25,7 @@
     "licenses:generate": "license-checker --production --out THIRD_PARTY_NOTICES.md"
   },
   "dependencies": {
+    "@resvg/resvg-wasm": "2.6.2",
     "@supabase/supabase-js": "2.108.2",
     "@tanstack/react-query": "5.59.16",
     "date-fns": "4.1.0",
@@ -35,6 +37,7 @@
   },
   "devDependencies": {
     "@eslint/js": "9.39.4",
+    "@resvg/resvg-js": "2.6.2",
     "@playwright/test": "1.61.1",
     "@types/node": "22.15.3",
     "@types/react": "18.3.12",

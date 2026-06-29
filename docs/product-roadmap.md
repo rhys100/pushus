@@ -28,6 +28,7 @@ Public-friendly view of where PushUS is today and where it may go.
 ### Training and settings
 
 - Science-based training plan: weekly microcycle + 4-week mesocycle with per-day targets
+- Reps-in-reserve effort feedback on training-day banks; plan auto-tunes from RIR + goal completion
 - Training wizard with week preview; rest days show recovery on Log
 - Settings tab (personal prefs, training plan, group admin tools)
 - Customisable push reminder frequency and active hours

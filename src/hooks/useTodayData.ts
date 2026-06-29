@@ -28,7 +28,7 @@ export const todayKeys = {
 }
 
 const ENTRY_COLUMNS =
-  'id, group_id, user_id, count, logged_for, logged_at, is_backdated, review_status, source, deleted_at, created_at, updated_at'
+  'id, group_id, user_id, count, logged_for, logged_at, is_backdated, review_status, source, reps_in_reserve, deleted_at, created_at, updated_at'
 
 export function getGroupLocalDateString(timezone: string, reference = new Date()): string {
   return formatInTimeZone(reference, timezone, 'yyyy-MM-dd')
@@ -148,6 +148,7 @@ function createOptimisticEntry(group: Group, count: number): PushupEntry {
     is_backdated: false,
     review_status: 'none',
     source: 'circle_logger',
+    reps_in_reserve: null,
     deleted_at: null,
     created_at: now,
     updated_at: now,
@@ -518,6 +519,39 @@ export function useDeleteEntry() {
       if (!error) {
         invalidateTodayRelatedQueries(queryClient, group)
       }
+    },
+  })
+}
+
+type RecordEntryEffortInput = {
+  group: Group
+  entryId: string
+  repsInReserve: number
+}
+
+export function useRecordEntryEffort() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ entryId, repsInReserve }: RecordEntryEffortInput) => {
+      const { data, error } = await supabase.rpc('record_entry_effort', {
+        p_entry_id: entryId,
+        p_reps_in_reserve: repsInReserve,
+      })
+
+      if (error) {
+        throw error
+      }
+
+      return data as PushupEntry
+    },
+    onSuccess: (entry, { group }) => {
+      const loggedFor = getGroupLocalDateString(group.timezone)
+      const entriesKey = todayKeys.entries(group.id, loggedFor)
+
+      queryClient.setQueryData<PushupEntry[]>(entriesKey, (current = []) =>
+        current.map((row) => (row.id === entry.id ? entry : row)),
+      )
     },
   })
 }

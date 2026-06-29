@@ -1,12 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  isRepHalfLapStop,
   isRepHapticSupported,
+  isRepLapStop,
   isRepMajorStop,
   primeRepFeedback,
   pulseRepHapticDelta,
   repHapticPatternForCount,
-  REP_MAJOR_STOP_PATTERN,
+  REP_HALF_LAP_STOP_PATTERN,
+  REP_LAP_STOP_PATTERN,
   REP_NOTCH_MS,
 } from '../../src/lib/repHaptic'
 
@@ -26,15 +29,20 @@ describe('repHaptic', () => {
     expect(isRepHapticSupported()).toBe(true)
   })
 
-  it('uses notch duration for ordinary reps', () => {
+  it('uses stronger notch duration for ordinary reps', () => {
     expect(repHapticPatternForCount(3)).toBe(REP_NOTCH_MS)
-    expect(isRepMajorStop(3)).toBe(false)
+    expect(REP_NOTCH_MS).toBeGreaterThan(8)
+    expect(isRepHalfLapStop(3)).toBe(false)
+    expect(isRepLapStop(3)).toBe(false)
   })
 
-  it('uses major-stop pattern at multiples of 5', () => {
-    expect(repHapticPatternForCount(5)).toEqual([...REP_MAJOR_STOP_PATTERN])
-    expect(repHapticPatternForCount(10)).toEqual([...REP_MAJOR_STOP_PATTERN])
-    expect(isRepMajorStop(5)).toBe(true)
+  it('uses half-lap pattern at 5 but lap pattern at 10', () => {
+    expect(repHapticPatternForCount(5)).toEqual([...REP_HALF_LAP_STOP_PATTERN])
+    expect(repHapticPatternForCount(10)).toEqual([...REP_LAP_STOP_PATTERN])
+    expect(isRepHalfLapStop(5)).toBe(true)
+    expect(isRepLapStop(5)).toBe(false)
+    expect(isRepHalfLapStop(10)).toBe(false)
+    expect(isRepLapStop(10)).toBe(true)
     expect(isRepMajorStop(10)).toBe(true)
   })
 
@@ -44,7 +52,7 @@ describe('repHaptic', () => {
     expect(vibrate).toHaveBeenCalledTimes(4)
     expect(vibrate.mock.calls[0]?.[0]).toBe(REP_NOTCH_MS)
     expect(vibrate.mock.calls[1]?.[0]).toBe(REP_NOTCH_MS)
-    expect(vibrate.mock.calls[2]?.[0]).toEqual([...REP_MAJOR_STOP_PATTERN])
+    expect(vibrate.mock.calls[2]?.[0]).toEqual([...REP_HALF_LAP_STOP_PATTERN])
     expect(vibrate.mock.calls[3]?.[0]).toBe(REP_NOTCH_MS)
   })
 

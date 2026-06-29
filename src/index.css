@@ -83,3 +83,21 @@
 .logger-handle-tick {
   animation: logger-handle-tick var(--duration-fast) var(--ease-out);
 }
+
+@layer components {
+  .dock-scrim {
+    height: var(--dock-scrim-height);
+    background: linear-gradient(to top, var(--dock-bg) 0%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .dock-panel {
+    background-color: var(--dock-bg);
+    border-top: 1px solid var(--color-border);
+    box-shadow: var(--dock-shadow);
+  }
+
+  .dock-label {
+    text-shadow: 0 1px 3px rgba(11, 18, 32, 0.95);
+  }
+}

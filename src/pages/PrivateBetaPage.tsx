@@ -3,8 +3,10 @@ import { Button, Card } from '@/components/ui'
 import { appConfig } from '@/lib/config'
 import { getPendingInviteCode } from '@/lib/storage'
 import { useAuth } from '@/providers/AuthProvider'
+import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 
 export function PrivateBetaPage() {
+  useDocumentTitle('Private beta')
   const { signOut, appAccess, refreshAppAccess } = useAuth()
   const pendingInvite = getPendingInviteCode()
 

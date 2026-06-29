@@ -235,6 +235,13 @@ For exploratory ideas without locked rules, see [product-roadmap.md](./product-r
 | Weekly microcycle: rest / easy / moderate / challenge days | Beta |
 | 4-week mesocycle: W1 70% → W2 85% → W3 100% → W4 deload 55% | Beta |
 | Auto-advance baseline +5% after mesocycle if hit rate ≥ 80% on training days | Beta |
+| **Reps-in-reserve (RIR) after each bank on training days** — skippable; 0–5+ scale | Beta |
+| RIR + hit rate drive max clean set (±1 per block) and plan baseline at mesocycle advance | Beta |
+| Require ≥3 RIR samples before effort overrides hit-rate-only progression | Beta |
+| **Post-challenge plan calibration:** wizard pre-fills from 28-day PushUS log history; user confirms or overrides | Beta |
+| Structured starting peak ≈ **55%** of confirmed recent daily average (not challenge grind volume) | Beta |
+| Initial `plan_baseline` capped at **1.35×** reference peak; requires ≥7 sample days | Beta |
+| High recent volume (peak day ≥ 2× daily cap, ≥14 sample days) → start mesocycle at **week 2 (85%)** not week 1 | Beta |
 | Rest days = 0 daily target, streak-protected | Beta |
 | Conservative defaults when wizard not completed | Beta |
 

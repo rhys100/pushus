@@ -26,6 +26,66 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-06-29 (log page hero reorder)
+
+**Shipped**
+- Log layout: ring + inline bank at top, compact plan card below, entries last
+- Removed top private-beta banner strip for ~32px vertical space
+- Stronger tiered drag haptics (14ms notch, stronger 5 and 10 lap stops)
+
+### 2026-06-29 (post-challenge plan calibration)
+
+**Shipped**
+
+- `volumeCalibration.ts`: 28-day history stats, wizard pre-fill, baseline + mesocycle week derivation
+- Migration `0023_plan_calibration`: `recent_daily_average`, `calibration_note`, `user_volume_stats` RPC
+- Training wizard: history card, recent daily average field, preview copy explaining structured vs grind volume
+- Save applies calibration to initial `plan_baseline` and optional week-2 start
+
+**Tests**
+
+- `npm test -- tests/unit/volumeCalibration.test.ts tests/unit/planEngine.test.ts`
+
+**Deploy**
+
+- Hosted Supabase needs migration `0023_plan_calibration` (`npx supabase db push`)
+
+### 2026-06-29 (Bugbot fixes)
+
+**Fixed**
+
+- Week-2 calibration: `mesocycle_block_start_week` + `getMesocycleWeekInBlock` so progression sync no longer resets to week 1
+- `_routes.json`: allow `/og/join/:code.png` Pages Function
+- Progression sync deduped module-wide per user/group/day
+- Wizard recent daily average rejects NaN input
+
+**Deploy**
+
+- Hosted Supabase needs migration `0024_mesocycle_block_start_week`
+
+### 2026-06-29 (SEO and social previews)
+
+**Shipped**
+
+- Per-route browser tab titles (`useDocumentTitle` + AppLayout wiring)
+- Static OG/Twitter meta in `index.html`; build injects `VITE_APP_URL`
+- Branded share images: default PNG at build time; dynamic invite PNG via Cloudflare Pages Function
+- Crawler HTML for `/join/:code` with group-specific OG tags
+- `robots.txt`, `sitemap.xml`, docs at `docs/seo-and-social-previews.md`
+
+**Notes**
+
+- CF Pages needs runtime `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `APP_URL` (not just `VITE_*`)
+
+### 2026-06-29 (RIR effort feedback)
+
+**Shipped**
+- Training-day banks: optional reps-in-reserve sheet (0–5+ or Skip)
+- RIR on entries; `(+N left)` in today's list; plan sync adjusts max clean set + baseline
+
+**Deploy**
+- Hosted Supabase needs migration `0022_entry_reps_in_reserve` (`npx supabase db push`)
+
 ### 2026-06-29 (board progress layout)
 
 **Changed**

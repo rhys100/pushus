@@ -23,13 +23,14 @@ function getBuildId(): string {
   }
 }
 
-function appVersionPlugin(buildId: string, version: string): Plugin {
+function appVersionPlugin(buildId: string, version: string, appUrl: string): Plugin {
   const bootstrapScript = `(function(){if(typeof fetch==="undefined")return;var m=document.querySelector('meta[name="pushus-build-id"]');if(!m)return;var c=m.getAttribute("content");if(!c||c==="dev")return;try{var u0=new URL(location.href);var requested=u0.searchParams.get("_v");if(requested){u0.searchParams.delete("_v");history.replaceState({},"",u0.toString());if(requested===c){sessionStorage.removeItem("pushus-reload-attempts-"+requested);return}}}catch(e){}fetch("/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(p){if(!p||!p.buildId||p.buildId===c)return;var attemptsKey="pushus-reload-attempts-"+p.buildId;var attempts=0;try{attempts=parseInt(sessionStorage.getItem(attemptsKey)||"0",10)||0}catch(e){}if(attempts>=3)return;try{sessionStorage.setItem(attemptsKey,String(attempts+1))}catch(e){}function go(){var u=new URL(location.href);u.searchParams.set("_v",p.buildId);location.replace(u.toString())}if("serviceWorker" in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){Promise.all(rs.map(function(r){return r.unregister()})).finally(go)})}else go()}).catch(function(){})})();`
 
   return {
     name: 'app-version',
     transformIndexHtml(html) {
-      return html.replace(
+      const withAppUrl = html.replaceAll('__PUSHUS_APP_URL__', appUrl)
+      return withAppUrl.replace(
         '<head>',
         `<head>\n    <meta name="pushus-build-id" content="${buildId}" />\n    <script>${bootstrapScript}</script>`,
       )
@@ -47,9 +48,10 @@ function appVersionPlugin(buildId: string, version: string): Plugin {
 export default defineConfig(({ mode }) => {
   const buildId = mode === 'development' ? 'dev' : getBuildId()
   const appVersion = readAppVersion()
+  const appUrl = (process.env.VITE_APP_URL ?? 'https://www.pushus.app').replace(/\/$/, '')
 
   return {
-    plugins: [react(), appVersionPlugin(buildId, appVersion)],
+    plugins: [react(), appVersionPlugin(buildId, appVersion, appUrl)],
     define: {
       __APP_BUILD_ID__: JSON.stringify(buildId),
       __APP_VERSION__: JSON.stringify(appVersion),

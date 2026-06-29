@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom'
 import { Button, Card } from '@/components/ui'
 import { InviteCodeEntry } from '@/components/group/InviteCodeEntry'
+import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 
 export function JoinLandingPage() {
+  useDocumentTitle('Join a group')
   return (
     <div className="flex min-h-screen flex-col bg-bg px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
       <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">

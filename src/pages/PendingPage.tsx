@@ -3,6 +3,7 @@ import { Button, Card, Skeleton } from '@/components/ui'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/providers/AuthProvider'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
+import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 
 async function fetchPendingGroupName(groupId: string): Promise<string> {
   const { data, error } = await supabase.rpc('get_pending_group_name', {
@@ -14,6 +15,7 @@ async function fetchPendingGroupName(groupId: string): Promise<string> {
 }
 
 export function PendingPage() {
+  useDocumentTitle('Pending approval')
   const { signOut } = useAuth()
   const { pendingGroupId, refreshGroup } = useActiveGroup()
 

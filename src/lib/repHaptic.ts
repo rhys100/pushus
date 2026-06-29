@@ -4,18 +4,41 @@
  * via [ios-vibrator-pro-max](https://vibrator.dev/).
  */
 
-/** Stepped-slider notch tick (ms). */
-export const REP_NOTCH_MS = 8
+/** Stepped-slider notch tick (ms) — ordinary reps. */
+export const REP_NOTCH_MS = 14
 
-/** Stepped-slider major stop every 5 steps — [vibrate, pause, vibrate]. */
-export const REP_MAJOR_STOP_PATTERN = [12, 8, 12] as const
+/** Half-lap stop at 5, 15, 25… — [vibrate, pause, vibrate]. */
+export const REP_HALF_LAP_STOP_PATTERN = [18, 10, 18] as const
 
+/** Full lap at 10, 20, 30… — triple pulse, strongest tier. */
+export const REP_LAP_STOP_PATTERN = [22, 12, 22, 12, 22] as const
+
+/** @deprecated Use REP_HALF_LAP_STOP_PATTERN */
+export const REP_MAJOR_STOP_PATTERN = REP_HALF_LAP_STOP_PATTERN
+
+export function isRepLapStop(count: number): boolean {
+  return count > 0 && count % 10 === 0
+}
+
+export function isRepHalfLapStop(count: number): boolean {
+  return count > 0 && count % 5 === 0 && count % 10 !== 0
+}
+
+/** @deprecated Use isRepHalfLapStop */
 export function isRepMajorStop(count: number): boolean {
-  return count > 0 && count % 5 === 0
+  return isRepHalfLapStop(count) || isRepLapStop(count)
 }
 
 export function repHapticPatternForCount(count: number): number | number[] {
-  return isRepMajorStop(count) ? [...REP_MAJOR_STOP_PATTERN] : REP_NOTCH_MS
+  if (isRepLapStop(count)) {
+    return [...REP_LAP_STOP_PATTERN]
+  }
+
+  if (isRepHalfLapStop(count)) {
+    return [...REP_HALF_LAP_STOP_PATTERN]
+  }
+
+  return REP_NOTCH_MS
 }
 
 export function isRepHapticSupported(): boolean {
@@ -41,7 +64,7 @@ function pulseRepAtCount(count: number): boolean {
 
 /**
  * Pulse once per rep crossed when count increases (e.g. drag from 3 → 7 → four ticks).
- * Multiples of 5 use the stronger major-stop pattern (5, 10, 15…).
+ * Reps 5/15/… use half-lap pattern; 10/20/… use strongest lap pattern.
  */
 export function pulseRepHapticDelta(prevCount: number, nextCount: number): boolean {
   if (nextCount <= prevCount) {

@@ -10,6 +10,7 @@ import {
 } from '@/lib/storage'
 import { useAuth } from '@/providers/AuthProvider'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
+import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 
 type JoinState =
   | 'loading_preview'
@@ -37,6 +38,8 @@ export function JoinPage() {
   const attemptedRef = useRef(false)
 
   const inviteCode = normalizeInviteCode(code ?? '')
+
+  useDocumentTitle(groupName ? `Join ${groupName}` : 'Join a group')
 
   useEffect(() => {
     if (!inviteCode) return

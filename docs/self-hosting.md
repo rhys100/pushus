@@ -42,6 +42,14 @@ PushUS is a static SPA. Deploy `dist/` to any static host (Cloudflare Pages, Ver
 
 Set environment variables at build time for `VITE_*` values.
 
+### SEO and invite link previews
+
+All deployments get per-route browser titles, static OG tags, and a default share image (`/og/default.png`) from `npm run build`.
+
+**Dynamic invite previews** (group name in Slack/iMessage link cards) require [Cloudflare Pages Functions](https://developers.cloudflare.com/pages/functions/) with runtime env vars. See [seo-and-social-previews.md](./seo-and-social-previews.md).
+
+Other static hosts still work; invite links fall back to the generic share image.
+
 ## Fork transparency
 
 Set in your build environment:

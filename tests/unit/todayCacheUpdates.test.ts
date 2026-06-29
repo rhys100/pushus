@@ -71,6 +71,7 @@ describe('cacheUpdates', () => {
         is_backdated: false,
         review_status: 'none' as const,
         source: 'circle_logger' as const,
+        reps_in_reserve: null,
         deleted_at: null,
         created_at: '2026-06-28T10:00:00.000Z',
         updated_at: '2026-06-28T10:00:00.000Z',

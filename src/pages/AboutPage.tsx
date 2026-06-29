@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Button, Card } from '@/components/ui'
+import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { appConfig } from '@/lib/config'
 import { APP_BUILD_ID } from '@/lib/buildId'
 import { APP_VERSION } from '@/lib/appVersionLabel'
@@ -13,6 +14,7 @@ function licenseUrl(): string {
 }
 
 export function AboutPage() {
+  useDocumentTitle('About')
   const deploymentLabel = appConfig.deploymentName || appConfig.name
 
   return (

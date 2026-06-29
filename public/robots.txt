@@ -1,0 +1,21 @@
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /join
+Allow: /login
+Allow: /og/default.png
+Disallow: /today
+Disallow: /leaderboard
+Disallow: /activity
+Disallow: /group
+Disallow: /settings
+Disallow: /group/billing
+Disallow: /settings/training
+Disallow: /challenges
+Disallow: /achievements
+Disallow: /onboarding
+Disallow: /pending
+Disallow: /private-beta
+Disallow: /auth/
+
+Sitemap: https://www.pushus.app/sitemap.xml

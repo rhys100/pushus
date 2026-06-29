@@ -75,6 +75,9 @@ export type TrainingPlanRow = {
   plan_baseline: number
   last_progression_at: string | null
   progression_note: string | null
+  recent_daily_average: number | null
+  calibration_note: string | null
+  mesocycle_block_start_week: number
   created_at: string
   updated_at: string
 }

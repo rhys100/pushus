@@ -3,6 +3,8 @@ import {
   advanceMesocycleIfDue,
   buildWeeklySchedule,
   getCurrentMesocycleWeek,
+  getMesocycleWeekInBlock,
+  planFromRow,
   recommendFromWizard,
   type WizardAnswers,
 } from '../../src/lib/training/planEngine'
@@ -54,5 +56,42 @@ describe('mesocycle', () => {
         expect(w4[day].target).toBeLessThan(w3[day].target)
       }
     }
+  })
+
+  it('getMesocycleWeekInBlock starts at week 2 when calibrated', () => {
+    const start = '2026-06-01'
+    expect(getMesocycleWeekInBlock(start, start, 2)).toBe(2)
+    expect(getMesocycleWeekInBlock(start, '2026-06-08', 2)).toBe(3)
+    expect(getMesocycleWeekInBlock(start, '2026-06-15', 2)).toBe(4)
+  })
+
+  it('planFromRow honors block start week 2 on day zero', () => {
+    const today = '2026-06-01'
+    const plan = planFromRow(
+      {
+        max_clean_set: 20,
+        training_level: 'intermediate',
+        challenge_intensity: 'moderate',
+        preferred_training_days: [0, 1, 2, 3, 4, 5],
+        mesocycle_week: 2,
+        mesocycle_started_at: today,
+        mesocycle_block_start_week: 2,
+        plan_baseline: 1.2,
+      },
+      today,
+    )
+
+    expect(plan.mesocycleWeek).toBe(2)
+    expect(plan.mesocycleBlockStartWeek).toBe(2)
+  })
+
+  it('advanceMesocycleIfDue does not regress calibrated week 2 to week 1', () => {
+    const { plan } = recommendFromWizard(answers, { startMesocycleWeek: 2 })
+    const today = plan.mesocycleStartedAt
+
+    const result = advanceMesocycleIfDue(plan, answers, today, 0.8)
+
+    expect(result.advanced).toBe(false)
+    expect(result.plan.mesocycleWeek).toBe(2)
   })
 })

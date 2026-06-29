@@ -115,6 +115,11 @@ function EntryRow({ group, entry }: EntryRowProps) {
           <p className="mt-0.5 font-mono text-lg font-semibold text-text-primary">
             {entry.count}
             <span className="ml-1 text-sm font-medium text-text-muted">reps</span>
+            {entry.reps_in_reserve !== null ? (
+              <span className="ml-2 text-sm font-normal text-text-muted">
+                (+{entry.reps_in_reserve} left)
+              </span>
+            ) : null}
           </p>
         )}
       </div>

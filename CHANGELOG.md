@@ -10,19 +10,32 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
-### Changed
-
-- Board Day view: cleaner progress layout with full-width bar and `current/target` fraction (removed duplicate rep column)
-- Group invite message: richer two-paragraph copy describing PushUS (leaderboards, training plan) without naming the group
-
 ### Added
 
+- Per-route browser tab titles across the app
+- SEO shell: Open Graph/Twitter meta tags, `robots.txt`, and `sitemap.xml`
+- Branded default social share image (`/og/default.png`)
+- Dynamic invite link previews for social crawlers on Cloudflare Pages (group name + share image at `/og/join/:code.png`)
+- Reps-in-reserve (RIR) effort feedback after banking on training days — quick 0–5+ chips or Skip; stored per entry
+- Training plan auto-progression uses RIR + goal hit rate to adjust max clean set and weekly volume at mesocycle boundaries
+- Post-challenge plan calibration: wizard reads 28-day log history, pre-fills max clean set and recent daily average, scales starting baseline for experienced users
 - Log page daily set planner: bank-about target, set N of M, and sets remaining (updates after each bank)
 - Board Day view: daily goal progress bar per member (reps vs personal training target)
 
+### Changed
+
+- **Log page layout:** ring and inline Bank CTA at top; compact today's plan below; removed top private-beta banner strip (~32px reclaimed)
+- Board Day view: cleaner progress layout with full-width bar and `current/target` fraction (removed duplicate rep column)
+- Group invite message: richer two-paragraph copy describing PushUS (leaderboards, training plan) without naming the group
+
 ### Fixed
 
-- Board Day targets refresh immediately after saving a training plan (no stale 60s cache)
+- Training plan wizard: Save/Continue actions pinned above bottom nav; push reminder hidden on wizard route
+- Bottom dock (nav, bank strip, prompts): solid background, fade scrim, and elevation shadow for readable labels over scrolling content
+- Calibrated week-2 plan start no longer reset to week 1 by auto progression sync on first app open
+- Cloudflare Pages: dynamic invite OG PNG routes (`/og/join/:code.png`) no longer blocked by `_routes.json`
+- Training plan progression sync runs once per user/group/day across pages, not once per hook mount
+- Training wizard rejects non-numeric recent daily average input instead of saving NaN
 - Logger handle tick animation resets after banking so later drags only tick on rep boundaries
 - Training plan save shows the real Supabase error instead of a generic toast (helps diagnose missing migration)
 - Circular logger snaps handle and haptic tick to each rep (1–10) while dragging, not only at a full lap
@@ -30,7 +43,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Database / deploy
 
-- **Required on hosted Supabase:** apply migration `0021_training_plan_v2` before saving a training plan (`npx supabase login` then `npx supabase db push`). Without it, saves fail on enum/column mismatch.
+- **Required on hosted Supabase:** apply migrations `0021_training_plan_v2`, `0022_entry_reps_in_reserve`, `0023_plan_calibration`, and `0024_mesocycle_block_start_week` before saving a training plan (`npx supabase login` then `npx supabase db push`). Without them, saves fail on enum/column mismatch or missing RPC.
 
 _(Nothing else yet.)_
 ---

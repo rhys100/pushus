@@ -5,6 +5,7 @@ import {
   navigateAfterAuth,
 } from '@/lib/postAuthNavigation'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { supabase } from '@/lib/supabase'
 
 function friendlyAuthError(message: string): string {
@@ -19,6 +20,7 @@ function friendlyAuthError(message: string): string {
 }
 
 export function AuthCallbackPage() {
+  useDocumentTitle('Signing in')
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
 

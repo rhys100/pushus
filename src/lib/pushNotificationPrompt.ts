@@ -5,6 +5,7 @@ export const PUSH_PROMPT_EXCLUDED_PATHS = [
   '/auth/callback',
   '/onboarding/profile',
   '/today',
+  '/settings/training',
 ] as const
 
 export type PushPromptVisibilityInput = {

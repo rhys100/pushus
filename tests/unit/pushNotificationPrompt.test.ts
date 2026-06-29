@@ -81,6 +81,9 @@ test('hides prompt on excluded routes', () => {
   expect(
     shouldShowPushNotificationPrompt({ ...baseInput, pathname: '/today' }),
   ).toBe(false)
+  expect(
+    shouldShowPushNotificationPrompt({ ...baseInput, pathname: '/settings/training' }),
+  ).toBe(false)
 })
 
 test('shows prompt on settings when reminders not enabled', () => {

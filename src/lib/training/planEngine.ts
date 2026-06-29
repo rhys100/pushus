@@ -3,6 +3,11 @@
  * Submaximal sets, tiered rest/easy/moderate/challenge days, progressive volume.
  */
 
+import {
+  deriveProgressionFromEffort,
+  type EffortSummary,
+} from '@/lib/training/effortFeedback'
+
 export type DayType = 'rest' | 'easy' | 'moderate' | 'challenge'
 
 export type DayPrescription = {
@@ -22,6 +27,7 @@ export type TrainingPlan = {
   setSize: number
   mesocycleWeek: MesocycleWeek
   mesocycleStartedAt: string
+  mesocycleBlockStartWeek: MesocycleWeek
   planBaseline: number
   restDays: number[]
   easyDays: number[]
@@ -42,12 +48,21 @@ export type WizardAnswers = {
   preferredTrainingDays: number[]
   sorenessWarningAcknowledged: boolean
   challengeIntensity: 'light' | 'moderate' | 'intense'
+  recentDailyAverage?: number | null
+}
+
+export type RecommendWizardOptions = {
+  initialBaseline?: number
+  startMesocycleWeek?: MesocycleWeek
+  mesocycleStartedAt?: string
 }
 
 export type PlanRecommendation = {
   plan: TrainingPlan
   summary: string
   isPlaceholder: boolean
+  calibrationNote?: string | null
+  previewNote?: string | null
 }
 
 export type TodayPrescription = DayPrescription & {
@@ -59,6 +74,7 @@ export type MesocycleAdvanceResult = {
   plan: TrainingPlan
   advanced: boolean
   progressionNote: string | null
+  maxCleanSet: number
 }
 
 const DEFAULT_DISCLAIMER =
@@ -260,6 +276,7 @@ function planFromAnswers(
   mesocycleWeek: MesocycleWeek = 1,
   mesocycleStartedAt?: string,
   planBaseline = 1,
+  mesocycleBlockStartWeek: MesocycleWeek = mesocycleWeek,
 ): TrainingPlan {
   const weeklySchedule = buildWeeklySchedule(answers, mesocycleWeek, planBaseline)
   const { restDays, easyDays, challengeDays } = deriveDayLists(weeklySchedule)
@@ -272,6 +289,7 @@ function planFromAnswers(
     setSize,
     mesocycleWeek,
     mesocycleStartedAt: mesocycleStartedAt ?? todayIsoDate(),
+    mesocycleBlockStartWeek,
     planBaseline,
     restDays,
     easyDays,
@@ -308,6 +326,19 @@ export function getCurrentMesocycleWeek(
   const days = Math.max(0, Math.floor((current.getTime() - start.getTime()) / 86_400_000))
   const weekIndex = Math.floor(days / 7) % 4
   return (weekIndex + 1) as MesocycleWeek
+}
+
+/** Week within the current block when the block may start above week 1 (calibration). */
+export function getMesocycleWeekInBlock(
+  mesocycleStartedAt: string,
+  today: string,
+  blockStartWeek: MesocycleWeek = 1,
+): MesocycleWeek {
+  const start = new Date(`${mesocycleStartedAt}T12:00:00Z`)
+  const current = new Date(`${today}T12:00:00Z`)
+  const days = Math.max(0, Math.floor((current.getTime() - start.getTime()) / 86_400_000))
+  const weeksElapsed = Math.floor(days / 7)
+  return (((blockStartWeek - 1 + weeksElapsed) % 4) + 1) as MesocycleWeek
 }
 
 export function getTodayPrescription(
@@ -352,9 +383,14 @@ export function advanceMesocycleIfDue(
   answers: WizardAnswers,
   today: string,
   hitRate: number,
+  effortSummary?: EffortSummary | null,
+  weekEffortSummary?: EffortSummary | null,
 ): MesocycleAdvanceResult {
+  let nextAnswers = { ...answers }
+  let maxCleanSet = answers.maxCleanSet
+
   if (plan.mesocycleStartedAt > today) {
-    return { plan, advanced: false, progressionNote: null }
+    return { plan, advanced: false, progressionNote: null, maxCleanSet }
   }
 
   const start = new Date(`${plan.mesocycleStartedAt}T12:00:00Z`)
@@ -363,21 +399,50 @@ export function advanceMesocycleIfDue(
   const completedWeeks = Math.floor(daysElapsed / 7)
 
   if (completedWeeks < 1) {
-    const currentWeek = getCurrentMesocycleWeek(plan.mesocycleStartedAt, today)
+    const currentWeek = getMesocycleWeekInBlock(
+      plan.mesocycleStartedAt,
+      today,
+      plan.mesocycleBlockStartWeek,
+    )
     if (currentWeek === plan.mesocycleWeek) {
-      return { plan, advanced: false, progressionNote: null }
+      return { plan, advanced: false, progressionNote: null, maxCleanSet }
     }
-    const updated = rebuildScheduleForMesocycleWeek(plan, answers, currentWeek)
-    return { plan: updated, advanced: true, progressionNote: null }
+    if (currentWeek < plan.mesocycleWeek) {
+      return { plan, advanced: false, progressionNote: null, maxCleanSet }
+    }
+    const updated = rebuildScheduleForMesocycleWeek(plan, nextAnswers, currentWeek)
+    return { plan: updated, advanced: true, progressionNote: null, maxCleanSet }
   }
 
   let planBaseline = plan.planBaseline
   let progressionNote: string | null = null
 
   if (completedWeeks >= 4) {
-    if (hitRate >= 0.8) {
+    const decision = deriveProgressionFromEffort(
+      effortSummary ?? {
+        sampleCount: 0,
+        observedMax: null,
+        medianRir: null,
+        zeroRirRate: 0,
+        highRirRate: 0,
+      },
+      answers.maxCleanSet,
+      hitRate,
+    )
+
+    if (decision === 'increase') {
       planBaseline = Math.round(planBaseline * 1.05 * 100) / 100
-      progressionNote = 'Strong month — volume increased 5% for the next block.'
+      maxCleanSet = answers.maxCleanSet + 1
+      nextAnswers = { ...nextAnswers, maxCleanSet }
+      progressionNote =
+        effortSummary && effortSummary.sampleCount >= 3
+          ? 'Strong block — volume up 5% and set capacity raised from your effort feedback.'
+          : 'Strong month — volume increased 5% for the next block.'
+    } else if (decision === 'reduce') {
+      planBaseline = Math.round(planBaseline * 0.95 * 100) / 100
+      maxCleanSet = Math.max(5, answers.maxCleanSet - 1)
+      nextAnswers = { ...nextAnswers, maxCleanSet }
+      progressionNote = 'Tough block — easing volume and set targets slightly for recovery.'
     } else if (hitRate < 0.5) {
       progressionNote = 'Tough month — holding current volume for the next block.'
     } else {
@@ -387,21 +452,53 @@ export function advanceMesocycleIfDue(
     const newStart = new Date(current)
     newStart.setUTCDate(newStart.getUTCDate() - (daysElapsed % 7))
 
-    const refreshed = planFromAnswers(answers, 1, newStart.toISOString().slice(0, 10), planBaseline)
+    const refreshed = planFromAnswers(
+      nextAnswers,
+      1,
+      newStart.toISOString().slice(0, 10),
+      planBaseline,
+    )
     return {
       plan: { ...refreshed, planBaseline },
       advanced: true,
       progressionNote,
+      maxCleanSet,
     }
   }
 
-  const currentWeek = getCurrentMesocycleWeek(plan.mesocycleStartedAt, today)
+  const currentWeek = getMesocycleWeekInBlock(
+    plan.mesocycleStartedAt,
+    today,
+    plan.mesocycleBlockStartWeek,
+  )
   if (currentWeek === plan.mesocycleWeek) {
-    return { plan, advanced: false, progressionNote: null }
+    return { plan, advanced: false, progressionNote: null, maxCleanSet }
+  }
+  if (currentWeek < plan.mesocycleWeek) {
+    return { plan, advanced: false, progressionNote: null, maxCleanSet }
   }
 
-  const updated = rebuildScheduleForMesocycleWeek(plan, answers, currentWeek)
-  return { plan: updated, advanced: true, progressionNote: null }
+  const weekSummary = weekEffortSummary ?? effortSummary
+  if (
+    weekSummary &&
+    weekSummary.sampleCount >= 3 &&
+    weekSummary.highRirRate >= 0.5 &&
+    weekSummary.observedMax !== null &&
+    weekSummary.observedMax >= answers.maxCleanSet + 2 &&
+    maxCleanSet === answers.maxCleanSet
+  ) {
+    maxCleanSet = answers.maxCleanSet + 1
+    nextAnswers = { ...nextAnswers, maxCleanSet }
+    progressionNote = 'Sets felt easy — nudging your max clean set up by 1 this week.'
+  }
+
+  const updated = rebuildScheduleForMesocycleWeek(plan, nextAnswers, currentWeek)
+  return {
+    plan: updated,
+    advanced: true,
+    progressionNote,
+    maxCleanSet,
+  }
 }
 
 export function formatWeeklyScheduleSummary(schedule: WeeklySchedule): string {
@@ -414,11 +511,22 @@ export function formatWeeklyScheduleSummary(schedule: WeeklySchedule): string {
   }).join(' · ')
 }
 
-export function recommendFromWizard(answers: WizardAnswers): PlanRecommendation {
-  const plan = planFromAnswers(answers, 1)
+export function recommendFromWizard(
+  answers: WizardAnswers,
+  options: RecommendWizardOptions = {},
+): PlanRecommendation {
+  const startWeek = options.startMesocycleWeek ?? 1
+  const baseline = options.initialBaseline ?? 1
+  const plan = planFromAnswers(
+    answers,
+    startWeek,
+    options.mesocycleStartedAt ?? todayIsoDate(),
+    baseline,
+    startWeek,
+  )
 
   const summary = [
-    `4-week build starting at ${Math.round(MESOCYCLE_MULTIPLIER[1] * 100)}% volume.`,
+    `4-week build starting at ${Math.round(MESOCYCLE_MULTIPLIER[startWeek] * 100)}% volume.`,
     `Peak day: ${plan.peakDayTarget} reps in submaximal sets of ${plan.setSize}.`,
     formatWeeklyScheduleSummary(plan.weeklySchedule),
   ].join(' ')
@@ -448,6 +556,7 @@ export function wizardAnswersFromPlanRow(row: {
   training_level: string
   challenge_intensity: string
   preferred_training_days: number[]
+  recent_daily_average?: number | null
 }): WizardAnswers {
   const level = row.training_level as WizardAnswers['trainingLevel']
   const intensity = row.challenge_intensity as WizardAnswers['challengeIntensity']
@@ -462,6 +571,7 @@ export function wizardAnswersFromPlanRow(row: {
     challengeIntensity: ['light', 'moderate', 'intense'].includes(intensity)
       ? intensity
       : 'moderate',
+    recentDailyAverage: row.recent_daily_average ?? null,
   }
 }
 
@@ -473,14 +583,25 @@ export function planFromRow(row: {
   weekly_schedule?: WeeklySchedule | null
   mesocycle_week?: number | null
   mesocycle_started_at?: string | null
+  mesocycle_block_start_week?: number | null
   plan_baseline?: number | null
 }, today: string = todayIsoDate()): TrainingPlan {
   const answers = wizardAnswersFromPlanRow(row)
   const mesocycleStartedAt = row.mesocycle_started_at ?? today
   const planBaseline = row.plan_baseline ?? 1
-  const mesocycleWeek = getCurrentMesocycleWeek(mesocycleStartedAt, today)
+  const blockStartWeek = Math.min(
+    4,
+    Math.max(1, row.mesocycle_block_start_week ?? 1),
+  ) as MesocycleWeek
+  const mesocycleWeek = getMesocycleWeekInBlock(mesocycleStartedAt, today, blockStartWeek)
 
-  return planFromAnswers(answers, mesocycleWeek, mesocycleStartedAt, planBaseline)
+  return planFromAnswers(
+    answers,
+    mesocycleWeek,
+    mesocycleStartedAt,
+    planBaseline,
+    blockStartWeek,
+  )
 }
 
 /** Estimate weekly volume from a plan. */

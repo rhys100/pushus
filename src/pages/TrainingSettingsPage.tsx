@@ -4,7 +4,7 @@ import { Badge, Card, useToast } from '@/components/ui'
 import { TrainingWizard } from '@/components/training/TrainingWizard'
 import { SettingsLinkRow } from '@/components/settings/SettingsLinkRow'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
-import { useTrainingPlan } from '@/hooks/useTrainingPlan'
+import { useTrainingPlan, useTrainingHistoryStats } from '@/hooks/useTrainingPlan'
 import { useAuth } from '@/providers/AuthProvider'
 import { type WizardAnswers } from '@/lib/training/planEngine'
 import { getErrorMessage } from '@/lib/errors'
@@ -14,10 +14,11 @@ export function TrainingSettingsPage() {
   const { toast } = useToast()
   const { user } = useAuth()
   const { activeGroup } = useActiveGroup()
-  const { savePlan, saving, wizardCompleted, savedWizardAnswers } = useTrainingPlan(
+  const { savePlan, saving, wizardCompleted, savedWizardAnswers, progressionNote } =
+    useTrainingPlan(user?.id, activeGroup?.id, activeGroup?.timezone)
+  const { data: historyStats, isLoading: historyLoading } = useTrainingHistoryStats(
     user?.id,
     activeGroup?.id,
-    activeGroup?.timezone,
   )
 
   async function handleComplete(answers: WizardAnswers) {
@@ -38,7 +39,7 @@ export function TrainingSettingsPage() {
 
   return (
     <AppLayout title="Training plan" subtitle="Personal targets" showNav>
-      <div className="space-y-4 pb-8">
+      <div className="space-y-4 pb-[calc(var(--bank-cta-height)+0.5rem)]">
         <Card padding="md" className="space-y-2">
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm font-medium text-text-primary">Training wizard</p>
@@ -50,11 +51,18 @@ export function TrainingSettingsPage() {
             Answer a few questions and we will build a 4-week plan with rest, easy, moderate, and
             challenge days. General fitness guidance only — not medical advice.
           </p>
+          {progressionNote ? (
+            <p className="rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-xs text-text-primary">
+              {progressionNote}
+            </p>
+          ) : null}
         </Card>
 
         <TrainingWizard
           saving={saving}
           initialAnswers={savedWizardAnswers}
+          historyStats={historyStats ?? null}
+          historyLoading={historyLoading}
           onComplete={(answers) => void handleComplete(answers)}
         />
 

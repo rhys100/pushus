@@ -1,8 +1,9 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { AppHeader, BottomNav, type NavItem } from '@/components/ui'
-import { PrivateBetaBanner } from '@/components/layout/PrivateBetaBanner'
-import { cn } from '@/lib/cn'
+import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
+import { cn } from '@/lib/cn'
+import { resolveAppLayoutDocumentTitle } from '@/lib/documentTitle'
 
 const navRoutes: Record<NavItem, string> = {
   log: '/today',
@@ -45,17 +46,23 @@ export function AppLayout({
   const { activeGroup } = useActiveGroup()
 
   const activeNav = navItemFromPath(location.pathname)
+  const isTodayRoute = location.pathname.startsWith('/today')
   const resolvedTitle = title ?? activeGroup?.name ?? 'PushUS'
   const resolvedSubtitle =
     subtitle ?? (activeGroup ? 'Your push-up crew' : undefined)
+  const documentTitle = resolveAppLayoutDocumentTitle(
+    title,
+    activeGroup?.name,
+    isTodayRoute,
+  )
+
+  useDocumentTitle(documentTitle)
 
   const handleNavigate = onNavigate ?? ((item: NavItem) => navigate(navRoutes[item]))
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-bg">
-      <PrivateBetaBanner />
-      {title !== null ? (
-        <AppHeader
+      {title !== null ? (        <AppHeader
           title={resolvedTitle}
           subtitle={resolvedSubtitle}
           leading={headerLeading}

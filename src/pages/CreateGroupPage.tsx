@@ -7,8 +7,10 @@ import { cn } from '@/lib/cn'
 import { getPendingInviteCode } from '@/lib/storage'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 import { useAuth } from '@/providers/AuthProvider'
+import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 
 export function CreateGroupPage() {
+  useDocumentTitle('Create group')
   const navigate = useNavigate()
   const { toast } = useToast()
   const { appAccess } = useAuth()

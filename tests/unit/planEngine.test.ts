@@ -136,7 +136,32 @@ describe('planEngine v2', () => {
 
     expect(result.advanced).toBe(true)
     expect(result.plan.planBaseline).toBeGreaterThan(1)
-    expect(result.progressionNote).toMatch(/5%/)
+    expect(result.maxCleanSet).toBe(21)
+    expect(result.progressionNote).toMatch(/5%|effort feedback/i)
+  })
+
+  it('advanceMesocycleIfDue uses effort feedback when RIR samples are rich', () => {
+    const { plan } = recommendFromWizard(advancedMax20)
+    const startPlan = { ...plan, mesocycleStartedAt: '2026-01-01', planBaseline: 1 }
+    const effortSummary = {
+      sampleCount: 4,
+      observedMax: 22,
+      medianRir: 2,
+      zeroRirRate: 0.25,
+      highRirRate: 0.5,
+    }
+
+    const result = advanceMesocycleIfDue(
+      startPlan,
+      advancedMax20,
+      '2026-01-29',
+      0.85,
+      effortSummary,
+    )
+
+    expect(result.advanced).toBe(true)
+    expect(result.maxCleanSet).toBe(21)
+    expect(result.progressionNote).toMatch(/effort feedback/i)
   })
 
   it('advanceMesocycleIfDue holds baseline on low hit rate', () => {

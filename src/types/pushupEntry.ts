@@ -12,6 +12,7 @@ export type PushupEntry = {
   is_backdated: boolean
   review_status: EntryReviewStatus
   source: EntrySource
+  reps_in_reserve: number | null
   deleted_at: string | null
   created_at: string
   updated_at: string

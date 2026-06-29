@@ -140,44 +140,43 @@ const navItems: NavConfig[] = [
 export function BottomNav({ active, onNavigate, className }: BottomNavProps) {
   return (
     <nav
-      className={cn(
-        'fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/95 backdrop-blur-sm',
-        'pb-[var(--bottom-nav-safe)]',
-        className,
-      )}
+      className={cn('fixed inset-x-0 bottom-0 z-40', className)}
       aria-label="Main navigation"
     >
-      <div className="mx-auto grid max-w-lg grid-cols-5">
-        {navItems.map((item) => {
-          const isActive = active === item.id
+      <div className="dock-scrim" aria-hidden="true" />
+      <div className="dock-panel pb-[var(--bottom-nav-safe)]">
+        <div className="mx-auto grid max-w-lg grid-cols-5">
+          {navItems.map((item) => {
+            const isActive = active === item.id
 
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onNavigate(item.id)}
-              aria-current={isActive ? 'page' : undefined}
-              aria-label={item.id === 'log' ? 'Log push-ups' : item.label}
-              className={cn(
-                'flex min-h-[var(--bottom-nav-content)] flex-col items-center justify-center gap-0.5 px-1 py-1.5',
-                'transition-colors duration-[var(--duration-fast)]',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50',
-                'active:scale-[0.97]',
-                isActive ? 'text-accent' : 'text-text-muted hover:text-text-primary',
-              )}
-            >
-              {item.icon(isActive)}
-              <span
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onNavigate(item.id)}
+                aria-current={isActive ? 'page' : undefined}
+                aria-label={item.id === 'log' ? 'Log push-ups' : item.label}
                 className={cn(
-                  'text-[0.625rem] font-medium leading-none',
-                  isActive && 'font-semibold',
+                  'flex min-h-[var(--bottom-nav-content)] flex-col items-center justify-center gap-0.5 px-1 py-1.5',
+                  'transition-colors duration-[var(--duration-fast)]',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50',
+                  'active:scale-[0.97]',
+                  isActive ? 'text-accent' : 'text-text-muted hover:text-text-primary',
                 )}
               >
-                {item.label}
-              </span>
-            </button>
-          )
-        })}
+                {item.icon(isActive)}
+                <span
+                  className={cn(
+                    'dock-label text-[0.625rem] font-medium leading-none',
+                    isActive && 'font-semibold',
+                  )}
+                >
+                  {item.label}
+                </span>
+              </button>
+            )
+          })}
+        </div>
       </div>
     </nav>
   )

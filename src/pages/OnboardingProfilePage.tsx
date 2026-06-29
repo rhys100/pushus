@@ -12,8 +12,10 @@ import { cn } from '@/lib/cn'
 import { getPendingInviteCode, markProfileCompleted } from '@/lib/storage'
 import { useAuth } from '@/providers/AuthProvider'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
+import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 
 export function OnboardingProfilePage() {
+  useDocumentTitle('Set up profile')
   const navigate = useNavigate()
   const location = useLocation()
   const { toast } = useToast()

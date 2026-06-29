@@ -22,12 +22,14 @@ export function PushNotificationPrompt() {
   return (
     <div
       className={cn(
-        'fixed inset-x-0 z-40 border-t border-border bg-surface px-4 pb-3 pt-3 shadow-[0_-4px_24px_rgba(0,0,0,0.12)]',
+        'fixed inset-x-0 z-40',
         promptBottomClass(pathname),
       )}
       role="region"
       aria-label="Push reminder prompt"
     >
+      <div className="dock-scrim" aria-hidden="true" />
+      <div className="dock-panel px-4 pb-3 pt-3">
       <p className="text-sm font-semibold text-text-primary">Stay on track with push reminders</p>
       <p className="mt-1 text-sm text-text-muted">
         We send hourly reminders if you are behind your goal, between 7am and 7pm in your
@@ -45,6 +47,7 @@ export function PushNotificationPrompt() {
         <Button variant="secondary" disabled={enabling} onClick={dismiss}>
           Not now
         </Button>
+      </div>
       </div>
     </div>
   )

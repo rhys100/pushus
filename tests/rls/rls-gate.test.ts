@@ -478,6 +478,46 @@ describe('RLS gate (Slice 1A)', () => {
     expect(auditRows![0].actor_id).toBe(ids.ownerId)
     expect(auditRows![0].after).toMatchObject({ count: 11 })
   })
+
+  it('allows owner to record effort on own entry', async () => {
+    const client = await signIn(ids.ownerEmail, ids.password)
+
+    const { data: entry, error: bankError } = await client.rpc('bank_pushups', {
+      p_group_id: ids.groupId,
+      p_count: 9,
+    })
+
+    expect(bankError).toBeNull()
+    expect(entry?.id).toBeTruthy()
+
+    const { data: updated, error: effortError } = await client.rpc('record_entry_effort', {
+      p_entry_id: entry!.id,
+      p_reps_in_reserve: 2,
+    })
+
+    expect(effortError).toBeNull()
+    expect(updated?.reps_in_reserve).toBe(2)
+  })
+
+  it('denies recording effort on another member entry', async () => {
+    const ownerClient = await signIn(ids.ownerEmail, ids.password)
+    const memberClient = await signIn(ids.activeEmail, ids.password)
+
+    const { data: entry, error: bankError } = await ownerClient.rpc('bank_pushups', {
+      p_group_id: ids.groupId,
+      p_count: 7,
+    })
+
+    expect(bankError).toBeNull()
+
+    const { data, error } = await memberClient.rpc('record_entry_effort', {
+      p_entry_id: entry!.id,
+      p_reps_in_reserve: 1,
+    })
+
+    expect(data).toBeNull()
+    expect(error?.message).toMatch(/not allowed/i)
+  })
 })
 
 describe('billing privacy (Slice 1B)', () => {
