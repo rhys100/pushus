@@ -10,83 +10,67 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+_(Nothing yet.)_
+---
+
+## [1.2.0] - 2026-06-29
+
 ### Added
 
-- **Trusted volume calibration (slice 13):** max clean caps set size; recent average shapes set count and daily targets via trust bands (none / partial / trusted)
+- **Trusted volume calibration:** max clean caps set size; recent average shapes set count and daily targets via trust bands (none / partial / trusted)
 - **Training plan engine v2:** day-type set sizing (easy 35% / moderate 50% / challenge 60% of max clean); default week Mon–Tue easy, Wed moderate, Thu rest, Fri easy, Sat challenge, Sun rest
 - Max clean check-in via explicit **Try max set** mode on challenge days; capped plan max update confirm in Settings
 - Easy / Good / Hard / Skip effort sheet after final set or challenge day (maps to RIR internally)
 - Post-challenge **soreness check-in** (feeling good / a bit sore / pain — stop) via `user_daily_status_checkins`
 - Leaderboard day view: **percent progress for other members**; exact target for self; no target when wizard skipped
-- Migration `0026_training_plan_v2.sql`: observed max, pending max update, progression log, max check-in flag on entries
 - Week 1 plan tuning: daily baseline adjusts from logged pushups + RIR during the first 7 days after saving a plan
 - Training wizard history confidence: trusted / partial / stale paths — max-clean-first when PushUS logs are old or missing
+- Reps-in-reserve (RIR) effort feedback after banking on training days — quick 0–5+ chips or Skip; stored per entry
+- Post-challenge plan calibration: wizard reads 30-day log history, pre-fills max clean set and recent daily average
+- Log page daily set planner: bank-about target, set N of M, and sets remaining (updates after each bank)
+- Board Day view: daily goal progress bar per member (reps vs personal training target)
+- Branded default social share image (`/og/default.png`); dynamic invite link previews for social crawlers on Cloudflare Pages
+- SEO shell: Open Graph/Twitter meta tags, `robots.txt`, and `sitemap.xml`
 
 ### Changed
 
-- Volume calibration replaces soft baseline hint with two-part model: `trustedVolume.ts` + updated `buildWeeklySchedule`
+- Volume calibration replaces soft baseline hint with two-part model (`trustedVolume.ts` + updated `buildWeeklySchedule`)
 - Edge `planResolve.ts` mirrors trusted volume when `recent_daily_average` is stored
 - Training plan uses **profile timezone** (group timezone for leaderboard only)
 - Volume calibration is **hints only** (+10% baseline nudge from daily average); history cannot override max clean; no auto week-2 skip
 - Block progression adjusts **baseline only** — no automatic max-clean bumps from effort or observed max
 - Training wizard: max clean min 1 step 1, soreness question, skip path, practice-day labels for max clean 1–2
-- Training plan preview and settings show honest set targets when mesocycle scaling reduces volume (e.g. `14 total · ~7/set` instead of misleading `2×9`)
+- Training plan preview and settings show honest set targets when mesocycle scaling reduces volume (e.g. `14 total · ~7/set`)
 - Training wizard: stale-log banner, optional off-app daily average, max-clean mismatch warning; fixed bottom Save/Back dock on mobile
-
-### Fixed
-
-- **Training wizard trust mode:** live manual average in preview (no stale saved value); explicit confirm checkbox for off-app/training average (including when partial PushUS logs exist); tiered mismatch (70/max 20 trusted when confirmed, extreme values stay partial); preview pills and copy by trust mode; Hardest day / Suggested sets labels; 6-day training warnings; removed redundant Back to settings card
-- CI lint: unused params and prefer-const in plan engine / progression sync
-- **Trusted volume path:** training wizard waits for PushUS log stats before preview; 14+ logged days (or 7+ recent) resolve trusted instead of partial fallback; stale `@vt:partial` rows promote to trusted on rebuild when logs qualify; separate off-app confirmation checkbox; preview copy explains trust mode and capped anchors
-- Off-app confirm (`mc:1`) restored when re-editing the wizard; leaderboard daily targets use live log stats for trusted promotion; progression sync waits for history stats before first run
-- Plan calibration baseline no longer stuck at 1.0 when structured peak hits the volume cap edge
-- SEO shell: Open Graph/Twitter meta tags, `robots.txt`, and `sitemap.xml`
-- Branded default social share image (`/og/default.png`)
-- Dynamic invite link previews for social crawlers on Cloudflare Pages (group name + share image at `/og/join/:code.png`)
-- Reps-in-reserve (RIR) effort feedback after banking on training days — quick 0–5+ chips or Skip; stored per entry
-- Training plan auto-progression uses RIR + goal hit rate to adjust max clean set and weekly volume at mesocycle boundaries
-- Post-challenge plan calibration: wizard reads 30-day log history, pre-fills max clean set and recent daily average, scales starting baseline for experienced users
-- Log page daily set planner: bank-about target, set N of M, and sets remaining (updates after each bank)
-- Board Day view: daily goal progress bar per member (reps vs personal training target)
-
-### Changed
-
-- Training wizard: clearer 30-day daily average question, step titles, mobile-friendly preview, log pre-fill on re-run, save gated on soreness acknowledgement
+- Training wizard: clearer 30-day daily average question, step titles, mobile-friendly preview, log pre-fill on re-run
 - Toasts moved below the header so they no longer cover settings content above the bottom nav
-- **Log page layout:** ring and inline Bank CTA at top; compact today's plan below; removed top private-beta banner strip (~32px reclaimed)
-- Circular logger: drag from anywhere on the ring with snap-to-rep on touch; aligned pointer/ring angle math; handle stays on track (no scale flash)
-- Stronger tiered drag haptics (18ms notch; stronger pulses at reps 5 and 10)
-- Board Day view: single-line rows with inline progress bar and `current/target` fraction
-- Board Day progress bar: lighter inset track so partial progress and empty goals read clearly
-- Group invite message: richer two-paragraph copy describing PushUS (leaderboards, training plan) without naming the group
+- **Log page layout:** ring and inline Bank CTA at top; compact today's plan below; removed top private-beta banner strip
+- Circular logger: drag from anywhere on the ring with snap-to-rep on touch; stronger tiered drag haptics (18ms notch; pulses at reps 5 and 10)
+- Board Day view: single-line rows with inline progress bar and `current/target` fraction; lighter inset track for partial progress
+- Group invite message: richer two-paragraph copy describing PushUS without naming the group
 
 ### Fixed
 
-- Activity feed: you can no longer react to your own entries (UI hidden + insert/update RLS enforced)
-- Push reminder tap opens the log page (`/today`) instead of leaving you on the previous tab
-- Push reminder copy matches the log page set planner (e.g. “Bank about 8 — set 1 of 3”) instead of only showing total reps left
-- Training plan wizard: Save/Continue actions pinned above bottom nav; push reminder hidden on wizard route
-- Bottom dock (nav, bank strip, prompts): solid background, fade scrim, and elevation shadow for readable labels over scrolling content
+- **Training wizard trust mode:** live manual average in preview; explicit confirm checkbox for off-app/training average; tiered mismatch; preview pills and copy by trust mode; Hardest day / Suggested sets labels; 6-day training warnings
+- **Trusted volume path:** wizard waits for PushUS log stats before preview; 14+ logged days resolve trusted; stale `@vt:partial` rows promote on rebuild; separate off-app confirmation checkbox
+- Off-app confirm (`mc:1`) restored when re-editing the wizard; leaderboard daily targets use live log stats; progression sync waits for history stats
+- Plan calibration baseline no longer stuck at 1.0 when structured peak hits the volume cap edge
+- Activity feed: you can no longer react to your own entries (UI hidden + RLS enforced)
+- Push reminder tap opens the log page (`/today`); reminder copy matches set planner (e.g. “Bank about 8 — set 1 of 3”)
+- Training plan wizard: Save/Continue pinned above bottom nav; push reminder hidden on wizard route
+- Bottom dock: solid background, fade scrim, and elevation shadow for readable labels over scrolling content
 - Calibrated week-2 plan start no longer reset to week 1 by auto progression sync on first app open
-- Cloudflare Pages: dynamic invite OG PNG routes (`/og/join/:code.png`) no longer blocked by `_routes.json`
-- Training plan progression sync runs once per user/group/day across pages, not once per hook mount
-- Training wizard rejects non-numeric recent daily average input instead of saving NaN
-- Training wizard log prefill waits for saved plan + history before applying (fixes re-run race)
-- Circular logger accepts taps across the full ring hit target, not just the visual stroke width
-- Training plan save confirmation shows inline at top of Settings instead of a bottom toast over page content
-- Toasts on headerless Log page use a smaller top inset so they do not cover the circular logger
-- Logger handle tick animation resets after banking so later drags only tick on rep boundaries
-- Training plan save shows the real Supabase error instead of a generic toast (helps diagnose missing migration)
-- Circular logger snaps handle and haptic tick to each rep (1–10) while dragging, not only at a full lap
-- Drag count stays in sync when moving the handle backward to a lower rep mid-drag
-- Backward drag during an active session no longer leaves centre count, bank state, and `getCount()` ahead of the handle until drag ends
-- Twelve-o'clock ring tap with partial count snaps to rep 1 instead of clearing the logger
+- Cloudflare Pages: dynamic invite OG PNG routes no longer blocked by `_routes.json`
+- Training plan progression sync runs once per user/group/day across pages
+- Training wizard rejects non-numeric recent daily average; log prefill waits for saved plan + history
+- Circular logger: full ring hit target, snap handle and haptic tick per rep, backward drag sync, twelve-o'clock tap snaps to rep 1
+- Training plan save shows the real Supabase error instead of a generic toast
+- CI lint: unused params and prefer-const in plan engine / progression sync
 
 ### Database / deploy
 
-- **Required on hosted Supabase:** apply migrations `0021_training_plan_v2`, `0022_entry_reps_in_reserve`, `0023_plan_calibration`, and `0024_mesocycle_block_start_week` before saving a training plan (`npx supabase login` then `npx supabase db push`). Without them, saves fail on enum/column mismatch or missing RPC.
+- **Required on hosted Supabase:** apply migrations through `0027_volume_stats_last_log` (`npx supabase login` then `npx supabase db push`). Key migrations: `0022_entry_reps_in_reserve`, `0023_plan_calibration`, `0024_mesocycle_block_start_week`, `0025_no_self_reactions`, `0026_training_plan_v2` (observed max, effort fields, progression log), `0027_volume_stats_last_log` (wizard last-log metadata). Duplicate `0025` numbering fixed — volume stats renumbered to `0027`.
 
-_(Nothing else yet.)_
 ---
 
 ## [1.1.0] - 2026-06-29
@@ -183,5 +167,7 @@ First public release — PushUS Community beta.
 
 ## Release history
 
+- **1.2.0** (2026-06-29) — Trusted volume calibration, training plan engine v2, max check-in, effort/soreness feedback, Board day progress, SEO/social previews
+- **1.1.0** (2026-06-29) — Science-based training plan, Board views, Log ring UX, Settings tab
 - **1.0.1** (2026-06-28) — Per-rep haptic feedback and handle snap on circular logger drag
 - **1.0.0** (2026-06-28) — Community beta: core loop, private beta, push reminders, open-source release

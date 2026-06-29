@@ -27,7 +27,8 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 
 | Label | Meaning |
 |-------|---------|
-| **v1.1.0** | Training plan v2, Board day/week/month views, Log ring UX polish, Settings tab (latest) |
+| **v1.2.0** | Trusted volume calibration, training plan engine v2, max check-in, effort/soreness feedback, Board day progress, SEO/social previews (latest) |
+| **v1.1.0** | Training plan v2, Board day/week/month views, Log ring UX polish, Settings tab |
 | **v1.0.1** | Per-rep haptic feedback on circular logger |
 | **v1.0.0** | First public release (Community beta) |
 | **Private beta** | Invite and allowlist-controlled access on the official deployment |
@@ -66,20 +67,21 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 
 ### Social and group
 
-- [x] Leaderboard (day, week, month views; daily goal progress on Day view)
+- [x] Leaderboard (day, week, month views; daily goal progress on Day view; percent progress for other members)
 - [x] Activity feed
 - [x] Emoji reactions
 - [x] Group invite tools
-- [x] Branded social share previews for invite links (Cloudflare Pages Functions)
+- [x] Branded social share previews for invite links (Cloudflare Pages Functions + default OG image)
 - [x] Member list on Group tab; join requests and invites in Settings (admin)
-
-### Settings and training
 
 - [x] Settings tab in bottom nav (personal + group admin)
 - [x] Science-based training plan: weekly microcycle + 4-week mesocycle with per-day targets
 - [x] Training plan wizard with saved plan (Log progress + push reminders; rest days skipped)
+- [x] Trusted volume calibration: max clean caps set size; recent average drives set count via trust bands
+- [x] Max clean check-in (Try max set) on challenge days; capped plan max update confirm in Settings
+- [x] Easy / Good / Hard effort feedback after sets; post-challenge soreness check-in
+- [x] Week 1 plan tuning adjusts targets from logged pushups + RIR; wizard adapts when log history is stale
 - [x] Training wizard calibrates starting volume from recent PushUS log history (structured build, not challenge grind)
-- [x] Week 1 plan tuning adjusts targets from logged pushups + RIR; wizard adapts questions when log history is stale
 - [x] Customisable push reminder frequency and active hours
 - [x] Injury pause for reminders
 
@@ -130,7 +132,7 @@ PushUS Community runs on **your** Supabase project plus a static frontend host.
 1. Clone this repository
 2. Create a Supabase project (or run Supabase locally)
 3. Copy `.env.example` to `.env` and set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
-4. Apply migrations: `supabase db reset` (local) or `npx supabase login` then `npx supabase db push` (hosted). Training plan save requires migrations through `0025_volume_stats_last_log` on hosted projects.
+4. Apply migrations: `supabase db reset` (local) or `npx supabase login` then `npx supabase db push` (hosted). Training plan features require migrations through `0027_volume_stats_last_log` on hosted projects (includes `0026_training_plan_v2` for max check-in / effort fields).
 5. Build: `npm run build` and deploy the `dist/` folder
 
 Keep `VITE_BILLING_ENABLED=false` for Community. Never put service role or Stripe secrets in the frontend.

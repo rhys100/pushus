@@ -28,15 +28,21 @@ Public-friendly view of where PushUS is today and where it may go.
 ### Training and settings
 
 - Science-based training plan: weekly microcycle + 4-week mesocycle with per-day targets
-- Reps-in-reserve effort feedback on training-day banks; plan auto-tunes from RIR + goal completion
+- **Trusted volume calibration:** max clean caps set size; recent average drives set count and daily targets (none / partial / trusted)
+- Training plan engine v2: day-type set sizing, default 5-day pattern, baseline-only block progression
+- Max clean check-in via **Try max set**; capped plan max update confirm in Settings
+- Easy / Good / Hard / Skip effort feedback; post-challenge soreness check-in
+- Week 1 adaptive baseline from logs + RIR; wizard history confidence tiers (trusted / partial / stale)
+- Reps-in-reserve effort feedback on training-day banks
 - Training wizard with week preview; rest days show recovery on Log
 - Settings tab (personal prefs, training plan, group admin tools)
 - Customisable push reminder frequency and active hours
 
 ### Social and group
 
-- Leaderboard (day, week, month)
-- Activity feed with emoji reactions (🔥 💪 👏 in beta)
+- Leaderboard (day, week, month; day view shows percent progress for others, exact target for self)
+- Activity feed with emoji reactions (🔥 💪 👏 in beta; no self-reactions)
+- Branded social share previews for invite links (Cloudflare Pages)
 - Invite tools and member management
 
 ### Platform

@@ -26,6 +26,16 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-06-29 (release v1.2.0)
+
+**Shipped**
+- Release **v1.2.0**: trusted volume calibration, training plan engine v2, max check-in, effort/soreness feedback, Board day progress, SEO/social previews
+- Migration numbering fix: `0025_volume_stats_last_log` renumbered to `0027`; `0026` + `0027` pushed to hosted Supabase
+
+**Tests:** full unit suite before tag
+
+**Next:** monitor prod training plan saves post-migration
+
 **Fixed**
 - Training average confirm control: checkbox shows when manual avg entered and logs not trusted (partial PushUS history no longer blocks it); confirmed manual uses manual anchor over sparse logs; Hardest day copy in wizard summary; CI lint clean on training modules
 - Training wizard trust UX: live manual avg in preview, confirm checkbox, tiered extreme mismatch, trust pills/copy, hardest-day labels, 6-day warnings, removed Back to settings card
@@ -75,7 +85,7 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 - Calibration fix: manual daily average + clamp fix; high avg → week 2 start
 - History-confidence wizard (trusted / partial / stale); off-app avg toggle for stale users
 - Week 1 adaptive baseline from logs + RIR (`weekOneAdaptation.ts` + progression sync)
-- Wizard dock padding token; migration `0025_volume_stats_last_log.sql`
+- Wizard dock padding token; migration `0027_volume_stats_last_log.sql` (renumbered from duplicate 0025)
 
 **Tests:** 240 passing (planEngine, volumeCalibration, weekOneAdaptation)
 
