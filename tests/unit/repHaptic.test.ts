@@ -31,7 +31,7 @@ describe('repHaptic', () => {
 
   it('uses stronger notch duration for ordinary reps', () => {
     expect(repHapticPatternForCount(3)).toBe(REP_NOTCH_MS)
-    expect(REP_NOTCH_MS).toBeGreaterThan(8)
+    expect(REP_NOTCH_MS).toBeGreaterThanOrEqual(18)
     expect(isRepHalfLapStop(3)).toBe(false)
     expect(isRepLapStop(3)).toBe(false)
   })

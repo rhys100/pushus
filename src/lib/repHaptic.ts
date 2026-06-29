@@ -5,13 +5,13 @@
  */
 
 /** Stepped-slider notch tick (ms) — ordinary reps. */
-export const REP_NOTCH_MS = 14
+export const REP_NOTCH_MS = 18
 
 /** Half-lap stop at 5, 15, 25… — [vibrate, pause, vibrate]. */
-export const REP_HALF_LAP_STOP_PATTERN = [18, 10, 18] as const
+export const REP_HALF_LAP_STOP_PATTERN = [24, 12, 24] as const
 
 /** Full lap at 10, 20, 30… — triple pulse, strongest tier. */
-export const REP_LAP_STOP_PATTERN = [22, 12, 22, 12, 22] as const
+export const REP_LAP_STOP_PATTERN = [28, 14, 28, 14, 28] as const
 
 /** @deprecated Use REP_HALF_LAP_STOP_PATTERN */
 export const REP_MAJOR_STOP_PATTERN = REP_HALF_LAP_STOP_PATTERN

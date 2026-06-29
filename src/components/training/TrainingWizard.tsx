@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Badge, Button, Card } from '@/components/ui'
+import { WizardStepHeader } from '@/components/training/WizardStepHeader'
 import {
   DAY_LABELS,
   MESOCYCLE_MULTIPLIER,
@@ -9,6 +10,7 @@ import {
 import {
   derivePlanCalibration,
   hasUsableVolumeHistory,
+  HISTORY_WINDOW_DAYS,
   suggestWizardPrefill,
   type VolumeHistoryStats,
 } from '@/lib/training/volumeCalibration'
@@ -22,9 +24,18 @@ const DEFAULT_ANSWERS: WizardAnswers = {
   recentDailyAverage: null,
 }
 
+const STEP_TITLES = ['Your capacity', 'Your week', 'Preview plan'] as const
+
+const INTENSITY_HINTS: Record<WizardAnswers['challengeIntensity'], string> = {
+  light: 'Easier challenge days',
+  moderate: 'Balanced (default)',
+  intense: 'Harder challenge days',
+}
+
 type TrainingWizardProps = {
   saving?: boolean
   initialAnswers?: WizardAnswers | null
+  savedAnswersReady?: boolean
   historyStats?: VolumeHistoryStats | null
   historyLoading?: boolean
   onComplete?: (answers: WizardAnswers) => void | Promise<void>
@@ -51,37 +62,59 @@ function parseRecentDailyAverage(raw: string): number | null {
 export function TrainingWizard({
   saving = false,
   initialAnswers = null,
+  savedAnswersReady = true,
   historyStats = null,
   historyLoading = false,
   onComplete,
 }: TrainingWizardProps) {
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<WizardAnswers>(initialAnswers ?? DEFAULT_ANSWERS)
-  const [hydratedFromSaved, setHydratedFromSaved] = useState(initialAnswers != null)
-  const [prefillApplied, setPrefillApplied] = useState(false)
+  const initializedRef = useRef(false)
+  const [userEditedDailyAvg, setUserEditedDailyAvg] = useState(false)
+  const [logSuggestedDailyAvg, setLogSuggestedDailyAvg] = useState<number | null>(null)
 
   useEffect(() => {
-    if (initialAnswers && !hydratedFromSaved) {
-      setAnswers(initialAnswers)
-      setHydratedFromSaved(true)
-    }
-  }, [initialAnswers, hydratedFromSaved])
-
-  useEffect(() => {
-    if (initialAnswers || prefillApplied || !historyStats) {
+    if (!savedAnswersReady || initializedRef.current) {
       return
     }
 
-    if (hasUsableVolumeHistory(historyStats)) {
-      const prefill = suggestWizardPrefill(historyStats)
-      setAnswers((current) => ({
-        ...current,
-        maxCleanSet: prefill.maxCleanSet,
-        recentDailyAverage: prefill.recentDailyAverage,
-      }))
-      setPrefillApplied(true)
+    initializedRef.current = true
+    setAnswers(initialAnswers ?? DEFAULT_ANSWERS)
+  }, [savedAnswersReady, initialAnswers])
+
+  useEffect(() => {
+    if (!savedAnswersReady || historyLoading || !historyStats || !hasUsableVolumeHistory(historyStats)) {
+      return
     }
-  }, [historyStats, initialAnswers, prefillApplied])
+
+    const prefill = suggestWizardPrefill(historyStats, initialAnswers?.maxCleanSet)
+
+    if (prefill.recentDailyAverage != null) {
+      setLogSuggestedDailyAvg(prefill.recentDailyAverage)
+    }
+
+    setAnswers((current) => {
+      const updates: Partial<WizardAnswers> = {}
+
+      if (
+        !userEditedDailyAvg &&
+        current.recentDailyAverage == null &&
+        prefill.recentDailyAverage != null
+      ) {
+        updates.recentDailyAverage = prefill.recentDailyAverage
+      }
+
+      if (!initialAnswers && prefill.maxCleanSet !== current.maxCleanSet) {
+        updates.maxCleanSet = prefill.maxCleanSet
+      }
+
+      if (Object.keys(updates).length === 0) {
+        return current
+      }
+
+      return { ...current, ...updates }
+    })
+  }, [savedAnswersReady, historyLoading, historyStats, initialAnswers, userEditedDailyAvg])
 
   const calibration = useMemo(
     () => derivePlanCalibration(answers, historyStats),
@@ -99,6 +132,13 @@ export function TrainingWizard({
 
   const showHistory = hasUsableVolumeHistory(historyStats)
   const startWeek = calibration.startMesocycleWeek
+  const daysSelected = answers.preferredTrainingDays.length
+  const canSave = answers.sorenessWarningAcknowledged
+
+  const showLogSuggestion =
+    logSuggestedDailyAvg != null &&
+    answers.recentDailyAverage === logSuggestedDailyAvg &&
+    !userEditedDailyAvg
 
   function toggleDay(day: number) {
     setAnswers((current) => {
@@ -117,49 +157,19 @@ export function TrainingWizard({
   }
 
   function handleFinish() {
+    if (!canSave) {
+      return
+    }
     onComplete?.(answers)
   }
 
   return (
     <>
       <div className="space-y-4 pb-[calc(var(--bank-cta-height)+1rem)]">
-        <div className="flex items-center gap-2">
-          {[0, 1, 2].map((index) => (
-            <span
-              key={index}
-              className={`h-1.5 flex-1 rounded-full ${step >= index ? 'bg-accent' : 'bg-border'}`}
-            />
-          ))}
-        </div>
+        <WizardStepHeader step={step} totalSteps={STEP_TITLES.length} title={STEP_TITLES[step]} />
 
         {step === 0 ? (
-          <Card padding="md" className="space-y-4">
-            {historyLoading ? (
-              <p className="text-xs text-text-muted">Loading your recent PushUS logs…</p>
-            ) : null}
-
-            {showHistory && historyStats ? (
-              <div className="rounded-[var(--radius-md)] border border-border bg-bg px-3 py-3">
-                <p className="text-xs font-semibold text-text-primary">
-                  From your PushUS logs (last 28 days)
-                </p>
-                <p className="mt-1 text-sm text-text-primary">
-                  Avg{' '}
-                  <span className="font-mono font-bold">
-                    {Math.round(historyStats.avgDailyTotal)}
-                  </span>
-                  /day · Best day{' '}
-                  <span className="font-mono font-bold">{historyStats.peakDailyTotal}</span> ·
-                  Largest bank{' '}
-                  <span className="font-mono font-bold">{historyStats.peakBank}</span>
-                </p>
-                <p className="mt-2 text-xs text-text-muted">
-                  We use this to set a structured starting block — not to copy your challenge daily
-                  total.
-                </p>
-              </div>
-            ) : null}
-
+          <Card padding="md" className="space-y-5">
             <div>
               <p className="text-sm font-medium text-text-primary">
                 Max clean set
@@ -168,7 +178,8 @@ export function TrainingWizard({
                 ) : null}
               </p>
               <p className="mt-1 text-xs text-text-muted">
-                How many push-ups can you do in one go with good form?
+                How many push-ups can you do in one go with good form? One set, good form — not your
+                daily total.
               </p>
             </div>
             <input
@@ -190,33 +201,72 @@ export function TrainingWizard({
             </p>
 
             <div className="space-y-2">
+              {historyLoading ? (
+                <p className="text-xs text-text-muted">Loading your recent PushUS logs…</p>
+              ) : null}
+
+              {showHistory && historyStats ? (
+                <div className="rounded-[var(--radius-md)] border border-border bg-bg px-3 py-3">
+                  <p className="text-xs font-semibold text-text-primary">
+                    From your PushUS logs (last {HISTORY_WINDOW_DAYS} days)
+                  </p>
+                  <p className="mt-1 text-sm text-text-primary">
+                    Avg{' '}
+                    <span className="font-mono font-bold">
+                      {Math.round(historyStats.avgDailyTotal)}
+                    </span>
+                    /day · Best day{' '}
+                    <span className="font-mono font-bold">{historyStats.peakDailyTotal}</span> ·
+                    Largest bank{' '}
+                    <span className="font-mono font-bold">{historyStats.peakBank}</span>
+                  </p>
+                  <p className="mt-2 text-xs text-text-muted">
+                    We&apos;ve pre-filled below — change anything that looks wrong. We use this to
+                    set a structured starting block, not to copy your challenge daily total.
+                  </p>
+                </div>
+              ) : null}
+
               <label htmlFor="recent-daily-average" className="text-sm font-medium text-text-primary">
-                Recent daily average
-                {showHistory ? (
-                  <span className="ml-1 font-normal text-text-muted">(optional)</span>
-                ) : null}
+                Over the last {HISTORY_WINDOW_DAYS} days, how many reps have you averaged per day?
               </label>
               <p className="text-xs text-text-muted">
-                Your typical total reps per day over the last few weeks. Leave blank if unsure.
+                Your total reps logged each day — not your max in one set. Leave blank if
+                you&apos;re new or unsure.
               </p>
-              <input
-                id="recent-daily-average"
-                type="number"
-                min={0}
-                max={500}
-                step={1}
-                inputMode="numeric"
-                placeholder="e.g. 58"
-                value={answers.recentDailyAverage ?? ''}
-                onChange={(event) => {
-                  const raw = event.target.value.trim()
-                  setAnswers((current) => ({
-                    ...current,
-                    recentDailyAverage: parseRecentDailyAverage(raw),
-                  }))
-                }}
-                className="w-full rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2.5 text-sm text-text-primary"
-              />
+              <div className="relative">
+                <input
+                  id="recent-daily-average"
+                  type="number"
+                  min={0}
+                  max={500}
+                  step={1}
+                  inputMode="numeric"
+                  placeholder="e.g. 58"
+                  value={answers.recentDailyAverage ?? ''}
+                  onChange={(event) => {
+                    setUserEditedDailyAvg(true)
+                    const raw = event.target.value.trim()
+                    setAnswers((current) => ({
+                      ...current,
+                      recentDailyAverage: parseRecentDailyAverage(raw),
+                    }))
+                  }}
+                  className="w-full rounded-[var(--radius-md)] border border-border bg-surface py-2.5 pl-3 pr-16 text-sm text-text-primary [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                />
+                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-text-muted">
+                  reps/day
+                </span>
+              </div>
+              {showLogSuggestion ? (
+                <p className="text-xs text-text-muted">
+                  Suggested from your logs:{' '}
+                  <span className="font-mono font-semibold text-text-primary">
+                    {logSuggestedDailyAvg}
+                  </span>
+                  /day
+                </p>
+              ) : null}
             </div>
 
             <div className="space-y-2">
@@ -265,6 +315,10 @@ export function TrainingWizard({
                 </button>
               ))}
             </div>
+            <p className="text-xs text-text-muted">
+              {daysSelected} day{daysSelected === 1 ? '' : 's'} selected
+            </p>
+
             <div className="space-y-2">
               <p className="text-sm font-medium text-text-primary">Challenge intensity</p>
               <div className="grid grid-cols-3 gap-2">
@@ -285,6 +339,7 @@ export function TrainingWizard({
                   </button>
                 ))}
               </div>
+              <p className="text-xs text-text-muted">{INTENSITY_HINTS[answers.challengeIntensity]}</p>
             </div>
           </Card>
         ) : null}
@@ -306,7 +361,22 @@ export function TrainingWizard({
               </p>
             ) : null}
 
-            <div className="overflow-hidden rounded-[var(--radius-md)] border border-border">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2.5">
+                <p className="text-xs text-text-muted">Peak day</p>
+                <p className="font-mono text-lg font-bold text-text-primary">
+                  {recommendation.plan.peakDayTarget}
+                </p>
+              </div>
+              <div className="rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2.5">
+                <p className="text-xs text-text-muted">Set size</p>
+                <p className="font-mono text-lg font-bold text-text-primary">
+                  {recommendation.plan.setSize}
+                </p>
+              </div>
+            </div>
+
+            <div className="hidden overflow-hidden rounded-[var(--radius-md)] border border-border sm:block">
               <table className="w-full text-left text-xs">
                 <thead className="bg-bg text-text-muted">
                   <tr>
@@ -346,20 +416,36 @@ export function TrainingWizard({
               </table>
             </div>
 
-            <dl className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <dt className="text-text-muted">Peak day</dt>
-                <dd className="font-mono text-lg font-bold text-text-primary">
-                  {recommendation.plan.peakDayTarget}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-text-muted">Set size</dt>
-                <dd className="font-mono text-lg font-bold text-text-primary">
-                  {recommendation.plan.setSize}
-                </dd>
-              </div>
-            </dl>
+            <div className="space-y-2 sm:hidden">
+              {DAY_LABELS.map((label, index) => {
+                const day = recommendation.plan.weeklySchedule[index as 0 | 1 | 2 | 3 | 4 | 5 | 6]
+                return (
+                  <div
+                    key={label}
+                    className="flex items-center justify-between gap-2 rounded-[var(--radius-md)] border border-border px-3 py-2"
+                  >
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="text-sm font-medium text-text-primary">{label}</span>
+                      <Badge variant={dayTypeBadgeVariant(day.dayType)} className="capitalize">
+                        {day.dayType}
+                      </Badge>
+                    </div>
+                    <span className="shrink-0 font-mono text-sm text-text-primary">
+                      {day.target > 0 ? (
+                        <>
+                          {day.target}
+                          <span className="ml-1 text-xs text-text-muted">
+                            ({day.sets}×{day.setSize})
+                          </span>
+                        </>
+                      ) : (
+                        '—'
+                      )}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
 
             {calibration.previewNote ? (
               <p className="text-xs italic text-text-muted">{calibration.previewNote}</p>
@@ -387,6 +473,9 @@ export function TrainingWizard({
                 stop if I feel pain.
               </span>
             </label>
+            {!canSave ? (
+              <p className="text-xs text-text-muted">Tick the box above to save your plan.</p>
+            ) : null}
             <p className="text-xs text-text-muted">{recommendation.plan.disclaimer}</p>
           </Card>
         ) : null}
@@ -410,7 +499,7 @@ export function TrainingWizard({
                 Continue
               </Button>
             ) : (
-              <Button fullWidth loading={saving} onClick={() => void handleFinish()}>
+              <Button fullWidth loading={saving} disabled={!canSave} onClick={() => void handleFinish()}>
                 Save plan
               </Button>
             )}

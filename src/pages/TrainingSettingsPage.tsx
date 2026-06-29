@@ -14,7 +14,7 @@ export function TrainingSettingsPage() {
   const { toast } = useToast()
   const { user } = useAuth()
   const { activeGroup } = useActiveGroup()
-  const { savePlan, saving, wizardCompleted, savedWizardAnswers, progressionNote } =
+  const { savePlan, saving, wizardCompleted, savedWizardAnswers, progressionNote, loading: planLoading } =
     useTrainingPlan(user?.id, activeGroup?.id, activeGroup?.timezone)
   const { data: historyStats, isLoading: historyLoading } = useTrainingHistoryStats(
     user?.id,
@@ -42,14 +42,13 @@ export function TrainingSettingsPage() {
       <div className="space-y-4 pb-[calc(var(--bank-cta-height)+0.5rem)]">
         <Card padding="md" className="space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-medium text-text-primary">Training wizard</p>
+            <p className="text-sm font-medium text-text-primary">Training plan</p>
             <Badge variant={wizardCompleted ? 'success' : 'warning'}>
               {wizardCompleted ? 'Plan saved' : 'Not set up yet'}
             </Badge>
           </div>
           <p className="text-xs text-text-muted">
-            Answer a few questions and we will build a 4-week plan with rest, easy, moderate, and
-            challenge days. General fitness guidance only — not medical advice.
+            Re-run anytime — your plan updates on save.
           </p>
           {progressionNote ? (
             <p className="rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-xs text-text-primary">
@@ -61,6 +60,7 @@ export function TrainingSettingsPage() {
         <TrainingWizard
           saving={saving}
           initialAnswers={savedWizardAnswers}
+          savedAnswersReady={!planLoading}
           historyStats={historyStats ?? null}
           historyLoading={historyLoading}
           onComplete={(answers) => void handleComplete(answers)}

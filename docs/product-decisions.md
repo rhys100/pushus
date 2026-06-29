@@ -238,7 +238,7 @@ For exploratory ideas without locked rules, see [product-roadmap.md](./product-r
 | **Reps-in-reserve (RIR) after each bank on training days** — skippable; 0–5+ scale | Beta |
 | RIR + hit rate drive max clean set (±1 per block) and plan baseline at mesocycle advance | Beta |
 | Require ≥3 RIR samples before effort overrides hit-rate-only progression | Beta |
-| **Post-challenge plan calibration:** wizard pre-fills from 28-day PushUS log history; user confirms or overrides | Beta |
+| **Post-challenge plan calibration:** wizard pre-fills from 30-day PushUS log history; user confirms or overrides | Beta |
 | Structured starting peak ≈ **55%** of confirmed recent daily average (not challenge grind volume) | Beta |
 | Initial `plan_baseline` capped at **1.35×** reference peak; requires ≥7 sample days | Beta |
 | High recent volume (peak day ≥ 2× daily cap, ≥14 sample days) → start mesocycle at **week 2 (85%)** not week 1 | Beta |

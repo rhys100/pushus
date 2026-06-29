@@ -148,6 +148,23 @@ test.describe('today mobile layout', () => {
     })
   }
 
+  test('touch ring at bottom snaps count without keyboard', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await gotoTodayReady(page)
+
+    const ringHit = page.getByTestId('logger-ring-hit')
+    const hitBox = await ringHit.boundingBox()
+
+    expect(hitBox).not.toBeNull()
+
+    if (hitBox) {
+      await page.mouse.click(hitBox.x + hitBox.width / 2, hitBox.y + hitBox.height - 6)
+    }
+
+    const ring = page.locator('svg[role="slider"]')
+    await expect(ring).toHaveAttribute('aria-valuenow', '6')
+  })
+
   test('ring handle stays visible at zero after drag hint dismissed', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.addInitScript(() => {

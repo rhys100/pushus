@@ -4,6 +4,9 @@ import {
   countToAngle,
   countWithinRevolution,
   CIRCULAR_COUNTER,
+  normalizeAngleDelta,
+  rawAngleFromPointerDown,
+  ringAngleToRawAngle,
   snapAngleToRep,
 } from '../../src/lib/circularCounter'
 
@@ -86,6 +89,43 @@ describe('circularCounter', () => {
       expect(snapAngleToRep(36)).toBe(54)
       expect(snapAngleToRep(359)).toBe(360)
       expect(snapAngleToRep(360)).toBe(360)
+    })
+  })
+
+  describe('rawAngleFromPointerDown', () => {
+    it('snaps first-lap touch at 6 o’clock to rep 6 slot', () => {
+      expect(rawAngleFromPointerDown(180)).toBe(countToAngle(6))
+      expect(angleToTotalCount(rawAngleFromPointerDown(180))).toBe(6)
+    })
+
+    it('returns 0 for top-of-ring touch at rest', () => {
+      expect(rawAngleFromPointerDown(0)).toBe(0)
+    })
+  })
+
+  describe('ringAngleToRawAngle', () => {
+    it('preserves completed revolutions when jumping on ring', () => {
+      const currentRaw = countToAngle(21)
+      const jumped = ringAngleToRawAngle(180, currentRaw)
+
+      expect(Math.floor(jumped / 360)).toBe(Math.floor(currentRaw / 360))
+      expect(angleToTotalCount(jumped)).toBeGreaterThan(20)
+    })
+
+    it('maps twelve o’clock tap to rep 1, not zero, when count is partial', () => {
+      const currentRaw = countToAngle(5)
+      const jumped = ringAngleToRawAngle(0, currentRaw)
+
+      expect(angleToTotalCount(jumped)).toBe(1)
+      expect(jumped).toBe(countToAngle(1))
+    })
+  })
+
+  describe('normalizeAngleDelta', () => {
+    it('wraps large deltas across 12 o’clock', () => {
+      expect(normalizeAngleDelta(270)).toBe(-90)
+      expect(normalizeAngleDelta(-270)).toBe(90)
+      expect(normalizeAngleDelta(45)).toBe(45)
     })
   })
 })

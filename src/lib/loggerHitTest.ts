@@ -20,6 +20,18 @@ export function clientToRingCoords(
   }
 }
 
+/**
+ * Pointer angle in ring space: 0° = 12 o'clock, clockwise (matches logger polar coords).
+ */
+export function pointerToRingAngle(clientX: number, clientY: number, rect: DOMRect): number {
+  const centerX = rect.left + rect.width / 2
+  const centerY = rect.top + rect.height / 2
+  const radians = Math.atan2(clientY - centerY, clientX - centerX)
+  const degrees = (radians * 180) / Math.PI
+
+  return (degrees + 90 + 360) % 360
+}
+
 /** True when a screen point is within the handle hit radius (SVG units). */
 export function isNearHandle(
   clientX: number,
@@ -34,4 +46,32 @@ export function isNearHandle(
   const dy = point.y - handlePoint.y
 
   return dx * dx + dy * dy <= hitRadius * hitRadius
+}
+
+/** True when a point hits the ring track (not the centre dead zone). */
+export function isPointOnRingTrack(
+  clientX: number,
+  clientY: number,
+  rect: DOMRect,
+  ringRadius: number,
+  strokeWidth: number,
+  ringSize = LOGGER_RING_SIZE,
+  innerDeadZoneRatio = 0.4,
+  hitPadding = 4,
+): boolean {
+  const point = clientToRingCoords(clientX, clientY, rect, ringSize)
+  const center = ringSize / 2
+  const dx = point.x - center
+  const dy = point.y - center
+  const distance = Math.sqrt(dx * dx + dy * dy)
+
+  const innerDead = ringRadius * innerDeadZoneRatio
+  const trackInner = ringRadius - strokeWidth / 2 - hitPadding
+  const trackOuter = ringRadius + strokeWidth / 2 + hitPadding
+
+  if (distance < innerDead) {
+    return false
+  }
+
+  return distance >= trackInner && distance <= trackOuter
 }

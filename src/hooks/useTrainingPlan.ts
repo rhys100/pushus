@@ -17,6 +17,7 @@ import {
 import { computePlanProgressionSync } from '@/lib/training/planProgressionSync'
 import {
   derivePlanCalibration,
+  HISTORY_WINDOW_DAYS,
   volumeHistoryStatsFromRpc,
   type UserVolumeStatsRow,
   type VolumeHistoryStats,
@@ -52,7 +53,7 @@ async function fetchVolumeHistoryStats(
   const { data, error } = await supabase.rpc('user_volume_stats', {
     p_group_id: groupId,
     p_user_id: userId,
-    p_days: 28,
+    p_days: HISTORY_WINDOW_DAYS,
   })
 
   if (error) {

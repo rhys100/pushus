@@ -68,15 +68,18 @@
 
 @keyframes logger-handle-tick {
   0% {
-    transform: scale(1);
+    opacity: 1;
+    stroke-width: 3px;
   }
 
   35% {
-    transform: scale(1.22);
+    opacity: 0.75;
+    stroke-width: 5px;
   }
 
   100% {
-    transform: scale(1);
+    opacity: 1;
+    stroke-width: 3px;
   }
 }
 

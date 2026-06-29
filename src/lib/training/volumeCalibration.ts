@@ -10,6 +10,7 @@ export const STRUCTURED_PEAK_RATIO = 0.55
 export const MAX_INITIAL_BASELINE = 1.35
 export const MIN_HISTORY_SAMPLE_DAYS = 7
 export const MIN_HIGH_VOLUME_SAMPLE_DAYS = 14
+export const HISTORY_WINDOW_DAYS = 30
 
 export type VolumeHistoryEntry = {
   count: number

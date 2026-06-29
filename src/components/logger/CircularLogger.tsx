@@ -14,9 +14,12 @@ import {
   angleToTotalCount,
   CIRCULAR_COUNTER,
   countToAngle,
+  normalizeAngleDelta,
+  rawAngleFromPointerDown,
+  ringAngleToRawAngle,
   snapAngleToRep,
 } from '@/lib/circularCounter'
-import { isNearHandle } from '@/lib/loggerHitTest'
+import { isPointOnRingTrack, pointerToRingAngle } from '@/lib/loggerHitTest'
 import { useCircularCounter } from '@/hooks/useCircularCounter'
 import { primeRepFeedback, pulseRepHapticDelta } from '@/lib/repHaptic'
 
@@ -24,8 +27,8 @@ const RING_SIZE = 280
 const RING_CENTER = RING_SIZE / 2
 const RING_RADIUS = 112
 const RING_STROKE = 14
+const RING_HIT_STROKE = 28
 const HANDLE_RADIUS = 13
-const HANDLE_HIT_RADIUS = 22
 const REP_TICK_ANGLES = Array.from(
   { length: CIRCULAR_COUNTER.repsPerRevolution - 1 },
   (_, index) => (index + 1) * CIRCULAR_COUNTER.degreesPerRep,
@@ -87,45 +90,6 @@ function describeArc(
   ].join(' ')
 }
 
-function getRingVisualState(totalAngle: number) {
-  const count = angleToTotalCount(totalAngle)
-  const displayAngle = totalAngle % CIRCULAR_COUNTER.degreesPerRevolution
-  const completedLap = count > 0 && count % CIRCULAR_COUNTER.repsPerRevolution === 0
-  const handleAngle = completedLap ? 0 : displayAngle || 0
-  const handlePoint = polarToCartesian(RING_CENTER, RING_CENTER, RING_RADIUS, handleAngle)
-  const progressEnd = completedLap ? 360 : displayAngle
-  const arcPath =
-    !completedLap && progressEnd > 0
-      ? describeArc(RING_CENTER, RING_CENTER, RING_RADIUS, 0, progressEnd)
-      : ''
-
-  return {
-    completedLap,
-    handlePoint,
-    arcPath,
-  }
-}
-
-function getPointerAngle(clientX: number, clientY: number, rect: DOMRect): number {
-  const centerX = rect.left + rect.width / 2
-  const centerY = rect.top + rect.height / 2
-  const radians = Math.atan2(clientY - centerY, clientX - centerX)
-
-  return (radians * 180) / Math.PI
-}
-
-function normalizeAngleDelta(delta: number): number {
-  if (delta > 180) {
-    return delta - 360
-  }
-
-  if (delta < -180) {
-    return delta + 360
-  }
-
-  return delta
-}
-
 export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerProps>(
   function CircularLogger(
     {
@@ -151,11 +115,8 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
     const lastHapticCountRef = useRef(count)
 
     const ringRef = useRef<SVGSVGElement>(null)
+    const ringTrackHitRef = useRef<SVGCircleElement>(null)
     const ringContainerRef = useRef<HTMLDivElement>(null)
-    const handleRef = useRef<SVGCircleElement>(null)
-    const handleHitRef = useRef<SVGCircleElement>(null)
-    const arcRef = useRef<SVGPathElement>(null)
-    const completedArcRef = useRef<SVGCircleElement>(null)
     const dragStateRef = useRef<{ lastPointerAngle: number; rawAngle: number } | null>(
       null,
     )
@@ -180,29 +141,6 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
       }),
       [resetLogger],
     )
-
-    const updateRingVisuals = useCallback((totalAngle: number) => {
-      const { completedLap, handlePoint, arcPath } = getRingVisualState(totalAngle)
-
-      handleRef.current?.setAttribute('cx', String(handlePoint.x))
-      handleRef.current?.setAttribute('cy', String(handlePoint.y))
-      handleHitRef.current?.setAttribute('cx', String(handlePoint.x))
-      handleHitRef.current?.setAttribute('cy', String(handlePoint.y))
-
-      if (completedLap) {
-        completedArcRef.current?.setAttribute('opacity', '1')
-        arcRef.current?.setAttribute('d', '')
-      } else {
-        completedArcRef.current?.setAttribute('opacity', '0')
-        arcRef.current?.setAttribute('d', arcPath)
-      }
-    }, [])
-
-    useEffect(() => {
-      if (!isDragging) {
-        updateRingVisuals(angle)
-      }
-    }, [angle, isDragging, updateRingVisuals])
 
     useEffect(() => {
       if (isDragging) {
@@ -307,18 +245,17 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
           return
         }
 
-        const pointerAngle = getPointerAngle(clientX, clientY, rect)
-        const delta = normalizeAngleDelta(pointerAngle - dragState.lastPointerAngle)
+        const ringAngle = pointerToRingAngle(clientX, clientY, rect)
+        const delta = normalizeAngleDelta(ringAngle - dragState.lastPointerAngle)
 
-        dragState.lastPointerAngle = pointerAngle
+        dragState.lastPointerAngle = ringAngle
         dragState.rawAngle = Math.max(0, dragState.rawAngle + delta)
 
-        const nextCount = angleToTotalCount(dragState.rawAngle)
         const snappedAngle = snapAngleToRep(dragState.rawAngle)
-
-        updateRingVisuals(snappedAngle)
-
+        const nextCount = angleToTotalCount(snappedAngle)
         const currentCount = countRef.current
+
+        syncAngleState(snappedAngle)
 
         if (nextCount !== currentCount) {
           if (nextCount > currentCount) {
@@ -332,17 +269,14 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
             lastHapticCountRef.current = nextCount
           }
 
-          syncAngleState(snappedAngle)
           notifyCountChange(nextCount)
-        } else {
-          angleRef.current = snappedAngle
         }
 
         if (Math.abs(delta) > 0.5) {
           onHintDismiss?.()
         }
       },
-      [maybePulseHaptic, notifyCountChange, onHintDismiss, syncAngleState, updateRingVisuals],
+      [maybePulseHaptic, notifyCountChange, onHintDismiss, syncAngleState],
     )
 
     const endDragSession = useCallback(() => {
@@ -370,19 +304,34 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
           return
         }
 
-        const { handlePoint: currentHandlePoint } = getRingVisualState(angleRef.current)
-
-        if (!isNearHandle(clientX, clientY, rect, currentHandlePoint, HANDLE_HIT_RADIUS)) {
+        if (!isPointOnRingTrack(clientX, clientY, rect, RING_RADIUS, RING_HIT_STROKE)) {
           return
         }
 
-        setIsDragging(true)
-        dragStateRef.current = {
-          lastPointerAngle: getPointerAngle(clientX, clientY, rect),
-          rawAngle: angleRef.current,
+        const ringAngle = pointerToRingAngle(clientX, clientY, rect)
+        const startRaw =
+          countRef.current === 0
+            ? rawAngleFromPointerDown(ringAngle)
+            : ringAngleToRawAngle(ringAngle, angleRef.current)
+        const startCount = angleToTotalCount(startRaw)
+
+        primeRepFeedback()
+        syncAngleState(startRaw)
+        notifyCountChange(startCount)
+        lastHapticCountRef.current = startCount
+
+        if (startCount > 0) {
+          setCountPulsing(true)
         }
+
+        dragStateRef.current = {
+          lastPointerAngle: ringAngle,
+          rawAngle: startRaw,
+        }
+        setIsDragging(true)
+        onHintDismiss?.()
       },
-      [],
+      [notifyCountChange, onHintDismiss, syncAngleState],
     )
 
     useLayoutEffect(() => {
@@ -439,9 +388,9 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
     }, [applyDragAt, endDragSession, isDragging])
 
     useEffect(() => {
-      const hitTarget = handleHitRef.current
+      const hitTarget = ringTrackHitRef.current
 
-      if (!hitTarget || disabled || !showHandle) {
+      if (!hitTarget || disabled) {
         return
       }
 
@@ -463,16 +412,15 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
       return () => {
         hitTarget.removeEventListener('touchstart', onTouchStart)
       }
-    }, [beginDragAt, disabled, showHandle])
+    }, [beginDragAt, disabled])
 
-    const handleHitPointerDown = (event: ReactPointerEvent<SVGCircleElement>) => {
+    const handleRingPointerDown = (event: ReactPointerEvent<SVGCircleElement>) => {
       if (disabled || event.pointerType === 'touch') {
         return
       }
 
       event.preventDefault()
       event.stopPropagation()
-      primeRepFeedback()
       beginDragAt(event.clientX, event.clientY)
     }
 
@@ -591,7 +539,6 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
             })}
 
             <circle
-              ref={completedArcRef}
               cx={RING_CENTER}
               cy={RING_CENTER}
               r={RING_RADIUS}
@@ -604,7 +551,6 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
             />
 
             <path
-              ref={arcRef}
               d={arcPath}
               fill="none"
               stroke="var(--color-accent)"
@@ -614,40 +560,38 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
               filter={isDragging ? undefined : 'url(#logger-glow)'}
             />
 
+            <circle
+              ref={ringTrackHitRef}
+              data-testid="logger-ring-hit"
+              cx={RING_CENTER}
+              cy={RING_CENTER}
+              r={RING_RADIUS}
+              fill="none"
+              stroke="transparent"
+              strokeWidth={RING_HIT_STROKE}
+              pointerEvents="stroke"
+              className={
+                disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'
+              }
+              onPointerDown={handleRingPointerDown}
+            />
+
             {showHandle ? (
-              <>
-                <circle
-                  ref={handleHitRef}
-                  data-testid="logger-handle-hit"
-                  cx={handlePoint.x}
-                  cy={handlePoint.y}
-                  r={HANDLE_HIT_RADIUS}
-                  fill="transparent"
-                  stroke="none"
-                  className={disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}
-                  onPointerDown={handleHitPointerDown}
-                />
-                <circle
-                  ref={handleRef}
-                  data-testid="logger-handle-visible"
-                  key={isDragging ? `tick-${handleTickKey}` : 'handle'}
-                  cx={handlePoint.x}
-                  cy={handlePoint.y}
-                  r={HANDLE_RADIUS}
-                  fill="var(--color-accent)"
-                  stroke="var(--color-bg)"
-                  strokeWidth={3}
-                  pointerEvents="none"
-                  className={cn(
-                    showZeroHint && 'logger-handle-pulse',
-                    !showZeroHint && count === 0 && !isDragging && 'logger-handle-idle',
-                    isDragging && handleTickKey > 0 && 'logger-handle-tick',
-                  )}
-                  style={{
-                    willChange: isDragging ? 'transform' : undefined,
-                  }}
-                />
-              </>
+              <circle
+                data-testid="logger-handle-visible"
+                cx={handlePoint.x}
+                cy={handlePoint.y}
+                r={HANDLE_RADIUS}
+                fill="var(--color-accent)"
+                stroke="var(--color-bg)"
+                strokeWidth={3}
+                pointerEvents="none"
+                className={cn(
+                  showZeroHint && 'logger-handle-pulse',
+                  !showZeroHint && count === 0 && !isDragging && 'logger-handle-idle',
+                  handleTickKey > 0 && 'logger-handle-tick',
+                )}
+              />
             ) : null}
 
             {showZeroHint ? (

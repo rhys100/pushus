@@ -18,14 +18,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Dynamic invite link previews for social crawlers on Cloudflare Pages (group name + share image at `/og/join/:code.png`)
 - Reps-in-reserve (RIR) effort feedback after banking on training days — quick 0–5+ chips or Skip; stored per entry
 - Training plan auto-progression uses RIR + goal hit rate to adjust max clean set and weekly volume at mesocycle boundaries
-- Post-challenge plan calibration: wizard reads 28-day log history, pre-fills max clean set and recent daily average, scales starting baseline for experienced users
+- Post-challenge plan calibration: wizard reads 30-day log history, pre-fills max clean set and recent daily average, scales starting baseline for experienced users
 - Log page daily set planner: bank-about target, set N of M, and sets remaining (updates after each bank)
 - Board Day view: daily goal progress bar per member (reps vs personal training target)
 
 ### Changed
 
+- Training wizard: clearer 30-day daily average question, step titles, mobile-friendly preview, log pre-fill on re-run, save gated on soreness acknowledgement
 - **Log page layout:** ring and inline Bank CTA at top; compact today's plan below; removed top private-beta banner strip (~32px reclaimed)
-- Stronger tiered drag haptics on the circular logger (14ms notch; stronger pulses at reps 5 and 10)
+- Circular logger: drag from anywhere on the ring with snap-to-rep on touch; aligned pointer/ring angle math; handle stays on track (no scale flash)
+- Stronger tiered drag haptics (18ms notch; stronger pulses at reps 5 and 10)
 - Board Day view: cleaner progress layout with full-width bar and `current/target` fraction (removed duplicate rep column)
 - Group invite message: richer two-paragraph copy describing PushUS (leaderboards, training plan) without naming the group
 
@@ -37,11 +39,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Cloudflare Pages: dynamic invite OG PNG routes (`/og/join/:code.png`) no longer blocked by `_routes.json`
 - Training plan progression sync runs once per user/group/day across pages, not once per hook mount
 - Training wizard rejects non-numeric recent daily average input instead of saving NaN
+- Training wizard log prefill waits for saved plan + history before applying (fixes re-run race)
+- Circular logger accepts taps across the full ring hit target, not just the visual stroke width
 - Logger handle tick animation resets after banking so later drags only tick on rep boundaries
 - Training plan save shows the real Supabase error instead of a generic toast (helps diagnose missing migration)
 - Circular logger snaps handle and haptic tick to each rep (1–10) while dragging, not only at a full lap
 - Drag count stays in sync when moving the handle backward to a lower rep mid-drag
 - Backward drag during an active session no longer leaves centre count, bank state, and `getCount()` ahead of the handle until drag ends
+- Twelve-o'clock ring tap with partial count snaps to rep 1 instead of clearing the logger
 
 ### Database / deploy
 

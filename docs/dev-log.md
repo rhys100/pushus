@@ -26,6 +26,21 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-06-29 (ring drag mechanics)
+
+**Shipped**
+- Drag from anywhere on the ring track; touch snaps immediately to nearest rep slot
+- Fixed handle flash/off-ring during drag (single React angle source, stroke tick animation)
+- Haptics bumped to 18ms / half-lap / lap tiers
+
+### 2026-06-29 (training wizard copy and UI)
+
+**Changed**
+
+- Step titles (Your capacity / Your week / Preview plan), 30-day daily average question, history card above input
+- Re-run prefill when saved plan has no recent daily average; save gated on soreness checkbox
+- Mobile stacked schedule on preview step; trimmed settings header card
+
 ### 2026-06-29 (log page hero reorder)
 
 **Shipped**
