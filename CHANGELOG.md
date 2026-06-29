@@ -30,6 +30,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Circular logger: drag from anywhere on the ring with snap-to-rep on touch; aligned pointer/ring angle math; handle stays on track (no scale flash)
 - Stronger tiered drag haptics (18ms notch; stronger pulses at reps 5 and 10)
 - Board Day view: single-line rows with inline progress bar and `current/target` fraction
+- Board Day progress bar: darker inset track so partial progress and empty goals read clearly
 - Group invite message: richer two-paragraph copy describing PushUS (leaderboards, training plan) without naming the group
 
 ### Fixed

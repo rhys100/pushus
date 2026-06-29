@@ -117,6 +117,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 **Deploy**
 - Hosted Supabase needs migration `0022_entry_reps_in_reserve` (`npx supabase db push`)
 
+### 2026-06-29 (board progress track)
+
+**Changed**
+- Board Day progress bar: inset track so partial fill (e.g. 12/14) and 0-rep rows show remaining goal clearly
+
 ### 2026-06-29 (board single-line rows)
 
 **Changed**

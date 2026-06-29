@@ -81,7 +81,7 @@ function LeaderboardRow({
     return (
       <li
         className={cn(
-          'flex items-center gap-2 px-4 py-2.5',
+          'flex min-w-0 items-center gap-2 px-4 py-2.5',
           isCurrentUser && 'bg-accent-muted/30',
         )}
       >
