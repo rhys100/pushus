@@ -33,6 +33,10 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 - Fixed handle flash/off-ring during drag (single React angle source, stroke tick animation)
 - Haptics bumped to 18ms / half-lap / lap tiers
 
+**Fixed (Bugbot)**
+- Top-of-ring tap with partial count snaps to rep 1 instead of zeroing
+- Wizard log prefill split from saved-plan hydration so late history still applies
+
 ### 2026-06-29 (training wizard copy and UI)
 
 **Changed**
