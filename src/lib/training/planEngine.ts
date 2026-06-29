@@ -497,7 +497,7 @@ export function advanceMesocycleIfDue(
   today: string,
   hitRate: number,
   effortSummary?: EffortSummary | null,
-  weekEffortSummary?: EffortSummary | null,
+  _weekEffortSummary?: EffortSummary | null,
 ): MesocycleAdvanceResult {
   let nextAnswers = { ...answers }
   let maxCleanSet = answers.maxCleanSet

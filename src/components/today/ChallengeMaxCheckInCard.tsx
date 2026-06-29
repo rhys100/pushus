@@ -24,13 +24,17 @@ export function ChallengeMaxCheckInCard({
         <Button
           type="button"
           variant={maxSetModeActive ? 'primary' : 'secondary'}
-          size="sm"
-          className="flex-1"
+          className="min-h-9 flex-1 px-3 text-sm"
           onClick={onTryMaxSet}
         >
           {maxSetModeActive ? 'Max set mode on' : 'Try max set'}
         </Button>
-        <Button type="button" variant="ghost" size="sm" className="flex-1" onClick={onStickToPlan}>
+        <Button
+          type="button"
+          variant="ghost"
+          className="min-h-9 flex-1 px-3 text-sm"
+          onClick={onStickToPlan}
+        >
           Stick to plan
         </Button>
       </div>

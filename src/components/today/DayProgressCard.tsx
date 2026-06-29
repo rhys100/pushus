@@ -1,7 +1,6 @@
 import { memo, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { GoalProgressBar } from '@/components/ui/GoalProgressBar'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -75,9 +74,14 @@ export const DayProgressCard = memo(function DayProgressCard({
           {bankedToday > 0 ? `${bankedToday} banked today — ` : ''}
           Daily habit + safe gradual fitness, not max-test chasing.
         </p>
-        <Button asChild variant="secondary" size="sm" className="mt-3 w-full">
-          <Link to="/settings/training">Set up training plan</Link>
-        </Button>
+        <Link
+          to="/settings/training"
+          className={cn(
+            'mt-3 flex min-h-11 w-full items-center justify-center rounded-[var(--radius-md)] border border-border bg-surface px-5 py-2.5 text-sm font-semibold text-text-primary transition-[background-color,border-color] hover:border-accent/40 hover:bg-surface/90',
+          )}
+        >
+          Set up training plan
+        </Link>
       </Card>
     )
   }

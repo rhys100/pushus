@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-06-29 (CI build fix)
+
+**Fixed**
+- TypeScript build errors blocking Cloudflare deploy (invalid Button `size`/`asChild`, `planFromRow` typing, unused params)
+
 ### 2026-06-29 (training plan engine v2)
 
 **Shipped**

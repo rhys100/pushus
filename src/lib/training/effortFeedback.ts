@@ -95,7 +95,7 @@ export function summarizeEffort(entries: EffortEntry[]): EffortSummary {
 
 export function deriveProgressionFromEffort(
   summary: EffortSummary,
-  wizardMaxCleanSet: number,
+  _wizardMaxCleanSet: number,
   hitRate: number,
 ): EffortProgressionDecision {
   if (summary.sampleCount < MIN_RIR_SAMPLES) {

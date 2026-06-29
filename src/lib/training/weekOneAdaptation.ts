@@ -1,5 +1,4 @@
 import {
-  computeHitRate,
   effortSummarySince,
   observedSetMax,
   type DailyGoalLog,
@@ -25,12 +24,6 @@ export type WeekOneAdaptationResult = {
   plan: TrainingPlan
   adapted: boolean
   progressionNote: string | null
-}
-
-function addDays(isoDate: string, days: number): string {
-  const date = new Date(`${isoDate}T12:00:00Z`)
-  date.setUTCDate(date.getUTCDate() + days)
-  return date.toISOString().slice(0, 10)
 }
 
 function daysSince(startIso: string, todayIso: string): number {

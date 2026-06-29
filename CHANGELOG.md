@@ -33,6 +33,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- TypeScript build: invalid Button props and unused-parameter errors blocking Cloudflare deploy after training engine v2
 - Plan calibration baseline no longer stuck at 1.0 when structured peak hits the volume cap edge
 - SEO shell: Open Graph/Twitter meta tags, `robots.txt`, and `sitemap.xml`
 - Branded default social share image (`/og/default.png`)

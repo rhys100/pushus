@@ -344,7 +344,6 @@ export function useTrainingPlan(
           mesocycle_started_at: query.data.mesocycle_started_at,
           mesocycle_block_start_week: query.data.mesocycle_block_start_week,
           plan_baseline: query.data.plan_baseline,
-          recent_daily_average: query.data.recent_daily_average,
         },
         todayIso,
       )
