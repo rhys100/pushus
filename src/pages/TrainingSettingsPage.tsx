@@ -24,11 +24,12 @@ export function TrainingSettingsPage() {
   async function handleComplete(answers: WizardAnswers) {
     try {
       const saved = await savePlan(answers)
-      toast({
-        message: `Training plan saved — peak day ${saved.estimated_capacity} reps. Your 4-week build starts now.`,
-        variant: 'success',
+      navigate('/settings', {
+        state: {
+          planSaved: true,
+          peakDay: saved.estimated_capacity,
+        },
       })
-      navigate('/settings')
     } catch (error) {
       toast({
         message: getErrorMessage(error, 'Could not save training plan.'),

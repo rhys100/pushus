@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Button, Card } from '@/components/ui'
 import { GroupAdminSettings } from '@/components/settings/GroupAdminSettings'
 import { SettingsLinkRow } from '@/components/settings/SettingsLinkRow'
@@ -24,7 +25,14 @@ const REMINDER_INTERVAL_OPTIONS: { value: ReminderIntervalHours; label: string }
   { value: 24, label: 'Once per day' },
 ]
 
+type SettingsLocationState = {
+  planSaved?: boolean
+  peakDay?: number
+}
+
 export function SettingsPage() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const { signOut, user } = useAuth()
   const { profile } = useProfile()
   const { activeGroup } = useActiveGroup()
@@ -49,6 +57,7 @@ export function SettingsPage() {
   } = useNotificationPreferences()
 
   const [localError, setLocalError] = useState<string | null>(null)
+  const [planSavedMessage, setPlanSavedMessage] = useState<string | null>(null)
   const hours = hourOptions()
   const pushConfigured = pushSupport === 'supported'
   const displayError = localError ?? prefsError
@@ -58,6 +67,18 @@ export function SettingsPage() {
     title: 'Settings',
     subtitle: 'Personal and group options',
   })
+
+  useEffect(() => {
+    const state = location.state as SettingsLocationState | null
+    if (!state?.planSaved || state.peakDay == null) {
+      return
+    }
+
+    setPlanSavedMessage(
+      `Training plan saved — peak day ${state.peakDay} reps. Your 4-week build starts now.`,
+    )
+    navigate(location.pathname, { replace: true, state: null })
+  }, [location.pathname, location.state, navigate])
 
   function pushButtonLabel(): string {
     if (prefs?.push_enabled) return 'Turn off'
@@ -97,6 +118,23 @@ export function SettingsPage() {
 
   return (
     <div className="space-y-4 pb-4">
+      {planSavedMessage ? (
+        <div
+          role="status"
+          className="flex items-start gap-3 rounded-[var(--radius-md)] border border-success/30 bg-success/10 px-4 py-3"
+        >
+          <p className="flex-1 text-sm leading-snug text-text-primary">{planSavedMessage}</p>
+          <button
+            type="button"
+            aria-label="Dismiss"
+            onClick={() => setPlanSavedMessage(null)}
+            className="shrink-0 text-text-muted transition-colors hover:text-text-primary"
+          >
+            ×
+          </button>
+        </div>
+      ) : null}
+
       <Card padding="md" className="space-y-3">
         <p className="text-xs font-medium uppercase tracking-wide text-text-muted">Personal</p>
         <p className="text-sm font-medium text-text-primary">Profile</p>

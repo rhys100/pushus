@@ -26,6 +26,15 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-06-29 (push reminder UX)
+
+**Fixed**
+- Notification tap navigates to `/today` (service worker `navigate` + React fallback)
+- Reminder body uses set-planner copy; title shortened to `PushUS`
+
+**Deploy**
+- Redeploy `send-push-reminders` edge function + Cloudflare (service worker update)
+
 ### 2026-06-29 (ring drag mechanics)
 
 **Shipped**

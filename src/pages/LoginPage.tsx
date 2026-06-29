@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Button, Card, useToast } from '@/components/ui'
 import { InviteCodeEntry } from '@/components/group/InviteCodeEntry'
@@ -46,6 +46,16 @@ export function LoginPage() {
     }
   }, [searchParams, toast])
 
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--toast-top',
+      'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
+    )
+    return () => {
+      document.documentElement.style.removeProperty('--toast-top')
+    }
+  }, [])
+
   async function handleMagicLink(event: React.FormEvent) {
     event.preventDefault()
     const trimmed = email.trim()
@@ -89,7 +99,6 @@ export function LoginPage() {
   return (
     <div
       className="flex min-h-screen flex-col bg-bg px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))]"
-      style={{ '--toast-bottom': 'calc(1.5rem + env(safe-area-inset-bottom))' } as CSSProperties}
     >
       <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
         <div className="mb-8 text-center">

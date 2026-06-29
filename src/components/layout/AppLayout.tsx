@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { AppHeader, BottomNav, type NavItem } from '@/components/ui'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
@@ -32,6 +33,9 @@ type AppLayoutProps = {
   children?: React.ReactNode
 }
 
+const TOAST_TOP_WITH_HEADER = 'calc(env(safe-area-inset-top, 0px) + 4.25rem)'
+const TOAST_TOP_HEADERLESS = 'calc(env(safe-area-inset-top, 0px) + 0.75rem)'
+
 export function AppLayout({
   title,
   subtitle,
@@ -58,11 +62,20 @@ export function AppLayout({
 
   useDocumentTitle(documentTitle)
 
+  useEffect(() => {
+    const toastTop = title === null ? TOAST_TOP_HEADERLESS : TOAST_TOP_WITH_HEADER
+    document.documentElement.style.setProperty('--toast-top', toastTop)
+    return () => {
+      document.documentElement.style.removeProperty('--toast-top')
+    }
+  }, [title])
+
   const handleNavigate = onNavigate ?? ((item: NavItem) => navigate(navRoutes[item]))
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-bg">
-      {title !== null ? (        <AppHeader
+      {title !== null ? (
+        <AppHeader
           title={resolvedTitle}
           subtitle={resolvedSubtitle}
           leading={headerLeading}

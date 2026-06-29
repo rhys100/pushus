@@ -2,9 +2,9 @@
 
 self.addEventListener('push', (event) => {
   let payload = {
-    title: 'PushUS reminder',
-    body: 'You still have push-ups to bank today.',
-    url: '/',
+    title: 'PushUS',
+    body: 'Tap to log your push-ups today.',
+    url: '/today',
   }
 
   try {
@@ -26,11 +26,39 @@ self.addEventListener('push', (event) => {
   )
 })
 
+async function focusOrOpenClient(targetUrl) {
+  const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+
+  for (const client of clientList) {
+    if (!client.url.startsWith(self.location.origin)) {
+      continue
+    }
+
+    if ('navigate' in client && typeof client.navigate === 'function') {
+      const navigated = await client.navigate(targetUrl)
+      if (navigated && 'focus' in navigated) {
+        return navigated.focus()
+      }
+    }
+
+    client.postMessage({ type: 'pushus:notification-click', url: targetUrl })
+    if ('focus' in client) {
+      return client.focus()
+    }
+  }
+
+  if (self.clients.openWindow) {
+    return self.clients.openWindow(targetUrl)
+  }
+
+  return undefined
+}
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
 
-  const rawUrl = event.notification.data?.url ?? '/'
-  let targetUrl = '/'
+  const rawUrl = event.notification.data?.url ?? '/today'
+  let targetUrl = '/today'
 
   try {
     if (typeof rawUrl === 'string' && rawUrl.startsWith('/')) {
@@ -42,22 +70,8 @@ self.addEventListener('notificationclick', (event) => {
       }
     }
   } catch {
-    targetUrl = '/'
+    targetUrl = '/today'
   }
 
-  event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      for (const client of clients) {
-        if ('focus' in client && client.url.includes(self.location.origin)) {
-          return client.focus()
-        }
-      }
-
-      if (self.clients.openWindow) {
-        return self.clients.openWindow(targetUrl)
-      }
-
-      return undefined
-    }),
-  )
+  event.waitUntil(focusOrOpenClient(targetUrl))
 })

@@ -158,6 +158,27 @@ export function getCurrentMesocycleWeek(mesocycleStartedAt: string, today: strin
   return weekIndex + 1
 }
 
+export function resolveTodayPrescription(
+  row: TrainingPlanRow | null,
+  localDate: string,
+  timezone: string,
+): DayPrescription | null {
+  if (!row?.wizard_completed) {
+    return null
+  }
+
+  const mesocycleWeek = getCurrentMesocycleWeek(row.mesocycle_started_at, localDate)
+  const schedule = buildWeeklySchedule(row, mesocycleWeek)
+  const dayOfWeek = dayOfWeekFromIso(localDate, timezone)
+  const prescription = schedule[dayOfWeek]
+
+  if (!prescription || prescription.target === 0 || prescription.dayType === 'rest') {
+    return null
+  }
+
+  return prescription
+}
+
 export function resolveTodayTarget(
   row: TrainingPlanRow | null,
   localDate: string,

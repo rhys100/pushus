@@ -25,6 +25,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ### Changed
 
 - Training wizard: clearer 30-day daily average question, step titles, mobile-friendly preview, log pre-fill on re-run, save gated on soreness acknowledgement
+- Toasts moved below the header so they no longer cover settings content above the bottom nav
 - **Log page layout:** ring and inline Bank CTA at top; compact today's plan below; removed top private-beta banner strip (~32px reclaimed)
 - Circular logger: drag from anywhere on the ring with snap-to-rep on touch; aligned pointer/ring angle math; handle stays on track (no scale flash)
 - Stronger tiered drag haptics (18ms notch; stronger pulses at reps 5 and 10)
@@ -33,6 +34,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Push reminder tap opens the log page (`/today`) instead of leaving you on the previous tab
+- Push reminder copy matches the log page set planner (e.g. “Bank about 8 — set 1 of 3”) instead of only showing total reps left
 - Training plan wizard: Save/Continue actions pinned above bottom nav; push reminder hidden on wizard route
 - Bottom dock (nav, bank strip, prompts): solid background, fade scrim, and elevation shadow for readable labels over scrolling content
 - Calibrated week-2 plan start no longer reset to week 1 by auto progression sync on first app open
@@ -41,6 +44,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Training wizard rejects non-numeric recent daily average input instead of saving NaN
 - Training wizard log prefill waits for saved plan + history before applying (fixes re-run race)
 - Circular logger accepts taps across the full ring hit target, not just the visual stroke width
+- Training plan save confirmation shows inline at top of Settings instead of a bottom toast over page content
+- Toasts on headerless Log page use a smaller top inset so they do not cover the circular logger
 - Logger handle tick animation resets after banking so later drags only tick on rep boundaries
 - Training plan save shows the real Supabase error instead of a generic toast (helps diagnose missing migration)
 - Circular logger snaps handle and haptic tick to each rep (1–10) while dragging, not only at a full lap

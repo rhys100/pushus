@@ -126,7 +126,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <div
         aria-label="Notifications"
         className={cn(
-          'pointer-events-none fixed inset-x-0 bottom-[var(--toast-bottom)] z-[60]',
+          'pointer-events-none fixed inset-x-0 top-[var(--toast-top)] z-[60]',
           'mx-auto flex max-w-lg flex-col gap-2 px-4',
         )}
       >

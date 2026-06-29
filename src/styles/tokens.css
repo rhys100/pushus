@@ -46,6 +46,7 @@
   --log-bank-strip-height: calc(var(--bank-cta-height) + 1.5rem + var(--bank-hint-height));
   --log-page-scroll-pad: calc(var(--log-bank-strip-height) + 0.5rem);
   --log-page-scroll-pad-inline: calc(var(--bottom-nav-height) + 0.5rem);
+  --toast-top: calc(env(safe-area-inset-top, 0px) + 4.25rem);
   --toast-bottom: calc(var(--bottom-nav-height) + 0.5rem);
 
   /* Fixed bottom chrome (nav, bank strip, wizard actions) */

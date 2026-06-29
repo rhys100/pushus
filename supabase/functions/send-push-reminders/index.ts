@@ -2,7 +2,8 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4'
 import webpush from 'npm:web-push@3.6.7'
-import { resolveTodayTarget } from '../_shared/planResolve.ts'
+import { resolveTodayPrescription, resolveTodayTarget } from '../_shared/planResolve.ts'
+import { buildReminderNotificationCopy } from '../_shared/reminderNotificationCopy.ts'
 
 // Eligibility rules mirror src/lib/notificationEligibility.ts
 
@@ -166,12 +167,12 @@ function jsonResponse(body: unknown, status = 200): Response {
   })
 }
 
-async function getBankedToday(
+async function getTodayEntryStats(
   supabase: ReturnType<typeof createClient>,
   userId: string,
   localDate: string,
   groupId?: string,
-): Promise<number> {
+): Promise<{ bankedToday: number; banksLogged: number }> {
   let query = supabase
     .from('pushup_entries')
     .select('count')
@@ -190,7 +191,11 @@ async function getBankedToday(
     throw error
   }
 
-  return (data ?? []).reduce((sum, row) => sum + row.count, 0)
+  const rows = data ?? []
+  return {
+    bankedToday: rows.reduce((sum, row) => sum + row.count, 0),
+    banksLogged: rows.length,
+  }
 }
 
 async function logEvent(
@@ -336,13 +341,14 @@ Deno.serve(async (req) => {
         ? timezoneByGroup.get(planRow.group_id) ?? profileTimezone
         : profileTimezone
       const localDate = getZonedTimeParts(timezone, now).dateKey
-      const bankedToday = await getBankedToday(
+      const { bankedToday, banksLogged } = await getTodayEntryStats(
         supabase,
         prefs.user_id,
         localDate,
         planRow?.group_id,
       )
       const todayTarget = resolveTodayTarget(planRow, localDate, timezone, prefs.daily_target)
+      const todayPrescription = resolveTodayPrescription(planRow, localDate, timezone)
 
       if (!isEligibleForReminder(prefs, timezone, bankedToday, todayTarget, now)) {
         skipped += 1
@@ -356,11 +362,13 @@ Deno.serve(async (req) => {
       }
 
       const remaining = Math.max(todayTarget - bankedToday, 0)
-      const payload = JSON.stringify({
-        title: 'PushUS reminder',
-        body: `You still have ${remaining} push-up${remaining === 1 ? '' : 's'} to bank today.`,
-        url: '/',
+      const notificationCopy = buildReminderNotificationCopy({
+        prescription: todayPrescription,
+        bankedToday,
+        banksLogged,
+        remainingTotal: remaining,
       })
+      const payload = JSON.stringify(notificationCopy)
 
       let userSent = false
 

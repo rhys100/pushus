@@ -26,6 +26,8 @@ A user receives a reminder when all of the following are true:
 
 Default for new users: hourly reminders between **7:00** and **20:00** (7pm inclusive). Existing users keep once-daily until they change frequency in Settings.
 
+Tapping a reminder opens the **log page** (`/today`). Reminder text mirrors the log page set planner when a training plan is active (e.g. “Bank about 8 — set 1 of 3 — tap to log”).
+
 Shared logic lives in `src/lib/notificationEligibility.ts` and is mirrored in the edge function.
 
 ## Setup
