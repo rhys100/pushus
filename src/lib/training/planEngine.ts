@@ -7,6 +7,11 @@ import {
   deriveProgressionFromEffort,
   type EffortSummary,
 } from '@/lib/training/effortFeedback'
+import {
+  buildTrustedDayPrescription,
+  volumeContextFromStoredPlan,
+  type VolumeCalibrationContext,
+} from '@/lib/training/trustedVolume'
 
 export type DayType = 'rest' | 'easy' | 'moderate' | 'challenge'
 
@@ -51,12 +56,17 @@ export type WizardAnswers = {
   wizardSorenessLevel?: 'none' | 'mild' | 'notable'
   challengeIntensity: 'light' | 'moderate' | 'intense'
   recentDailyAverage?: number | null
+  /** Populated when loading from DB — holds encoded volume trust metadata. */
+  storedCalibrationNote?: string | null
+  /** Set when user confirms off-app training on stale path — encoded in calibration_note at save. */
+  manualConfirmedRegularTraining?: boolean
 }
 
 export type RecommendWizardOptions = {
   initialBaseline?: number
   startMesocycleWeek?: MesocycleWeek
   mesocycleStartedAt?: string
+  volumeContext?: VolumeCalibrationContext
 }
 
 export type PlanRecommendation = {
@@ -94,18 +104,6 @@ const MESOCYCLE_MULTIPLIER: Record<MesocycleWeek, number> = {
   2: 0.85,
   3: 1.0,
   4: 0.55,
-}
-
-const LEVEL_VOLUME_FACTOR: Record<WizardAnswers['trainingLevel'], number> = {
-  beginner: 0.85,
-  intermediate: 0.95,
-  advanced: 1.0,
-}
-
-const INTENSITY_VOLUME_FACTOR: Record<WizardAnswers['challengeIntensity'], number> = {
-  light: 0.85,
-  moderate: 1.0,
-  intense: 1.1,
 }
 
 /** Default active days: Mon, Tue, Wed, Fri, Sat — Thu + Sun rest. */
@@ -202,16 +200,6 @@ export function dailyVolumeCap(maxCleanSet: number): number {
   return Math.min(maxCleanSet * 2, maxCleanSet + 15)
 }
 
-function setsForDayType(
-  dayType: DayType,
-  trainingLevel: WizardAnswers['trainingLevel'],
-): number {
-  if (dayType === 'rest') return 0
-  if (dayType === 'easy') return 2
-  if (dayType === 'moderate') return 3
-  return trainingLevel === 'beginner' ? 3 : 4
-}
-
 function dayTypeLabel(dayType: DayType, sets: number, setSize: number): string {
   if (dayType === 'rest') return 'Rest — recovery'
   const typeName = dayType.charAt(0).toUpperCase() + dayType.slice(1)
@@ -274,11 +262,9 @@ export function buildWeeklySchedule(
   answers: WizardAnswers,
   mesocycleWeek: MesocycleWeek = 3,
   planBaseline = 1,
+  volumeContext?: VolumeCalibrationContext,
 ): WeeklySchedule {
-  const volumeCap = dailyVolumeCap(answers.maxCleanSet)
-  const levelFactor = LEVEL_VOLUME_FACTOR[answers.trainingLevel]
-  const intensityFactor = INTENSITY_VOLUME_FACTOR[answers.challengeIntensity]
-  const mesoFactor = MESOCYCLE_MULTIPLIER[mesocycleWeek]
+  const ctx = volumeContext ?? volumeContextFromStoredPlan(answers, answers.storedCalibrationNote)
 
   let trainingDays = [...answers.preferredTrainingDays].sort((a, b) => a - b)
 
@@ -300,24 +286,20 @@ export function buildWeeklySchedule(
 
   for (const day of ALL_DAYS) {
     const dayType = assignment.get(day) ?? 'rest'
-    const sets = setsForDayType(dayType, answers.trainingLevel)
-    const setSize = computeSetSizeForDay(answers.maxCleanSet, dayType)
-    let target = sets * setSize
-    target = roundReps(target * levelFactor * intensityFactor * mesoFactor * planBaseline)
-    const capped = applyVolumeCapCoherent(
-      target,
-      sets,
-      setSize,
-      volumeCap,
-      answers.maxCleanSet,
+    const prescription = buildTrustedDayPrescription(
+      answers,
+      dayType,
+      mesocycleWeek,
+      planBaseline,
+      ctx,
     )
 
     schedule[day] = {
       dayType,
-      target: capped.target,
-      setSize: capped.setSize,
-      sets: capped.sets,
-      label: dayTypeLabel(dayType, capped.sets, capped.setSize),
+      target: prescription.target,
+      setSize: prescription.setSize,
+      sets: prescription.sets,
+      label: dayTypeLabel(dayType, prescription.sets, prescription.setSize),
     }
   }
 
@@ -357,8 +339,14 @@ function planFromAnswers(
   mesocycleStartedAt?: string,
   planBaseline = 1,
   mesocycleBlockStartWeek: MesocycleWeek = mesocycleWeek,
+  volumeContext?: VolumeCalibrationContext,
 ): TrainingPlan {
-  const weeklySchedule = buildWeeklySchedule(answers, mesocycleWeek, planBaseline)
+  const weeklySchedule = buildWeeklySchedule(
+    answers,
+    mesocycleWeek,
+    planBaseline,
+    volumeContext,
+  )
   const { restDays, easyDays, challengeDays } = deriveDayLists(weeklySchedule)
   const setSize = computeSetSize(answers.maxCleanSet)
   const peakDayTarget = getPeakDayTarget(weeklySchedule)
@@ -474,7 +462,12 @@ export function rebuildScheduleForMesocycleWeek(
   answers: WizardAnswers,
   mesocycleWeek: MesocycleWeek,
 ): TrainingPlan {
-  const weeklySchedule = buildWeeklySchedule(answers, mesocycleWeek, plan.planBaseline)
+  const weeklySchedule = buildWeeklySchedule(
+    answers,
+    mesocycleWeek,
+    plan.planBaseline,
+    volumeContextFromStoredPlan(answers, answers.storedCalibrationNote),
+  )
   const { restDays, easyDays, challengeDays } = deriveDayLists(weeklySchedule)
   const peakDayTarget = getPeakDayTarget(weeklySchedule)
 
@@ -663,12 +656,16 @@ export function recommendFromWizard(
 ): PlanRecommendation {
   const startWeek = options.startMesocycleWeek ?? 1
   const baseline = options.initialBaseline ?? 1
+  const volumeContext =
+    options.volumeContext ?? volumeContextFromStoredPlan(answers, answers.storedCalibrationNote)
+
   const plan = planFromAnswers(
     answers,
     startWeek,
     options.mesocycleStartedAt ?? todayIsoDate(),
     baseline,
     startWeek,
+    volumeContext,
   )
 
   const summary = [
@@ -703,9 +700,12 @@ export function wizardAnswersFromPlanRow(row: {
   challenge_intensity: string
   preferred_training_days: number[]
   recent_daily_average?: number | null
+  calibration_note?: string | null
+  wizard_soreness_level?: string | null
 }): WizardAnswers {
   const level = row.training_level as WizardAnswers['trainingLevel']
   const intensity = row.challenge_intensity as WizardAnswers['challengeIntensity']
+  const soreness = row.wizard_soreness_level
 
   return {
     maxCleanSet: row.max_clean_set,
@@ -718,6 +718,11 @@ export function wizardAnswersFromPlanRow(row: {
       ? intensity
       : 'moderate',
     recentDailyAverage: row.recent_daily_average ?? null,
+    storedCalibrationNote: row.calibration_note ?? null,
+    wizardSorenessLevel:
+      soreness === 'none' || soreness === 'mild' || soreness === 'notable'
+        ? soreness
+        : 'none',
   }
 }
 
@@ -731,8 +736,12 @@ export function planFromRow(row: {
   mesocycle_started_at?: string | null
   mesocycle_block_start_week?: number | null
   plan_baseline?: number | null
+  recent_daily_average?: number | null
+  calibration_note?: string | null
+  wizard_soreness_level?: string | null
 }, today: string = todayIsoDate()): TrainingPlan {
   const answers = wizardAnswersFromPlanRow(row)
+  const volumeContext = volumeContextFromStoredPlan(answers, row.calibration_note)
   const mesocycleStartedAt = row.mesocycle_started_at ?? today
   const planBaseline = row.plan_baseline ?? 1
   const blockStartWeek = Math.min(
@@ -747,6 +756,7 @@ export function planFromRow(row: {
     mesocycleStartedAt,
     planBaseline,
     blockStartWeek,
+    volumeContext,
   )
 }
 

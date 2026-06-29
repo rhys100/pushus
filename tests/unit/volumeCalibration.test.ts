@@ -121,31 +121,34 @@ describe('suggestWizardPrefill', () => {
 })
 
 describe('derivePlanCalibration', () => {
-  it('rhys-like case nudges baseline softly and always starts week 1', () => {
+  it('rhys-like case uses trusted volume context and starts week 1', () => {
     const entries = makeChallengeHistory(63, 24, 95)
     const stats = summarizeVolumeHistory(entries)
     const calibration = derivePlanCalibration(rhysLikeAnswers, stats)
 
-    expect(calibration.initialBaseline).toBeGreaterThan(1)
-    expect(calibration.initialBaseline).toBeLessThanOrEqual(MAX_HINT_BASELINE)
+    expect(calibration.initialBaseline).toBe(1)
     expect(calibration.startMesocycleWeek).toBe(1)
-    expect(calibration.calibrationNote).toMatch(/recent avg|slightly higher/i)
-    expect(calibration.previewNote).toMatch(/recent avg 63/i)
+    expect(calibration.volumeContext.trustMode).toBe('trusted')
+    expect(calibration.volumeContext.volumeAnchor).toBeGreaterThan(0)
+    expect(calibration.calibrationNote).toMatch(/recent average/i)
+    expect(calibration.previewNote).toMatch(/63/i)
 
     const week1Schedule = buildWeeklySchedule(
       rhysLikeAnswers,
       calibration.startMesocycleWeek,
       calibration.initialBaseline,
+      calibration.volumeContext,
     )
     expect(getPeakDayTarget(week1Schedule)).toBeGreaterThan(20)
   })
 
-  it('calibrates from manual average without log history', () => {
+  it('calibrates from manual average without log history (partial trust)', () => {
     const calibration = derivePlanCalibration(rhysLikeAnswers, null)
 
-    expect(calibration.initialBaseline).toBeGreaterThan(1)
+    expect(calibration.initialBaseline).toBe(1)
     expect(calibration.startMesocycleWeek).toBe(1)
-    expect(calibration.previewNote).toMatch(/recent avg 63/i)
+    expect(calibration.volumeContext.trustMode).toBe('partial')
+    expect(calibration.previewNote).toMatch(/63|blend/i)
   })
 
   it('returns defaults without history or manual average', () => {
@@ -157,10 +160,11 @@ describe('derivePlanCalibration', () => {
     expect(calibration.initialBaseline).toBe(1)
     expect(calibration.startMesocycleWeek).toBe(1)
     expect(calibration.calibrationNote).toBeNull()
-    expect(calibration.previewNote).toMatch(/week 1 targets will adjust/i)
+    expect(calibration.volumeContext.trustMode).toBe('none')
+    expect(calibration.previewNote).toMatch(/conservatively|adjust as you log/i)
   })
 
-  it('advanced intense max 20 avg 65 applies soft hint at cap edge', () => {
+  it('advanced intense max 20 avg 65 trusted W1 hits success bands', () => {
     const answers: WizardAnswers = {
       maxCleanSet: 20,
       trainingLevel: 'advanced',
@@ -173,11 +177,17 @@ describe('derivePlanCalibration', () => {
     const calibration = derivePlanCalibration(answers, null)
 
     expect(calibration.startMesocycleWeek).toBe(1)
-    expect(calibration.initialBaseline).toBeGreaterThanOrEqual(1)
     expect(calibration.maxCleanMismatchWarning).toMatch(/double-check max clean/i)
 
-    const schedule = buildWeeklySchedule(answers, calibration.startMesocycleWeek, calibration.initialBaseline)
-    expect(getPeakDayTarget(schedule)).toBeGreaterThanOrEqual(24)
+    const schedule = buildWeeklySchedule(
+      answers,
+      calibration.startMesocycleWeek,
+      calibration.initialBaseline,
+      { trustMode: 'trusted', volumeAnchor: 65 },
+    )
+    const challenge = Object.values(schedule).find((rx) => rx.dayType === 'challenge')
+    expect(challenge?.target ?? 0).toBeGreaterThanOrEqual(45)
+    expect(challenge?.target ?? 0).toBeLessThanOrEqual(55)
   })
 
   it('caps baseline hint at MAX_HINT_BASELINE for spike-heavy history', () => {

@@ -23,6 +23,16 @@ type TrainingPlanRow = {
   mesocycle_block_start_week?: number | null
   plan_baseline: number
   wizard_completed: boolean
+  recent_daily_average?: number | null
+  calibration_note?: string | null
+  wizard_soreness_level?: string | null
+}
+
+type VolumeTrustMode = 'none' | 'partial' | 'trusted'
+
+type VolumeCalibrationContext = {
+  trustMode: VolumeTrustMode
+  volumeAnchor: number | null
 }
 
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6]
@@ -45,6 +55,53 @@ const INTENSITY_VOLUME_FACTOR: Record<string, number> = {
   light: 0.85,
   moderate: 1.0,
   intense: 1.1,
+}
+
+const TRUSTED_INTENSITY_FACTOR: Record<string, number> = {
+  light: 0.95,
+  moderate: 1.0,
+  intense: 1.05,
+}
+
+const BANDS_TRUSTED: Record<number, Record<DayType, readonly [number, number]>> = {
+  1: {
+    rest: [0, 0],
+    easy: [0.32, 0.43],
+    moderate: [0.54, 0.62],
+    challenge: [0.69, 0.85],
+  },
+  2: {
+    rest: [0, 0],
+    easy: [0.4, 0.5],
+    moderate: [0.6, 0.7],
+    challenge: [0.65, 0.8],
+  },
+  3: {
+    rest: [0, 0],
+    easy: [0.5, 0.6],
+    moderate: [0.7, 0.85],
+    challenge: [0.75, 1.0],
+  },
+  4: {
+    rest: [0, 0],
+    easy: [0.24, 0.36],
+    moderate: [0.4, 0.48],
+    challenge: [0.4, 0.6],
+  },
+}
+
+const CEILING_BY_WEEK: Record<number, number> = {
+  1: 1.1,
+  2: 1.05,
+  3: 1.1,
+  4: 0.65,
+}
+
+const SET_COUNT_LIMITS: Record<DayType, { min: number; max: number }> = {
+  rest: { min: 0, max: 0 },
+  easy: { min: 2, max: 5 },
+  moderate: { min: 3, max: 6 },
+  challenge: { min: 3, max: 7 },
 }
 
 const EFFORT_RATIO: Record<DayType, number> = {
@@ -115,10 +172,10 @@ function assignDayTypes(trainingDays: number[], trainingLevel: string): Map<numb
     1: ['moderate'],
     2: ['easy', 'challenge'],
     3: ['easy', 'moderate', 'challenge'],
-    4: ['easy', 'easy', 'moderate', 'challenge'],
+    4: ['easy', 'moderate', 'moderate', 'challenge'],
     5: ['easy', 'easy', 'moderate', 'easy', 'challenge'],
-    6: ['easy', 'easy', 'moderate', 'easy', 'challenge', 'moderate'],
-    7: ['easy', 'easy', 'moderate', 'easy', 'challenge', 'moderate', 'easy'],
+    6: ['easy', 'easy', 'moderate', 'moderate', 'challenge', 'moderate'],
+    7: ['easy', 'moderate', 'easy', 'moderate', 'challenge', 'moderate', 'easy'],
   }
 
   let pattern = patterns[Math.min(sorted.length, 7)] ?? patterns[4]
@@ -163,15 +220,242 @@ function getMesocycleWeekInBlock(
   return (((blockStartWeek - 1 + weeksElapsed) % 4) + 1)
 }
 
+function parseCalibrationNote(note?: string | null): {
+  trustMode: VolumeTrustMode | null
+  manualConfirmed: boolean
+} {
+  if (!note?.trim()) {
+    return { trustMode: null, manualConfirmed: false }
+  }
+
+  const match = note.match(/^@vt:(none|partial|trusted)(?:;mc:(0|1))?@/)
+  if (!match) {
+    return { trustMode: null, manualConfirmed: false }
+  }
+
+  return {
+    trustMode: match[1] as VolumeTrustMode,
+    manualConfirmed: match[2] === '1',
+  }
+}
+
+function volumeContextFromRow(row: TrainingPlanRow): VolumeCalibrationContext {
+  const parsed = parseCalibrationNote(row.calibration_note)
+  const avg = row.recent_daily_average
+  let trustMode: VolumeTrustMode = parsed.trustMode ?? 'none'
+
+  if (trustMode === 'none' && avg != null && avg > 0) {
+    trustMode = 'partial'
+  }
+
+  if (avg == null || avg <= 0) {
+    return { trustMode: 'none', volumeAnchor: null }
+  }
+
+  let anchor = Math.max(0, Math.round(avg))
+  if (trustMode === 'partial') {
+    const referencePeak = computeConservativeDayTarget(row, 'challenge', 3)
+    anchor = Math.min(anchor, Math.max(0, Math.round(referencePeak * 1.25)))
+  }
+
+  return { trustMode, volumeAnchor: anchor }
+}
+
+function computeEffectiveSetSize(
+  maxClean: number,
+  dayType: DayType,
+  bandMax: number,
+  minSets: number,
+): number {
+  if (dayType === 'rest') return 0
+  const upperBound = computeSetSizeForDay(maxClean, dayType)
+  const floor = minSetSize(maxClean)
+  if (bandMax <= 0 || minSets <= 0) return upperBound
+  const volumeLimited = Math.floor(bandMax / minSets)
+  return clamp(volumeLimited, floor, upperBound)
+}
+
+function computeTargetBand(
+  dayType: DayType,
+  mesocycleWeek: number,
+  volumeAnchor: number,
+  row: TrainingPlanRow,
+): { min: number; max: number; midpoint: number } {
+  const [loPct, hiPct] = BANDS_TRUSTED[mesocycleWeek][dayType]
+  let lo = volumeAnchor * loPct
+  let hi = volumeAnchor * hiPct
+  hi *= TRUSTED_INTENSITY_FACTOR[row.challenge_intensity] ?? 1
+  lo *= LEVEL_VOLUME_FACTOR[row.training_level] ?? 1
+
+  const soreness = row.wizard_soreness_level
+  if (soreness === 'notable' || soreness === 'mild') {
+    lo *= 0.85
+    hi *= 0.85
+  }
+
+  const min = Math.max(0, Math.round(lo))
+  const max = Math.max(0, Math.round(hi))
+  return { min, max, midpoint: Math.max(0, Math.round((min + max) / 2)) }
+}
+
+function convertTargetToSetsAndSetSize(
+  targetMid: number,
+  targetMin: number,
+  setSize: number,
+  minSets: number,
+  maxSets: number,
+): { target: number; sets: number; setSize: number } {
+  if (setSize <= 0 || maxSets <= 0) return { target: 0, sets: 0, setSize: 0 }
+  let sets = clamp(Math.round(targetMid / setSize), minSets, maxSets)
+  let adjustedTarget = sets * setSize
+  while (adjustedTarget < targetMin && sets < maxSets) {
+    sets += 1
+    adjustedTarget = sets * setSize
+  }
+  return { target: adjustedTarget, sets, setSize }
+}
+
+function computeConservativeDayTarget(
+  row: TrainingPlanRow,
+  dayType: DayType,
+  mesocycleWeek: number,
+): number {
+  if (dayType === 'rest') return 0
+  const sets = setsForDayType(dayType, row.training_level)
+  const setSize = computeSetSizeForDay(row.max_clean_set, dayType)
+  let target = sets * setSize
+  target = Math.max(
+    0,
+    Math.round(
+      target *
+        (LEVEL_VOLUME_FACTOR[row.training_level] ?? 1) *
+        (INTENSITY_VOLUME_FACTOR[row.challenge_intensity] ?? 1) *
+        (MESOCYCLE_MULTIPLIER[mesocycleWeek] ?? 1) *
+        (row.plan_baseline ?? 1),
+    ),
+  )
+  const cap = dailyVolumeCap(row.max_clean_set)
+  return applyVolumeCapCoherent(target, sets, setSize, cap, row.max_clean_set).target
+}
+
+function applyTrustedSafetyCaps(
+  trustMode: VolumeTrustMode,
+  dayType: DayType,
+  mesocycleWeek: number,
+  target: number,
+  sets: number,
+  setSize: number,
+  maxClean: number,
+  volumeAnchor: number | null,
+  sorenessLevel?: string | null,
+): { target: number; sets: number; setSize: number } {
+  const maxSetSize = computeSetSizeForDay(maxClean, dayType)
+  const effectiveSetSize = Math.min(setSize, maxSetSize)
+
+  if (trustMode === 'none' || !volumeAnchor || volumeAnchor <= 0) {
+    return applyVolumeCapCoherent(
+      target,
+      sets,
+      effectiveSetSize,
+      dailyVolumeCap(maxClean),
+      maxClean,
+    )
+  }
+
+  let dailyCeiling =
+    trustMode === 'partial'
+      ? dailyVolumeCap(maxClean)
+      : volumeAnchor * (CEILING_BY_WEEK[mesocycleWeek] ?? 1.1)
+
+  if (sorenessLevel === 'mild' || sorenessLevel === 'notable') {
+    dailyCeiling *= 0.75
+  }
+
+  if (trustMode === 'trusted' && mesocycleWeek <= 2) {
+    dailyCeiling = Math.min(dailyCeiling, volumeAnchor * 1.25)
+  }
+
+  return applyVolumeCapCoherent(
+    target,
+    sets,
+    effectiveSetSize,
+    Math.max(0, Math.round(dailyCeiling)),
+    maxClean,
+  )
+}
+
+function buildTrustedDayPrescription(
+  row: TrainingPlanRow,
+  dayType: DayType,
+  mesocycleWeek: number,
+  ctx: VolumeCalibrationContext,
+): { target: number; sets: number; setSize: number } {
+  if (dayType === 'rest') return { target: 0, sets: 0, setSize: 0 }
+
+  const conservativeTarget = computeConservativeDayTarget(row, dayType, mesocycleWeek)
+  const anchor = ctx.volumeAnchor
+  const limits = SET_COUNT_LIMITS[dayType]
+
+  if (ctx.trustMode === 'none' || !anchor || anchor <= 0) {
+    const setSize = computeSetSizeForDay(row.max_clean_set, dayType)
+    const sets = setsForDayType(dayType, row.training_level)
+    return applyTrustedSafetyCaps(
+      'none',
+      dayType,
+      mesocycleWeek,
+      conservativeTarget,
+      sets,
+      setSize,
+      row.max_clean_set,
+      null,
+      row.wizard_soreness_level,
+    )
+  }
+
+  const band = computeTargetBand(dayType, mesocycleWeek, anchor, row)
+  let targetMid = band.midpoint
+
+  if (ctx.trustMode === 'partial') {
+    targetMid = Math.max(
+      0,
+      Math.round(conservativeTarget + 0.5 * (band.midpoint - conservativeTarget)),
+    )
+    targetMid = clamp(targetMid, band.min, band.max)
+  }
+
+  const setSize = computeEffectiveSetSize(
+    row.max_clean_set,
+    dayType,
+    band.max,
+    limits.min,
+  )
+
+  const converted = convertTargetToSetsAndSetSize(
+    targetMid,
+    band.min,
+    setSize,
+    limits.min,
+    limits.max,
+  )
+
+  return applyTrustedSafetyCaps(
+    ctx.trustMode,
+    dayType,
+    mesocycleWeek,
+    converted.target,
+    converted.sets,
+    converted.setSize,
+    row.max_clean_set,
+    anchor,
+    row.wizard_soreness_level,
+  )
+}
+
 function buildWeeklySchedule(
   row: TrainingPlanRow,
   mesocycleWeek: number,
 ): WeeklySchedule {
-  const volumeCap = dailyVolumeCap(row.max_clean_set)
-  const levelFactor = LEVEL_VOLUME_FACTOR[row.training_level] ?? 1
-  const intensityFactor = INTENSITY_VOLUME_FACTOR[row.challenge_intensity] ?? 1
-  const mesoFactor = MESOCYCLE_MULTIPLIER[mesocycleWeek] ?? 1
-  const planBaseline = row.plan_baseline ?? 1
+  const ctx = volumeContextFromRow(row)
 
   let trainingDays = [...(row.preferred_training_days ?? [])].sort((a, b) => a - b)
   if (trainingDays.length === 0) trainingDays = [...DEFAULT_PREFERRED_TRAINING_DAYS]
@@ -182,20 +466,13 @@ function buildWeeklySchedule(
 
   for (const day of ALL_DAYS) {
     const dayType = assignment.get(day) ?? 'rest'
-    const sets = setsForDayType(dayType, row.training_level)
-    const setSize = computeSetSizeForDay(row.max_clean_set, dayType)
-    let target = sets * setSize
-    target = Math.max(
-      0,
-      Math.round(target * levelFactor * intensityFactor * mesoFactor * planBaseline),
-    )
-    const capped = applyVolumeCapCoherent(target, sets, setSize, volumeCap, row.max_clean_set)
+    const prescription = buildTrustedDayPrescription(row, dayType, mesocycleWeek, ctx)
 
     schedule[day] = {
       dayType,
-      target: capped.target,
-      setSize: capped.setSize,
-      sets: capped.sets,
+      target: prescription.target,
+      setSize: prescription.setSize,
+      sets: prescription.sets,
     }
   }
 

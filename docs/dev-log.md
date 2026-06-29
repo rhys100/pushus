@@ -26,6 +26,21 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+**Fixed**
+- Bugbot slice 13: trust mode persisted in `calibration_note` metadata; partial no longer upgrades to trusted on rebuild; off-app flag wired on save; soreness restored from row; planResolve patterns + partial anchor cap aligned
+
+### 2026-06-29 (trusted volume calibration — slice 13)
+
+**Shipped**
+- Two-part schedule model: max clean upper-bounds set size; trusted recent volume drives set count and daily targets
+- Trust modes: none / partial (50% blend + max-clean cap) / trusted (7+ logged days or confirmed off-app training)
+- Case D fix: low recent volume reduces set size below max-clean formula; high volume never exceeds it
+- Wizard + save path pass `volumeContext`; edge `planResolve` mirror updated
+- Unit tests: Case C (max 20, avg 65) and Case D (max 40, avg 10)
+
+**Notes**
+- `plan_baseline` soft hint retired for volume; baseline stays 1 when trusted bands apply
+
 ### 2026-06-29 (CI build fix)
 
 **Fixed**

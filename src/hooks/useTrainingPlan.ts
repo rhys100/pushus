@@ -161,6 +161,9 @@ function resolveTrainingPlan(
       mesocycle_started_at: row.mesocycle_started_at,
       mesocycle_block_start_week: row.mesocycle_block_start_week,
       plan_baseline: row.plan_baseline,
+      recent_daily_average: row.recent_daily_average,
+      calibration_note: row.calibration_note,
+      wizard_soreness_level: row.wizard_soreness_level,
     },
     todayIso,
   )
@@ -188,12 +191,15 @@ export function useTrainingPlan(
       }
 
       const historyStats = await fetchVolumeHistoryStats(userId, groupId)
-      const calibration = derivePlanCalibration(answers, historyStats)
+      const calibration = derivePlanCalibration(answers, historyStats, {
+        manualConfirmedRegularTraining: answers.manualConfirmedRegularTraining ?? false,
+      })
       const recentDailyAverage = sanitizeRecentDailyAverage(answers.recentDailyAverage)
       const calibratedAnswers = { ...answers, recentDailyAverage }
       const { plan } = recommendFromWizard(calibratedAnswers, {
         initialBaseline: calibration.initialBaseline,
         startMesocycleWeek: calibration.startMesocycleWeek,
+        volumeContext: calibration.volumeContext,
       })
       const row = rowFromPlan(userId, groupId, calibratedAnswers, plan, {
         recentDailyAverage,
@@ -344,6 +350,9 @@ export function useTrainingPlan(
           mesocycle_started_at: query.data.mesocycle_started_at,
           mesocycle_block_start_week: query.data.mesocycle_block_start_week,
           plan_baseline: query.data.plan_baseline,
+          recent_daily_average: query.data.recent_daily_average,
+          calibration_note: query.data.calibration_note,
+          wizard_soreness_level: query.data.wizard_soreness_level,
         },
         todayIso,
       )

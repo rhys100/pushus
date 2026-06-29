@@ -13,6 +13,7 @@ import {
 import {
   deriveHistoryConfidence,
   derivePlanCalibration,
+  displayCalibrationNote,
   hasUsableVolumeHistory,
   HISTORY_WINDOW_DAYS,
   shouldPrefillDailyAverage,
@@ -123,8 +124,11 @@ export function TrainingWizard({
   }, [savedAnswersReady, historyLoading, historyStats, initialAnswers, userEditedDailyAvg])
 
   const calibration = useMemo(
-    () => derivePlanCalibration(answers, historyStats),
-    [answers, historyStats],
+    () =>
+      derivePlanCalibration(answers, historyStats, {
+        manualConfirmedRegularTraining: showOffAppTraining,
+      }),
+    [answers, historyStats, showOffAppTraining],
   )
 
   const historyPrefill = useMemo(
@@ -137,8 +141,9 @@ export function TrainingWizard({
       recommendFromWizard(answers, {
         initialBaseline: calibration.initialBaseline,
         startMesocycleWeek: calibration.startMesocycleWeek,
+        volumeContext: calibration.volumeContext,
       }),
-    [answers, calibration.initialBaseline, calibration.startMesocycleWeek],
+    [answers, calibration.initialBaseline, calibration.startMesocycleWeek, calibration.volumeContext],
   )
 
   const historyConfidence = deriveHistoryConfidence(historyStats)
@@ -177,7 +182,10 @@ export function TrainingWizard({
     if (!canSave) {
       return
     }
-    onComplete?.(answers)
+    onComplete?.({
+      ...answers,
+      manualConfirmedRegularTraining: showOffAppTraining,
+    })
   }
 
   return (
@@ -247,7 +255,7 @@ export function TrainingWizard({
                     <span className="font-mono font-bold">{historyStats.peakBank}</span>
                   </p>
                   <p className="mt-2 text-xs text-text-muted">
-                    Daily average is a soft hint only — your max clean set stays the anchor.
+                    Max clean caps set size; recent average shapes set count and daily targets.
                   </p>
                 </div>
               ) : null}
@@ -454,9 +462,9 @@ export function TrainingWizard({
 
             <p className="text-sm text-text-muted">{recommendation.summary}</p>
 
-            {calibration.calibrationNote ? (
+            {displayCalibrationNote(calibration.calibrationNote) ? (
               <p className="rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-xs text-text-primary">
-                {calibration.calibrationNote}
+                {displayCalibrationNote(calibration.calibrationNote)}
               </p>
             ) : null}
 

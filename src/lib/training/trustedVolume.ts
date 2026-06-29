@@ -1,0 +1,553 @@
+import type { DayType, MesocycleWeek, WizardAnswers } from '@/lib/training/planEngine'
+import {
+  applyVolumeCapCoherent,
+  computeSetSizeForDay,
+  dailyVolumeCap,
+  minSetSize,
+} from '@/lib/training/planEngine'
+import type { VolumeHistoryStats } from '@/lib/training/volumeCalibration'
+import { deriveHistoryConfidence } from '@/lib/training/volumeCalibration'
+
+export type VolumeTrustMode = 'none' | 'partial' | 'trusted'
+
+export type VolumeCalibrationContext = {
+  trustMode: VolumeTrustMode
+  volumeAnchor: number | null
+  wizardSorenessLevel?: WizardAnswers['wizardSorenessLevel']
+  hardFeedbackRate7d?: number
+  manualConfirmedRegularTraining?: boolean
+}
+
+const BANDS_TRUSTED: Record<
+  MesocycleWeek,
+  Record<DayType, readonly [number, number]>
+> = {
+  1: {
+    rest: [0, 0],
+    easy: [0.32, 0.43],
+    moderate: [0.54, 0.62],
+    challenge: [0.69, 0.85],
+  },
+  2: {
+    rest: [0, 0],
+    easy: [0.4, 0.5],
+    moderate: [0.6, 0.7],
+    challenge: [0.65, 0.8],
+  },
+  3: {
+    rest: [0, 0],
+    easy: [0.5, 0.6],
+    moderate: [0.7, 0.85],
+    challenge: [0.75, 1.0],
+  },
+  4: {
+    rest: [0, 0],
+    easy: [0.24, 0.36],
+    moderate: [0.4, 0.48],
+    challenge: [0.4, 0.6],
+  },
+}
+
+/** W1–W3 daily ceiling as fraction of volume anchor; W4 deload. */
+const CEILING_BY_WEEK: Record<MesocycleWeek, number> = {
+  1: 1.1,
+  2: 1.05,
+  3: 1.1,
+  4: 0.65,
+}
+
+export const SET_COUNT_LIMITS: Record<
+  DayType,
+  { min: number; max: number }
+> = {
+  rest: { min: 0, max: 0 },
+  easy: { min: 2, max: 5 },
+  moderate: { min: 3, max: 6 },
+  challenge: { min: 3, max: 7 },
+}
+
+const LEVEL_VOLUME_FACTOR: Record<WizardAnswers['trainingLevel'], number> = {
+  beginner: 0.85,
+  intermediate: 0.95,
+  advanced: 1.0,
+}
+
+const INTENSITY_VOLUME_FACTOR: Record<WizardAnswers['challengeIntensity'], number> = {
+  light: 0.95,
+  moderate: 1.0,
+  intense: 1.05,
+}
+
+const MESOCYCLE_MULTIPLIER: Record<MesocycleWeek, number> = {
+  1: 0.7,
+  2: 0.85,
+  3: 1.0,
+  4: 0.55,
+}
+
+const PARTIAL_TRUST_BLEND = 0.5
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value))
+}
+
+function roundReps(value: number): number {
+  return Math.max(0, Math.round(value))
+}
+
+function setsForDayTypeConservative(
+  dayType: DayType,
+  trainingLevel: WizardAnswers['trainingLevel'],
+): number {
+  if (dayType === 'rest') return 0
+  if (dayType === 'easy') return 2
+  if (dayType === 'moderate') return 3
+  return trainingLevel === 'beginner' ? 3 : 4
+}
+
+export function deriveVolumeTrustMode(
+  stats: VolumeHistoryStats | null,
+  manualAverage: number | null,
+  manualConfirmedRegularTraining: boolean,
+): VolumeTrustMode {
+  const sampleDays = stats?.sampleDays ?? 0
+  const daysSince = stats?.daysSinceLastLog ?? null
+  const hasManual = manualAverage != null && manualAverage > 0
+
+  if (sampleDays >= 14) {
+    return 'trusted'
+  }
+
+  if (sampleDays >= 7 && (daysSince === null || daysSince <= 14)) {
+    return 'trusted'
+  }
+
+  if (hasManual && manualConfirmedRegularTraining && sampleDays === 0) {
+    return 'trusted'
+  }
+
+  if (sampleDays >= 7) {
+    return 'partial'
+  }
+
+  if (hasManual) {
+    return 'partial'
+  }
+
+  if (stats && deriveHistoryConfidence(stats) === 'partial') {
+    return 'partial'
+  }
+
+  return 'none'
+}
+
+export function computeTrustedVolumeAnchor(
+  stats: VolumeHistoryStats | null,
+  manualAverage: number | null,
+  trustMode: VolumeTrustMode,
+  maxCleanReferencePeak: number,
+): number | null {
+  if (trustMode === 'none') {
+    return null
+  }
+
+  const fromLogs =
+    stats && stats.sampleDays >= 7 ? roundReps(stats.avgDailyTotal) : null
+  const fromManual =
+    manualAverage != null && manualAverage > 0 ? roundReps(manualAverage) : null
+
+  let anchor = fromLogs ?? fromManual
+  if (!anchor || anchor <= 0) {
+    return null
+  }
+
+  if (trustMode === 'partial') {
+    anchor = Math.min(anchor, roundReps(maxCleanReferencePeak * 1.25))
+  }
+
+  return anchor
+}
+
+export function computeTargetBand(
+  dayType: DayType,
+  mesocycleWeek: MesocycleWeek,
+  volumeAnchor: number,
+  answers: WizardAnswers,
+  ctx: VolumeCalibrationContext,
+): { min: number; max: number; midpoint: number } {
+  const [loPct, hiPct] = BANDS_TRUSTED[mesocycleWeek][dayType]
+  let lo = volumeAnchor * loPct
+  let hi = volumeAnchor * hiPct
+
+  hi *= INTENSITY_VOLUME_FACTOR[answers.challengeIntensity]
+  lo *= LEVEL_VOLUME_FACTOR[answers.trainingLevel]
+
+  const soreness = ctx.wizardSorenessLevel ?? 'none'
+  if (soreness === 'notable' || soreness === 'mild') {
+    lo *= 0.85
+    hi *= 0.85
+  }
+
+  if ((ctx.hardFeedbackRate7d ?? 0) >= 0.4) {
+    lo *= 0.9
+    hi *= 0.9
+  }
+
+  const min = roundReps(lo)
+  const max = roundReps(hi)
+  return { min, max, midpoint: roundReps((min + max) / 2) }
+}
+
+/**
+ * Max clean sets upper safe set size; low trusted volume may reduce below that.
+ * Recent volume never increases set size above the max-clean formula.
+ */
+export function computeEffectiveSetSize(
+  maxClean: number,
+  dayType: DayType,
+  bandMax: number,
+  minSets: number,
+): number {
+  if (dayType === 'rest') {
+    return 0
+  }
+
+  const upperBound = computeSetSizeForDay(maxClean, dayType)
+  const floor = minSetSize(maxClean)
+
+  if (bandMax <= 0 || minSets <= 0) {
+    return upperBound
+  }
+
+  const volumeLimited = Math.floor(bandMax / minSets)
+  return clamp(volumeLimited, floor, upperBound)
+}
+
+export function convertTargetToSetsAndSetSize(
+  targetMid: number,
+  targetMin: number,
+  setSize: number,
+  minSets: number,
+  maxSets: number,
+): { target: number; sets: number; setSize: number } {
+  if (setSize <= 0 || maxSets <= 0) {
+    return { target: 0, sets: 0, setSize: 0 }
+  }
+
+  let sets = clamp(Math.round(targetMid / setSize), minSets, maxSets)
+  let adjustedTarget = sets * setSize
+
+  while (adjustedTarget < targetMin && sets < maxSets) {
+    sets += 1
+    adjustedTarget = sets * setSize
+  }
+
+  return { target: adjustedTarget, sets, setSize }
+}
+
+export function computeConservativeDayTarget(
+  answers: WizardAnswers,
+  dayType: DayType,
+  mesocycleWeek: MesocycleWeek,
+  planBaseline: number,
+): number {
+  if (dayType === 'rest') {
+    return 0
+  }
+
+  const sets = setsForDayTypeConservative(dayType, answers.trainingLevel)
+  const setSize = computeSetSizeForDay(answers.maxCleanSet, dayType)
+  let target = sets * setSize
+  target = roundReps(
+    target *
+      LEVEL_VOLUME_FACTOR[answers.trainingLevel] *
+      INTENSITY_VOLUME_FACTOR[answers.challengeIntensity] *
+      MESOCYCLE_MULTIPLIER[mesocycleWeek] *
+      planBaseline,
+  )
+
+  const cap = dailyVolumeCap(answers.maxCleanSet)
+  const capped = applyVolumeCapCoherent(
+    target,
+    sets,
+    setSize,
+    cap,
+    answers.maxCleanSet,
+  )
+  return capped.target
+}
+
+export function applySafetyCaps(
+  trustMode: VolumeTrustMode,
+  dayType: DayType,
+  mesocycleWeek: MesocycleWeek,
+  target: number,
+  sets: number,
+  setSize: number,
+  maxClean: number,
+  volumeAnchor: number | null,
+  sorenessLevel?: WizardAnswers['wizardSorenessLevel'],
+): { target: number; sets: number; setSize: number } {
+  const maxSetSize = computeSetSizeForDay(maxClean, dayType)
+  const effectiveSetSize = Math.min(setSize, maxSetSize)
+
+  if (trustMode === 'none' || !volumeAnchor || volumeAnchor <= 0) {
+    const cap = dailyVolumeCap(maxClean)
+    return applyVolumeCapCoherent(
+      target,
+      sets,
+      effectiveSetSize,
+      cap,
+      maxClean,
+    )
+  }
+
+  let dailyCeiling =
+    trustMode === 'partial'
+      ? dailyVolumeCap(maxClean)
+      : volumeAnchor * CEILING_BY_WEEK[mesocycleWeek]
+
+  if (sorenessLevel === 'mild' || sorenessLevel === 'notable') {
+    dailyCeiling *= 0.75
+  }
+
+  if (trustMode === 'trusted' && mesocycleWeek <= 2) {
+    dailyCeiling = Math.min(dailyCeiling, volumeAnchor * 1.25)
+  }
+
+  return applyVolumeCapCoherent(
+    target,
+    sets,
+    effectiveSetSize,
+    roundReps(dailyCeiling),
+    maxClean,
+  )
+}
+
+export function blendPartialTarget(
+  conservativeTarget: number,
+  trustedMidpoint: number,
+): number {
+  return roundReps(
+    conservativeTarget + PARTIAL_TRUST_BLEND * (trustedMidpoint - conservativeTarget),
+  )
+}
+
+export function buildVolumeContext(
+  answers: WizardAnswers,
+  stats: VolumeHistoryStats | null,
+  options?: {
+    manualConfirmedRegularTraining?: boolean
+    maxCleanReferencePeak?: number
+    hardFeedbackRate7d?: number
+  },
+): VolumeCalibrationContext {
+  const manualConfirmed = options?.manualConfirmedRegularTraining ?? false
+  const trustMode = deriveVolumeTrustMode(
+    stats,
+    answers.recentDailyAverage ?? null,
+    manualConfirmed,
+  )
+  const referencePeak =
+    options?.maxCleanReferencePeak ??
+    computeConservativeDayTarget(answers, 'challenge', 3, 1)
+
+  const volumeAnchor = computeTrustedVolumeAnchor(
+    stats,
+    answers.recentDailyAverage ?? null,
+    trustMode,
+    referencePeak,
+  )
+
+  return {
+    trustMode,
+    volumeAnchor,
+    wizardSorenessLevel: answers.wizardSorenessLevel,
+    hardFeedbackRate7d: options?.hardFeedbackRate7d,
+    manualConfirmedRegularTraining: manualConfirmed,
+  }
+}
+
+/** Runtime schedule build from stored plan fields (no live log stats). */
+export function volumeContextFromStoredPlan(
+  answers: WizardAnswers,
+  calibrationNote?: string | null,
+): VolumeCalibrationContext {
+  const parsed = parseCalibrationNote(calibrationNote)
+  const avg = answers.recentDailyAverage
+
+  let trustMode: VolumeTrustMode = parsed.trustMode ?? 'none'
+  if (trustMode === 'none' && avg != null && avg > 0) {
+    // Legacy rows without metadata — default partial, not full trusted
+    trustMode = 'partial'
+  }
+
+  const referencePeak = computeConservativeDayTarget(answers, 'challenge', 3, 1)
+  const volumeAnchor = computeTrustedVolumeAnchor(
+    null,
+    avg ?? null,
+    trustMode,
+    referencePeak,
+  )
+
+  if (!volumeAnchor || volumeAnchor <= 0) {
+    return {
+      trustMode: 'none',
+      volumeAnchor: null,
+      wizardSorenessLevel: answers.wizardSorenessLevel,
+      manualConfirmedRegularTraining: parsed.manualConfirmed,
+    }
+  }
+
+  return {
+    trustMode,
+    volumeAnchor,
+    wizardSorenessLevel: answers.wizardSorenessLevel,
+    manualConfirmedRegularTraining: parsed.manualConfirmed,
+  }
+}
+
+/** @deprecated Use volumeContextFromStoredPlan */
+export function volumeContextFromStoredAverage(
+  answers: WizardAnswers,
+): VolumeCalibrationContext {
+  return volumeContextFromStoredPlan(answers)
+}
+
+const CALIBRATION_META_PATTERN =
+  /^@vt:(none|partial|trusted)(?:;mc:(0|1))?@(?:\n([\s\S]*))?$/
+
+export function formatCalibrationNote(
+  ctx: VolumeCalibrationContext,
+  userNote?: string | null,
+): string | null {
+  const userText = userNote?.trim() ?? ''
+  if (ctx.trustMode === 'none' && !userText) {
+    return null
+  }
+
+  const meta = `@vt:${ctx.trustMode};mc:${ctx.manualConfirmedRegularTraining ? 1 : 0}@`
+  return userText ? `${meta}\n${userText}` : meta
+}
+
+export function parseCalibrationNote(note?: string | null): {
+  trustMode: VolumeTrustMode | null
+  manualConfirmed: boolean
+  displayNote: string | null
+} {
+  if (!note?.trim()) {
+    return { trustMode: null, manualConfirmed: false, displayNote: null }
+  }
+
+  const match = note.match(CALIBRATION_META_PATTERN)
+  if (!match) {
+    return { trustMode: null, manualConfirmed: false, displayNote: note.trim() }
+  }
+
+  return {
+    trustMode: match[1] as VolumeTrustMode,
+    manualConfirmed: match[2] === '1',
+    displayNote: match[3]?.trim() || null,
+  }
+}
+
+export function displayCalibrationNote(note?: string | null): string | null {
+  return parseCalibrationNote(note).displayNote
+}
+
+export function previewExplanationForContext(
+  ctx: VolumeCalibrationContext,
+  anchor: number | null,
+): string | null {
+  const soreness = ctx.wizardSorenessLevel ?? 'none'
+  if (soreness === 'notable' || soreness === 'mild') {
+    return 'Because you reported soreness, PushUS is keeping this week lighter.'
+  }
+
+  if (ctx.trustMode === 'trusted' && anchor != null && anchor > 0) {
+    return `You've averaged about ${anchor}/day recently, so PushUS starts below that and spreads reps across easy submaximal sets.`
+  }
+
+  if (ctx.trustMode === 'partial' && anchor != null && anchor > 0) {
+    return `Using a blend of your max clean set and recent average (~${anchor}/day) — targets will tune as you log.`
+  }
+
+  return 'PushUS is starting conservatively from your max clean set. It will adjust as you log.'
+}
+
+export function buildTrustedDayPrescription(
+  answers: WizardAnswers,
+  dayType: DayType,
+  mesocycleWeek: MesocycleWeek,
+  planBaseline: number,
+  ctx: VolumeCalibrationContext,
+): { target: number; sets: number; setSize: number } {
+  if (dayType === 'rest') {
+    return { target: 0, sets: 0, setSize: 0 }
+  }
+
+  const conservativeTarget = computeConservativeDayTarget(
+    answers,
+    dayType,
+    mesocycleWeek,
+    planBaseline,
+  )
+
+  const anchor = ctx.volumeAnchor
+  const limits = SET_COUNT_LIMITS[dayType]
+
+  if (
+    ctx.trustMode === 'none' ||
+    !anchor ||
+    anchor <= 0
+  ) {
+    const setSize = computeSetSizeForDay(answers.maxCleanSet, dayType)
+    const sets = setsForDayTypeConservative(dayType, answers.trainingLevel)
+    return applySafetyCaps(
+      'none',
+      dayType,
+      mesocycleWeek,
+      conservativeTarget,
+      sets,
+      setSize,
+      answers.maxCleanSet,
+      null,
+      ctx.wizardSorenessLevel,
+    )
+  }
+
+  const band = computeTargetBand(dayType, mesocycleWeek, anchor, answers, ctx)
+  let targetMid = band.midpoint
+
+  if (ctx.trustMode === 'partial') {
+    targetMid = blendPartialTarget(conservativeTarget, band.midpoint)
+    targetMid = clamp(targetMid, band.min, band.max)
+  }
+
+  const setSize = computeEffectiveSetSize(
+    answers.maxCleanSet,
+    dayType,
+    band.max,
+    limits.min,
+  )
+
+  const converted = convertTargetToSetsAndSetSize(
+    targetMid,
+    band.min,
+    setSize,
+    limits.min,
+    limits.max,
+  )
+
+  return applySafetyCaps(
+    ctx.trustMode,
+    dayType,
+    mesocycleWeek,
+    converted.target,
+    converted.sets,
+    converted.setSize,
+    answers.maxCleanSet,
+    anchor,
+    ctx.wizardSorenessLevel,
+  )
+}

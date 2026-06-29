@@ -255,7 +255,10 @@ For exploratory ideas without locked rules, see [product-roadmap.md](./product-r
 | Decision | Status |
 |----------|--------|
 | **No fake default plan** when wizard skipped — show setup CTA, not generic targets | Beta |
-| Max clean is **anchor**; daily average is soft hint only (+10% baseline cap at wizard save) | Beta |
+| Max clean **anchors set size** (upper safe bound); trusted recent volume **anchors set count and daily target** | Beta |
+| Partial trust: conservative target + 50% uplift toward trusted target; full trusted after 7 logged days or confirmed off-app training | Beta |
+| Low recent volume may reduce set size below max-clean formula; recent volume never increases set size above it | Beta |
+| W1 active-day ceiling: 1.1× recent average (all active days) | Beta |
 | Day-type set ratios: easy 35%, moderate 50%, challenge 60% of max clean; min set 1–2 reps | Beta |
 | Default training days: Mon, Tue, Wed, Fri, Sat (Thu + Sun rest) | Beta |
 | Training plan timezone = **user profile**; leaderboard uses group timezone | Beta |

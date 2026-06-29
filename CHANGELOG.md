@@ -12,6 +12,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Trusted volume calibration (slice 13):** max clean caps set size; recent average shapes set count and daily targets via trust bands (none / partial / trusted)
 - **Training plan engine v2:** day-type set sizing (easy 35% / moderate 50% / challenge 60% of max clean); default week Mon–Tue easy, Wed moderate, Thu rest, Fri easy, Sat challenge, Sun rest
 - Max clean check-in via explicit **Try max set** mode on challenge days; capped plan max update confirm in Settings
 - Easy / Good / Hard / Skip effort sheet after final set or challenge day (maps to RIR internally)
@@ -23,7 +24,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
-- **No fake default plan** when wizard skipped — Today and Settings show setup CTA instead of generic targets
+- Volume calibration replaces soft baseline hint with two-part model: `trustedVolume.ts` + updated `buildWeeklySchedule`
+- Edge `planResolve.ts` mirrors trusted volume when `recent_daily_average` is stored
 - Training plan uses **profile timezone** (group timezone for leaderboard only)
 - Volume calibration is **hints only** (+10% baseline nudge from daily average); history cannot override max clean; no auto week-2 skip
 - Block progression adjusts **baseline only** — no automatic max-clean bumps from effort or observed max

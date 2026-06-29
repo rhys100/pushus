@@ -213,17 +213,22 @@ describe('planEngine v2', () => {
     expect(plan.peakDayTarget).toBeLessThanOrEqual(36)
   })
 
-  it('wizardAnswersFromPlanRow maps stored values', () => {
+  it('wizardAnswersFromPlanRow maps stored values including soreness and calibration', () => {
     const answers = wizardAnswersFromPlanRow({
       max_clean_set: 25,
       training_level: 'intermediate',
       challenge_intensity: 'intense',
       preferred_training_days: [1, 3, 5],
+      recent_daily_average: 40,
+      calibration_note: '@vt:partial;mc:0@\nBlend note',
+      wizard_soreness_level: 'mild',
     })
 
     expect(answers.maxCleanSet).toBe(25)
     expect(answers.trainingLevel).toBe('intermediate')
     expect(answers.challengeIntensity).toBe('intense')
+    expect(answers.wizardSorenessLevel).toBe('mild')
+    expect(answers.storedCalibrationNote).toMatch(/@vt:partial/)
   })
 
   it('recommendFromWizard summary mentions 4-week build', () => {

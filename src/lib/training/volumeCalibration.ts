@@ -1,15 +1,22 @@
 import {
   buildWeeklySchedule,
-  dailyVolumeCap,
   getPeakDayTarget,
   type MesocycleWeek,
   type WizardAnswers,
 } from '@/lib/training/planEngine'
+import {
+  buildVolumeContext,
+  formatCalibrationNote,
+  previewExplanationForContext,
+  type VolumeCalibrationContext,
+} from '@/lib/training/trustedVolume'
+
+export { displayCalibrationNote, formatCalibrationNote, parseCalibrationNote } from '@/lib/training/trustedVolume'
 
 export const STRUCTURED_PEAK_RATIO = 0.55
-/** Soft hint cap — daily average may nudge baseline at wizard save only. */
+/** @deprecated Trusted volume bands replace baseline nudges — kept for legacy tests */
 export const MAX_HINT_BASELINE = 1.1
-/** @deprecated Use MAX_HINT_BASELINE — kept for test migration */
+/** @deprecated Use MAX_HINT_BASELINE */
 export const MAX_INITIAL_BASELINE = MAX_HINT_BASELINE
 export const MIN_HISTORY_SAMPLE_DAYS = 7
 export const HISTORY_WINDOW_DAYS = 30
@@ -40,12 +47,16 @@ export type PlanCalibrationResult = {
   calibrationNote: string | null
   previewNote: string | null
   maxCleanMismatchWarning: string | null
+  volumeContext: VolumeCalibrationContext
+}
+
+export type PlanCalibrationOptions = {
+  manualConfirmedRegularTraining?: boolean
 }
 
 export type WizardPrefill = {
   maxCleanSet: number
   recentDailyAverage: number | null
-  /** Shown as optional hint — never auto-applied over user max clean. */
   suggestedMaxCleanFromHistory: number | null
 }
 
@@ -149,8 +160,16 @@ export function suggestWizardPrefill(
   }
 }
 
-export function referencePeakAtFullBlock(answers: WizardAnswers): number {
-  const schedule = buildWeeklySchedule(answers, 3, 1)
+export function referencePeakAtFullBlock(
+  answers: WizardAnswers,
+  volumeContext?: VolumeCalibrationContext,
+): number {
+  const schedule = buildWeeklySchedule(
+    answers,
+    3,
+    1,
+    volumeContext,
+  )
   return getPeakDayTarget(schedule)
 }
 
@@ -158,7 +177,7 @@ export function deriveMaxCleanMismatchWarning(
   answers: WizardAnswers,
 ): string | null {
   const recentDailyAverage = answers.recentDailyAverage ?? null
-  const volumeCap = dailyVolumeCap(answers.maxCleanSet)
+  const volumeCap = answers.maxCleanSet * 2
 
   if (
     recentDailyAverage !== null &&
@@ -174,48 +193,52 @@ export function deriveMaxCleanMismatchWarning(
 export function derivePlanCalibration(
   answers: WizardAnswers,
   stats: VolumeHistoryStats | null,
+  options: PlanCalibrationOptions = {},
 ): PlanCalibrationResult {
-  const recentDailyAverage = answers.recentDailyAverage ?? null
-  const referencePeak = referencePeakAtFullBlock(answers)
-  const confidence = deriveHistoryConfidence(stats)
+  const volumeContext = buildVolumeContext(answers, stats, {
+    manualConfirmedRegularTraining: options.manualConfirmedRegularTraining ?? false,
+  })
 
-  let initialBaseline = 1
   const startMesocycleWeek: MesocycleWeek = 1
+  const initialBaseline = 1
   const notes: string[] = []
 
-  const useDailyAverageForHint =
-    recentDailyAverage !== null && recentDailyAverage > 0 && referencePeak > 0
-
-  if (useDailyAverageForHint) {
-    const desiredPeak = Math.min(recentDailyAverage * STRUCTURED_PEAK_RATIO, dailyVolumeCap(answers.maxCleanSet))
-    const ratio = desiredPeak / referencePeak
-    if (ratio > 1.05) {
-      initialBaseline = clamp(ratio, 1, MAX_HINT_BASELINE)
-      initialBaseline = Math.round(initialBaseline * 100) / 100
-      if (initialBaseline > 1) {
-        notes.push(
-          `Recent average suggests starting slightly higher (${Math.round(initialBaseline * 100)}%) — you'll still ramp through week 1.`,
-        )
-      }
-    }
+  if (volumeContext.trustMode === 'partial') {
+    notes.push(
+      'Using a blend of max clean and recent average — targets will tune as you log.',
+    )
+  } else if (volumeContext.trustMode === 'trusted' && volumeContext.volumeAnchor) {
+    notes.push(
+      `Recent average (~${volumeContext.volumeAnchor}/day) shapes set count and daily targets; max clean caps set size.`,
+    )
   }
 
-  let previewNote: string | null = null
-  if (recentDailyAverage !== null && recentDailyAverage > 0 && referencePeak > 0) {
-    const startSchedule = buildWeeklySchedule(answers, startMesocycleWeek, initialBaseline)
-    const startPeak = getPeakDayTarget(startSchedule)
-    previewNote = `Structured peak day ${startPeak} vs your recent avg ${recentDailyAverage}/day — spread across submaximal sets, not one big grind.`
-  } else if (confidence === 'stale' && recentDailyAverage === null) {
-    previewNote =
-      'Starting from your max clean set — week 1 targets will adjust quickly as you log push-ups.'
+  const previewNote = previewExplanationForContext(
+    volumeContext,
+    volumeContext.volumeAnchor,
+  )
+
+  const startSchedule = buildWeeklySchedule(
+    answers,
+    startMesocycleWeek,
+    initialBaseline,
+    volumeContext,
+  )
+  const startPeak = getPeakDayTarget(startSchedule)
+  const avg = answers.recentDailyAverage
+
+  let detailedPreview = previewNote
+  if (avg != null && avg > 0 && startPeak > 0 && volumeContext.trustMode !== 'none') {
+    detailedPreview = `${previewNote ?? ''} Week 1 peak day ~${startPeak} vs your recent avg ${avg}/day — spread across submaximal sets.`.trim()
   }
 
   return {
     initialBaseline,
     startMesocycleWeek,
-    calibrationNote: notes.length > 0 ? notes.join(' ') : null,
-    previewNote,
+    calibrationNote: formatCalibrationNote(volumeContext, notes.length > 0 ? notes.join(' ') : null),
+    previewNote: detailedPreview,
     maxCleanMismatchWarning: deriveMaxCleanMismatchWarning(answers),
+    volumeContext,
   }
 }
 

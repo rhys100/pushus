@@ -25,6 +25,9 @@ type TrainingPlanSnapshot = Pick<
   | 'mesocycle_started_at'
   | 'mesocycle_block_start_week'
   | 'plan_baseline'
+  | 'recent_daily_average'
+  | 'calibration_note'
+  | 'wizard_soreness_level'
 >
 
 export function resolveMemberTodayTarget(
@@ -53,6 +56,9 @@ export function resolveMemberTodayTarget(
       mesocycle_started_at: row.mesocycle_started_at,
       mesocycle_block_start_week: row.mesocycle_block_start_week,
       plan_baseline: row.plan_baseline,
+      recent_daily_average: row.recent_daily_average,
+      calibration_note: row.calibration_note,
+      wizard_soreness_level: row.wizard_soreness_level,
     },
     todayIso,
   )
