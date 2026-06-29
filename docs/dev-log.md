@@ -27,6 +27,7 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 ## Daily notes
 
 **Fixed**
+- Training wizard trust UX: live manual avg in preview, confirm checkbox, tiered extreme mismatch, trust pills/copy, hardest-day labels, 6-day warnings, removed Back to settings card
 - Bugbot slice 13: trust mode persisted in `calibration_note` metadata; partial no longer upgrades to trusted on rebuild; off-app flag wired on save; soreness restored from row; planResolve patterns + partial anchor cap aligned
 - Trusted volume path: `resolveVolumeContext()` centralises trust; wizard gates preview on history load; log-first trusted rules + stale partial promotion on rebuild; separate off-app confirm checkbox; honest preview copy and trust mode badge
 - Bugbot trusted-path fixes: restore off-app confirm from `mc:1` on wizard re-edit; leaderboard daily targets fetch log stats for promotion; progression sync waits for history stats load

@@ -7,6 +7,7 @@ import {
 } from '../../src/lib/training/planEngine'
 import {
   blendPartialTarget,
+  buildTrustModeLabel,
   buildTrustPreviewCopy,
   buildVolumeContext,
   computeEffectiveSetSize,
@@ -17,7 +18,7 @@ import {
   volumeContextFromStoredPlan,
   type VolumeCalibrationContext,
 } from '../../src/lib/training/trustedVolume'
-import type { VolumeHistoryStats } from '../../src/lib/training/volumeCalibration'
+import { derivePlanCalibration } from '../../src/lib/training/volumeCalibration'
 
 const caseCAnswers: WizardAnswers = {
   maxCleanSet: 20,
@@ -150,16 +151,37 @@ describe('trusted volume calibration (slice 13)', () => {
     })
 
     expect(ctx.trustMode).toBe('partial')
+    expect(buildTrustModeLabel(ctx)).toBe('PARTIAL · MANUAL AVERAGE')
     expect(buildTrustPreviewCopy(ctx, null)).toMatch(/cautious blend/i)
     expect(buildTrustPreviewCopy(ctx, null)).toMatch(/65/)
     expect(dayTarget(caseCAnswers, 1, ctx, 'challenge')).toBeLessThan(45)
   })
 
-  it('manual confirmed off-app uses trusted when no logs', () => {
+  it('partial sparse logs uses PARTIAL · PUSHUS LOGS label', () => {
+    const sparseStats: VolumeHistoryStats = {
+      sampleDays: 5,
+      avgDailyTotal: 50,
+      peakDailyTotal: 70,
+      peakBank: 25,
+      estimatedMaxClean: 22,
+      lastLogDate: '2026-06-28',
+      daysSinceLastLog: 1,
+    }
+    const answersNoManual: WizardAnswers = {
+      ...caseCAnswers,
+      recentDailyAverage: null,
+    }
+    const ctx = resolveVolumeContext(answersNoManual, sparseStats)
+
+    expect(ctx.trustMode).toBe('partial')
+    expect(ctx.volumeAnchorSource).toBe('logs')
+    expect(buildTrustModeLabel(ctx)).toBe('PARTIAL · PUSHUS LOGS')
+  })
+
+  it('manual confirmed max 20 avg 70 uses trusted with acceptance bands', () => {
     const confirmedManualAnswers: WizardAnswers = {
       ...caseCAnswers,
-      maxCleanSet: 25,
-      recentDailyAverage: 65,
+      recentDailyAverage: 70,
     }
     const ctx = resolveVolumeContext(confirmedManualAnswers, null, {
       manualConfirmedRegularTraining: true,
@@ -167,8 +189,47 @@ describe('trusted volume calibration (slice 13)', () => {
 
     expect(ctx.trustMode).toBe('trusted')
     expect(ctx.volumeAnchorSource).toBe('manual')
-    expect(buildTrustPreviewCopy(ctx, null)).toMatch(/confirmed recent training/i)
-    expect(dayTarget(confirmedManualAnswers, 1, ctx, 'challenge')).toBeGreaterThanOrEqual(45)
+    expect(ctx.volumeAnchor).toBe(70)
+    expect(buildTrustModeLabel(ctx)).toBe('TRUSTED · CONFIRMED AVERAGE')
+    expect(buildTrustPreviewCopy(ctx, null)).toMatch(/confirmed recent average of 70/i)
+    expect(dayTarget(confirmedManualAnswers, 1, ctx, 'easy')).toBeGreaterThanOrEqual(22)
+    expect(dayTarget(confirmedManualAnswers, 1, ctx, 'easy')).toBeLessThanOrEqual(30)
+    expect(dayTarget(confirmedManualAnswers, 1, ctx, 'moderate')).toBeGreaterThanOrEqual(38)
+    expect(dayTarget(confirmedManualAnswers, 1, ctx, 'moderate')).toBeLessThanOrEqual(43)
+    expect(dayTarget(confirmedManualAnswers, 1, ctx, 'challenge')).toBeGreaterThanOrEqual(48)
+    expect(dayTarget(confirmedManualAnswers, 1, ctx, 'challenge')).toBeLessThanOrEqual(60)
+  })
+
+  it('extreme confirmed manual stays partial despite checkbox', () => {
+    const extremeAnswers: WizardAnswers = {
+      maxCleanSet: 5,
+      trainingLevel: 'advanced',
+      preferredTrainingDays: [1, 2, 3, 5, 6],
+      sorenessWarningAcknowledged: true,
+      challengeIntensity: 'intense',
+      recentDailyAverage: 300,
+    }
+    const ctx = resolveVolumeContext(extremeAnswers, null, {
+      manualConfirmedRegularTraining: true,
+    })
+
+    expect(ctx.trustMode).toBe('partial')
+    expect(ctx.extremeManualRejected).toBe(true)
+    expect(buildTrustPreviewCopy(ctx, null)).toMatch(/too high for your max clean/i)
+  })
+
+  it('manual average 70 appears in preview not stale 65', () => {
+    const answers: WizardAnswers = {
+      ...caseCAnswers,
+      recentDailyAverage: 70,
+      storedCalibrationNote: '@vt:partial;mc:0@\nOld note',
+    }
+    const calibration = derivePlanCalibration(answers, null, {
+      manualConfirmedRegularTraining: false,
+    })
+
+    expect(calibration.previewNote).toMatch(/70/)
+    expect(calibration.previewNote).not.toMatch(/65/)
   })
 
   it('trusted logs preview copy mentions PushUS history not blend', () => {

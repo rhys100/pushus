@@ -7,6 +7,7 @@ import {
 import {
   buildTrustPreviewCopy,
   formatCalibrationNote,
+  manualAverageWildlyInconsistent,
   resolveVolumeContext,
   type VolumeCalibrationContext,
 } from '@/lib/training/trustedVolume'
@@ -17,6 +18,8 @@ export {
   buildTrustPreviewCopy,
   displayCalibrationNote,
   formatCalibrationNote,
+  isExtremeManualMismatch,
+  logsQualifyTrusted,
   parseCalibrationNote,
   resolveVolumeContext,
 } from '@/lib/training/trustedVolume'
@@ -185,12 +188,11 @@ export function deriveMaxCleanMismatchWarning(
   answers: WizardAnswers,
 ): string | null {
   const recentDailyAverage = answers.recentDailyAverage ?? null
-  const volumeCap = answers.maxCleanSet * 2
 
   if (
     recentDailyAverage !== null &&
     recentDailyAverage > 0 &&
-    recentDailyAverage > volumeCap * 1.5
+    manualAverageWildlyInconsistent(answers, recentDailyAverage)
   ) {
     return `Your daily average (${recentDailyAverage}) is much higher than your max clean set suggests — double-check max clean if you can do more in one go.`
   }
@@ -221,28 +223,11 @@ export function derivePlanCalibration(
 
   const previewNote = buildTrustPreviewCopy(volumeContext, stats)
 
-  const startSchedule = buildWeeklySchedule(
-    answers,
-    startMesocycleWeek,
-    initialBaseline,
-    volumeContext,
-  )
-  const startPeak = getPeakDayTarget(startSchedule)
-
-  let detailedPreview = previewNote
-  if (
-    volumeContext.trustMode === 'trusted' &&
-    volumeContext.volumeAnchor != null &&
-    startPeak > 0
-  ) {
-    detailedPreview = `${previewNote ?? ''} Week 1 peak day ~${startPeak}.`.trim()
-  }
-
   return {
     initialBaseline,
     startMesocycleWeek,
     calibrationNote: formatCalibrationNote(volumeContext, notes.length > 0 ? notes.join(' ') : null),
-    previewNote: detailedPreview,
+    previewNote,
     maxCleanMismatchWarning: deriveMaxCleanMismatchWarning(answers),
     volumeContext,
   }

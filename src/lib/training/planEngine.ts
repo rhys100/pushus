@@ -652,6 +652,25 @@ export function formatWeeklyScheduleSummary(schedule: WeeklySchedule): string {
   }).join(' · ')
 }
 
+/** Wizard preview: one representative honest target line per active day type. */
+export function formatDayTypeSetsSummary(schedule: WeeklySchedule): string {
+  const parts: string[] = []
+  const seen = new Set<DayType>()
+
+  for (const day of ALL_DAYS) {
+    const rx = schedule[day]
+    if (rx.dayType === 'rest' || rx.target <= 0 || seen.has(rx.dayType)) {
+      continue
+    }
+    seen.add(rx.dayType)
+    const label = rx.dayType.charAt(0).toUpperCase() + rx.dayType.slice(1)
+    const targetText = formatDayTarget(rx).replace(/ \(up to \d+\)$/, '')
+    parts.push(`${label} ${targetText}`)
+  }
+
+  return parts.join(' · ')
+}
+
 export function recommendFromWizard(
   answers: WizardAnswers,
   options: RecommendWizardOptions = {},

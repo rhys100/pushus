@@ -21,6 +21,8 @@ export type VolumeCalibrationContext = {
   wizardSorenessLevel?: WizardAnswers['wizardSorenessLevel']
   hardFeedbackRate7d?: number
   manualConfirmedRegularTraining?: boolean
+  /** Confirmed manual rejected as trusted due to extreme mismatch with max clean. */
+  extremeManualRejected?: boolean
 }
 
 export type ResolveVolumeContextOptions = {
@@ -136,12 +138,22 @@ export function logsQualifyTrusted(stats: VolumeHistoryStats | null): boolean {
   return false
 }
 
-function manualAverageWildlyInconsistent(
+/** Unconfirmed manual: flag implausible average vs max clean (soft warning tier). */
+export function manualAverageWildlyInconsistent(
   answers: WizardAnswers,
   manualAverage: number,
 ): boolean {
-  const volumeCap = answers.maxCleanSet * 2
+  const volumeCap = dailyVolumeCap(answers.maxCleanSet)
   return manualAverage > volumeCap * 1.5
+}
+
+/** Confirmed manual-only: reject trust only for implausible extremes (e.g. max 5 + 300/day). */
+export function isExtremeManualMismatch(
+  answers: WizardAnswers,
+  manualAverage: number,
+): boolean {
+  const volumeCap = dailyVolumeCap(answers.maxCleanSet)
+  return manualAverage > volumeCap * 2.5 || manualAverage > answers.maxCleanSet * 12
 }
 
 export function deriveVolumeTrustMode(
@@ -200,15 +212,7 @@ export function resolveVolumeContext(
     computeConservativeDayTarget(answers, 'challenge', 3, 1)
 
   let trustMode = deriveVolumeTrustMode(stats, manualAverage, manualConfirmed)
-
-  if (
-    trustMode === 'trusted' &&
-    (stats?.sampleDays ?? 0) === 0 &&
-    userEnteredAverage != null &&
-    manualAverageWildlyInconsistent(answers, userEnteredAverage)
-  ) {
-    trustMode = 'partial'
-  }
+  let extremeManualRejected = false
 
   // Live logs trump stored partial metadata (promotion on rebuild).
   if (logsQualifyTrusted(stats)) {
@@ -216,13 +220,26 @@ export function resolveVolumeContext(
   } else if (
     userEnteredAverage != null &&
     manualConfirmed &&
-    (stats?.sampleDays ?? 0) === 0 &&
-    !manualAverageWildlyInconsistent(answers, userEnteredAverage)
+    (stats?.sampleDays ?? 0) === 0
   ) {
-    trustMode = 'trusted'
+    if (isExtremeManualMismatch(answers, userEnteredAverage)) {
+      trustMode = 'partial'
+      extremeManualRejected = true
+    } else {
+      trustMode = 'trusted'
+    }
   } else if (!stats && parsed.trustMode) {
     if (parsed.trustMode === 'trusted') {
-      trustMode = 'trusted'
+      if (
+        userEnteredAverage != null &&
+        parsed.manualConfirmed &&
+        isExtremeManualMismatch(answers, userEnteredAverage)
+      ) {
+        trustMode = 'partial'
+        extremeManualRejected = true
+      } else {
+        trustMode = 'trusted'
+      }
     } else if (parsed.trustMode === 'partial' && userEnteredAverage != null) {
       trustMode = 'partial'
     } else if (parsed.trustMode === 'none') {
@@ -242,6 +259,7 @@ export function resolveVolumeContext(
       wizardSorenessLevel: answers.wizardSorenessLevel,
       hardFeedbackRate7d: options.hardFeedbackRate7d,
       manualConfirmedRegularTraining: manualConfirmed,
+      extremeManualRejected: false,
     }
   }
 
@@ -269,6 +287,7 @@ export function resolveVolumeContext(
       wizardSorenessLevel: answers.wizardSorenessLevel,
       hardFeedbackRate7d: options.hardFeedbackRate7d,
       manualConfirmedRegularTraining: manualConfirmed,
+      extremeManualRejected: false,
     }
   }
 
@@ -285,6 +304,7 @@ export function resolveVolumeContext(
     wizardSorenessLevel: answers.wizardSorenessLevel,
     hardFeedbackRate7d: options.hardFeedbackRate7d,
     manualConfirmedRegularTraining: manualConfirmed,
+    extremeManualRejected,
   }
 }
 
@@ -557,27 +577,26 @@ export function displayCalibrationNote(note?: string | null): string | null {
 
 export function buildTrustModeLabel(ctx: VolumeCalibrationContext): string {
   if (ctx.trustMode === 'trusted' && ctx.volumeAnchorSource === 'logs') {
-    const days = ctx.volumeSampleDays ?? 0
-    return days > 0 ? `Trusted · PushUS logs (${days} days)` : 'Trusted · PushUS logs'
+    return 'TRUSTED · PUSHUS HISTORY'
   }
 
   if (ctx.trustMode === 'trusted' && ctx.volumeAnchorSource === 'manual') {
-    return 'Trusted · confirmed off-app average'
+    return 'TRUSTED · CONFIRMED AVERAGE'
   }
 
   if (ctx.trustMode === 'partial' && ctx.volumeAnchorSource === 'manual') {
-    return 'Partial · manual average'
+    return 'PARTIAL · MANUAL AVERAGE'
   }
 
-  if (ctx.trustMode === 'partial' && ctx.volumeSampleDays != null && ctx.volumeSampleDays > 0) {
-    return `Partial · ${ctx.volumeSampleDays} logged days so far`
+  if (ctx.trustMode === 'partial' && ctx.volumeAnchorSource === 'logs') {
+    return 'PARTIAL · PUSHUS LOGS'
   }
 
   if (ctx.trustMode === 'partial') {
-    return 'Partial · cautious blend'
+    return 'PARTIAL · CAUTIOUS BLEND'
   }
 
-  return 'Conservative · max clean only'
+  return 'CONSERVATIVE · NO HISTORY'
 }
 
 export function buildTrustPreviewCopy(
@@ -594,18 +613,18 @@ export function buildTrustPreviewCopy(
 
   if (ctx.trustMode === 'trusted' && ctx.volumeAnchorSource === 'logs' && anchor != null) {
     const days = ctx.volumeSampleDays ?? stats?.sampleDays ?? 0
-    return `Using trusted PushUS history: ${days} logged days, about ${anchor}/day. PushUS starts below that and spreads reps across easy submaximal sets.`
+    return `Using trusted PushUS history: ${days} logged days, about ${anchor}/day. PushUS starts below that and spreads reps across submaximal sets.`
   }
 
   if (ctx.trustMode === 'trusted' && ctx.volumeAnchorSource === 'manual' && anchor != null) {
-    return `Using your confirmed recent training average of ${anchor}/day. PushUS starts below that and spreads reps across easy submaximal sets.`
+    return `Using your confirmed recent average of ${anchor}/day. PushUS starts below that and spreads reps across submaximal sets.`
   }
 
   if (ctx.trustMode === 'partial' && ctx.volumeAnchorSource === 'manual' && userAvg != null) {
-    if (anchor != null && anchor < userAvg) {
-      return `Using a cautious blend from your manual average (${userAvg}/day). Confirm regular off-app training or keep logging to unlock a fuller plan.`
+    if (ctx.extremeManualRejected) {
+      return `Your manual average (${userAvg}/day) seems too high for your max clean set — kept as a cautious starting plan. Keep logging or adjust max clean if needed.`
     }
-    return `Using a cautious blend from your manual average (${userAvg}/day). Confirm regular off-app training or keep logging to unlock a fuller plan.`
+    return `Using a cautious blend from your manual average of ${userAvg}/day. Confirm regular training or keep logging to unlock a fuller plan.`
   }
 
   if (

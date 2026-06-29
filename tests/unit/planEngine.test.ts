@@ -5,8 +5,10 @@ import {
   computeSetSize,
   computeSetSizeForDay,
   dailyVolumeCap,
+  DEFAULT_PREFERRED_TRAINING_DAYS,
   formatDayTarget,
   formatDayTargetSetsDetail,
+  formatDayTypeSetsSummary,
   formatWeeklyScheduleSummary,
   getCurrentMesocycleWeek,
   getDefaultPlan,
@@ -18,6 +20,7 @@ import {
   type WizardAnswers,
   wizardAnswersFromPlanRow,
 } from '../../src/lib/training/planEngine'
+import { buildVolumeContext } from '../../src/lib/training/trustedVolume'
 
 const advancedMax20: WizardAnswers = {
   maxCleanSet: 20,
@@ -272,5 +275,29 @@ describe('planEngine v2', () => {
     const summary = formatWeeklyScheduleSummary(schedule)
 
     expect(summary).toMatch(/total · ~/)
+  })
+
+  it('default preferred training days are Mon Tue Wed Fri Sat', () => {
+    expect([...DEFAULT_PREFERRED_TRAINING_DAYS]).toEqual([1, 2, 3, 5, 6])
+  })
+
+  it('formatDayTypeSetsSummary shows honest per day-type targets', () => {
+    const schedule = buildWeeklySchedule(advancedMax20, 1)
+    const summary = formatDayTypeSetsSummary(schedule)
+
+    expect(summary).toMatch(/Easy \d+/)
+    expect(summary).toMatch(/Moderate \d+/)
+    expect(summary).toMatch(/Challenge \d+/)
+    expect(summary).not.toMatch(/Peak day/i)
+
+    const partialCtx = buildVolumeContext(
+      { ...advancedMax20, recentDailyAverage: 65 },
+      null,
+    )
+    const partialSchedule = buildWeeklySchedule(advancedMax20, 1, 1, partialCtx)
+    const partialSummary = formatDayTypeSetsSummary(partialSchedule)
+    const easyRx = Object.values(partialSchedule).find((rx) => rx.dayType === 'easy')!
+
+    expect(partialSummary).toContain(formatDayTarget(easyRx).replace(/ \(up to \d+\)$/, ''))
   })
 })

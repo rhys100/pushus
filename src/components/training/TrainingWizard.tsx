@@ -5,6 +5,7 @@ import {
   DAY_LABELS,
   DEFAULT_PREFERRED_TRAINING_DAYS,
   formatDayTarget,
+  formatDayTypeSetsSummary,
   getDayTypeDisplayLabel,
   MESOCYCLE_MULTIPLIER,
   recommendFromWizard,
@@ -14,15 +15,20 @@ import {
   buildTrustModeLabel,
   deriveHistoryConfidence,
   derivePlanCalibration,
-  displayCalibrationNote,
   hasUsableVolumeHistory,
   HISTORY_WINDOW_DAYS,
+  logsQualifyTrusted,
   parseCalibrationNote,
   shouldPrefillDailyAverage,
   shouldShowDailyAverageQuestion,
   suggestWizardPrefill,
   type VolumeHistoryStats,
 } from '@/lib/training/volumeCalibration'
+import {
+  getTrainingDayWarnings,
+  shouldNormalizeLegacyTrainingDays,
+  WIZARD_PREVIEW_LABELS,
+} from '@/lib/training/wizardUi'
 
 const DEFAULT_ANSWERS: WizardAnswers = {
   maxCleanSet: 15,
@@ -86,7 +92,9 @@ export function TrainingWizard({
   const [logSuggestedDailyAvg, setLogSuggestedDailyAvg] = useState<number | null>(null)
   const [showOffAppTraining, setShowOffAppTraining] = useState(false)
   const [confirmedOffAppTraining, setConfirmedOffAppTraining] = useState(false)
+  const savedInitialAvgRef = useRef<number | null>(null)
 
+  const logsTrusted = logsQualifyTrusted(historyStats)
   const logSampleDays = historyStats?.sampleDays ?? 0
   const manualOnlyVolume = logSampleDays === 0
   const savedManualConfirmed =
@@ -100,15 +108,27 @@ export function TrainingWizard({
 
     initializedRef.current = true
     const nextAnswers = initialAnswers ?? DEFAULT_ANSWERS
-    setAnswers(nextAnswers)
+    savedInitialAvgRef.current = nextAnswers.recentDailyAverage ?? null
+
+    let preferredTrainingDays = nextAnswers.preferredTrainingDays
+    if (
+      shouldNormalizeLegacyTrainingDays(
+        preferredTrainingDays,
+        nextAnswers.storedCalibrationNote,
+      )
+    ) {
+      preferredTrainingDays = [...DEFAULT_PREFERRED_TRAINING_DAYS]
+    }
+
+    setAnswers({ ...nextAnswers, preferredTrainingDays })
 
     if (savedManualConfirmed) {
       setConfirmedOffAppTraining(true)
       setShowOffAppTraining(true)
-    } else if (nextAnswers.recentDailyAverage != null && !historyLoading && manualOnlyVolume) {
+    } else if (nextAnswers.recentDailyAverage != null) {
       setShowOffAppTraining(true)
     }
-  }, [savedAnswersReady, initialAnswers, savedManualConfirmed, historyLoading, manualOnlyVolume])
+  }, [savedAnswersReady, initialAnswers, savedManualConfirmed])
 
   useEffect(() => {
     if (!savedAnswersReady || historyLoading || !historyStats || !shouldPrefillDailyAverage(deriveHistoryConfidence(historyStats))) {
@@ -122,13 +142,21 @@ export function TrainingWizard({
     }
 
     setAnswers((current) => {
-      const updates: Partial<WizardAnswers> = {}
+      if (userEditedDailyAvg) {
+        return current
+      }
 
       if (
-        !userEditedDailyAvg &&
-        current.recentDailyAverage == null &&
-        prefill.recentDailyAverage != null
+        current.recentDailyAverage != null &&
+        prefill.recentDailyAverage != null &&
+        current.recentDailyAverage !== prefill.recentDailyAverage
       ) {
+        return current
+      }
+
+      const updates: Partial<WizardAnswers> = {}
+
+      if (current.recentDailyAverage == null && prefill.recentDailyAverage != null) {
         updates.recentDailyAverage = prefill.recentDailyAverage
       }
 
@@ -143,12 +171,20 @@ export function TrainingWizard({
   const offAppConfirmed =
     confirmedOffAppTraining || Boolean(answers.manualConfirmedRegularTraining)
 
+  const calibrationAnswers = useMemo(
+    (): WizardAnswers => ({
+      ...answers,
+      storedCalibrationNote: null,
+    }),
+    [answers],
+  )
+
   const calibration = useMemo(
     () =>
-      derivePlanCalibration(answers, historyLoading ? null : historyStats, {
-        manualConfirmedRegularTraining: manualOnlyVolume && offAppConfirmed,
+      derivePlanCalibration(calibrationAnswers, historyLoading ? null : historyStats, {
+        manualConfirmedRegularTraining: offAppConfirmed && !logsTrusted && manualOnlyVolume,
       }),
-    [answers, historyStats, historyLoading, manualOnlyVolume, offAppConfirmed],
+    [calibrationAnswers, historyStats, historyLoading, offAppConfirmed, logsTrusted, manualOnlyVolume],
   )
 
   const historyPrefill = useMemo(
@@ -158,12 +194,12 @@ export function TrainingWizard({
 
   const recommendation = useMemo(
     () =>
-      recommendFromWizard(answers, {
+      recommendFromWizard(calibrationAnswers, {
         initialBaseline: calibration.initialBaseline,
         startMesocycleWeek: calibration.startMesocycleWeek,
         volumeContext: calibration.volumeContext,
       }),
-    [answers, calibration.initialBaseline, calibration.startMesocycleWeek, calibration.volumeContext],
+    [calibrationAnswers, calibration.initialBaseline, calibration.startMesocycleWeek, calibration.volumeContext],
   )
 
   const historyConfidence = deriveHistoryConfidence(historyStats)
@@ -176,6 +212,14 @@ export function TrainingWizard({
   const startWeek = calibration.startMesocycleWeek
   const daysSelected = answers.preferredTrainingDays.length
   const canSave = answers.sorenessWarningAcknowledged
+  const dayWarnings = getTrainingDayWarnings(daysSelected, answers.challengeIntensity)
+  const suggestedSetsSummary = formatDayTypeSetsSummary(recommendation.plan.weeklySchedule)
+  const hardestDayTarget = recommendation.plan.peakDayTarget
+  const showManualConfirmCheckbox =
+    answers.recentDailyAverage != null &&
+    answers.recentDailyAverage > 0 &&
+    !logsTrusted &&
+    manualOnlyVolume
 
   const showLogSuggestion =
     logSuggestedDailyAvg != null &&
@@ -204,7 +248,7 @@ export function TrainingWizard({
     }
     onComplete?.({
       ...answers,
-      manualConfirmedRegularTraining: manualOnlyVolume && offAppConfirmed,
+      manualConfirmedRegularTraining: offAppConfirmed && !logsTrusted && manualOnlyVolume,
     })
   }
 
@@ -327,9 +371,17 @@ export function TrainingWizard({
                       onChange={(event) => {
                         setUserEditedDailyAvg(true)
                         const raw = event.target.value.trim()
+                        const parsed = parseRecentDailyAverage(raw)
+                        if (
+                          parsed !== savedInitialAvgRef.current &&
+                          parsed !== answers.recentDailyAverage
+                        ) {
+                          setConfirmedOffAppTraining(false)
+                        }
                         setAnswers((current) => ({
                           ...current,
-                          recentDailyAverage: parseRecentDailyAverage(raw),
+                          recentDailyAverage: parsed,
+                          manualConfirmedRegularTraining: false,
                         }))
                       }}
                       className="w-full rounded-[var(--radius-md)] border border-border bg-surface py-2.5 pl-3 pr-16 text-sm text-text-primary [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
@@ -348,7 +400,7 @@ export function TrainingWizard({
                     </p>
                   ) : null}
 
-                  {showOffAppTraining && manualOnlyVolume ? (
+                  {showManualConfirmCheckbox ? (
                     <label className="flex items-start gap-3 rounded-[var(--radius-md)] border border-border bg-surface p-3">
                       <input
                         type="checkbox"
@@ -357,7 +409,12 @@ export function TrainingWizard({
                         className="mt-0.5 h-4 w-4 accent-accent"
                       />
                       <span className="text-xs leading-relaxed text-text-muted">
-                        I train regularly off-app — use my manual average as trusted volume.
+                        <span className="font-medium text-text-primary">
+                          I&apos;ve genuinely been averaging about this recently
+                        </span>
+                        <br />
+                        Use this if you&apos;ve been training outside PushUS or your logs are
+                        accurate.
                       </span>
                     </label>
                   ) : null}
@@ -459,6 +516,14 @@ export function TrainingWizard({
             <p className="text-xs text-text-muted">
               {daysSelected} day{daysSelected === 1 ? '' : 's'} selected
             </p>
+            {dayWarnings.map((warning) => (
+              <p
+                key={warning}
+                className="rounded-[var(--radius-md)] border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-text-primary"
+              >
+                {warning}
+              </p>
+            ))}
 
             <div className="space-y-2">
               <p className="text-sm font-medium text-text-primary">Challenge intensity</p>
@@ -504,23 +569,17 @@ export function TrainingWizard({
 
             <p className="text-sm text-text-muted">{recommendation.summary}</p>
 
-            {displayCalibrationNote(calibration.calibrationNote) ? (
-              <p className="rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-xs text-text-primary">
-                {displayCalibrationNote(calibration.calibrationNote)}
-              </p>
-            ) : null}
-
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2.5">
-                <p className="text-xs text-text-muted">Peak day</p>
+                <p className="text-xs text-text-muted">{WIZARD_PREVIEW_LABELS.hardestDay}</p>
                 <p className="font-mono text-lg font-bold text-text-primary">
-                  {recommendation.plan.peakDayTarget}
+                  {hardestDayTarget}
                 </p>
               </div>
               <div className="rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2.5">
-                <p className="text-xs text-text-muted">Set size</p>
-                <p className="font-mono text-lg font-bold text-text-primary">
-                  {recommendation.plan.setSize}
+                <p className="text-xs text-text-muted">{WIZARD_PREVIEW_LABELS.suggestedSets}</p>
+                <p className="text-sm font-medium leading-snug text-text-primary">
+                  {suggestedSetsSummary || '—'}
                 </p>
               </div>
             </div>
@@ -579,7 +638,24 @@ export function TrainingWizard({
             </div>
 
             {calibration.previewNote ? (
-              <p className="text-xs italic text-text-muted">{calibration.previewNote}</p>
+              <p className="text-xs text-text-muted">{calibration.previewNote}</p>
+            ) : null}
+
+            {calibration.volumeContext.trustMode === 'partial' &&
+            calibration.volumeContext.volumeAnchorSource === 'manual' &&
+            showManualConfirmCheckbox &&
+            !offAppConfirmed ? (
+              <label className="flex items-start gap-3 rounded-[var(--radius-md)] border border-border bg-surface p-3">
+                <input
+                  type="checkbox"
+                  checked={confirmedOffAppTraining}
+                  onChange={(event) => setConfirmedOffAppTraining(event.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-accent"
+                />
+                <span className="text-xs leading-relaxed text-text-muted">
+                  Use my recent average as trusted volume — check to unlock a fuller plan.
+                </span>
+              </label>
             ) : null}
 
             <p className="text-xs text-text-muted">

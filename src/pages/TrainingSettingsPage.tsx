@@ -2,7 +2,6 @@ import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Badge, Card, useToast } from '@/components/ui'
 import { TrainingWizard } from '@/components/training/TrainingWizard'
-import { SettingsLinkRow } from '@/components/settings/SettingsLinkRow'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 import { useTrainingPlan, useTrainingHistoryStats } from '@/hooks/useTrainingPlan'
 import { useAuth } from '@/providers/AuthProvider'
@@ -69,9 +68,6 @@ export function TrainingSettingsPage() {
           onSkip={() => navigate('/settings')}
         />
 
-        <Card padding="md">
-          <SettingsLinkRow to="/settings" title="Back to settings" />
-        </Card>
       </div>
     </AppLayout>
   )
