@@ -206,6 +206,7 @@ For exploratory ideas without locked rules, see [product-roadmap.md](./product-r
 | Default feed visibility: **full entries** (`full_entries`) | Beta |
 | Future visibility modes: **full entries**, **daily totals only**, **leaderboard totals only** | Future |
 | **Emoji reactions only** — no comments | Beta |
+| **Cannot react to your own entries** | Beta |
 | **No DMs** | Non-goal |
 | **No comment threads** | Non-goal |
 | Locked reaction set: **💪 🔥 😂 👏 😤** | Phase 2 |

@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-06-29 (activity feed reactions)
+
+**Fixed**
+- Block self-reactions on activity feed entries — emoji buttons hidden on your own posts; RLS rejects direct inserts and retargeting via update; existing self-reactions cleaned up in migration 0025
+
 ### 2026-06-29 (push reminder UX)
 
 **Fixed**
@@ -120,7 +125,7 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 ### 2026-06-29 (board progress track)
 
 **Changed**
-- Board Day progress bar: inset track so partial fill (e.g. 12/14) and 0-rep rows show remaining goal clearly
+- Board Day progress bar: lighter inset track so partial fill and 0-rep rows show remaining goal clearly
 
 ### 2026-06-29 (board single-line rows)
 

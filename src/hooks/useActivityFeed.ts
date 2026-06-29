@@ -19,6 +19,17 @@ export type ActivityFeedItem = {
 export const REACTION_EMOJIS = ['🔥', '💪', '👏'] as const
 export type ReactionEmoji = (typeof REACTION_EMOJIS)[number]
 
+export function canReactToFeedItem(
+  item: ActivityFeedItem,
+  currentUserId: string | undefined,
+): boolean {
+  return (
+    item.event_type === 'entry' &&
+    Boolean(currentUserId) &&
+    item.user_id !== currentUserId
+  )
+}
+
 export const activityFeedKeys = {
   all: ['activityFeed'] as const,
   feed: (groupId: string) => ['activityFeed', groupId] as const,

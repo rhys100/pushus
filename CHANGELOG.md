@@ -30,11 +30,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Circular logger: drag from anywhere on the ring with snap-to-rep on touch; aligned pointer/ring angle math; handle stays on track (no scale flash)
 - Stronger tiered drag haptics (18ms notch; stronger pulses at reps 5 and 10)
 - Board Day view: single-line rows with inline progress bar and `current/target` fraction
-- Board Day progress bar: darker inset track so partial progress and empty goals read clearly
+- Board Day progress bar: lighter inset track so partial progress and empty goals read clearly
 - Group invite message: richer two-paragraph copy describing PushUS (leaderboards, training plan) without naming the group
 
 ### Fixed
 
+- Activity feed: you can no longer react to your own entries (UI hidden + insert/update RLS enforced)
 - Push reminder tap opens the log page (`/today`) instead of leaving you on the previous tab
 - Push reminder copy matches the log page set planner (e.g. “Bank about 8 — set 1 of 3”) instead of only showing total reps left
 - Training plan wizard: Save/Continue actions pinned above bottom nav; push reminder hidden on wizard route

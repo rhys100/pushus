@@ -3,6 +3,7 @@ import { cn } from '@/lib/cn'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 import {
   REACTION_EMOJIS,
+  canReactToFeedItem,
   useActivityFeed,
   useToggleReaction,
   useUserEntryReactions,
@@ -35,6 +36,7 @@ function feedItemSummary(item: ActivityFeedItem): string {
 
 type ActivityFeedRowProps = {
   item: ActivityFeedItem
+  currentUserId: string | undefined
   userReactions: Set<string>
   onToggleReaction: (entryId: string, emoji: ReactionEmoji) => void
   reactionPending: boolean
@@ -46,11 +48,13 @@ function reactionKey(entryId: string, emoji: string): string {
 
 function ActivityFeedRow({
   item,
+  currentUserId,
   userReactions,
   onToggleReaction,
   reactionPending,
 }: ActivityFeedRowProps) {
-  const canReact = item.event_type === 'entry'
+  const showReactionButtons = canReactToFeedItem(item, currentUserId)
+  const showReactionCount = item.event_type === 'entry' && item.reaction_count > 0
   const summary = `${item.display_name} ${feedItemSummary(item)}`
 
   return (
@@ -76,35 +80,37 @@ function ActivityFeedRow({
         </div>
       </div>
 
-      {canReact ? (
+      {showReactionButtons || showReactionCount ? (
         <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-[3.25rem]">
-          {REACTION_EMOJIS.map((emoji) => {
-            const active = userReactions.has(reactionKey(item.event_id, emoji))
+          {showReactionButtons
+            ? REACTION_EMOJIS.map((emoji) => {
+                const active = userReactions.has(reactionKey(item.event_id, emoji))
 
-            return (
-              <button
-                key={emoji}
-                type="button"
-                disabled={reactionPending}
-                aria-pressed={active}
-                aria-label={`React with ${emoji}`}
-                onClick={() => onToggleReaction(item.event_id, emoji)}
-                className={cn(
-                  'inline-flex min-h-8 min-w-8 items-center justify-center rounded-[var(--radius-full)]',
-                  'border text-sm transition-colors duration-[var(--duration-fast)]',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
-                  active
-                    ? 'border-accent/40 bg-accent-muted'
-                    : 'border-border bg-bg hover:border-accent/30',
-                  reactionPending && 'opacity-60',
-                )}
-              >
-                {emoji}
-              </button>
-            )
-          })}
+                return (
+                  <button
+                    key={emoji}
+                    type="button"
+                    disabled={reactionPending}
+                    aria-pressed={active}
+                    aria-label={`React with ${emoji}`}
+                    onClick={() => onToggleReaction(item.event_id, emoji)}
+                    className={cn(
+                      'inline-flex min-h-8 min-w-8 items-center justify-center rounded-[var(--radius-full)]',
+                      'border text-sm transition-colors duration-[var(--duration-fast)]',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                      active
+                        ? 'border-accent/40 bg-accent-muted'
+                        : 'border-border bg-bg hover:border-accent/30',
+                      reactionPending && 'opacity-60',
+                    )}
+                  >
+                    {emoji}
+                  </button>
+                )
+              })
+            : null}
 
-          {item.reaction_count > 0 ? (
+          {showReactionCount ? (
             <span className="text-[0.6875rem] text-text-muted">
               {item.reaction_count} reaction{item.reaction_count === 1 ? '' : 's'}
             </span>
@@ -155,6 +161,11 @@ export function ActivityPage() {
       return
     }
 
+    const targetItem = feed.find((item) => item.event_type === 'entry' && item.event_id === entryId)
+    if (targetItem && !canReactToFeedItem(targetItem, user?.id)) {
+      return
+    }
+
     toggleReaction.mutate({ group: activeGroup, entryId, emoji })
   }
 
@@ -201,6 +212,7 @@ export function ActivityPage() {
             <ActivityFeedRow
               key={`${item.event_type}-${item.event_id}`}
               item={item}
+              currentUserId={user?.id}
               userReactions={userReactions}
               onToggleReaction={handleToggleReaction}
               reactionPending={toggleReaction.isPending}
