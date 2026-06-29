@@ -99,7 +99,7 @@ function LeaderboardRow({
         </p>
 
         {targetsLoading ? (
-          <Skeleton className="h-2 min-w-12 flex-1 rounded-full" />
+          <Skeleton className="h-2.5 min-w-12 flex-1 rounded-full" />
         ) : dayTarget && !dayTarget.isRestDay ? (
           <GoalProgressBar
             inline

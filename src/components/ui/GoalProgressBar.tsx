@@ -30,7 +30,7 @@ function ProgressTrack({
   return (
     <div
       className={cn(
-        'h-2 w-full min-w-0 overflow-hidden rounded-[var(--radius-full)] bg-bg ring-1 ring-inset ring-border',
+        'h-2.5 w-full min-w-0 overflow-hidden rounded-[var(--radius-full)] bg-text-muted/25 ring-1 ring-inset ring-text-muted/40',
         className,
         barClassName,
       )}

@@ -122,6 +122,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 **Deploy**
 - Hosted Supabase needs migration `0022_entry_reps_in_reserve` (`npx supabase db push`)
 
+### 2026-06-29 (board progress track contrast)
+
+**Changed**
+- Board Day progress bar track bumped to muted grey inset (`text-muted/25`) — easier to read than the first dark groove
+
 ### 2026-06-29 (board progress track)
 
 **Changed**
