@@ -11,11 +11,13 @@ import {
   type WizardAnswers,
 } from '@/lib/training/planEngine'
 import {
+  buildTrustModeLabel,
   deriveHistoryConfidence,
   derivePlanCalibration,
   displayCalibrationNote,
   hasUsableVolumeHistory,
   HISTORY_WINDOW_DAYS,
+  parseCalibrationNote,
   shouldPrefillDailyAverage,
   shouldShowDailyAverageQuestion,
   suggestWizardPrefill,
@@ -83,6 +85,13 @@ export function TrainingWizard({
   const [userEditedDailyAvg, setUserEditedDailyAvg] = useState(false)
   const [logSuggestedDailyAvg, setLogSuggestedDailyAvg] = useState<number | null>(null)
   const [showOffAppTraining, setShowOffAppTraining] = useState(false)
+  const [confirmedOffAppTraining, setConfirmedOffAppTraining] = useState(false)
+
+  const logSampleDays = historyStats?.sampleDays ?? 0
+  const manualOnlyVolume = logSampleDays === 0
+  const savedManualConfirmed =
+    initialAnswers?.manualConfirmedRegularTraining ??
+    parseCalibrationNote(initialAnswers?.storedCalibrationNote).manualConfirmed
 
   useEffect(() => {
     if (!savedAnswersReady || initializedRef.current) {
@@ -90,8 +99,16 @@ export function TrainingWizard({
     }
 
     initializedRef.current = true
-    setAnswers(initialAnswers ?? DEFAULT_ANSWERS)
-  }, [savedAnswersReady, initialAnswers])
+    const nextAnswers = initialAnswers ?? DEFAULT_ANSWERS
+    setAnswers(nextAnswers)
+
+    if (savedManualConfirmed) {
+      setConfirmedOffAppTraining(true)
+      setShowOffAppTraining(true)
+    } else if (nextAnswers.recentDailyAverage != null && !historyLoading && manualOnlyVolume) {
+      setShowOffAppTraining(true)
+    }
+  }, [savedAnswersReady, initialAnswers, savedManualConfirmed, historyLoading, manualOnlyVolume])
 
   useEffect(() => {
     if (!savedAnswersReady || historyLoading || !historyStats || !shouldPrefillDailyAverage(deriveHistoryConfidence(historyStats))) {
@@ -123,12 +140,15 @@ export function TrainingWizard({
     })
   }, [savedAnswersReady, historyLoading, historyStats, initialAnswers, userEditedDailyAvg])
 
+  const offAppConfirmed =
+    confirmedOffAppTraining || Boolean(answers.manualConfirmedRegularTraining)
+
   const calibration = useMemo(
     () =>
-      derivePlanCalibration(answers, historyStats, {
-        manualConfirmedRegularTraining: showOffAppTraining,
+      derivePlanCalibration(answers, historyLoading ? null : historyStats, {
+        manualConfirmedRegularTraining: manualOnlyVolume && offAppConfirmed,
       }),
-    [answers, historyStats, showOffAppTraining],
+    [answers, historyStats, historyLoading, manualOnlyVolume, offAppConfirmed],
   )
 
   const historyPrefill = useMemo(
@@ -184,7 +204,7 @@ export function TrainingWizard({
     }
     onComplete?.({
       ...answers,
-      manualConfirmedRegularTraining: showOffAppTraining,
+      manualConfirmedRegularTraining: manualOnlyVolume && offAppConfirmed,
     })
   }
 
@@ -327,6 +347,20 @@ export function TrainingWizard({
                       /day
                     </p>
                   ) : null}
+
+                  {showOffAppTraining && manualOnlyVolume ? (
+                    <label className="flex items-start gap-3 rounded-[var(--radius-md)] border border-border bg-surface p-3">
+                      <input
+                        type="checkbox"
+                        checked={confirmedOffAppTraining}
+                        onChange={(event) => setConfirmedOffAppTraining(event.target.checked)}
+                        className="mt-0.5 h-4 w-4 accent-accent"
+                      />
+                      <span className="text-xs leading-relaxed text-text-muted">
+                        I train regularly off-app — use my manual average as trusted volume.
+                      </span>
+                    </label>
+                  ) : null}
                 </>
               ) : null}
 
@@ -452,12 +486,20 @@ export function TrainingWizard({
         ) : null}
 
         {step === 2 ? (
+          historyLoading ? (
+            <Card padding="md" className="space-y-3">
+              <p className="text-sm text-text-muted">Loading your PushUS history…</p>
+            </Card>
+          ) : (
           <Card padding="md" className="space-y-3">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-medium text-text-primary">Your 4-week plan</p>
-              <Badge variant="accent">
-                Week {startWeek} · {Math.round(MESOCYCLE_MULTIPLIER[startWeek] * 100)}% volume
-              </Badge>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="neutral">{buildTrustModeLabel(calibration.volumeContext)}</Badge>
+                <Badge variant="accent">
+                  Week {startWeek} · {Math.round(MESOCYCLE_MULTIPLIER[startWeek] * 100)}% volume
+                </Badge>
+              </div>
             </div>
 
             <p className="text-sm text-text-muted">{recommendation.summary}</p>
@@ -567,6 +609,7 @@ export function TrainingWizard({
             ) : null}
             <p className="text-xs text-text-muted">{recommendation.plan.disclaimer}</p>
           </Card>
+          )
         ) : null}
       </div>
 

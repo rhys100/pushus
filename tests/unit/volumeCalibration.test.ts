@@ -130,8 +130,8 @@ describe('derivePlanCalibration', () => {
     expect(calibration.startMesocycleWeek).toBe(1)
     expect(calibration.volumeContext.trustMode).toBe('trusted')
     expect(calibration.volumeContext.volumeAnchor).toBeGreaterThan(0)
-    expect(calibration.calibrationNote).toMatch(/recent average/i)
-    expect(calibration.previewNote).toMatch(/63/i)
+    expect(calibration.calibrationNote).toMatch(/Trusted volume/i)
+    expect(calibration.previewNote).toMatch(/63|PushUS history/i)
 
     const week1Schedule = buildWeeklySchedule(
       rhysLikeAnswers,

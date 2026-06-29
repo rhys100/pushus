@@ -16,9 +16,7 @@ import {
 import { computePlanProgressionSync, fetchMaxCheckInContext } from '@/lib/training/planProgressionSync'
 import {
   derivePlanCalibration,
-  HISTORY_WINDOW_DAYS,
-  volumeHistoryStatsFromRpc,
-  type UserVolumeStatsRow,
+  fetchVolumeHistoryStats,
   type VolumeHistoryStats,
 } from '@/lib/training/volumeCalibration'
 import type { TrainingPlanRow } from '@/types/gamification'
@@ -42,23 +40,6 @@ function sanitizeRecentDailyAverage(value: number | null | undefined): number | 
     return null
   }
   return Math.round(value)
-}
-
-async function fetchVolumeHistoryStats(
-  userId: string,
-  groupId: string,
-): Promise<VolumeHistoryStats | null> {
-  const { data, error } = await supabase.rpc('user_volume_stats', {
-    p_group_id: groupId,
-    p_user_id: userId,
-    p_days: HISTORY_WINDOW_DAYS,
-  })
-
-  if (error) {
-    throw error
-  }
-
-  return volumeHistoryStatsFromRpc(data as UserVolumeStatsRow)
 }
 
 async function fetchTrainingPlan(
@@ -145,6 +126,7 @@ function rowFromPlan(
 function resolveTrainingPlan(
   row: TrainingPlanRow | null | undefined,
   todayIso: string,
+  stats?: VolumeHistoryStats | null,
 ): TrainingPlan | null {
   if (!row || !row.wizard_completed) {
     return null
@@ -166,6 +148,7 @@ function resolveTrainingPlan(
       wizard_soreness_level: row.wizard_soreness_level,
     },
     todayIso,
+    stats ?? null,
   )
 }
 
@@ -234,9 +217,16 @@ export function useTrainingPlan(
 
   const todayIso = getGroupLocalDateString(timezone)
 
+  const historyStatsQuery = useQuery({
+    queryKey: trainingHistoryStatsQueryKey(userId, groupId),
+    queryFn: () => fetchVolumeHistoryStats(userId!, groupId!),
+    enabled: Boolean(userId && groupId),
+    staleTime: 60_000,
+  })
+
   const trainingPlan = useMemo(
-    () => resolveTrainingPlan(query.data, todayIso),
-    [query.data, todayIso],
+    () => resolveTrainingPlan(query.data, todayIso, historyStatsQuery.data ?? null),
+    [query.data, todayIso, historyStatsQuery.data],
   )
 
   const hasPlan = trainingPlan !== null
@@ -314,7 +304,13 @@ export function useTrainingPlan(
   })
 
   useEffect(() => {
-    if (!userId || !groupId || !query.data?.wizard_completed || query.isLoading) {
+    if (
+      !userId ||
+      !groupId ||
+      !query.data?.wizard_completed ||
+      query.isLoading ||
+      historyStatsQuery.isLoading
+    ) {
       return
     }
 
@@ -325,7 +321,14 @@ export function useTrainingPlan(
 
     progressionSyncedKeys.add(syncKey)
     void syncProgressionMutation.mutate()
-  }, [groupId, query.data?.wizard_completed, query.isLoading, todayIso, userId])
+  }, [
+    groupId,
+    historyStatsQuery.isLoading,
+    query.data?.wizard_completed,
+    query.isLoading,
+    todayIso,
+    userId,
+  ])
 
   const confirmPendingMaxCleanMutation = useMutation({
     mutationFn: async () => {
@@ -355,6 +358,7 @@ export function useTrainingPlan(
           wizard_soreness_level: query.data.wizard_soreness_level,
         },
         todayIso,
+        historyStatsQuery.data ?? null,
       )
 
       const row = rowFromPlan(userId, groupId, updatedAnswers, plan, {

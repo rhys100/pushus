@@ -9,9 +9,11 @@ import {
 } from '@/lib/training/effortFeedback'
 import {
   buildTrustedDayPrescription,
+  parseCalibrationNote,
   volumeContextFromStoredPlan,
   type VolumeCalibrationContext,
 } from '@/lib/training/trustedVolume'
+import type { VolumeHistoryStats } from '@/lib/training/volumeCalibration'
 
 export type DayType = 'rest' | 'easy' | 'moderate' | 'challenge'
 
@@ -706,6 +708,7 @@ export function wizardAnswersFromPlanRow(row: {
   const level = row.training_level as WizardAnswers['trainingLevel']
   const intensity = row.challenge_intensity as WizardAnswers['challengeIntensity']
   const soreness = row.wizard_soreness_level
+  const manualConfirmed = parseCalibrationNote(row.calibration_note).manualConfirmed
 
   return {
     maxCleanSet: row.max_clean_set,
@@ -719,6 +722,7 @@ export function wizardAnswersFromPlanRow(row: {
       : 'moderate',
     recentDailyAverage: row.recent_daily_average ?? null,
     storedCalibrationNote: row.calibration_note ?? null,
+    manualConfirmedRegularTraining: manualConfirmed,
     wizardSorenessLevel:
       soreness === 'none' || soreness === 'mild' || soreness === 'notable'
         ? soreness
@@ -739,9 +743,9 @@ export function planFromRow(row: {
   recent_daily_average?: number | null
   calibration_note?: string | null
   wizard_soreness_level?: string | null
-}, today: string = todayIsoDate()): TrainingPlan {
+}, today: string = todayIsoDate(), stats?: VolumeHistoryStats | null): TrainingPlan {
   const answers = wizardAnswersFromPlanRow(row)
-  const volumeContext = volumeContextFromStoredPlan(answers, row.calibration_note)
+  const volumeContext = volumeContextFromStoredPlan(answers, row.calibration_note, stats)
   const mesocycleStartedAt = row.mesocycle_started_at ?? today
   const planBaseline = row.plan_baseline ?? 1
   const blockStartWeek = Math.min(

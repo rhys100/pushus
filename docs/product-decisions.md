@@ -256,7 +256,12 @@ For exploratory ideas without locked rules, see [product-roadmap.md](./product-r
 |----------|--------|
 | **No fake default plan** when wizard skipped — show setup CTA, not generic targets | Beta |
 | Max clean **anchors set size** (upper safe bound); trusted recent volume **anchors set count and daily target** | Beta |
-| Partial trust: conservative target + 50% uplift toward trusted target; full trusted after 7 logged days or confirmed off-app training | Beta |
+| Partial trust: conservative target + 50% uplift toward trusted target; anchor capped at ~1.25× max-clean reference peak | Beta |
+| **Trusted volume resolution (2026-06-29):** 14+ logged days in 30d **or** 7+ days with last log ≤14 days **or** confirmed off-app manual when no logs (unless avg wildly exceeds max-clean cap) | Beta |
+| Live PushUS logs **trump** stored `@vt:partial` in `calibration_note` on rebuild — promotion when stats qualify | Beta |
+| Wizard preview **waits for history stats** before calibrating; separate checkbox for “train regularly off-app” (not the reveal toggle alone) | Beta |
+| Trust mode + honest preview copy shown on wizard step 2 (logs vs partial blend vs conservative) | Beta |
+| **Deferred schema:** first-class columns `volume_trust_mode`, `volume_anchor_daily_average`, `volume_anchor_source`, `volume_sample_days` on `user_training_plans` — keep `@vt:…` encoding until migration slice | Future |
 | Low recent volume may reduce set size below max-clean formula; recent volume never increases set size above it | Beta |
 | W1 active-day ceiling: 1.1× recent average (all active days) | Beta |
 | Day-type set ratios: easy 35%, moderate 50%, challenge 60% of max clean; min set 1–2 reps | Beta |

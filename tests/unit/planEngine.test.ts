@@ -229,6 +229,21 @@ describe('planEngine v2', () => {
     expect(answers.challengeIntensity).toBe('intense')
     expect(answers.wizardSorenessLevel).toBe('mild')
     expect(answers.storedCalibrationNote).toMatch(/@vt:partial/)
+    expect(answers.manualConfirmedRegularTraining).toBe(false)
+  })
+
+  it('wizardAnswersFromPlanRow restores manualConfirmed from calibration_note mc flag', () => {
+    const answers = wizardAnswersFromPlanRow({
+      max_clean_set: 25,
+      training_level: 'advanced',
+      challenge_intensity: 'intense',
+      preferred_training_days: [1, 2, 3, 5, 6],
+      recent_daily_average: 65,
+      calibration_note: '@vt:trusted;mc:1@\nOff-app confirmed',
+      wizard_soreness_level: 'none',
+    })
+
+    expect(answers.manualConfirmedRegularTraining).toBe(true)
   })
 
   it('recommendFromWizard summary mentions 4-week build', () => {

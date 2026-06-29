@@ -3,6 +3,7 @@ import {
   planFromRow,
   type WeeklySchedule,
 } from '@/lib/training/planEngine'
+import type { VolumeHistoryStats } from '@/lib/training/volumeCalibration'
 import type { TrainingPlanRow } from '@/types/gamification'
 
 export type MemberDayTarget = {
@@ -35,6 +36,7 @@ export function resolveMemberTodayTarget(
   todayIso: string,
   timezone: string,
   bankedToday = 0,
+  stats: VolumeHistoryStats | null = null,
 ): MemberDayTarget {
   if (row?.wizard_completed !== true) {
     return {
@@ -61,6 +63,7 @@ export function resolveMemberTodayTarget(
       wizard_soreness_level: row.wizard_soreness_level,
     },
     todayIso,
+    stats,
   )
 
   const prescription = getTodayPrescription(plan, todayIso, timezone)

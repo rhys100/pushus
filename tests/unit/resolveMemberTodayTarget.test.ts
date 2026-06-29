@@ -105,4 +105,38 @@ describe('resolveMemberTodayTarget', () => {
 
     expect(result.progressPercent).toBe(50)
   })
+
+  it('promotes stale partial row to trusted targets when live stats qualify', () => {
+    const today = '2026-06-27'
+    const row = {
+      wizard_completed: true,
+      max_clean_set: 20,
+      training_level: 'advanced',
+      challenge_intensity: 'intense',
+      preferred_training_days: [1, 2, 3, 5, 6],
+      weekly_schedule: null,
+      mesocycle_week: 1,
+      mesocycle_started_at: '2026-06-01',
+      plan_baseline: 1,
+      recent_daily_average: 65,
+      calibration_note: '@vt:partial;mc:0@',
+      wizard_soreness_level: 'none',
+    }
+    const stats = {
+      sampleDays: 24,
+      avgDailyTotal: 65,
+      peakDailyTotal: 95,
+      peakBank: 25,
+      estimatedMaxClean: 22,
+      lastLogDate: '2026-06-28',
+      daysSinceLastLog: 1,
+    }
+
+    const withoutStats = resolveMemberTodayTarget(row, today, 'UTC')
+    const withStats = resolveMemberTodayTarget(row, today, 'UTC', 0, stats)
+
+    expect(withoutStats.target).toBeGreaterThan(0)
+    expect(withStats.target).toBeGreaterThan(withoutStats.target ?? 0)
+    expect(withStats.target ?? 0).toBeGreaterThanOrEqual(30)
+  })
 })

@@ -35,7 +35,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
-- TypeScript build: invalid Button props and unused-parameter errors blocking Cloudflare deploy after training engine v2
+- **Trusted volume path:** training wizard waits for PushUS log stats before preview; 14+ logged days (or 7+ recent) resolve trusted instead of partial fallback; stale `@vt:partial` rows promote to trusted on rebuild when logs qualify; separate off-app confirmation checkbox; preview copy explains trust mode and capped anchors
+- Off-app confirm (`mc:1`) restored when re-editing the wizard; leaderboard daily targets use live log stats for trusted promotion; progression sync waits for history stats before first run
 - Plan calibration baseline no longer stuck at 1.0 when structured peak hits the volume cap edge
 - SEO shell: Open Graph/Twitter meta tags, `robots.txt`, and `sitemap.xml`
 - Branded default social share image (`/og/default.png`)

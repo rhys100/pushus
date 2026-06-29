@@ -5,13 +5,21 @@ import {
   type WizardAnswers,
 } from '@/lib/training/planEngine'
 import {
-  buildVolumeContext,
+  buildTrustPreviewCopy,
   formatCalibrationNote,
-  previewExplanationForContext,
+  resolveVolumeContext,
   type VolumeCalibrationContext,
 } from '@/lib/training/trustedVolume'
+import { supabase } from '@/lib/supabase'
 
-export { displayCalibrationNote, formatCalibrationNote, parseCalibrationNote } from '@/lib/training/trustedVolume'
+export {
+  buildTrustModeLabel,
+  buildTrustPreviewCopy,
+  displayCalibrationNote,
+  formatCalibrationNote,
+  parseCalibrationNote,
+  resolveVolumeContext,
+} from '@/lib/training/trustedVolume'
 
 export const STRUCTURED_PEAK_RATIO = 0.55
 /** @deprecated Trusted volume bands replace baseline nudges — kept for legacy tests */
@@ -195,7 +203,7 @@ export function derivePlanCalibration(
   stats: VolumeHistoryStats | null,
   options: PlanCalibrationOptions = {},
 ): PlanCalibrationResult {
-  const volumeContext = buildVolumeContext(answers, stats, {
+  const volumeContext = resolveVolumeContext(answers, stats, {
     manualConfirmedRegularTraining: options.manualConfirmedRegularTraining ?? false,
   })
 
@@ -204,19 +212,14 @@ export function derivePlanCalibration(
   const notes: string[] = []
 
   if (volumeContext.trustMode === 'partial') {
-    notes.push(
-      'Using a blend of max clean and recent average — targets will tune as you log.',
-    )
+    notes.push('Partial trust — targets will tune as you log.')
   } else if (volumeContext.trustMode === 'trusted' && volumeContext.volumeAnchor) {
     notes.push(
-      `Recent average (~${volumeContext.volumeAnchor}/day) shapes set count and daily targets; max clean caps set size.`,
+      `Trusted volume (~${volumeContext.volumeAnchor}/day) shapes set count and daily targets; max clean caps set size.`,
     )
   }
 
-  const previewNote = previewExplanationForContext(
-    volumeContext,
-    volumeContext.volumeAnchor,
-  )
+  const previewNote = buildTrustPreviewCopy(volumeContext, stats)
 
   const startSchedule = buildWeeklySchedule(
     answers,
@@ -225,11 +228,14 @@ export function derivePlanCalibration(
     volumeContext,
   )
   const startPeak = getPeakDayTarget(startSchedule)
-  const avg = answers.recentDailyAverage
 
   let detailedPreview = previewNote
-  if (avg != null && avg > 0 && startPeak > 0 && volumeContext.trustMode !== 'none') {
-    detailedPreview = `${previewNote ?? ''} Week 1 peak day ~${startPeak} vs your recent avg ${avg}/day — spread across submaximal sets.`.trim()
+  if (
+    volumeContext.trustMode === 'trusted' &&
+    volumeContext.volumeAnchor != null &&
+    startPeak > 0
+  ) {
+    detailedPreview = `${previewNote ?? ''} Week 1 peak day ~${startPeak}.`.trim()
   }
 
   return {
@@ -276,4 +282,21 @@ export function volumeHistoryStatsFromRpc(row: UserVolumeStatsRow | null): Volum
         ? null
         : Number(row.days_since_last_log),
   }
+}
+
+export async function fetchVolumeHistoryStats(
+  userId: string,
+  groupId: string,
+): Promise<VolumeHistoryStats | null> {
+  const { data, error } = await supabase.rpc('user_volume_stats', {
+    p_group_id: groupId,
+    p_user_id: userId,
+    p_days: HISTORY_WINDOW_DAYS,
+  })
+
+  if (error) {
+    throw error
+  }
+
+  return volumeHistoryStatsFromRpc(data as UserVolumeStatsRow)
 }

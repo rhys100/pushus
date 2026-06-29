@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { getGroupLocalDateString } from '@/hooks/useTodayData'
+import { fetchVolumeHistoryStats } from '@/lib/training/volumeCalibration'
 import { resolveMemberTodayTarget, type MemberDayTarget } from '@/lib/training/resolveMemberTodayTarget'
 import { supabase } from '@/lib/supabase'
 import type { Group } from '@/types/database'
@@ -25,11 +26,31 @@ async function fetchGroupDailyTargets(
   }
 
   const targets = new Map<string, MemberDayTarget>()
+  const planRows = (data ?? []) as TrainingPlanRow[]
+  const activeRows = planRows.filter((row) => row.wizard_completed)
 
-  for (const row of (data ?? []) as TrainingPlanRow[]) {
+  const statsByUser = new Map<string, Awaited<ReturnType<typeof fetchVolumeHistoryStats>>>()
+  await Promise.all(
+    activeRows.map(async (row) => {
+      try {
+        const stats = await fetchVolumeHistoryStats(row.user_id, group.id)
+        statsByUser.set(row.user_id, stats)
+      } catch {
+        statsByUser.set(row.user_id, null)
+      }
+    }),
+  )
+
+  for (const row of planRows) {
     targets.set(
       row.user_id,
-      resolveMemberTodayTarget(row, todayIso, group.timezone),
+      resolveMemberTodayTarget(
+        row,
+        todayIso,
+        group.timezone,
+        0,
+        statsByUser.get(row.user_id) ?? null,
+      ),
     )
   }
 

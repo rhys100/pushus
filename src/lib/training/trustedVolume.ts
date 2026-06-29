@@ -10,12 +10,24 @@ import { deriveHistoryConfidence } from '@/lib/training/volumeCalibration'
 
 export type VolumeTrustMode = 'none' | 'partial' | 'trusted'
 
+export type VolumeAnchorSource = 'logs' | 'manual' | 'none'
+
 export type VolumeCalibrationContext = {
   trustMode: VolumeTrustMode
   volumeAnchor: number | null
+  volumeAnchorSource: VolumeAnchorSource
+  volumeSampleDays: number | null
+  userEnteredAverage: number | null
   wizardSorenessLevel?: WizardAnswers['wizardSorenessLevel']
   hardFeedbackRate7d?: number
   manualConfirmedRegularTraining?: boolean
+}
+
+export type ResolveVolumeContextOptions = {
+  manualConfirmedRegularTraining?: boolean
+  calibrationNote?: string | null
+  maxCleanReferencePeak?: number
+  hardFeedbackRate7d?: number
 }
 
 const BANDS_TRUSTED: Record<
@@ -105,6 +117,33 @@ function setsForDayTypeConservative(
   return trainingLevel === 'beginner' ? 3 : 4
 }
 
+export function logsQualifyTrusted(stats: VolumeHistoryStats | null): boolean {
+  if (!stats) {
+    return false
+  }
+
+  const sampleDays = stats.sampleDays
+  const daysSince = stats.daysSinceLastLog ?? null
+
+  if (sampleDays >= 14) {
+    return true
+  }
+
+  if (sampleDays >= 7 && (daysSince === null || daysSince <= 14)) {
+    return true
+  }
+
+  return false
+}
+
+function manualAverageWildlyInconsistent(
+  answers: WizardAnswers,
+  manualAverage: number,
+): boolean {
+  const volumeCap = answers.maxCleanSet * 2
+  return manualAverage > volumeCap * 1.5
+}
+
 export function deriveVolumeTrustMode(
   stats: VolumeHistoryStats | null,
   manualAverage: number | null,
@@ -141,6 +180,115 @@ export function deriveVolumeTrustMode(
   return 'none'
 }
 
+export function resolveVolumeContext(
+  answers: WizardAnswers,
+  stats: VolumeHistoryStats | null,
+  options: ResolveVolumeContextOptions = {},
+): VolumeCalibrationContext {
+  const manualConfirmed =
+    options.manualConfirmedRegularTraining ??
+    answers.manualConfirmedRegularTraining ??
+    false
+  const manualAverage = answers.recentDailyAverage ?? null
+  const userEnteredAverage =
+    manualAverage != null && manualAverage > 0 ? roundReps(manualAverage) : null
+  const calibrationNote =
+    options.calibrationNote ?? answers.storedCalibrationNote ?? null
+  const parsed = parseCalibrationNote(calibrationNote)
+  const referencePeak =
+    options.maxCleanReferencePeak ??
+    computeConservativeDayTarget(answers, 'challenge', 3, 1)
+
+  let trustMode = deriveVolumeTrustMode(stats, manualAverage, manualConfirmed)
+
+  if (
+    trustMode === 'trusted' &&
+    (stats?.sampleDays ?? 0) === 0 &&
+    userEnteredAverage != null &&
+    manualAverageWildlyInconsistent(answers, userEnteredAverage)
+  ) {
+    trustMode = 'partial'
+  }
+
+  // Live logs trump stored partial metadata (promotion on rebuild).
+  if (logsQualifyTrusted(stats)) {
+    trustMode = 'trusted'
+  } else if (
+    userEnteredAverage != null &&
+    manualConfirmed &&
+    (stats?.sampleDays ?? 0) === 0 &&
+    !manualAverageWildlyInconsistent(answers, userEnteredAverage)
+  ) {
+    trustMode = 'trusted'
+  } else if (!stats && parsed.trustMode) {
+    if (parsed.trustMode === 'trusted') {
+      trustMode = 'trusted'
+    } else if (parsed.trustMode === 'partial' && userEnteredAverage != null) {
+      trustMode = 'partial'
+    } else if (parsed.trustMode === 'none') {
+      trustMode = 'none'
+    }
+  } else if (!stats && !parsed.trustMode && userEnteredAverage != null) {
+    trustMode = 'partial'
+  }
+
+  if (trustMode === 'none') {
+    return {
+      trustMode: 'none',
+      volumeAnchor: null,
+      volumeAnchorSource: 'none',
+      volumeSampleDays: stats?.sampleDays ?? null,
+      userEnteredAverage,
+      wizardSorenessLevel: answers.wizardSorenessLevel,
+      hardFeedbackRate7d: options.hardFeedbackRate7d,
+      manualConfirmedRegularTraining: manualConfirmed,
+    }
+  }
+
+  let volumeAnchorSource: VolumeAnchorSource = 'none'
+  let volumeAnchor: number | null = null
+
+  if (trustMode === 'trusted' && stats && stats.sampleDays >= 7) {
+    volumeAnchor = roundReps(stats.avgDailyTotal)
+    volumeAnchorSource = 'logs'
+  } else if (userEnteredAverage != null) {
+    volumeAnchor = userEnteredAverage
+    volumeAnchorSource = 'manual'
+  } else if (stats && stats.sampleDays > 0) {
+    volumeAnchor = roundReps(stats.avgDailyTotal)
+    volumeAnchorSource = 'logs'
+  }
+
+  if (!volumeAnchor || volumeAnchor <= 0) {
+    return {
+      trustMode: 'none',
+      volumeAnchor: null,
+      volumeAnchorSource: 'none',
+      volumeSampleDays: stats?.sampleDays ?? null,
+      userEnteredAverage,
+      wizardSorenessLevel: answers.wizardSorenessLevel,
+      hardFeedbackRate7d: options.hardFeedbackRate7d,
+      manualConfirmedRegularTraining: manualConfirmed,
+    }
+  }
+
+  if (trustMode === 'partial') {
+    volumeAnchor = Math.min(volumeAnchor, roundReps(referencePeak * 1.25))
+  }
+
+  return {
+    trustMode,
+    volumeAnchor,
+    volumeAnchorSource,
+    volumeSampleDays: stats?.sampleDays ?? null,
+    userEnteredAverage,
+    wizardSorenessLevel: answers.wizardSorenessLevel,
+    hardFeedbackRate7d: options.hardFeedbackRate7d,
+    manualConfirmedRegularTraining: manualConfirmed,
+  }
+}
+
+/** @deprecated Use resolveVolumeContext */
 export function computeTrustedVolumeAnchor(
   stats: VolumeHistoryStats | null,
   manualAverage: number | null,
@@ -342,69 +490,21 @@ export function buildVolumeContext(
     hardFeedbackRate7d?: number
   },
 ): VolumeCalibrationContext {
-  const manualConfirmed = options?.manualConfirmedRegularTraining ?? false
-  const trustMode = deriveVolumeTrustMode(
-    stats,
-    answers.recentDailyAverage ?? null,
-    manualConfirmed,
-  )
-  const referencePeak =
-    options?.maxCleanReferencePeak ??
-    computeConservativeDayTarget(answers, 'challenge', 3, 1)
-
-  const volumeAnchor = computeTrustedVolumeAnchor(
-    stats,
-    answers.recentDailyAverage ?? null,
-    trustMode,
-    referencePeak,
-  )
-
-  return {
-    trustMode,
-    volumeAnchor,
-    wizardSorenessLevel: answers.wizardSorenessLevel,
-    hardFeedbackRate7d: options?.hardFeedbackRate7d,
-    manualConfirmedRegularTraining: manualConfirmed,
-  }
+  return resolveVolumeContext(answers, stats, options)
 }
 
-/** Runtime schedule build from stored plan fields (no live log stats). */
+/** Runtime schedule build from stored plan fields; pass live stats to promote partial → trusted. */
 export function volumeContextFromStoredPlan(
   answers: WizardAnswers,
   calibrationNote?: string | null,
+  stats?: VolumeHistoryStats | null,
 ): VolumeCalibrationContext {
-  const parsed = parseCalibrationNote(calibrationNote)
-  const avg = answers.recentDailyAverage
-
-  let trustMode: VolumeTrustMode = parsed.trustMode ?? 'none'
-  if (trustMode === 'none' && avg != null && avg > 0) {
-    // Legacy rows without metadata — default partial, not full trusted
-    trustMode = 'partial'
-  }
-
-  const referencePeak = computeConservativeDayTarget(answers, 'challenge', 3, 1)
-  const volumeAnchor = computeTrustedVolumeAnchor(
-    null,
-    avg ?? null,
-    trustMode,
-    referencePeak,
-  )
-
-  if (!volumeAnchor || volumeAnchor <= 0) {
-    return {
-      trustMode: 'none',
-      volumeAnchor: null,
-      wizardSorenessLevel: answers.wizardSorenessLevel,
-      manualConfirmedRegularTraining: parsed.manualConfirmed,
-    }
-  }
-
-  return {
-    trustMode,
-    volumeAnchor,
-    wizardSorenessLevel: answers.wizardSorenessLevel,
-    manualConfirmedRegularTraining: parsed.manualConfirmed,
-  }
+  return resolveVolumeContext(answers, stats ?? null, {
+    calibrationNote: calibrationNote ?? answers.storedCalibrationNote ?? null,
+    manualConfirmedRegularTraining: parseCalibrationNote(
+      calibrationNote ?? answers.storedCalibrationNote ?? null,
+    ).manualConfirmed,
+  })
 }
 
 /** @deprecated Use volumeContextFromStoredPlan */
@@ -455,24 +555,80 @@ export function displayCalibrationNote(note?: string | null): string | null {
   return parseCalibrationNote(note).displayNote
 }
 
-export function previewExplanationForContext(
+export function buildTrustModeLabel(ctx: VolumeCalibrationContext): string {
+  if (ctx.trustMode === 'trusted' && ctx.volumeAnchorSource === 'logs') {
+    const days = ctx.volumeSampleDays ?? 0
+    return days > 0 ? `Trusted · PushUS logs (${days} days)` : 'Trusted · PushUS logs'
+  }
+
+  if (ctx.trustMode === 'trusted' && ctx.volumeAnchorSource === 'manual') {
+    return 'Trusted · confirmed off-app average'
+  }
+
+  if (ctx.trustMode === 'partial' && ctx.volumeAnchorSource === 'manual') {
+    return 'Partial · manual average'
+  }
+
+  if (ctx.trustMode === 'partial' && ctx.volumeSampleDays != null && ctx.volumeSampleDays > 0) {
+    return `Partial · ${ctx.volumeSampleDays} logged days so far`
+  }
+
+  if (ctx.trustMode === 'partial') {
+    return 'Partial · cautious blend'
+  }
+
+  return 'Conservative · max clean only'
+}
+
+export function buildTrustPreviewCopy(
   ctx: VolumeCalibrationContext,
-  anchor: number | null,
+  stats: VolumeHistoryStats | null,
 ): string | null {
   const soreness = ctx.wizardSorenessLevel ?? 'none'
   if (soreness === 'notable' || soreness === 'mild') {
     return 'Because you reported soreness, PushUS is keeping this week lighter.'
   }
 
-  if (ctx.trustMode === 'trusted' && anchor != null && anchor > 0) {
-    return `You've averaged about ${anchor}/day recently, so PushUS starts below that and spreads reps across easy submaximal sets.`
+  const anchor = ctx.volumeAnchor
+  const userAvg = ctx.userEnteredAverage
+
+  if (ctx.trustMode === 'trusted' && ctx.volumeAnchorSource === 'logs' && anchor != null) {
+    const days = ctx.volumeSampleDays ?? stats?.sampleDays ?? 0
+    return `Using trusted PushUS history: ${days} logged days, about ${anchor}/day. PushUS starts below that and spreads reps across easy submaximal sets.`
   }
 
-  if (ctx.trustMode === 'partial' && anchor != null && anchor > 0) {
-    return `Using a blend of your max clean set and recent average (~${anchor}/day) — targets will tune as you log.`
+  if (ctx.trustMode === 'trusted' && ctx.volumeAnchorSource === 'manual' && anchor != null) {
+    return `Using your confirmed recent training average of ${anchor}/day. PushUS starts below that and spreads reps across easy submaximal sets.`
+  }
+
+  if (ctx.trustMode === 'partial' && ctx.volumeAnchorSource === 'manual' && userAvg != null) {
+    if (anchor != null && anchor < userAvg) {
+      return `Using a cautious blend from your manual average (${userAvg}/day). Confirm regular off-app training or keep logging to unlock a fuller plan.`
+    }
+    return `Using a cautious blend from your manual average (${userAvg}/day). Confirm regular off-app training or keep logging to unlock a fuller plan.`
+  }
+
+  if (
+    ctx.trustMode === 'partial' &&
+    ctx.volumeSampleDays != null &&
+    ctx.volumeSampleDays > 0
+  ) {
+    return `Using a cautious blend while PushUS learns your pattern (${ctx.volumeSampleDays} days logged so far). Keep logging to unlock a fuller plan.`
+  }
+
+  if (ctx.trustMode === 'partial' && anchor != null) {
+    return `Using a cautious blend from your max clean set and recent average. Targets will tune as you log.`
   }
 
   return 'PushUS is starting conservatively from your max clean set. It will adjust as you log.'
+}
+
+/** @deprecated Use buildTrustPreviewCopy */
+export function previewExplanationForContext(
+  ctx: VolumeCalibrationContext,
+  _anchor: number | null,
+): string | null {
+  return buildTrustPreviewCopy(ctx, null)
 }
 
 export function buildTrustedDayPrescription(

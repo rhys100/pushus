@@ -1,12 +1,19 @@
 import { describe, expect, it } from 'vitest'
-import { buildWeeklySchedule, computeSetSizeForDay, type WizardAnswers } from '../../src/lib/training/planEngine'
+import {
+  buildWeeklySchedule,
+  computeSetSizeForDay,
+  recommendFromWizard,
+  type WizardAnswers,
+} from '../../src/lib/training/planEngine'
 import {
   blendPartialTarget,
+  buildTrustPreviewCopy,
   buildVolumeContext,
   computeEffectiveSetSize,
   deriveVolumeTrustMode,
   formatCalibrationNote,
   parseCalibrationNote,
+  resolveVolumeContext,
   volumeContextFromStoredPlan,
   type VolumeCalibrationContext,
 } from '../../src/lib/training/trustedVolume'
@@ -30,8 +37,24 @@ const caseDAnswers: WizardAnswers = {
   recentDailyAverage: 10,
 }
 
+const rhysStats: VolumeHistoryStats = {
+  sampleDays: 24,
+  avgDailyTotal: 65,
+  peakDailyTotal: 95,
+  peakBank: 25,
+  estimatedMaxClean: 22,
+  lastLogDate: '2026-06-28',
+  daysSinceLastLog: 1,
+}
+
 function trustedContext(anchor: number): VolumeCalibrationContext {
-  return { trustMode: 'trusted', volumeAnchor: anchor }
+  return {
+    trustMode: 'trusted',
+    volumeAnchor: anchor,
+    volumeAnchorSource: 'logs',
+    volumeSampleDays: 24,
+    userEnteredAverage: anchor,
+  }
 }
 
 function dayTarget(
@@ -71,8 +94,105 @@ describe('trusted volume calibration (slice 13)', () => {
     expect(challenge).toBeLessThanOrEqual(55)
   })
 
+  it('Rhys case: 24 logged days resolves trusted with anchor ~65 and weekly total above 105', () => {
+    const ctx = resolveVolumeContext(caseCAnswers, rhysStats)
+
+    expect(ctx.trustMode).toBe('trusted')
+    expect(ctx.volumeAnchor).toBe(65)
+    expect(ctx.volumeAnchorSource).toBe('logs')
+    expect(ctx.volumeSampleDays).toBe(24)
+
+    const schedule = buildWeeklySchedule(caseCAnswers, 1, 1, ctx)
+    const weeklyTotal = Object.values(schedule).reduce((sum, rx) => sum + rx.target, 0)
+    expect(dayTarget(caseCAnswers, 1, ctx, 'easy')).toBeGreaterThanOrEqual(21)
+    expect(dayTarget(caseCAnswers, 1, ctx, 'moderate')).toBeGreaterThanOrEqual(35)
+    expect(dayTarget(caseCAnswers, 1, ctx, 'challenge')).toBeGreaterThanOrEqual(45)
+    expect(dayTarget(caseCAnswers, 1, ctx, 'challenge')).toBeLessThanOrEqual(55)
+    expect(weeklyTotal).toBeGreaterThan(105)
+  })
+
+  it('promotes stale partial row when live stats qualify as trusted', () => {
+    const encoded = formatCalibrationNote(
+      {
+        trustMode: 'partial',
+        volumeAnchor: 30,
+        volumeAnchorSource: 'manual',
+        volumeSampleDays: null,
+        userEnteredAverage: 65,
+        manualConfirmedRegularTraining: false,
+      },
+      'Old partial',
+    )
+
+    const ctx = volumeContextFromStoredPlan(
+      { ...caseCAnswers, storedCalibrationNote: encoded },
+      encoded,
+      rhysStats,
+    )
+
+    expect(ctx.trustMode).toBe('trusted')
+    expect(ctx.volumeAnchor).toBe(65)
+    expect(dayTarget(caseCAnswers, 1, ctx, 'challenge')).toBeGreaterThanOrEqual(45)
+  })
+
+  it('wizard loading race: null stats partial, then stats trusted', () => {
+    const loadingCtx = resolveVolumeContext(caseCAnswers, null)
+    expect(loadingCtx.trustMode).toBe('partial')
+
+    const loadedCtx = resolveVolumeContext(caseCAnswers, rhysStats)
+    expect(loadedCtx.trustMode).toBe('trusted')
+    expect(loadedCtx.volumeAnchor).toBe(65)
+  })
+
+  it('manual unconfirmed uses partial and cautious preview copy', () => {
+    const ctx = resolveVolumeContext(caseCAnswers, null, {
+      manualConfirmedRegularTraining: false,
+    })
+
+    expect(ctx.trustMode).toBe('partial')
+    expect(buildTrustPreviewCopy(ctx, null)).toMatch(/cautious blend/i)
+    expect(buildTrustPreviewCopy(ctx, null)).toMatch(/65/)
+    expect(dayTarget(caseCAnswers, 1, ctx, 'challenge')).toBeLessThan(45)
+  })
+
+  it('manual confirmed off-app uses trusted when no logs', () => {
+    const confirmedManualAnswers: WizardAnswers = {
+      ...caseCAnswers,
+      maxCleanSet: 25,
+      recentDailyAverage: 65,
+    }
+    const ctx = resolveVolumeContext(confirmedManualAnswers, null, {
+      manualConfirmedRegularTraining: true,
+    })
+
+    expect(ctx.trustMode).toBe('trusted')
+    expect(ctx.volumeAnchorSource).toBe('manual')
+    expect(buildTrustPreviewCopy(ctx, null)).toMatch(/confirmed recent training/i)
+    expect(dayTarget(confirmedManualAnswers, 1, ctx, 'challenge')).toBeGreaterThanOrEqual(45)
+  })
+
+  it('trusted logs preview copy mentions PushUS history not blend', () => {
+    const ctx = resolveVolumeContext(caseCAnswers, rhysStats)
+    const copy = buildTrustPreviewCopy(ctx, rhysStats)
+
+    expect(copy).toMatch(/trusted PushUS history/i)
+    expect(copy).toMatch(/24 logged days/i)
+    expect(copy).not.toMatch(/blend/i)
+    expect(copy).not.toMatch(/~30/)
+  })
+
+  it('recommendFromWizard with trusted context matches Rhys W1 challenge band', () => {
+    const ctx = resolveVolumeContext(caseCAnswers, rhysStats)
+    const { plan } = recommendFromWizard(caseCAnswers, { volumeContext: ctx })
+
+    expect(plan.peakDayTarget).toBeGreaterThanOrEqual(45)
+    expect(plan.peakDayTarget).toBeLessThanOrEqual(55)
+  })
+
   it('Case D: max 40 avg 10 does not prescribe max-clean set sizes for low targets', () => {
     const ctx = trustedContext(10)
+    ctx.volumeAnchorSource = 'manual'
+    ctx.userEnteredAverage = 10
     const moderateSetSize = daySetSize(caseDAnswers, 1, ctx, 'moderate')
     const moderateTarget = dayTarget(caseDAnswers, 1, ctx, 'moderate')
 
@@ -129,6 +249,9 @@ describe('trusted volume calibration (slice 13)', () => {
     const ctx: VolumeCalibrationContext = {
       trustMode: 'partial',
       volumeAnchor: 30,
+      volumeAnchorSource: 'manual',
+      volumeSampleDays: null,
+      userEnteredAverage: 65,
       manualConfirmedRegularTraining: false,
     }
     const encoded = formatCalibrationNote(ctx, 'Blend note')
