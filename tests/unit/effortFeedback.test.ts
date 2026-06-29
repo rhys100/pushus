@@ -49,6 +49,7 @@ describe('deriveProgressionFromEffort', () => {
     medianRir: 2,
     zeroRirRate: 0.25,
     highRirRate: 0.5,
+    hardRate: 0.25,
   }
 
   it('increases when hit rate and effort support it', () => {
@@ -68,7 +69,7 @@ describe('deriveProgressionFromEffort', () => {
   it('reduces when grinding and missing goals', () => {
     expect(
       deriveProgressionFromEffort(
-        { ...richSummary, zeroRirRate: 0.75, highRirRate: 0 },
+        { ...richSummary, hardRate: 0.75, highRirRate: 0, zeroRirRate: 0.75 },
         20,
         0.4,
       ),
@@ -82,6 +83,7 @@ describe('deriveProgressionFromEffort', () => {
       medianRir: 0,
       zeroRirRate: 1,
       highRirRate: 0,
+      hardRate: 1,
     }
 
     expect(deriveProgressionFromEffort(sparse, 20, 0.9)).toBe('increase')

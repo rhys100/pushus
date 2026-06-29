@@ -7,7 +7,6 @@ import {
   useLeaderboardPeriod,
   type LeaderboardEntry,
 } from '@/hooks/useLeaderboard'
-import { getGroupLocalDateString } from '@/hooks/useTodayData'
 import { formatPeriodLabel, type LeaderboardRange } from '@/lib/leaderboardCalc'
 import type { MemberDayTarget } from '@/lib/training/resolveMemberTodayTarget'
 import { useAuth } from '@/providers/AuthProvider'
@@ -77,6 +76,13 @@ function LeaderboardRow({
   showDayProgress = false,
   targetsLoading = false,
 }: LeaderboardRowProps) {
+  const hasTrainingTarget =
+    dayTarget?.hasPlan && !dayTarget.isRestDay && dayTarget.target != null && dayTarget.target > 0
+  const progressPercent =
+    hasTrainingTarget && dayTarget?.target
+      ? Math.min(100, Math.round((entry.total / dayTarget.target) * 100))
+      : null
+
   if (showDayProgress) {
     return (
       <li
@@ -100,7 +106,7 @@ function LeaderboardRow({
 
         {targetsLoading ? (
           <Skeleton className="h-2.5 min-w-12 flex-1 rounded-full" />
-        ) : dayTarget && !dayTarget.isRestDay ? (
+        ) : hasTrainingTarget && dayTarget?.target ? (
           <GoalProgressBar
             inline
             current={entry.total}
@@ -114,13 +120,19 @@ function LeaderboardRow({
 
         {targetsLoading ? (
           <Skeleton className="h-4 w-12 shrink-0" />
-        ) : dayTarget ? (
+        ) : isCurrentUser && hasTrainingTarget && dayTarget?.target ? (
           <GoalProgressFraction
             current={entry.total}
             target={dayTarget.target}
             isRestDay={dayTarget.isRestDay}
             className="shrink-0"
           />
+        ) : progressPercent != null ? (
+          <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-text-primary">
+            {progressPercent}%
+          </span>
+        ) : dayTarget?.isRestDay ? (
+          <span className="shrink-0 text-xs font-medium text-text-muted">Rest</span>
         ) : null}
       </li>
     )
@@ -185,8 +197,6 @@ export function LeaderboardPage() {
   const { data: dailyTargets, isLoading: targetsLoading } = useGroupDailyTargets(activeGroup, {
     enabled: showDayProgress,
   })
-  const todayIso = activeGroup ? getGroupLocalDateString(activeGroup.timezone) : ''
-
   const subtitle = period
     ? formatPeriodLabel(range, period.periodStart, period.periodEnd)
     : 'Today'
@@ -257,7 +267,7 @@ export function LeaderboardPage() {
               targetsLoading={targetsLoading}
               dayTarget={
                 showDayProgress
-                  ? getMemberDayTarget(dailyTargets, entry.user_id, activeGroup, todayIso)
+                  ? getMemberDayTarget(dailyTargets, entry.user_id)
                   : undefined
               }
             />

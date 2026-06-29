@@ -7,10 +7,15 @@ import {
 import {
   advanceMesocycleIfDue,
   getTodayPrescription,
+  type MaxCheckInContext,
   type TrainingPlan,
   type WizardAnswers,
   wizardAnswersFromPlanRow,
 } from '@/lib/training/planEngine'
+import {
+  deriveWeekOneBaselineAdjustment,
+  filterEffortSincePlanStart,
+} from '@/lib/training/weekOneAdaptation'
 import { supabase } from '@/lib/supabase'
 import type { TrainingPlanRow } from '@/types/gamification'
 
@@ -59,6 +64,67 @@ async function fetchUserDayTotal(
   return data ?? 0
 }
 
+function daysBetween(fromIso: string, toIso: string): number {
+  const from = new Date(`${fromIso.slice(0, 10)}T12:00:00Z`)
+  const to = new Date(`${toIso.slice(0, 10)}T12:00:00Z`)
+  return Math.max(0, Math.floor((to.getTime() - from.getTime()) / 86_400_000))
+}
+
+export async function fetchMaxCheckInContext(input: {
+  groupId: string
+  userId: string
+  todayIso: string
+  timezone: string
+  trainingPlan: TrainingPlan
+  observedMaxCleanAt: string | null
+}): Promise<MaxCheckInContext> {
+  const { groupId, userId, todayIso, timezone, trainingPlan, observedMaxCleanAt } = input
+  const effortSince7 = addDays(todayIso, -6)
+  const effortEntries = await fetchEffortEntries(groupId, userId, effortSince7)
+  const weekEffort = effortSummarySince(effortEntries, effortSince7)
+
+  const logTemplates = buildRecentDailyLogs(todayIso, 7, (date) => {
+    const prescription = getTodayPrescription(trainingPlan, date, timezone)
+    return {
+      date,
+      banked: 0,
+      target: prescription.target,
+      isRestDay: prescription.isRestDay,
+    }
+  })
+
+  const dailyLogs = await Promise.all(
+    logTemplates.map(async (log) => ({
+      ...log,
+      banked: await fetchUserDayTotal(groupId, userId, log.date),
+    })),
+  )
+
+  const { data: sorenessRow } = await supabase
+    .from('user_daily_status_checkins')
+    .select('status')
+    .eq('user_id', userId)
+    .eq('group_id', groupId)
+    .eq('checkin_date', todayIso)
+    .maybeSingle()
+
+  const sorenessStatus =
+    (sorenessRow?.status as MaxCheckInContext['sorenessStatus']) ?? null
+
+  let daysSinceLastMaxCheckIn: number | null = null
+  if (observedMaxCleanAt) {
+    daysSinceLastMaxCheckIn = daysBetween(observedMaxCleanAt.slice(0, 10), todayIso)
+  }
+
+  return {
+    sorenessStatus,
+    hitRate7d: computeHitRate(dailyLogs),
+    effortHardRate7d: weekEffort.hardRate,
+    daysSinceLastMaxCheckIn,
+    recentHardWeek: weekEffort.hardRate > 0.4,
+  }
+}
+
 export type PlanProgressionSyncInput = {
   row: TrainingPlanRow
   trainingPlan: TrainingPlan
@@ -75,6 +141,8 @@ export type PlanProgressionSyncResult = {
   plan: TrainingPlan
   answers: WizardAnswers
   shouldPersist: boolean
+  progressionSyncKey: string | null
+  weekOneAdapted: boolean
 }
 
 export async function computePlanProgressionSync(
@@ -108,8 +176,28 @@ export async function computePlanProgressionSync(
 
   const hitRate = computeHitRate(dailyLogs)
 
-  const result = advanceMesocycleIfDue(
+  const mesocycleStartedAt = row.mesocycle_started_at ?? todayIso
+  const planStartEffort = filterEffortSincePlanStart(effortEntries, mesocycleStartedAt)
+  const weekOneEffortSummary = effortSummarySince(planStartEffort, mesocycleStartedAt)
+
+  const weekOneDailyLogs = dailyLogs.filter((log) => log.date >= mesocycleStartedAt)
+
+  const weekOneResult = deriveWeekOneBaselineAdjustment(
     trainingPlan,
+    answers,
+    weekOneDailyLogs,
+    weekOneEffortSummary,
+    mesocycleStartedAt,
+    todayIso,
+    row.week_one_last_adjusted_at,
+  )
+
+  let workingPlan = weekOneResult.plan
+  let progressionNote = weekOneResult.progressionNote
+  let weekOneAdapted = weekOneResult.adapted
+
+  const result = advanceMesocycleIfDue(
+    workingPlan,
     answers,
     todayIso,
     hitRate,
@@ -117,22 +205,36 @@ export async function computePlanProgressionSync(
     weekEffortSummary,
   )
 
+  if (result.progressionNote) {
+    progressionNote = result.progressionNote
+  }
+
   const updatedAnswers = { ...answers, maxCleanSet: result.maxCleanSet }
 
+  const syncKey = [
+    row.mesocycle_started_at,
+    result.plan.mesocycleWeek,
+    result.plan.planBaseline.toFixed(2),
+    progressionNote ?? '',
+  ].join('|')
+
   const shouldPersist =
-    result.advanced ||
-    result.maxCleanSet !== row.max_clean_set ||
-    Math.abs(result.plan.planBaseline - Number(row.plan_baseline)) > 0.001 ||
-    result.plan.mesocycleWeek !== row.mesocycle_week ||
-    result.plan.mesocycleStartedAt !== row.mesocycle_started_at ||
-    (result.progressionNote !== null && result.progressionNote !== row.progression_note)
+    (weekOneAdapted ||
+      result.advanced ||
+      Math.abs(result.plan.planBaseline - Number(row.plan_baseline)) > 0.001 ||
+      result.plan.mesocycleWeek !== row.mesocycle_week ||
+      result.plan.mesocycleStartedAt !== row.mesocycle_started_at ||
+      (progressionNote !== null && progressionNote !== row.progression_note)) &&
+    syncKey !== (row.progression_sync_key ?? '')
 
   return {
-    advanced: result.advanced,
-    progressionNote: result.progressionNote,
+    advanced: result.advanced || weekOneAdapted,
+    progressionNote,
     maxCleanSet: result.maxCleanSet,
     plan: result.plan,
     answers: updatedAnswers,
     shouldPersist,
+    progressionSyncKey: shouldPersist ? syncKey : null,
+    weekOneAdapted,
   }
 }

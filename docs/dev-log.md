@@ -26,6 +26,34 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-06-29 (training plan engine v2)
+
+**Shipped**
+- Engine v2: null plan contract, day-type set sizing, default 5-day pattern, soft calibration (+10% hint cap), baseline-only progression
+- Wizard v2: max clean 1–60 step 1, soreness question, skip for now, history max as hint only
+- Today: Try max set mode, Easy/Good/Hard effort sheet, challenge max check-in card, soreness check-in sheet
+- Settings: pending max clean confirm (capped +10%), profile timezone for plan
+- Leaderboard day view: % for others, exact for self, no target without wizard
+- Migration `0026_training_plan_v2.sql`; edge mirror `planResolve.ts` aligned
+- Progression sync writes `training_plan_progression_log` on persist
+
+**Tests:** 242 passing (planEngine, volumeCalibration, resolveMemberTodayTarget, effortFeedback, weekOneAdaptation)
+
+**Notes:** Apply migration 0026 on hosted Supabase before max check-in / progression log features work in prod.
+
+### 2026-06-29 (training plan science + adaptive week 1)
+
+**Shipped**
+- Honest day-target formatting when mesocycle scaling reduces reps below nominal sets×size
+- Calibration fix: manual daily average + clamp fix; high avg → week 2 start
+- History-confidence wizard (trusted / partial / stale); off-app avg toggle for stale users
+- Week 1 adaptive baseline from logs + RIR (`weekOneAdaptation.ts` + progression sync)
+- Wizard dock padding token; migration `0025_volume_stats_last_log.sql`
+
+**Tests:** 240 passing (planEngine, volumeCalibration, weekOneAdaptation)
+
+**Notes:** Deploy migration 0025 on hosted Supabase for last-log metadata in wizard.
+
 ### 2026-06-29 (activity feed reactions)
 
 **Fixed**

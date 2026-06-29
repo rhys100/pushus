@@ -9,8 +9,12 @@ import { useAuth } from '@/providers/AuthProvider'
 import { useProfile } from '@/hooks/useProfile'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 import { useTrainingPlan } from '@/hooks/useTrainingPlan'
+import { capPlanMaxUpdate } from '@/lib/training/maxCleanUpdate'
+import { formatDayTargetSetsDetail } from '@/lib/training/planEngine'
 import type { ReminderIntervalHours } from '@/lib/notificationEligibility'
 import { useNotificationPreferences } from '@/providers/NotificationPreferencesProvider'
+import { useToast } from '@/components/ui/Toast'
+import { getErrorMessage } from '@/lib/errors'
 
 function hourOptions() {
   return Array.from({ length: 24 }, (_, hour) => ({
@@ -36,13 +40,20 @@ export function SettingsPage() {
   const { signOut, user } = useAuth()
   const { profile } = useProfile()
   const { activeGroup } = useActiveGroup()
+  const { toast } = useToast()
+  const planTimezone = profile?.timezone || activeGroup?.timezone || 'UTC'
   const {
     dailyTarget,
     todayPrescription,
     weeklySchedule,
     peakDayTarget,
     wizardCompleted,
-  } = useTrainingPlan(user?.id, activeGroup?.id, activeGroup?.timezone)
+    hasPlan,
+    plan,
+    confirmPendingMaxClean,
+    dismissPendingMaxClean,
+    confirmingMaxClean,
+  } = useTrainingPlan(user?.id, activeGroup?.id, planTimezone)
   const {
     prefs,
     loading: prefsLoading,
@@ -61,7 +72,35 @@ export function SettingsPage() {
   const hours = hourOptions()
   const pushConfigured = pushSupport === 'supported'
   const displayError = localError ?? prefsError
-  const isRestDay = todayPrescription.isRestDay || dailyTarget === 0
+  const isRestDay = hasPlan && (todayPrescription?.isRestDay || dailyTarget === 0)
+  const pendingMax = plan?.pending_max_clean_update
+  const cappedMax =
+    pendingMax && plan?.max_clean_set
+      ? capPlanMaxUpdate(plan.max_clean_set, pendingMax)
+      : null
+
+  async function handleConfirmMaxClean() {
+    try {
+      await confirmPendingMaxClean()
+      toast({ message: 'Training plan max clean updated.', variant: 'success' })
+    } catch (error) {
+      toast({
+        message: getErrorMessage(error, 'Could not update max clean.'),
+        variant: 'danger',
+      })
+    }
+  }
+
+  async function handleDismissMaxClean() {
+    try {
+      await dismissPendingMaxClean()
+    } catch (error) {
+      toast({
+        message: getErrorMessage(error, 'Could not dismiss update.'),
+        variant: 'danger',
+      })
+    }
+  }
 
   useTabPageMeta({
     title: 'Settings',
@@ -158,26 +197,29 @@ export function SettingsPage() {
         </p>
         <div className="rounded-[var(--radius-md)] border border-border bg-bg px-3 py-3">
           <p className="text-xs text-text-muted">
-            {isRestDay ? 'Today — rest day' : "Today's target"}
+            {isRestDay ? 'Today — rest day' : hasPlan ? "Today's target" : 'No plan yet'}
           </p>
           <p className="mt-1 font-mono text-2xl font-bold text-text-primary">
             {isRestDay ? (
               'Recovery'
-            ) : (
+            ) : hasPlan && dailyTarget != null ? (
               <>
                 {dailyTarget}
                 <span className="ml-1.5 text-sm font-medium text-text-muted">push-ups</span>
               </>
+            ) : (
+              'Set up your plan'
             )}
           </p>
-          {!isRestDay && todayPrescription.sets > 0 ? (
+          {hasPlan && !isRestDay && todayPrescription && todayPrescription.sets > 0 ? (
             <p className="mt-1 text-xs text-text-muted">
-              {todayPrescription.sets} sets of {todayPrescription.setSize}
+              {formatDayTargetSetsDetail(todayPrescription)}
             </p>
           ) : null}
-          {wizardCompleted ? (
+          {wizardCompleted && hasPlan ? (
             <p className="mt-2 text-xs text-text-muted">
-              Peak day this week: {peakDayTarget} · Week {todayPrescription.mesocycleWeek} of 4
+              Max clean {plan?.max_clean_set} · Peak day this week: {peakDayTarget} · Week{' '}
+              {todayPrescription?.mesocycleWeek ?? 1} of 4
             </p>
           ) : (
             <p className="mt-1 text-xs text-text-muted">
@@ -185,7 +227,32 @@ export function SettingsPage() {
             </p>
           )}
         </div>
-        {wizardCompleted ? (
+        {pendingMax && plan?.max_clean_set && cappedMax ? (
+          <div className="rounded-[var(--radius-md)] border border-accent/40 bg-accent-muted/20 px-3 py-3">
+            <p className="text-sm font-medium text-text-primary">Max clean check-in</p>
+            <p className="mt-1 text-xs text-text-muted">
+              You logged {pendingMax} in one set. Apply a capped update to {cappedMax} (plan max{' '}
+              {plan.max_clean_set})?
+            </p>
+            <div className="mt-3 flex gap-2">
+              <Button
+                className="min-h-9 px-3 text-sm"
+                loading={confirmingMaxClean}
+                onClick={() => void handleConfirmMaxClean()}
+              >
+                Update to {cappedMax}
+              </Button>
+              <Button
+                className="min-h-9 px-3 text-sm"
+                variant="secondary"
+                onClick={() => void handleDismissMaxClean()}
+              >
+                Not now
+              </Button>
+            </div>
+          </div>
+        ) : null}
+        {wizardCompleted && weeklySchedule ? (
           <div className="grid grid-cols-7 gap-1">
             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((label, index) => {
               const day = weeklySchedule[index as 0 | 1 | 2 | 3 | 4 | 5 | 6]

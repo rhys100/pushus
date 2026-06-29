@@ -241,10 +241,30 @@ For exploratory ideas without locked rules, see [product-roadmap.md](./product-r
 | Require ≥3 RIR samples before effort overrides hit-rate-only progression | Beta |
 | **Post-challenge plan calibration:** wizard pre-fills from 30-day PushUS log history; user confirms or overrides | Beta |
 | Structured starting peak ≈ **55%** of confirmed recent daily average (not challenge grind volume) | Beta |
-| Initial `plan_baseline` capped at **1.35×** reference peak; requires ≥7 sample days | Beta |
+| Initial `plan_baseline` capped at **1.35×** reference peak; manual daily average trusted at save | Beta |
 | High recent volume (peak day ≥ 2× daily cap, ≥14 sample days) → start mesocycle at **week 2 (85%)** not week 1 | Beta |
+| Manual daily average ≥ 50/day → may also start at week 2 when log spike data absent | Beta |
+| **History confidence tiers** for wizard: trusted (≥7 days in 30d + recent log), partial, stale (>90 days since last PushUS log) | Beta |
+| Stale users: max-clean-first; daily average hidden unless off-app toggle | Beta |
+| **Week 1 adaptive tuning:** baseline ±3–5% from logs + RIR during first 7 days (caps +12% / −10% cumulative) | Beta |
 | Rest days = 0 daily target, streak-protected | Beta |
 | Conservative defaults when wizard not completed | Beta |
+
+### Training plan engine v2 (2026-06-29)
+
+| Decision | Status |
+|----------|--------|
+| **No fake default plan** when wizard skipped — show setup CTA, not generic targets | Beta |
+| Max clean is **anchor**; daily average is soft hint only (+10% baseline cap at wizard save) | Beta |
+| Day-type set ratios: easy 35%, moderate 50%, challenge 60% of max clean; min set 1–2 reps | Beta |
+| Default training days: Mon, Tue, Wed, Fri, Sat (Thu + Sun rest) | Beta |
+| Training plan timezone = **user profile**; leaderboard uses group timezone | Beta |
+| Effort UX: Easy / Good / Hard / Skip → RIR 5 / 3 / 1 / null; ask after final set or challenge only | Beta |
+| **No auto max-clean bumps** from progression — baseline-only block changes | Beta |
+| Max check-in via explicit **Try max set** mode; capped plan max update (+10% per jump) with user confirm | Beta |
+| Leaderboard: others see **% progress only**; self sees exact; no target without wizard | Beta |
+| History prefill cannot override user max clean — suggestion only | Beta |
+| No forced mesocycle week-2 skip from calibration | Beta |
 
 ---
 

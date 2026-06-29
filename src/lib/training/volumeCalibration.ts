@@ -7,10 +7,16 @@ import {
 } from '@/lib/training/planEngine'
 
 export const STRUCTURED_PEAK_RATIO = 0.55
-export const MAX_INITIAL_BASELINE = 1.35
+/** Soft hint cap — daily average may nudge baseline at wizard save only. */
+export const MAX_HINT_BASELINE = 1.1
+/** @deprecated Use MAX_HINT_BASELINE — kept for test migration */
+export const MAX_INITIAL_BASELINE = MAX_HINT_BASELINE
 export const MIN_HISTORY_SAMPLE_DAYS = 7
-export const MIN_HIGH_VOLUME_SAMPLE_DAYS = 14
 export const HISTORY_WINDOW_DAYS = 30
+export const STALE_LOG_DAYS = 90
+export const RECENT_LOG_DAYS = 14
+
+export type HistoryConfidence = 'trusted' | 'partial' | 'stale'
 
 export type VolumeHistoryEntry = {
   count: number
@@ -24,6 +30,8 @@ export type VolumeHistoryStats = {
   peakDailyTotal: number
   peakBank: number
   estimatedMaxClean: number | null
+  lastLogDate: string | null
+  daysSinceLastLog: number | null
 }
 
 export type PlanCalibrationResult = {
@@ -31,11 +39,14 @@ export type PlanCalibrationResult = {
   startMesocycleWeek: MesocycleWeek
   calibrationNote: string | null
   previewNote: string | null
+  maxCleanMismatchWarning: string | null
 }
 
 export type WizardPrefill = {
   maxCleanSet: number
   recentDailyAverage: number | null
+  /** Shown as optional hint — never auto-applied over user max clean. */
+  suggestedMaxCleanFromHistory: number | null
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -68,13 +79,49 @@ export function summarizeVolumeHistory(entries: VolumeHistoryEntry[]): VolumeHis
       ? Math.max(...withRir.map((entry) => entry.count + (entry.reps_in_reserve as number)))
       : null
 
+  const logDates = entries.map((entry) => entry.logged_for).sort()
+  const lastLogDate = logDates.length > 0 ? logDates[logDates.length - 1] : null
+
   return {
     sampleDays,
     avgDailyTotal,
     peakDailyTotal,
     peakBank,
     estimatedMaxClean,
+    lastLogDate,
+    daysSinceLastLog: null,
   }
+}
+
+export function deriveHistoryConfidence(stats: VolumeHistoryStats | null): HistoryConfidence {
+  if (!stats) {
+    return 'stale'
+  }
+
+  const daysSince = stats.daysSinceLastLog
+
+  if (stats.sampleDays >= MIN_HISTORY_SAMPLE_DAYS) {
+    if (daysSince === null || daysSince <= RECENT_LOG_DAYS) {
+      return 'trusted'
+    }
+    if (daysSince <= STALE_LOG_DAYS) {
+      return 'partial'
+    }
+  }
+
+  if (stats.sampleDays === 0 || (daysSince !== null && daysSince > STALE_LOG_DAYS)) {
+    return 'stale'
+  }
+
+  return 'partial'
+}
+
+export function shouldShowDailyAverageQuestion(confidence: HistoryConfidence): boolean {
+  return confidence !== 'stale'
+}
+
+export function shouldPrefillDailyAverage(confidence: HistoryConfidence): boolean {
+  return confidence === 'trusted'
 }
 
 export function suggestWizardPrefill(
@@ -82,22 +129,23 @@ export function suggestWizardPrefill(
   savedMaxCleanSet?: number,
 ): WizardPrefill {
   const floor = savedMaxCleanSet ?? 15
-  if (!stats || stats.sampleDays < MIN_HISTORY_SAMPLE_DAYS) {
+  const confidence = deriveHistoryConfidence(stats)
+
+  if (!stats || confidence !== 'trusted') {
     return {
       maxCleanSet: floor,
       recentDailyAverage: null,
+      suggestedMaxCleanFromHistory: null,
     }
   }
 
-  const fromHistory = Math.max(
-    stats.estimatedMaxClean ?? 0,
-    stats.peakBank,
-    floor,
-  )
+  const fromHistory = Math.max(stats.estimatedMaxClean ?? 0, stats.peakBank)
 
   return {
-    maxCleanSet: clamp(roundReps(fromHistory), 5, 60),
+    maxCleanSet: floor,
     recentDailyAverage: roundReps(stats.avgDailyTotal),
+    suggestedMaxCleanFromHistory:
+      fromHistory > 0 ? clamp(roundReps(fromHistory), 1, 60) : null,
   }
 }
 
@@ -106,47 +154,50 @@ export function referencePeakAtFullBlock(answers: WizardAnswers): number {
   return getPeakDayTarget(schedule)
 }
 
+export function deriveMaxCleanMismatchWarning(
+  answers: WizardAnswers,
+): string | null {
+  const recentDailyAverage = answers.recentDailyAverage ?? null
+  const volumeCap = dailyVolumeCap(answers.maxCleanSet)
+
+  if (
+    recentDailyAverage !== null &&
+    recentDailyAverage > 0 &&
+    recentDailyAverage > volumeCap * 1.5
+  ) {
+    return `Your daily average (${recentDailyAverage}) is much higher than your max clean set suggests — double-check max clean if you can do more in one go.`
+  }
+
+  return null
+}
+
 export function derivePlanCalibration(
   answers: WizardAnswers,
   stats: VolumeHistoryStats | null,
 ): PlanCalibrationResult {
   const recentDailyAverage = answers.recentDailyAverage ?? null
   const referencePeak = referencePeakAtFullBlock(answers)
-  const volumeCap = dailyVolumeCap(answers.maxCleanSet)
+  const confidence = deriveHistoryConfidence(stats)
 
   let initialBaseline = 1
-  let startMesocycleWeek: MesocycleWeek = 1
+  const startMesocycleWeek: MesocycleWeek = 1
   const notes: string[] = []
 
-  if (
-    recentDailyAverage !== null &&
-    recentDailyAverage > 0 &&
-    stats &&
-    stats.sampleDays >= MIN_HISTORY_SAMPLE_DAYS &&
-    referencePeak > 0
-  ) {
-    const structuredTarget = clamp(
-      recentDailyAverage * STRUCTURED_PEAK_RATIO,
-      referencePeak,
-      volumeCap,
-    )
-    initialBaseline = clamp(structuredTarget / referencePeak, 1, MAX_INITIAL_BASELINE)
-    initialBaseline = Math.round(initialBaseline * 100) / 100
+  const useDailyAverageForHint =
+    recentDailyAverage !== null && recentDailyAverage > 0 && referencePeak > 0
 
-    if (initialBaseline > 1) {
-      notes.push(
-        `Calibrated from your recent avg ${recentDailyAverage}/day — structured peak targets scaled to ${Math.round(initialBaseline * 100)}%.`,
-      )
+  if (useDailyAverageForHint) {
+    const desiredPeak = Math.min(recentDailyAverage * STRUCTURED_PEAK_RATIO, dailyVolumeCap(answers.maxCleanSet))
+    const ratio = desiredPeak / referencePeak
+    if (ratio > 1.05) {
+      initialBaseline = clamp(ratio, 1, MAX_HINT_BASELINE)
+      initialBaseline = Math.round(initialBaseline * 100) / 100
+      if (initialBaseline > 1) {
+        notes.push(
+          `Recent average suggests starting slightly higher (${Math.round(initialBaseline * 100)}%) — you'll still ramp through week 1.`,
+        )
+      }
     }
-  }
-
-  if (
-    stats &&
-    stats.sampleDays >= MIN_HIGH_VOLUME_SAMPLE_DAYS &&
-    stats.peakDailyTotal >= 2 * volumeCap
-  ) {
-    startMesocycleWeek = 2
-    notes.push('Recent high volume detected — starting at 85% instead of a full deload week.')
   }
 
   let previewNote: string | null = null
@@ -154,6 +205,9 @@ export function derivePlanCalibration(
     const startSchedule = buildWeeklySchedule(answers, startMesocycleWeek, initialBaseline)
     const startPeak = getPeakDayTarget(startSchedule)
     previewNote = `Structured peak day ${startPeak} vs your recent avg ${recentDailyAverage}/day — spread across submaximal sets, not one big grind.`
+  } else if (confidence === 'stale' && recentDailyAverage === null) {
+    previewNote =
+      'Starting from your max clean set — week 1 targets will adjust quickly as you log push-ups.'
   }
 
   return {
@@ -161,11 +215,12 @@ export function derivePlanCalibration(
     startMesocycleWeek,
     calibrationNote: notes.length > 0 ? notes.join(' ') : null,
     previewNote,
+    maxCleanMismatchWarning: deriveMaxCleanMismatchWarning(answers),
   }
 }
 
 export function hasUsableVolumeHistory(stats: VolumeHistoryStats | null): boolean {
-  return Boolean(stats && stats.sampleDays >= MIN_HISTORY_SAMPLE_DAYS)
+  return deriveHistoryConfidence(stats) === 'trusted'
 }
 
 export type UserVolumeStatsRow = {
@@ -174,19 +229,28 @@ export type UserVolumeStatsRow = {
   peak_daily_total: number
   peak_bank: number
   estimated_max_clean: number | null
+  last_log_date?: string | null
+  days_since_last_log?: number | null
 }
 
 export function volumeHistoryStatsFromRpc(row: UserVolumeStatsRow | null): VolumeHistoryStats | null {
-  if (!row || row.sample_days <= 0) {
+  if (!row) {
     return null
   }
 
   return {
-    sampleDays: row.sample_days,
-    avgDailyTotal: Number(row.avg_daily_total),
-    peakDailyTotal: Number(row.peak_daily_total),
-    peakBank: Number(row.peak_bank),
+    sampleDays: row.sample_days ?? 0,
+    avgDailyTotal: Number(row.avg_daily_total ?? 0),
+    peakDailyTotal: Number(row.peak_daily_total ?? 0),
+    peakBank: Number(row.peak_bank ?? 0),
     estimatedMaxClean:
-      row.estimated_max_clean === null ? null : Number(row.estimated_max_clean),
+      row.estimated_max_clean === null || row.estimated_max_clean === undefined
+        ? null
+        : Number(row.estimated_max_clean),
+    lastLogDate: row.last_log_date ?? null,
+    daysSinceLastLog:
+      row.days_since_last_log === null || row.days_since_last_log === undefined
+        ? null
+        : Number(row.days_since_last_log),
   }
 }

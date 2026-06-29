@@ -54,15 +54,17 @@ export function useGroupDailyTargets(
 export function getMemberDayTarget(
   targets: Map<string, MemberDayTarget> | undefined,
   userId: string,
-  group: Group,
-  todayIso: string,
 ): MemberDayTarget | undefined {
   if (targets === undefined) {
     return undefined
   }
 
   return (
-    targets.get(userId) ??
-    resolveMemberTodayTarget(null, todayIso, group.timezone)
+    targets.get(userId) ?? {
+      target: null,
+      isRestDay: false,
+      hasPlan: false,
+      progressPercent: null,
+    }
   )
 }

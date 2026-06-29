@@ -12,7 +12,28 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
-- Per-route browser tab titles across the app
+- **Training plan engine v2:** day-type set sizing (easy 35% / moderate 50% / challenge 60% of max clean); default week Mon–Tue easy, Wed moderate, Thu rest, Fri easy, Sat challenge, Sun rest
+- Max clean check-in via explicit **Try max set** mode on challenge days; capped plan max update confirm in Settings
+- Easy / Good / Hard / Skip effort sheet after final set or challenge day (maps to RIR internally)
+- Post-challenge **soreness check-in** (feeling good / a bit sore / pain — stop) via `user_daily_status_checkins`
+- Leaderboard day view: **percent progress for other members**; exact target for self; no target when wizard skipped
+- Migration `0026_training_plan_v2.sql`: observed max, pending max update, progression log, max check-in flag on entries
+- Week 1 plan tuning: daily baseline adjusts from logged pushups + RIR during the first 7 days after saving a plan
+- Training wizard history confidence: trusted / partial / stale paths — max-clean-first when PushUS logs are old or missing
+
+### Changed
+
+- **No fake default plan** when wizard skipped — Today and Settings show setup CTA instead of generic targets
+- Training plan uses **profile timezone** (group timezone for leaderboard only)
+- Volume calibration is **hints only** (+10% baseline nudge from daily average); history cannot override max clean; no auto week-2 skip
+- Block progression adjusts **baseline only** — no automatic max-clean bumps from effort or observed max
+- Training wizard: max clean min 1 step 1, soreness question, skip path, practice-day labels for max clean 1–2
+- Training plan preview and settings show honest set targets when mesocycle scaling reduces volume (e.g. `14 total · ~7/set` instead of misleading `2×9`)
+- Training wizard: stale-log banner, optional off-app daily average, max-clean mismatch warning; fixed bottom Save/Back dock on mobile
+
+### Fixed
+
+- Plan calibration baseline no longer stuck at 1.0 when structured peak hits the volume cap edge
 - SEO shell: Open Graph/Twitter meta tags, `robots.txt`, and `sitemap.xml`
 - Branded default social share image (`/og/default.png`)
 - Dynamic invite link previews for social crawlers on Cloudflare Pages (group name + share image at `/og/join/:code.png`)

@@ -53,6 +53,7 @@
   --dock-bg: #0b1220;
   --dock-scrim-height: 1.5rem;
   --dock-shadow: 0 -10px 36px rgba(0, 0, 0, 0.55);
+  --wizard-dock-height: calc(var(--dock-scrim-height) + var(--bank-cta-height) + 1.5rem);
 }
 
 * {

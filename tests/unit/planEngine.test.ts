@@ -3,7 +3,11 @@ import {
   advanceMesocycleIfDue,
   buildWeeklySchedule,
   computeSetSize,
+  computeSetSizeForDay,
   dailyVolumeCap,
+  formatDayTarget,
+  formatDayTargetSetsDetail,
+  formatWeeklyScheduleSummary,
   getCurrentMesocycleWeek,
   getDefaultPlan,
   getPeakDayTarget,
@@ -18,7 +22,7 @@ import {
 const advancedMax20: WizardAnswers = {
   maxCleanSet: 20,
   trainingLevel: 'advanced',
-  preferredTrainingDays: [1, 2, 3, 4, 5],
+  preferredTrainingDays: [1, 2, 3, 5, 6],
   sorenessWarningAcknowledged: true,
   challengeIntensity: 'moderate',
 }
@@ -34,9 +38,27 @@ describe('planEngine v2', () => {
     expect(plan.disclaimer).toMatch(/not medical advice/i)
   })
 
-  it('computes submaximal set size for max 20', () => {
-    expect(computeSetSize(20)).toBe(9)
+  it('computes day-type set sizes for max 20', () => {
+    expect(computeSetSize(20)).toBe(10)
+    expect(computeSetSizeForDay(20, 'easy')).toBe(7)
+    expect(computeSetSizeForDay(20, 'moderate')).toBe(10)
+    expect(computeSetSizeForDay(20, 'challenge')).toBe(12)
     expect(dailyVolumeCap(20)).toBe(35)
+  })
+
+  it('computeSetSizeForDay matrix matches v2 reference', () => {
+    const cases: [number, number, number, number][] = [
+      [1, 1, 1, 1],
+      [5, 2, 3, 3],
+      [20, 7, 10, 12],
+      [40, 14, 15, 15],
+    ]
+
+    for (const [max, easy, moderate, challenge] of cases) {
+      expect(computeSetSizeForDay(max, 'easy')).toBe(easy)
+      expect(computeSetSizeForDay(max, 'moderate')).toBe(moderate)
+      expect(computeSetSizeForDay(max, 'challenge')).toBe(challenge)
+    }
   })
 
   it('advanced max 20 never recommends 50/day peak', () => {
@@ -44,18 +66,18 @@ describe('planEngine v2', () => {
 
     expect(plan.peakDayTarget).toBeLessThanOrEqual(36)
     expect(plan.peakDayTarget).not.toBe(50)
-    expect(plan.setSize).toBe(9)
+    expect(plan.setSize).toBe(10)
     expect(plan.restDays.length).toBeGreaterThanOrEqual(1)
   })
 
-  it('assigns tiered targets across the week for Mon–Fri', () => {
+  it('assigns tiered targets across the default week pattern', () => {
     const schedule = buildWeeklySchedule(advancedMax20, 3)
 
     expect(schedule[0].dayType).toBe('rest')
-    expect(schedule[6].dayType).toBe('rest')
+    expect(schedule[4].dayType).toBe('rest')
+    expect(schedule[6].dayType).toBe('challenge')
     expect(schedule[1].target).toBeGreaterThan(0)
-    expect(schedule[4].dayType).toBe('challenge')
-    expect(schedule[4].target).toBeGreaterThan(schedule[1].target)
+    expect(schedule[6].target).toBeGreaterThan(schedule[1].target)
   })
 
   it('rest day has zero target', () => {
@@ -81,19 +103,19 @@ describe('planEngine v2', () => {
     )
   })
 
-  it('mesocycle W1 targets are lower than W3 on same day', () => {
+  it('mesocycle W1 targets are lower than W3 on easy day', () => {
     const w1 = buildWeeklySchedule(advancedMax20, 1)
     const w3 = buildWeeklySchedule(advancedMax20, 3)
 
-    expect(w3[5].target).toBeGreaterThan(w1[5].target)
+    expect(w3[1].target).toBeGreaterThan(w1[1].target)
   })
 
-  it('mesocycle W4 deload is roughly 55% of W3', () => {
+  it('mesocycle W4 deload is roughly 55% of W3 on easy day', () => {
     const w3 = buildWeeklySchedule(advancedMax20, 3)
     const w4 = buildWeeklySchedule(advancedMax20, 4)
 
-    expect(w4[5].target).toBeLessThan(w3[5].target)
-    expect(w4[5].target / w3[5].target).toBeCloseTo(
+    expect(w4[1].target).toBeLessThan(w3[1].target)
+    expect(w4[1].target / w3[1].target).toBeCloseTo(
       MESOCYCLE_MULTIPLIER[4] / MESOCYCLE_MULTIPLIER[3],
       1,
     )
@@ -128,7 +150,7 @@ describe('planEngine v2', () => {
     expect(getCurrentMesocycleWeek('2026-06-01', '2026-06-29')).toBe(1)
   })
 
-  it('advanceMesocycleIfDue increases baseline after strong mesocycle', () => {
+  it('advanceMesocycleIfDue increases baseline after strong mesocycle without auto max-clean bump', () => {
     const { plan } = recommendFromWizard(advancedMax20)
     const startPlan = { ...plan, mesocycleStartedAt: '2026-01-01' }
 
@@ -136,8 +158,8 @@ describe('planEngine v2', () => {
 
     expect(result.advanced).toBe(true)
     expect(result.plan.planBaseline).toBeGreaterThan(1)
-    expect(result.maxCleanSet).toBe(21)
-    expect(result.progressionNote).toMatch(/5%|effort feedback/i)
+    expect(result.maxCleanSet).toBe(20)
+    expect(result.progressionNote).toMatch(/5%|effort feedback|volume/i)
   })
 
   it('advanceMesocycleIfDue uses effort feedback when RIR samples are rich', () => {
@@ -149,6 +171,7 @@ describe('planEngine v2', () => {
       medianRir: 2,
       zeroRirRate: 0.25,
       highRirRate: 0.5,
+      hardRate: 0.25,
     }
 
     const result = advanceMesocycleIfDue(
@@ -160,8 +183,8 @@ describe('planEngine v2', () => {
     )
 
     expect(result.advanced).toBe(true)
-    expect(result.maxCleanSet).toBe(21)
-    expect(result.progressionNote).toMatch(/effort feedback/i)
+    expect(result.maxCleanSet).toBe(20)
+    expect(result.progressionNote).toMatch(/effort feedback|volume|manageable/i)
   })
 
   it('advanceMesocycleIfDue holds baseline on low hit rate', () => {
@@ -171,7 +194,7 @@ describe('planEngine v2', () => {
     const result = advanceMesocycleIfDue(startPlan, advancedMax20, '2026-01-29', 0.3)
 
     expect(result.plan.planBaseline).toBe(1)
-    expect(result.progressionNote).toMatch(/holding/i)
+    expect(result.progressionNote).toMatch(/holding|tough/i)
   })
 
   it('planFromRow rebuilds from wizard fields when schedule empty', () => {
@@ -179,7 +202,7 @@ describe('planEngine v2', () => {
       max_clean_set: 20,
       training_level: 'advanced',
       challenge_intensity: 'moderate',
-      preferred_training_days: [1, 2, 3, 4, 5],
+      preferred_training_days: [1, 2, 3, 5, 6],
       weekly_schedule: null,
       mesocycle_week: 1,
       mesocycle_started_at: '2026-06-01',
@@ -207,5 +230,27 @@ describe('planEngine v2', () => {
     const { summary } = recommendFromWizard(advancedMax20)
     expect(summary).toMatch(/4-week/)
     expect(summary).toMatch(/Peak day/)
+  })
+
+  it('formatDayTarget shows scaled volume honestly', () => {
+    const w1 = buildWeeklySchedule(advancedMax20, 1)
+    expect(formatDayTarget(w1[1])).toMatch(/total · ~\d+\/set/)
+
+    const w3 = buildWeeklySchedule(advancedMax20, 3)
+    expect(formatDayTarget(w3[6])).toMatch(/\d+ \(2×\d+\)|\d+ \(4×\d+\)|\d+ total/)
+  })
+
+  it('formatDayTargetSetsDetail explains partial sets', () => {
+    const w1 = buildWeeklySchedule(advancedMax20, 1)
+    const detail = formatDayTargetSetsDetail(w1[1])
+
+    expect(detail).toMatch(/sets · ~\d+ each/)
+  })
+
+  it('formatWeeklyScheduleSummary uses formatDayTarget', () => {
+    const schedule = buildWeeklySchedule(advancedMax20, 1)
+    const summary = formatWeeklyScheduleSummary(schedule)
+
+    expect(summary).toMatch(/total · ~/)
   })
 })

@@ -12,10 +12,11 @@ import { getErrorMessage } from '@/lib/errors'
 export function TrainingSettingsPage() {
   const navigate = useNavigate()
   const { toast } = useToast()
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const { activeGroup } = useActiveGroup()
+  const planTimezone = profile?.timezone || activeGroup?.timezone || 'UTC'
   const { savePlan, saving, wizardCompleted, savedWizardAnswers, progressionNote, loading: planLoading } =
-    useTrainingPlan(user?.id, activeGroup?.id, activeGroup?.timezone)
+    useTrainingPlan(user?.id, activeGroup?.id, planTimezone)
   const { data: historyStats, isLoading: historyLoading } = useTrainingHistoryStats(
     user?.id,
     activeGroup?.id,
@@ -40,7 +41,7 @@ export function TrainingSettingsPage() {
 
   return (
     <AppLayout title="Training plan" subtitle="Personal targets" showNav>
-      <div className="space-y-4 pb-[calc(var(--bank-cta-height)+0.5rem)]">
+      <div className="space-y-4">
         <Card padding="md" className="space-y-2">
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm font-medium text-text-primary">Training plan</p>
@@ -65,6 +66,7 @@ export function TrainingSettingsPage() {
           historyStats={historyStats ?? null}
           historyLoading={historyLoading}
           onComplete={(answers) => void handleComplete(answers)}
+          onSkip={() => navigate('/settings')}
         />
 
         <Card padding="md">

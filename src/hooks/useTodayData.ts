@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { formatInTimeZone } from 'date-fns-tz'
 import { activityFeedKeys, type ActivityFeedItem } from '@/hooks/useActivityFeed'
+import { groupDailyTargetsKeys } from '@/hooks/useGroupDailyTargets'
 import { leaderboardKeys, type LeaderboardEntry } from '@/hooks/useLeaderboard'
+import { maxCheckInContextQueryKey, trainingPlanQueryKey } from '@/hooks/trainingPlanKeys'
 import {
   applyLeaderboardDelta,
   createOptimisticActivityItem,
@@ -99,6 +101,7 @@ type BankPushupsInput = {
   count: number
   userId: string
   profile: UserProfileSnapshot
+  isMaxCheckin?: boolean
 }
 
 type UndoLastEntryInput = {
@@ -228,10 +231,11 @@ export function useBankPushups() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ group, count }: BankPushupsInput) => {
+    mutationFn: async ({ group, count, isMaxCheckin = false }: BankPushupsInput) => {
       const { data, error } = await supabase.rpc('bank_pushups', {
         p_group_id: group.id,
         p_count: count,
+        p_is_max_checkin: isMaxCheckin,
       })
 
       if (error) {
@@ -303,7 +307,7 @@ export function useBankPushups() {
 
       invalidateTodayRelatedQueries(queryClient, group)
     },
-    onSuccess: (entry, { group, profile }) => {
+    onSuccess: (entry, { group, profile, isMaxCheckin, userId }) => {
       const loggedFor = getGroupLocalDateString(group.timezone)
       const entriesKey = todayKeys.entries(group.id, loggedFor)
 
@@ -325,6 +329,16 @@ export function useBankPushups() {
           createOptimisticActivityItem(profile, entry),
         )
       })
+
+      if (isMaxCheckin && userId) {
+        void queryClient.invalidateQueries({
+          queryKey: trainingPlanQueryKey(userId, group.id),
+        })
+        void queryClient.invalidateQueries({ queryKey: groupDailyTargetsKeys.all })
+        void queryClient.invalidateQueries({
+          queryKey: maxCheckInContextQueryKey(userId, group.id, loggedFor),
+        })
+      }
     },
   })
 }

@@ -3,14 +3,20 @@ import { Badge, Button, Card } from '@/components/ui'
 import { WizardStepHeader } from '@/components/training/WizardStepHeader'
 import {
   DAY_LABELS,
+  DEFAULT_PREFERRED_TRAINING_DAYS,
+  formatDayTarget,
+  getDayTypeDisplayLabel,
   MESOCYCLE_MULTIPLIER,
   recommendFromWizard,
   type WizardAnswers,
 } from '@/lib/training/planEngine'
 import {
+  deriveHistoryConfidence,
   derivePlanCalibration,
   hasUsableVolumeHistory,
   HISTORY_WINDOW_DAYS,
+  shouldPrefillDailyAverage,
+  shouldShowDailyAverageQuestion,
   suggestWizardPrefill,
   type VolumeHistoryStats,
 } from '@/lib/training/volumeCalibration'
@@ -18,8 +24,9 @@ import {
 const DEFAULT_ANSWERS: WizardAnswers = {
   maxCleanSet: 15,
   trainingLevel: 'beginner',
-  preferredTrainingDays: [1, 2, 3, 4, 5],
+  preferredTrainingDays: [...DEFAULT_PREFERRED_TRAINING_DAYS],
   sorenessWarningAcknowledged: false,
+  wizardSorenessLevel: 'none',
   challengeIntensity: 'moderate',
   recentDailyAverage: null,
 }
@@ -39,6 +46,7 @@ type TrainingWizardProps = {
   historyStats?: VolumeHistoryStats | null
   historyLoading?: boolean
   onComplete?: (answers: WizardAnswers) => void | Promise<void>
+  onSkip?: () => void
 }
 
 function dayTypeBadgeVariant(dayType: string): 'neutral' | 'accent' | 'warning' | 'success' {
@@ -66,12 +74,14 @@ export function TrainingWizard({
   historyStats = null,
   historyLoading = false,
   onComplete,
+  onSkip,
 }: TrainingWizardProps) {
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<WizardAnswers>(initialAnswers ?? DEFAULT_ANSWERS)
   const initializedRef = useRef(false)
   const [userEditedDailyAvg, setUserEditedDailyAvg] = useState(false)
   const [logSuggestedDailyAvg, setLogSuggestedDailyAvg] = useState<number | null>(null)
+  const [showOffAppTraining, setShowOffAppTraining] = useState(false)
 
   useEffect(() => {
     if (!savedAnswersReady || initializedRef.current) {
@@ -83,7 +93,7 @@ export function TrainingWizard({
   }, [savedAnswersReady, initialAnswers])
 
   useEffect(() => {
-    if (!savedAnswersReady || historyLoading || !historyStats || !hasUsableVolumeHistory(historyStats)) {
+    if (!savedAnswersReady || historyLoading || !historyStats || !shouldPrefillDailyAverage(deriveHistoryConfidence(historyStats))) {
       return
     }
 
@@ -104,10 +114,6 @@ export function TrainingWizard({
         updates.recentDailyAverage = prefill.recentDailyAverage
       }
 
-      if (!initialAnswers && prefill.maxCleanSet !== current.maxCleanSet) {
-        updates.maxCleanSet = prefill.maxCleanSet
-      }
-
       if (Object.keys(updates).length === 0) {
         return current
       }
@@ -121,6 +127,11 @@ export function TrainingWizard({
     [answers, historyStats],
   )
 
+  const historyPrefill = useMemo(
+    () => suggestWizardPrefill(historyStats, initialAnswers?.maxCleanSet),
+    [historyStats, initialAnswers?.maxCleanSet],
+  )
+
   const recommendation = useMemo(
     () =>
       recommendFromWizard(answers, {
@@ -130,7 +141,13 @@ export function TrainingWizard({
     [answers, calibration.initialBaseline, calibration.startMesocycleWeek],
   )
 
+  const historyConfidence = deriveHistoryConfidence(historyStats)
   const showHistory = hasUsableVolumeHistory(historyStats)
+  const showDailyAverage = shouldShowDailyAverageQuestion(historyConfidence) || showOffAppTraining
+  const showStaleBanner =
+    historyConfidence === 'stale' &&
+    historyStats?.daysSinceLastLog != null &&
+    historyStats.daysSinceLastLog > 0
   const startWeek = calibration.startMesocycleWeek
   const daysSelected = answers.preferredTrainingDays.length
   const canSave = answers.sorenessWarningAcknowledged
@@ -165,28 +182,37 @@ export function TrainingWizard({
 
   return (
     <>
-      <div className="space-y-4 pb-[calc(var(--bank-cta-height)+1rem)]">
+      <div className="space-y-4 pb-[calc(var(--bottom-nav-height)+var(--wizard-dock-height)+1rem)]">
         <WizardStepHeader step={step} totalSteps={STEP_TITLES.length} title={STEP_TITLES[step]} />
 
         {step === 0 ? (
           <Card padding="md" className="space-y-5">
-            <div>
-              <p className="text-sm font-medium text-text-primary">
-                Max clean set
-                {showHistory ? (
-                  <span className="ml-1 font-normal text-text-muted">(suggested — change if wrong)</span>
-                ) : null}
+            {showStaleBanner ? (
+              <p className="rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-xs text-text-primary">
+                Last logged {historyStats?.daysSinceLastLog} days ago — targets will adjust
+                quickly once you start banking sets.
               </p>
+            ) : null}
+
+            {historyConfidence === 'stale' && !historyLoading && !showStaleBanner ? (
+              <p className="rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-xs text-text-primary">
+                We don&apos;t have recent PushUS logs — start from your best single set. Week 1
+                targets will tune from your logged push-ups.
+              </p>
+            ) : null}
+
+            <div>
+              <p className="text-sm font-medium text-text-primary">Max clean set</p>
               <p className="mt-1 text-xs text-text-muted">
-                How many push-ups can you do in one go with good form? One set, good form — not your
-                daily total.
+                How many push-ups in one go with good form? Stop when form breaks — not your daily
+                total. Daily habit + safe gradual fitness.
               </p>
             </div>
             <input
               type="range"
-              min={5}
+              min={1}
               max={60}
-              step={5}
+              step={1}
               value={answers.maxCleanSet}
               onChange={(event) =>
                 setAnswers((current) => ({
@@ -194,9 +220,9 @@ export function TrainingWizard({
                   maxCleanSet: Number(event.target.value),
                 }))
               }
-              className="w-full accent-accent"
+              className="mb-3 w-full accent-accent"
             />
-            <p className="text-center font-mono text-2xl font-bold text-text-primary">
+            <p className="rounded-[var(--radius-md)] border border-border bg-bg py-3 text-center font-mono text-2xl font-bold text-text-primary">
               {answers.maxCleanSet}
             </p>
 
@@ -221,50 +247,123 @@ export function TrainingWizard({
                     <span className="font-mono font-bold">{historyStats.peakBank}</span>
                   </p>
                   <p className="mt-2 text-xs text-text-muted">
-                    We&apos;ve pre-filled below — change anything that looks wrong. We use this to
-                    set a structured starting block, not to copy your challenge daily total.
+                    Daily average is a soft hint only — your max clean set stays the anchor.
                   </p>
                 </div>
               ) : null}
 
-              <label htmlFor="recent-daily-average" className="text-sm font-medium text-text-primary">
-                Over the last {HISTORY_WINDOW_DAYS} days, how many reps have you averaged per day?
-              </label>
-              <p className="text-xs text-text-muted">
-                Your total reps logged each day — not your max in one set. Leave blank if
-                you&apos;re new or unsure.
-              </p>
-              <div className="relative">
-                <input
-                  id="recent-daily-average"
-                  type="number"
-                  min={0}
-                  max={500}
-                  step={1}
-                  inputMode="numeric"
-                  placeholder="e.g. 58"
-                  value={answers.recentDailyAverage ?? ''}
-                  onChange={(event) => {
-                    setUserEditedDailyAvg(true)
-                    const raw = event.target.value.trim()
-                    setAnswers((current) => ({
-                      ...current,
-                      recentDailyAverage: parseRecentDailyAverage(raw),
-                    }))
-                  }}
-                  className="w-full rounded-[var(--radius-md)] border border-border bg-surface py-2.5 pl-3 pr-16 text-sm text-text-primary [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                />
-                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-text-muted">
-                  reps/day
-                </span>
-              </div>
-              {showLogSuggestion ? (
+              {historyPrefill.suggestedMaxCleanFromHistory != null &&
+              historyPrefill.suggestedMaxCleanFromHistory !== answers.maxCleanSet ? (
                 <p className="text-xs text-text-muted">
-                  Suggested from your logs:{' '}
+                  Logs suggest around{' '}
                   <span className="font-mono font-semibold text-text-primary">
-                    {logSuggestedDailyAvg}
-                  </span>
-                  /day
+                    {historyPrefill.suggestedMaxCleanFromHistory}
+                  </span>{' '}
+                  for max clean — update above if that looks right.
+                </p>
+              ) : null}
+
+              {historyConfidence === 'stale' && !showOffAppTraining ? (
+                <button
+                  type="button"
+                  onClick={() => setShowOffAppTraining(true)}
+                  className="text-xs font-medium text-accent underline-offset-2 hover:underline"
+                >
+                  I&apos;ve been training off-app — add a rough daily average
+                </button>
+              ) : null}
+
+              {showDailyAverage ? (
+                <>
+                  <label htmlFor="recent-daily-average" className="text-sm font-medium text-text-primary">
+                    Over the last {HISTORY_WINDOW_DAYS} days, how many reps have you averaged per day?
+                    {historyConfidence === 'partial' ? (
+                      <span className="ml-1 font-normal text-text-muted">(optional)</span>
+                    ) : null}
+                  </label>
+                  <p className="text-xs text-text-muted">
+                    {historyConfidence === 'partial'
+                      ? 'Only if you have been training regularly — skip if unsure.'
+                      : 'Your total reps logged each day — not your max in one set. Leave blank if you are new or unsure.'}
+                  </p>
+                  <div className="relative">
+                    <input
+                      id="recent-daily-average"
+                      type="number"
+                      min={0}
+                      max={500}
+                      step={1}
+                      inputMode="numeric"
+                      placeholder="e.g. 58"
+                      value={answers.recentDailyAverage ?? ''}
+                      onChange={(event) => {
+                        setUserEditedDailyAvg(true)
+                        const raw = event.target.value.trim()
+                        setAnswers((current) => ({
+                          ...current,
+                          recentDailyAverage: parseRecentDailyAverage(raw),
+                        }))
+                      }}
+                      className="w-full rounded-[var(--radius-md)] border border-border bg-surface py-2.5 pl-3 pr-16 text-sm text-text-primary [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    />
+                    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-text-muted">
+                      reps/day
+                    </span>
+                  </div>
+                  {showLogSuggestion ? (
+                    <p className="text-xs text-text-muted">
+                      Suggested from your logs:{' '}
+                      <span className="font-mono font-semibold text-text-primary">
+                        {logSuggestedDailyAvg}
+                      </span>
+                      /day
+                    </p>
+                  ) : null}
+                </>
+              ) : null}
+
+              {calibration.maxCleanMismatchWarning ? (
+                <p className="rounded-[var(--radius-md)] border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-text-primary">
+                  {calibration.maxCleanMismatchWarning}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-text-primary">
+                Any shoulder, elbow, or wrist soreness lately?
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {(
+                  [
+                    ['none', 'None'],
+                    ['mild', 'A little'],
+                    ['notable', 'Noticeable'],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() =>
+                      setAnswers((current) => ({
+                        ...current,
+                        wizardSorenessLevel: value,
+                      }))
+                    }
+                    className={`min-h-11 rounded-[var(--radius-md)] border px-2 text-xs font-semibold ${
+                      (answers.wizardSorenessLevel ?? 'none') === value
+                        ? 'border-accent bg-accent-muted text-accent'
+                        : 'border-border bg-surface text-text-muted'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {(answers.wizardSorenessLevel ?? 'none') === 'notable' ? (
+                <p className="text-xs text-text-muted">
+                  We&apos;ll keep targets conservative and skip max-test suggestions until you feel
+                  better.
                 </p>
               ) : null}
             </div>
@@ -394,20 +493,11 @@ export function TrainingWizard({
                         <td className="px-3 py-2 font-medium text-text-primary">{label}</td>
                         <td className="px-3 py-2 capitalize text-text-muted">
                           <Badge variant={dayTypeBadgeVariant(day.dayType)} className="capitalize">
-                            {day.dayType}
+                            {getDayTypeDisplayLabel(day.dayType, answers.maxCleanSet)}
                           </Badge>
                         </td>
                         <td className="px-3 py-2 text-right font-mono text-text-primary">
-                          {day.target > 0 ? (
-                            <>
-                              {day.target}
-                              <span className="ml-1 text-text-muted">
-                                ({day.sets}×{day.setSize})
-                              </span>
-                            </>
-                          ) : (
-                            '—'
-                          )}
+                          {day.target > 0 ? formatDayTarget(day) : '—'}
                         </td>
                       </tr>
                     )
@@ -427,20 +517,11 @@ export function TrainingWizard({
                     <div className="flex min-w-0 items-center gap-2">
                       <span className="text-sm font-medium text-text-primary">{label}</span>
                       <Badge variant={dayTypeBadgeVariant(day.dayType)} className="capitalize">
-                        {day.dayType}
+                        {getDayTypeDisplayLabel(day.dayType, answers.maxCleanSet)}
                       </Badge>
                     </div>
                     <span className="shrink-0 font-mono text-sm text-text-primary">
-                      {day.target > 0 ? (
-                        <>
-                          {day.target}
-                          <span className="ml-1 text-xs text-text-muted">
-                            ({day.sets}×{day.setSize})
-                          </span>
-                        </>
-                      ) : (
-                        '—'
-                      )}
+                      {day.target > 0 ? formatDayTarget(day) : '—'}
                     </span>
                   </div>
                 )
@@ -452,8 +533,8 @@ export function TrainingWizard({
             ) : null}
 
             <p className="text-xs text-text-muted">
-              Volume builds over 4 weeks: ramp in, peak, then deload. Targets adjust automatically
-              each week based on your progress.
+              Volume builds over 4 weeks: ramp in, peak, then deload. Week 1 also tunes from your
+              logged push-ups. Targets adjust each week based on progress.
             </p>
 
             <label className="flex items-start gap-3 rounded-[var(--radius-md)] border border-border bg-surface p-3">
@@ -492,6 +573,10 @@ export function TrainingWizard({
                 onClick={() => setStep((current) => current - 1)}
               >
                 Back
+              </Button>
+            ) : onSkip ? (
+              <Button variant="secondary" fullWidth onClick={onSkip}>
+                Skip for now
               </Button>
             ) : null}
             {step < 2 ? (

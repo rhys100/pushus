@@ -78,6 +78,15 @@ export type TrainingPlanRow = {
   recent_daily_average: number | null
   calibration_note: string | null
   mesocycle_block_start_week: number
+  observed_max_clean: number | null
+  observed_max_clean_at: string | null
+  pending_max_clean_update: number | null
+  soreness_ack_at: string | null
+  wizard_soreness_level: string | null
+  week_one_baseline_at_start: number | null
+  week_one_last_adjusted_at: string | null
+  progression_sync_key: string | null
+  effort_prompted_for: string | null
   created_at: string
   updated_at: string
 }

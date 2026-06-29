@@ -1,10 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo } from 'react'
 import { getGroupLocalDateString } from '@/hooks/useTodayData'
-import { supabase } from '@/lib/supabase'
+import { maxCheckInContextQueryKey, trainingPlanQueryKey } from '@/hooks/trainingPlanKeys'
 import {
   advanceMesocycleIfDue,
-  getDefaultPlan,
   getTodayPrescription,
   planFromRow,
   recommendFromWizard,
@@ -14,7 +13,7 @@ import {
   type WizardAnswers,
   wizardAnswersFromPlanRow,
 } from '@/lib/training/planEngine'
-import { computePlanProgressionSync } from '@/lib/training/planProgressionSync'
+import { computePlanProgressionSync, fetchMaxCheckInContext } from '@/lib/training/planProgressionSync'
 import {
   derivePlanCalibration,
   HISTORY_WINDOW_DAYS,
@@ -24,9 +23,8 @@ import {
 } from '@/lib/training/volumeCalibration'
 import type { TrainingPlanRow } from '@/types/gamification'
 import { groupDailyTargetsKeys } from '@/hooks/useGroupDailyTargets'
-
-const trainingPlanQueryKey = (userId: string | undefined, groupId: string | undefined) =>
-  ['training-plan', userId, groupId] as const
+import { capPlanMaxUpdate } from '@/lib/training/maxCleanUpdate'
+import { supabase } from '@/lib/supabase'
 
 const trainingHistoryStatsQueryKey = (
   userId: string | undefined,
@@ -86,6 +84,14 @@ type RowFromPlanOptions = {
   lastProgressionAt?: string | null
   recentDailyAverage?: number | null
   calibrationNote?: string | null
+  progressionSyncKey?: string | null
+  weekOneLastAdjustedAt?: string | null
+  weekOneBaselineAtStart?: number | null
+  observedMaxClean?: number | null
+  observedMaxCleanAt?: string | null
+  pendingMaxCleanUpdate?: number | null
+  wizardSorenessLevel?: string | null
+  sorenessAckAt?: string | null
 }
 
 function rowFromPlan(
@@ -124,15 +130,24 @@ function rowFromPlan(
         ? options.recentDailyAverage
         : (answers.recentDailyAverage ?? null),
     calibration_note: options.calibrationNote ?? null,
+    observed_max_clean: options.observedMaxClean ?? null,
+    observed_max_clean_at: options.observedMaxCleanAt ?? null,
+    pending_max_clean_update: options.pendingMaxCleanUpdate ?? null,
+    soreness_ack_at: options.sorenessAckAt ?? null,
+    wizard_soreness_level: options.wizardSorenessLevel ?? null,
+    week_one_baseline_at_start: options.weekOneBaselineAtStart ?? null,
+    week_one_last_adjusted_at: options.weekOneLastAdjustedAt ?? null,
+    progression_sync_key: options.progressionSyncKey ?? null,
+    effort_prompted_for: null,
   }
 }
 
 function resolveTrainingPlan(
   row: TrainingPlanRow | null | undefined,
   todayIso: string,
-): TrainingPlan {
+): TrainingPlan | null {
   if (!row || !row.wizard_completed) {
-    return getDefaultPlan()
+    return null
   }
 
   return planFromRow(
@@ -151,25 +166,13 @@ function resolveTrainingPlan(
   )
 }
 
-export function useTrainingHistoryStats(
-  userId: string | undefined,
-  groupId: string | undefined,
-) {
-  return useQuery({
-    queryKey: trainingHistoryStatsQueryKey(userId, groupId),
-    queryFn: () => fetchVolumeHistoryStats(userId!, groupId!),
-    enabled: Boolean(userId && groupId),
-    staleTime: 60_000,
-  })
-}
-
 export function useTrainingPlan(
   userId: string | undefined,
   groupId: string | undefined,
-  groupTimezone = 'UTC',
+  userTimezone = 'UTC',
 ) {
   const queryClient = useQueryClient()
-  const timezone = groupTimezone || 'UTC'
+  const timezone = userTimezone || 'UTC'
 
   const query = useQuery({
     queryKey: trainingPlanQueryKey(userId, groupId),
@@ -195,6 +198,9 @@ export function useTrainingPlan(
       const row = rowFromPlan(userId, groupId, calibratedAnswers, plan, {
         recentDailyAverage,
         calibrationNote: calibration.calibrationNote,
+        wizardSorenessLevel: answers.wizardSorenessLevel ?? 'none',
+        sorenessAckAt:
+          answers.wizardSorenessLevel === 'notable' ? new Date().toISOString() : null,
       })
 
       const { data, error } = await supabase
@@ -227,15 +233,17 @@ export function useTrainingPlan(
     [query.data, todayIso],
   )
 
+  const hasPlan = trainingPlan !== null
+
   const syncProgressionMutation = useMutation({
     mutationFn: async () => {
-      if (!userId || !groupId || !query.data?.wizard_completed) {
+      if (!userId || !groupId || !query.data?.wizard_completed || !trainingPlan) {
         return null
       }
 
       const syncResult = await computePlanProgressionSync({
         row: query.data,
-        trainingPlan: resolveTrainingPlan(query.data, todayIso),
+        trainingPlan,
         userId,
         groupId,
         todayIso,
@@ -251,6 +259,15 @@ export function useTrainingPlan(
         lastProgressionAt: new Date().toISOString(),
         recentDailyAverage: query.data.recent_daily_average,
         calibrationNote: query.data.calibration_note,
+        progressionSyncKey: syncResult.progressionSyncKey,
+        weekOneLastAdjustedAt: syncResult.weekOneAdapted ? todayIso : query.data.week_one_last_adjusted_at,
+        weekOneBaselineAtStart:
+          query.data.week_one_baseline_at_start ?? Number(query.data.plan_baseline),
+        observedMaxClean: query.data.observed_max_clean,
+        observedMaxCleanAt: query.data.observed_max_clean_at,
+        pendingMaxCleanUpdate: query.data.pending_max_clean_update,
+        wizardSorenessLevel: query.data.wizard_soreness_level,
+        sorenessAckAt: query.data.soreness_ack_at,
       })
 
       const { data, error } = await supabase
@@ -261,6 +278,19 @@ export function useTrainingPlan(
 
       if (error) {
         throw error
+      }
+
+      if (syncResult.progressionSyncKey) {
+        await supabase.from('training_plan_progression_log').insert({
+          user_id: userId,
+          group_id: groupId,
+          event_type: syncResult.weekOneAdapted ? 'week_one_adjust' : 'mesocycle_advance',
+          before_baseline: Number(query.data.plan_baseline),
+          after_baseline: syncResult.plan.planBaseline,
+          before_max_clean: query.data.max_clean_set,
+          after_max_clean: syncResult.maxCleanSet,
+          note: syncResult.progressionNote,
+        })
       }
 
       return data as TrainingPlanRow
@@ -291,9 +321,114 @@ export function useTrainingPlan(
     void syncProgressionMutation.mutate()
   }, [groupId, query.data?.wizard_completed, query.isLoading, todayIso, userId])
 
-  const todayPrescription: TodayPrescription = useMemo(
-    () => getTodayPrescription(trainingPlan, todayIso, timezone),
-    [trainingPlan, todayIso, timezone],
+  const confirmPendingMaxCleanMutation = useMutation({
+    mutationFn: async () => {
+      if (!userId || !groupId || !query.data?.pending_max_clean_update) {
+        throw new Error('No pending max clean update.')
+      }
+
+      const newMax = capPlanMaxUpdate(
+        query.data.max_clean_set,
+        query.data.pending_max_clean_update,
+      )
+      const answers = wizardAnswersFromPlanRow(query.data)
+      const updatedAnswers = { ...answers, maxCleanSet: newMax }
+      const plan = planFromRow(
+        {
+          max_clean_set: newMax,
+          training_level: query.data.training_level,
+          challenge_intensity: query.data.challenge_intensity,
+          preferred_training_days: query.data.preferred_training_days,
+          weekly_schedule: null,
+          mesocycle_week: query.data.mesocycle_week,
+          mesocycle_started_at: query.data.mesocycle_started_at,
+          mesocycle_block_start_week: query.data.mesocycle_block_start_week,
+          plan_baseline: query.data.plan_baseline,
+          recent_daily_average: query.data.recent_daily_average,
+        },
+        todayIso,
+      )
+
+      const row = rowFromPlan(userId, groupId, updatedAnswers, plan, {
+        recentDailyAverage: query.data.recent_daily_average,
+        calibrationNote: query.data.calibration_note,
+        observedMaxClean: query.data.observed_max_clean,
+        observedMaxCleanAt: query.data.observed_max_clean_at,
+        pendingMaxCleanUpdate: null,
+        wizardSorenessLevel: query.data.wizard_soreness_level,
+        sorenessAckAt: query.data.soreness_ack_at,
+        progressionSyncKey: query.data.progression_sync_key,
+      })
+
+      const { data, error } = await supabase
+        .from('user_training_plans')
+        .upsert(row, { onConflict: 'user_id,group_id' })
+        .select('*')
+        .single()
+
+      if (error) {
+        throw error
+      }
+
+      return data as TrainingPlanRow
+    },
+    onSuccess: async (data) => {
+      queryClient.setQueryData(trainingPlanQueryKey(userId, groupId), data)
+      await queryClient.invalidateQueries({ queryKey: groupDailyTargetsKeys.all })
+    },
+  })
+
+  const dismissPendingMaxCleanMutation = useMutation({
+    mutationFn: async () => {
+      if (!userId || !groupId || !query.data) {
+        throw new Error('No plan row.')
+      }
+
+      const { error } = await supabase
+        .from('user_training_plans')
+        .update({ pending_max_clean_update: null, updated_at: new Date().toISOString() })
+        .eq('user_id', userId)
+        .eq('group_id', groupId)
+
+      if (error) {
+        throw error
+      }
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: trainingPlanQueryKey(userId, groupId),
+      })
+    },
+  })
+
+  const maxCheckInContextQuery = useQuery({
+    queryKey: maxCheckInContextQueryKey(userId, groupId, todayIso),
+    queryFn: () =>
+      fetchMaxCheckInContext({
+        groupId: groupId!,
+        userId: userId!,
+        todayIso,
+        timezone,
+        trainingPlan: trainingPlan!,
+        observedMaxCleanAt: query.data?.observed_max_clean_at ?? null,
+      }),
+    enabled: Boolean(userId && groupId && trainingPlan && query.data?.wizard_completed),
+    staleTime: 60_000,
+  })
+
+  const todayPrescription: TodayPrescription | null = useMemo(
+    () =>
+      trainingPlan
+        ? getTodayPrescription(
+            trainingPlan,
+            todayIso,
+            timezone,
+            maxCheckInContextQuery.isSuccess
+              ? maxCheckInContextQuery.data
+              : { hitRate7d: 0 },
+          )
+        : null,
+    [trainingPlan, todayIso, timezone, maxCheckInContextQuery.data, maxCheckInContextQuery.isSuccess],
   )
 
   const savedWizardAnswers = useMemo((): WizardAnswers | null => {
@@ -301,15 +436,16 @@ export function useTrainingPlan(
     return wizardAnswersFromPlanRow(query.data)
   }, [query.data])
 
-  const dailyTarget = todayPrescription.target
+  const dailyTarget = todayPrescription?.target ?? null
 
   return {
     plan: query.data,
     trainingPlan,
+    hasPlan,
     todayPrescription,
-    weeklySchedule: trainingPlan.weeklySchedule,
+    weeklySchedule: trainingPlan?.weeklySchedule ?? null,
     dailyTarget,
-    peakDayTarget: trainingPlan.peakDayTarget,
+    peakDayTarget: trainingPlan?.peakDayTarget ?? null,
     wizardCompleted: query.data?.wizard_completed ?? false,
     savedWizardAnswers,
     progressionNote: query.data?.progression_note ?? null,
@@ -318,18 +454,36 @@ export function useTrainingPlan(
     saving: saveMutation.isPending,
     error: query.error ?? saveMutation.error ?? syncProgressionMutation.error,
     savePlan: saveMutation.mutateAsync,
-    advanceMesocycleIfDue: (hitRate: number) =>
-      advanceMesocycleIfDue(
+    confirmPendingMaxClean: confirmPendingMaxCleanMutation.mutateAsync,
+    dismissPendingMaxClean: dismissPendingMaxCleanMutation.mutateAsync,
+    confirmingMaxClean: confirmPendingMaxCleanMutation.isPending,
+    advanceMesocycleIfDue: (hitRate: number) => {
+      if (!trainingPlan || !savedWizardAnswers) {
+        return {
+          plan: trainingPlan,
+          advanced: false,
+          progressionNote: null,
+          maxCleanSet: savedWizardAnswers?.maxCleanSet ?? 0,
+        }
+      }
+      return advanceMesocycleIfDue(
         trainingPlan,
-        savedWizardAnswers ?? {
-          maxCleanSet: 15,
-          trainingLevel: 'beginner',
-          preferredTrainingDays: [1, 2, 3, 4],
-          sorenessWarningAcknowledged: true,
-          challengeIntensity: 'moderate',
-        },
+        savedWizardAnswers,
         todayIso,
         hitRate,
-      ),
+      )
+    },
   }
+}
+
+export function useTrainingHistoryStats(
+  userId: string | undefined,
+  groupId: string | undefined,
+) {
+  return useQuery({
+    queryKey: trainingHistoryStatsQueryKey(userId, groupId),
+    queryFn: () => fetchVolumeHistoryStats(userId!, groupId!),
+    enabled: Boolean(userId && groupId),
+    staleTime: 60_000,
+  })
 }

@@ -20,11 +20,13 @@ type TrainingPlanRow = {
   challenge_intensity: string
   preferred_training_days: number[]
   mesocycle_started_at: string
+  mesocycle_block_start_week?: number | null
   plan_baseline: number
   wizard_completed: boolean
 }
 
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6]
+const DEFAULT_PREFERRED_TRAINING_DAYS = [1, 2, 3, 5, 6]
 
 const MESOCYCLE_MULTIPLIER: Record<number, number> = {
   1: 0.7,
@@ -45,16 +47,56 @@ const INTENSITY_VOLUME_FACTOR: Record<string, number> = {
   intense: 1.1,
 }
 
+const EFFORT_RATIO: Record<DayType, number> = {
+  rest: 0,
+  easy: 0.35,
+  moderate: 0.5,
+  challenge: 0.6,
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
 }
 
-function computeSetSize(maxCleanSet: number): number {
-  return clamp(Math.round(maxCleanSet * 0.45), 5, Math.min(maxCleanSet, 15))
+function minSetSize(maxCleanSet: number): number {
+  if (maxCleanSet <= 3) return 1
+  return 2
+}
+
+function computeSetSizeForDay(maxCleanSet: number, dayType: DayType): number {
+  if (dayType === 'rest') return 0
+  const raw = Math.round(maxCleanSet * EFFORT_RATIO[dayType])
+  const floor = minSetSize(maxCleanSet)
+  const ceiling = Math.min(15, Math.max(1, maxCleanSet - 1))
+  return clamp(raw, floor, ceiling)
 }
 
 function dailyVolumeCap(maxCleanSet: number): number {
   return Math.min(maxCleanSet * 2, maxCleanSet + 15)
+}
+
+function applyVolumeCapCoherent(
+  target: number,
+  sets: number,
+  setSize: number,
+  cap: number,
+  maxCleanSet: number,
+): { target: number; sets: number; setSize: number } {
+  if (target <= cap) {
+    return { target, sets, setSize }
+  }
+
+  const newSets = Math.max(1, Math.floor(cap / setSize))
+  if (newSets * setSize <= cap) {
+    return { target: newSets * setSize, sets: newSets, setSize }
+  }
+
+  const newSize = Math.max(minSetSize(maxCleanSet), Math.floor(cap / sets))
+  return {
+    target: Math.min(cap, sets * newSize),
+    sets,
+    setSize: newSize,
+  }
 }
 
 function setsForDayType(dayType: DayType, trainingLevel: string): number {
@@ -73,10 +115,10 @@ function assignDayTypes(trainingDays: number[], trainingLevel: string): Map<numb
     1: ['moderate'],
     2: ['easy', 'challenge'],
     3: ['easy', 'moderate', 'challenge'],
-    4: ['easy', 'moderate', 'moderate', 'challenge'],
-    5: ['easy', 'moderate', 'moderate', 'challenge', 'easy'],
-    6: ['easy', 'easy', 'moderate', 'moderate', 'challenge', 'moderate'],
-    7: ['easy', 'moderate', 'easy', 'moderate', 'challenge', 'moderate', 'easy'],
+    4: ['easy', 'easy', 'moderate', 'challenge'],
+    5: ['easy', 'easy', 'moderate', 'easy', 'challenge'],
+    6: ['easy', 'easy', 'moderate', 'easy', 'challenge', 'moderate'],
+    7: ['easy', 'easy', 'moderate', 'easy', 'challenge', 'moderate', 'easy'],
   }
 
   let pattern = patterns[Math.min(sorted.length, 7)] ?? patterns[4]
@@ -109,11 +151,22 @@ function enforceChallengeSpacing(assignment: Map<number, DayType>): void {
   }
 }
 
+function getMesocycleWeekInBlock(
+  mesocycleStartedAt: string,
+  today: string,
+  blockStartWeek: number,
+): number {
+  const start = new Date(`${mesocycleStartedAt}T12:00:00Z`)
+  const current = new Date(`${today}T12:00:00Z`)
+  const days = Math.max(0, Math.floor((current.getTime() - start.getTime()) / 86_400_000))
+  const weeksElapsed = Math.floor(days / 7)
+  return (((blockStartWeek - 1 + weeksElapsed) % 4) + 1)
+}
+
 function buildWeeklySchedule(
   row: TrainingPlanRow,
   mesocycleWeek: number,
 ): WeeklySchedule {
-  const setSize = computeSetSize(row.max_clean_set)
   const volumeCap = dailyVolumeCap(row.max_clean_set)
   const levelFactor = LEVEL_VOLUME_FACTOR[row.training_level] ?? 1
   const intensityFactor = INTENSITY_VOLUME_FACTOR[row.challenge_intensity] ?? 1
@@ -121,7 +174,7 @@ function buildWeeklySchedule(
   const planBaseline = row.plan_baseline ?? 1
 
   let trainingDays = [...(row.preferred_training_days ?? [])].sort((a, b) => a - b)
-  if (trainingDays.length === 0) trainingDays = [1, 2, 3, 4]
+  if (trainingDays.length === 0) trainingDays = [...DEFAULT_PREFERRED_TRAINING_DAYS]
 
   const assignment = assignDayTypes(trainingDays, row.training_level)
   enforceChallengeSpacing(assignment)
@@ -130,11 +183,20 @@ function buildWeeklySchedule(
   for (const day of ALL_DAYS) {
     const dayType = assignment.get(day) ?? 'rest'
     const sets = setsForDayType(dayType, row.training_level)
+    const setSize = computeSetSizeForDay(row.max_clean_set, dayType)
     let target = sets * setSize
-    target = Math.max(0, Math.round(target * levelFactor * intensityFactor * mesoFactor * planBaseline))
-    target = Math.min(target, volumeCap)
+    target = Math.max(
+      0,
+      Math.round(target * levelFactor * intensityFactor * mesoFactor * planBaseline),
+    )
+    const capped = applyVolumeCapCoherent(target, sets, setSize, volumeCap, row.max_clean_set)
 
-    schedule[day] = { dayType, target, setSize, sets }
+    schedule[day] = {
+      dayType,
+      target: capped.target,
+      setSize: capped.setSize,
+      sets: capped.sets,
+    }
   }
 
   return schedule
@@ -167,7 +229,12 @@ export function resolveTodayPrescription(
     return null
   }
 
-  const mesocycleWeek = getCurrentMesocycleWeek(row.mesocycle_started_at, localDate)
+  const blockStartWeek = Math.min(4, Math.max(1, row.mesocycle_block_start_week ?? 1))
+  const mesocycleWeek = getMesocycleWeekInBlock(
+    row.mesocycle_started_at,
+    localDate,
+    blockStartWeek,
+  )
   const schedule = buildWeeklySchedule(row, mesocycleWeek)
   const dayOfWeek = dayOfWeekFromIso(localDate, timezone)
   const prescription = schedule[dayOfWeek]
@@ -183,16 +250,20 @@ export function resolveTodayTarget(
   row: TrainingPlanRow | null,
   localDate: string,
   timezone: string,
-  fallbackTarget: number,
-): number {
+): number | null {
   if (!row?.wizard_completed) {
-    return fallbackTarget
+    return null
   }
 
-  const mesocycleWeek = getCurrentMesocycleWeek(row.mesocycle_started_at, localDate)
+  const blockStartWeek = Math.min(4, Math.max(1, row.mesocycle_block_start_week ?? 1))
+  const mesocycleWeek = getMesocycleWeekInBlock(
+    row.mesocycle_started_at,
+    localDate,
+    blockStartWeek,
+  )
   const schedule = buildWeeklySchedule(row, mesocycleWeek)
   const dayOfWeek = dayOfWeekFromIso(localDate, timezone)
-  return schedule[dayOfWeek]?.target ?? fallbackTarget
+  return schedule[dayOfWeek]?.target ?? null
 }
 
 export function isRestDayTarget(
@@ -201,5 +272,6 @@ export function isRestDayTarget(
   timezone: string,
 ): boolean {
   if (!row?.wizard_completed) return false
-  return resolveTodayTarget(row, localDate, timezone, 0) === 0
+  const target = resolveTodayTarget(row, localDate, timezone)
+  return target === null || target === 0
 }

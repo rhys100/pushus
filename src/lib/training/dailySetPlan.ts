@@ -2,6 +2,7 @@ import type { DayPrescription, DayType } from '@/lib/training/planEngine'
 
 export type DailySetPlanInput = Pick<DayPrescription, 'dayType' | 'target' | 'setSize' | 'sets'> & {
   isRestDay?: boolean
+  dayTypeLabel?: string
 }
 
 export type DailySetPlan = {
@@ -56,7 +57,7 @@ export function computeDailySetPlan(
   if (goalHit) {
     return {
       dayType: prescription.dayType,
-      dayTypeLabel: DAY_TYPE_LABEL[prescription.dayType],
+      dayTypeLabel: prescription.dayTypeLabel ?? DAY_TYPE_LABEL[prescription.dayType],
       banksLogged,
       setsPlanned,
       setsRemaining: 0,
@@ -102,7 +103,7 @@ export function computeDailySetPlan(
 
   return {
     dayType: prescription.dayType,
-    dayTypeLabel: DAY_TYPE_LABEL[prescription.dayType],
+    dayTypeLabel: prescription.dayTypeLabel ?? DAY_TYPE_LABEL[prescription.dayType],
     banksLogged,
     setsPlanned,
     setsRemaining,

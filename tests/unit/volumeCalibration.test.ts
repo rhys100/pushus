@@ -1,17 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import {
+  deriveHistoryConfidence,
+  deriveMaxCleanMismatchWarning,
   derivePlanCalibration,
-  MAX_INITIAL_BASELINE,
+  MAX_HINT_BASELINE,
   summarizeVolumeHistory,
   suggestWizardPrefill,
+  volumeHistoryStatsFromRpc,
   type VolumeHistoryEntry,
+  type VolumeHistoryStats,
 } from '../../src/lib/training/volumeCalibration'
 import { buildWeeklySchedule, getPeakDayTarget, type WizardAnswers } from '../../src/lib/training/planEngine'
 
 const rhysLikeAnswers: WizardAnswers = {
   maxCleanSet: 20,
   trainingLevel: 'intermediate',
-  preferredTrainingDays: [0, 1, 2, 3, 4, 5],
+  preferredTrainingDays: [1, 2, 3, 5, 6],
   sorenessWarningAcknowledged: true,
   challengeIntensity: 'moderate',
   recentDailyAverage: 63,
@@ -44,6 +48,51 @@ describe('summarizeVolumeHistory', () => {
     expect(stats.peakDailyTotal).toBe(35)
     expect(stats.peakBank).toBe(30)
     expect(stats.estimatedMaxClean).toBe(22)
+    expect(stats.lastLogDate).toBe('2026-06-02')
+  })
+})
+
+describe('deriveHistoryConfidence', () => {
+  it('returns trusted for recent dense history', () => {
+    const stats: VolumeHistoryStats = {
+      sampleDays: 10,
+      avgDailyTotal: 50,
+      peakDailyTotal: 70,
+      peakBank: 25,
+      estimatedMaxClean: 22,
+      lastLogDate: '2026-06-28',
+      daysSinceLastLog: 1,
+    }
+
+    expect(deriveHistoryConfidence(stats)).toBe('trusted')
+  })
+
+  it('returns stale when no sample days', () => {
+    expect(
+      deriveHistoryConfidence({
+        sampleDays: 0,
+        avgDailyTotal: 0,
+        peakDailyTotal: 0,
+        peakBank: 0,
+        estimatedMaxClean: null,
+        lastLogDate: null,
+        daysSinceLastLog: null,
+      }),
+    ).toBe('stale')
+  })
+
+  it('returns stale when last log over 90 days ago', () => {
+    expect(
+      deriveHistoryConfidence({
+        sampleDays: 20,
+        avgDailyTotal: 50,
+        peakDailyTotal: 70,
+        peakBank: 25,
+        estimatedMaxClean: 22,
+        lastLogDate: '2025-01-01',
+        daysSinceLastLog: 340,
+      }),
+    ).toBe('stale')
   })
 })
 
@@ -56,29 +105,31 @@ describe('suggestWizardPrefill', () => {
     expect(suggestWizardPrefill(stats, 20)).toEqual({
       maxCleanSet: 20,
       recentDailyAverage: null,
+      suggestedMaxCleanFromHistory: null,
     })
   })
 
-  it('prefills from 28-day history', () => {
+  it('prefills daily average from 28-day history without overriding max clean', () => {
     const entries = makeChallengeHistory(58, 14)
     const stats = summarizeVolumeHistory(entries)
 
     const prefill = suggestWizardPrefill(stats)
     expect(prefill.recentDailyAverage).toBe(57)
-    expect(prefill.maxCleanSet).toBeGreaterThanOrEqual(19)
+    expect(prefill.maxCleanSet).toBe(15)
+    expect(prefill.suggestedMaxCleanFromHistory).toBeGreaterThanOrEqual(19)
   })
 })
 
 describe('derivePlanCalibration', () => {
-  it('rhys-like case increases baseline and can start at week 2', () => {
+  it('rhys-like case nudges baseline softly and always starts week 1', () => {
     const entries = makeChallengeHistory(63, 24, 95)
     const stats = summarizeVolumeHistory(entries)
     const calibration = derivePlanCalibration(rhysLikeAnswers, stats)
 
     expect(calibration.initialBaseline).toBeGreaterThan(1)
-    expect(calibration.initialBaseline).toBeLessThanOrEqual(MAX_INITIAL_BASELINE)
-    expect(calibration.startMesocycleWeek).toBe(2)
-    expect(calibration.calibrationNote).toMatch(/recent avg 63/i)
+    expect(calibration.initialBaseline).toBeLessThanOrEqual(MAX_HINT_BASELINE)
+    expect(calibration.startMesocycleWeek).toBe(1)
+    expect(calibration.calibrationNote).toMatch(/recent avg|slightly higher/i)
     expect(calibration.previewNote).toMatch(/recent avg 63/i)
 
     const week1Schedule = buildWeeklySchedule(
@@ -86,18 +137,50 @@ describe('derivePlanCalibration', () => {
       calibration.startMesocycleWeek,
       calibration.initialBaseline,
     )
-    expect(getPeakDayTarget(week1Schedule)).toBeGreaterThan(26)
+    expect(getPeakDayTarget(week1Schedule)).toBeGreaterThan(20)
   })
 
-  it('returns defaults without history', () => {
+  it('calibrates from manual average without log history', () => {
     const calibration = derivePlanCalibration(rhysLikeAnswers, null)
+
+    expect(calibration.initialBaseline).toBeGreaterThan(1)
+    expect(calibration.startMesocycleWeek).toBe(1)
+    expect(calibration.previewNote).toMatch(/recent avg 63/i)
+  })
+
+  it('returns defaults without history or manual average', () => {
+    const calibration = derivePlanCalibration(
+      { ...rhysLikeAnswers, recentDailyAverage: null },
+      null,
+    )
 
     expect(calibration.initialBaseline).toBe(1)
     expect(calibration.startMesocycleWeek).toBe(1)
     expect(calibration.calibrationNote).toBeNull()
+    expect(calibration.previewNote).toMatch(/week 1 targets will adjust/i)
   })
 
-  it('caps baseline at 1.35 for spike-heavy history', () => {
+  it('advanced intense max 20 avg 65 applies soft hint at cap edge', () => {
+    const answers: WizardAnswers = {
+      maxCleanSet: 20,
+      trainingLevel: 'advanced',
+      preferredTrainingDays: [1, 2, 3, 5, 6],
+      sorenessWarningAcknowledged: true,
+      challengeIntensity: 'intense',
+      recentDailyAverage: 65,
+    }
+
+    const calibration = derivePlanCalibration(answers, null)
+
+    expect(calibration.startMesocycleWeek).toBe(1)
+    expect(calibration.initialBaseline).toBeGreaterThanOrEqual(1)
+    expect(calibration.maxCleanMismatchWarning).toMatch(/double-check max clean/i)
+
+    const schedule = buildWeeklySchedule(answers, calibration.startMesocycleWeek, calibration.initialBaseline)
+    expect(getPeakDayTarget(schedule)).toBeGreaterThanOrEqual(24)
+  })
+
+  it('caps baseline hint at MAX_HINT_BASELINE for spike-heavy history', () => {
     const entries: VolumeHistoryEntry[] = []
     for (let index = 0; index < 14; index += 1) {
       entries.push({
@@ -116,10 +199,10 @@ describe('derivePlanCalibration', () => {
       stats,
     )
 
-    expect(calibration.initialBaseline).toBeLessThanOrEqual(MAX_INITIAL_BASELINE)
+    expect(calibration.initialBaseline).toBeLessThanOrEqual(MAX_HINT_BASELINE)
   })
 
-  it('starts week 2 when peak daily exceeds double volume cap', () => {
+  it('does not auto-skip to week 2 when peak daily exceeds double volume cap', () => {
     const entries: VolumeHistoryEntry[] = []
     for (let index = 0; index < 14; index += 1) {
       entries.push({
@@ -134,7 +217,40 @@ describe('derivePlanCalibration', () => {
       stats,
     )
 
-    expect(calibration.startMesocycleWeek).toBe(2)
-    expect(calibration.calibrationNote).toMatch(/85%/)
+    expect(calibration.startMesocycleWeek).toBe(1)
+    expect(calibration.initialBaseline).toBeLessThanOrEqual(MAX_HINT_BASELINE)
+  })
+})
+
+describe('deriveMaxCleanMismatchWarning', () => {
+  it('warns when daily average far exceeds volume cap', () => {
+    const warning = deriveMaxCleanMismatchWarning({
+      maxCleanSet: 20,
+      trainingLevel: 'advanced',
+      preferredTrainingDays: [1, 2, 3, 5, 6],
+      sorenessWarningAcknowledged: true,
+      challengeIntensity: 'intense',
+      recentDailyAverage: 65,
+    })
+
+    expect(warning).toMatch(/double-check max clean/i)
+  })
+})
+
+describe('volumeHistoryStatsFromRpc', () => {
+  it('returns zero-day stats for stale users', () => {
+    const stats = volumeHistoryStatsFromRpc({
+      sample_days: 0,
+      avg_daily_total: 0,
+      peak_daily_total: 0,
+      peak_bank: 0,
+      estimated_max_clean: null,
+      last_log_date: '2025-01-01',
+      days_since_last_log: 340,
+    })
+
+    expect(stats?.sampleDays).toBe(0)
+    expect(stats?.daysSinceLastLog).toBe(340)
+    expect(deriveHistoryConfidence(stats)).toBe('stale')
   })
 })

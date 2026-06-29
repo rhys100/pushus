@@ -10,6 +10,7 @@ export type EffortSummary = {
   medianRir: number | null
   zeroRirRate: number
   highRirRate: number
+  hardRate: number
 }
 
 export type EffortProgressionDecision = 'increase' | 'hold' | 'reduce'
@@ -69,6 +70,7 @@ export function summarizeEffort(entries: EffortEntry[]): EffortSummary {
       medianRir: null,
       zeroRirRate: 0,
       highRirRate: 0,
+      hardRate: 0,
     }
   }
 
@@ -79,6 +81,7 @@ export function summarizeEffort(entries: EffortEntry[]): EffortSummary {
 
   const zeroCount = rirValues.filter((rir) => rir === 0).length
   const highCount = rirValues.filter((rir) => rir >= 3).length
+  const hardCount = rirValues.filter((rir) => rir <= 1).length
 
   return {
     sampleCount: withRir.length,
@@ -86,6 +89,7 @@ export function summarizeEffort(entries: EffortEntry[]): EffortSummary {
     medianRir: median(rirValues),
     zeroRirRate: zeroCount / withRir.length,
     highRirRate: highCount / withRir.length,
+    hardRate: hardCount / withRir.length,
   }
 }
 
@@ -108,17 +112,16 @@ export function deriveProgressionFromEffort(
 
   if (
     hitRate >= 0.8 &&
-    (summary.highRirRate >= 0.5 ||
-      (summary.observedMax !== null && summary.observedMax >= wizardMaxCleanSet + 2))
+    summary.highRirRate >= 0.5
   ) {
     return 'increase'
   }
 
-  if (summary.zeroRirRate >= 0.6 && hitRate < 0.6) {
+  if (summary.hardRate >= 0.5 && hitRate < 0.6) {
     return 'reduce'
   }
 
-  if (summary.zeroRirRate >= 0.4 || hitRate < 0.5) {
+  if (summary.hardRate >= 0.4 || hitRate < 0.5) {
     return 'hold'
   }
 

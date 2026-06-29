@@ -79,6 +79,7 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 - [x] Science-based training plan: weekly microcycle + 4-week mesocycle with per-day targets
 - [x] Training plan wizard with saved plan (Log progress + push reminders; rest days skipped)
 - [x] Training wizard calibrates starting volume from recent PushUS log history (structured build, not challenge grind)
+- [x] Week 1 plan tuning adjusts targets from logged pushups + RIR; wizard adapts questions when log history is stale
 - [x] Customisable push reminder frequency and active hours
 - [x] Injury pause for reminders
 
@@ -129,7 +130,7 @@ PushUS Community runs on **your** Supabase project plus a static frontend host.
 1. Clone this repository
 2. Create a Supabase project (or run Supabase locally)
 3. Copy `.env.example` to `.env` and set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
-4. Apply migrations: `supabase db reset` (local) or `npx supabase login` then `npx supabase db push` (hosted). Training plan save requires migrations through `0023_plan_calibration` on hosted projects.
+4. Apply migrations: `supabase db reset` (local) or `npx supabase login` then `npx supabase db push` (hosted). Training plan save requires migrations through `0025_volume_stats_last_log` on hosted projects.
 5. Build: `npm run build` and deploy the `dist/` folder
 
 Keep `VITE_BILLING_ENABLED=false` for Community. Never put service role or Stripe secrets in the frontend.
