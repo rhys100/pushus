@@ -17,7 +17,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
-- Circular logger ring progress uses even 36° segments for reps 1–10 (first wedge no longer half-sized)
+- Circular logger ring handle and progress arc share the same angle; dial anchors rep 5 at bottom and rep 10 at top with even 36° spacing
 - `update_my_profile` now checks private-beta app access (same gate as onboarding profile save)
 ---
 

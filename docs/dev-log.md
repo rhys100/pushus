@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-06-29 (ring dial alignment)
+
+**Fixed**
+- Log ring handle and progress arc use the same dial angle; rep 5 at bottom, rep 10 at top, even 36° steps between reps
+
 ### 2026-06-29 (ring arc spacing)
 
 **Fixed**

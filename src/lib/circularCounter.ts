@@ -2,20 +2,38 @@ const DEGREES_PER_REVOLUTION = 360
 const REPS_PER_REVOLUTION = 10
 const DEGREES_PER_REP = DEGREES_PER_REVOLUTION / REPS_PER_REVOLUTION
 
-/** Rep count within a single 0–360° revolution (1–10). */
-export function countWithinRevolution(angleDegrees: number): number {
-  const normalized = ((angleDegrees % DEGREES_PER_REVOLUTION) + DEGREES_PER_REVOLUTION) % DEGREES_PER_REVOLUTION
+function clampWithinLapRep(rep: number): number {
+  return Math.min(REPS_PER_REVOLUTION, Math.max(0, rep))
+}
+
+function withinLapRepFromAngle(angleDegrees: number): number {
+  const normalized =
+    ((angleDegrees % DEGREES_PER_REVOLUTION) + DEGREES_PER_REVOLUTION) %
+    DEGREES_PER_REVOLUTION
 
   if (normalized === 0) {
-    return 1
+    return 0
   }
 
-  return Math.floor(normalized / DEGREES_PER_REP) + 1
+  return clampWithinLapRep(Math.round(normalized / DEGREES_PER_REP))
+}
+
+/** Rep count within a single 0–360° revolution (0–10). */
+export function countWithinRevolution(angleDegrees: number): number {
+  const normalized =
+    ((angleDegrees % DEGREES_PER_REVOLUTION) + DEGREES_PER_REVOLUTION) %
+    DEGREES_PER_REVOLUTION
+
+  if (normalized === 0) {
+    return 0
+  }
+
+  return withinLapRepFromAngle(normalized)
 }
 
 /**
  * Map cumulative drag angle to total rep count.
- * Each full 360° adds 10 reps; partial revolutions use floor(angle/36)+1.
+ * Rep N sits at N × 36° clockwise from top; rep 10 / full lap = 360°.
  */
 export function angleToTotalCount(totalAngleDegrees: number): number {
   if (totalAngleDegrees <= 0) {
@@ -25,35 +43,15 @@ export function angleToTotalCount(totalAngleDegrees: number): number {
   const revolutions = Math.floor(totalAngleDegrees / DEGREES_PER_REVOLUTION)
   const remainder = totalAngleDegrees % DEGREES_PER_REVOLUTION
 
-  const withinRev =
-    remainder === 0 ? 0 : Math.floor(remainder / DEGREES_PER_REP) + 1
+  if (remainder === 0) {
+    return revolutions * REPS_PER_REVOLUTION
+  }
 
-  return revolutions * REPS_PER_REVOLUTION + withinRev
+  return revolutions * REPS_PER_REVOLUTION + withinLapRepFromAngle(remainder)
 }
 
-/** Map a target rep count to a representative drag angle (centre of each rep slot). */
+/** Map rep count to dial angle (handle + arc). Rep 5 = bottom, rep 10 = top. */
 export function countToAngle(count: number): number {
-  if (count <= 0) {
-    return 0
-  }
-
-  const revolutions = Math.floor((count - 1) / REPS_PER_REVOLUTION)
-  const withinRev = ((count - 1) % REPS_PER_REVOLUTION) + 1
-
-  if (withinRev === REPS_PER_REVOLUTION) {
-    return (revolutions + 1) * DEGREES_PER_REVOLUTION
-  }
-
-  return revolutions * DEGREES_PER_REVOLUTION + withinRev * DEGREES_PER_REP - DEGREES_PER_REP / 2
-}
-
-/** Map cumulative drag angle to the centre of the current rep slot (stepped feel). */
-export function snapAngleToRep(totalAngleDegrees: number): number {
-  return countToAngle(angleToTotalCount(totalAngleDegrees))
-}
-
-/** Map rep count to progress arc end angle (slot boundary, not handle centre). */
-export function countToProgressArcEnd(count: number): number {
   if (count <= 0) {
     return 0
   }
@@ -61,13 +59,20 @@ export function countToProgressArcEnd(count: number): number {
   const withinLap = count % REPS_PER_REVOLUTION
 
   if (withinLap === 0) {
-    return DEGREES_PER_REVOLUTION
+    return (count / REPS_PER_REVOLUTION) * DEGREES_PER_REVOLUTION
   }
 
-  return withinLap * DEGREES_PER_REP
+  const revolutions = Math.floor((count - 1) / REPS_PER_REVOLUTION)
+
+  return revolutions * DEGREES_PER_REVOLUTION + withinLap * DEGREES_PER_REP
 }
 
-/** Snap a pointer ring angle (0–360°) to the first-lap rep slot centre. */
+/** Map cumulative drag angle to the nearest rep position on the dial. */
+export function snapAngleToRep(totalAngleDegrees: number): number {
+  return countToAngle(angleToTotalCount(totalAngleDegrees))
+}
+
+/** Snap a pointer ring angle (0–360°) to the first-lap rep position. */
 export function rawAngleFromPointerDown(ringAngle: number): number {
   return Math.max(0, snapAngleToRep(ringAngle))
 }
