@@ -50,8 +50,8 @@ Public-friendly view of where PushUS is today and where it may go.
 - Supabase + RLS; Community mode (billing off)
 - Static SPA deployable to Cloudflare Pages (and similar hosts)
 - AGPL-3.0-only
-- Installable Android PWA manifest with generated app icons and an in-app install prompt
-- Optional web push reminders (plan-aware; skipped on rest days; configurable frequency; installed-app path for more reliable Android delivery)
+- Installable Android and iOS PWA setup with generated app icons and an in-app install prompt
+- Optional web push reminders (plan-aware; skipped on rest days; configurable frequency; installed-app path for more reliable mobile delivery)
 
 ---
 

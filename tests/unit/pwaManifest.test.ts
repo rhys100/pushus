@@ -23,6 +23,7 @@ const root = path.resolve(__dirname, '../..')
 const manifest = JSON.parse(
   readFileSync(path.join(root, 'public/manifest.webmanifest'), 'utf8'),
 ) as WebAppManifest
+const indexHtml = readFileSync(path.join(root, 'index.html'), 'utf8')
 
 function iconsForSize(size: string): ManifestIcon[] {
   return manifest.icons?.filter((icon) => icon.sizes?.split(/\s+/).includes(size)) ?? []
@@ -56,5 +57,15 @@ describe('PWA manifest', () => {
       expect(iconPath?.startsWith('/pwa/')).toBe(true)
       expect(existsSync(path.join(root, 'public', iconPath ?? ''))).toBe(true)
     }
+  })
+
+  it('declares iOS home screen metadata', () => {
+    expect(indexHtml).toContain('rel="apple-touch-icon"')
+    expect(indexHtml).toContain('sizes="180x180"')
+    expect(indexHtml).toContain('href="/pwa/apple-touch-icon.png"')
+    expect(indexHtml).toContain('name="apple-mobile-web-app-capable" content="yes"')
+    expect(indexHtml).toContain('name="apple-mobile-web-app-title" content="PushUS"')
+    expect(indexHtml).toContain('name="apple-mobile-web-app-status-bar-style"')
+    expect(existsSync(path.join(root, 'public/pwa/apple-touch-icon.png'))).toBe(true)
   })
 })

@@ -14,11 +14,36 @@ export type PwaInstallPromptVisibilityInput = {
   promptAvailable: boolean
   isInstalled: boolean
   promptDismissed: boolean
-  isAndroid: boolean
+  platform: PwaInstallPlatform
 }
+
+export type PwaInstallPlatform = 'android' | 'ios' | 'other'
 
 export function isAndroidUserAgent(userAgent: string): boolean {
   return /Android/i.test(userAgent)
+}
+
+export function isIosUserAgent(userAgent: string): boolean {
+  return /iPad|iPhone|iPod/i.test(userAgent)
+}
+
+export function getPwaInstallPlatform(
+  userAgent: string,
+  navigatorPlatform = '',
+  maxTouchPoints = 0,
+): PwaInstallPlatform {
+  if (isAndroidUserAgent(userAgent)) {
+    return 'android'
+  }
+
+  if (
+    isIosUserAgent(userAgent) ||
+    (/Macintosh/i.test(userAgent) && /Mac/i.test(navigatorPlatform) && maxTouchPoints > 1)
+  ) {
+    return 'ios'
+  }
+
+  return 'other'
 }
 
 export function isStandaloneDisplayMode(): boolean {
@@ -45,11 +70,11 @@ export function shouldShowPwaInstallPrompt(
     return false
   }
 
-  if (!input.isAndroid) {
+  if (input.platform === 'other') {
     return false
   }
 
-  if (!input.promptAvailable) {
+  if (input.platform === 'android' && !input.promptAvailable) {
     return false
   }
 

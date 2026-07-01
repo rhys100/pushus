@@ -5,9 +5,10 @@ import {
   isPwaInstallPromptDismissed,
 } from '@/lib/storage'
 import {
-  isAndroidUserAgent,
+  getPwaInstallPlatform,
   isStandaloneDisplayMode,
   shouldShowPwaInstallPrompt,
+  type PwaInstallPlatform,
 } from '@/lib/pwaInstallPrompt'
 import {
   getPwaInstallDockVisible,
@@ -35,11 +36,15 @@ function getIsInstalled(): boolean {
   }
 }
 
-function getIsAndroid(): boolean {
+function getPlatform(): PwaInstallPlatform {
   try {
-    return isAndroidUserAgent(navigator.userAgent)
+    return getPwaInstallPlatform(
+      navigator.userAgent,
+      navigator.platform,
+      navigator.maxTouchPoints,
+    )
   } catch {
-    return false
+    return 'other'
   }
 }
 
@@ -59,7 +64,7 @@ export function usePwaInstallPrompt() {
   const [installing, setInstalling] = useState(false)
   const [isInstalled, setIsInstalled] = useState(getIsInstalled)
   const [promptDismissed, setPromptDismissed] = useState(false)
-  const isAndroid = useMemo(getIsAndroid, [])
+  const platform = useMemo(getPlatform, [])
 
   useEffect(() => {
     setPromptDismissed(userId ? isPwaInstallPromptDismissed(userId) : false)
@@ -103,7 +108,7 @@ export function usePwaInstallPrompt() {
       promptAvailable: Boolean(deferredPrompt),
       isInstalled,
       promptDismissed,
-      isAndroid,
+      platform,
     })
   }, [
     userId,
@@ -116,7 +121,7 @@ export function usePwaInstallPrompt() {
     deferredPrompt,
     isInstalled,
     promptDismissed,
-    isAndroid,
+    platform,
   ])
 
   useEffect(() => {
@@ -136,6 +141,9 @@ export function usePwaInstallPrompt() {
 
   const install = useCallback(async () => {
     if (!deferredPrompt) {
+      if (platform === 'ios') {
+        dismiss()
+      }
       return
     }
 
@@ -155,11 +163,12 @@ export function usePwaInstallPrompt() {
     } finally {
       setInstalling(false)
     }
-  }, [deferredPrompt, dismiss])
+  }, [deferredPrompt, dismiss, platform])
 
   return {
     visible,
     installing,
+    platform,
     install,
     dismiss,
     pathname: location.pathname,

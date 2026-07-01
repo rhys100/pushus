@@ -8,7 +8,7 @@ PushUS sends optional reminders when you are behind your goal during your chosen
 
 - **Browser:** `public/sw.js` service worker receives push events via the native Push API (no `web-push` in the frontend bundle).
 - **Frontend:** `src/lib/notifications/registerPush.ts` registers the service worker, requests permission, and stores subscriptions in Supabase.
-- **PWA install path:** Android Chrome users get an **Install PushUS** bottom dock when the browser exposes the native install prompt. Installed web apps are the preferred path for reliable Android reminders because Chrome does not auto-remove notification permission for installed web apps.
+- **PWA install path:** Android Chrome users get an **Install PushUS** bottom dock when the browser exposes the native install prompt. iPhone users get home-screen install instructions because iOS web push is most reliable from an installed web app. Installed web apps are the preferred path for reliable mobile reminders.
 - **Database:** `notification_preferences`, `push_subscriptions`, and `notification_events` (see `supabase/migrations/0005_notifications.sql`).
 - **Sender:** `supabase/functions/send-push-reminders` edge function (cron-style) uses `web-push` with VAPID keys.
 
@@ -102,7 +102,7 @@ curl -X POST "http://127.0.0.1:54321/functions/v1/send-push-reminders" \
 
 ### 7. User flow
 
-1. On Android, install PushUS when the **Install PushUS** bottom dock appears, or use Chrome's install menu once the app is eligible.
+1. Install PushUS from the bottom dock when it appears. On Android this opens the native install flow. On iPhone, tap Share, then **Add to Home Screen**.
 2. Open **Settings → Push reminders**.
 3. Tap **Turn on** — the browser asks for notification permission.
 4. Adjust active hours, reminder frequency, or enable **Injury pause** as needed.
@@ -113,6 +113,7 @@ curl -X POST "http://127.0.0.1:54321/functions/v1/send-push-reminders" \
 - **Audit trail:** `notification_events` records sends, failures, and disabled subscriptions (users can read their own rows via RLS).
 - **Bad subscriptions:** Re-enable push from Settings to register a fresh subscription.
 - **Android reliability:** If a user stays in normal Chrome and does not install PushUS, Chrome can quieten or remove website notification permission for low-engagement sites. Ask them to install PushUS and then re-enable reminders from Settings if notifications stop.
+- **iOS reliability:** iPhone users should add PushUS to the home screen before relying on push reminders. If reminders stop, open the home-screen app and check Settings → Push reminders.
 
 ## Security notes
 

@@ -12,7 +12,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
-- Installable Android PWA manifest, generated app icons, and a bottom-dock install prompt so Chrome can offer **Install PushUS** for more reliable reminders
+- Installable Android and iOS PWA setup with generated app icons, iPhone home-screen metadata, and a bottom-dock install prompt for more reliable reminders
 - Optional profile **name initial** (single letter, e.g. Rhys E) on onboarding and in Settings
 - **Personal mate labels** on the Group Members list — tap a mate to rename for yourself; synced to your account; shown as `Your label (their name)`
 

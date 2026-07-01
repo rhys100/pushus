@@ -38,7 +38,9 @@ If secrets are missing, the workflow exits cleanly with a skip message (no faile
 ### 3. Phone test
 
 1. Open **https://www.pushus.app/settings** after redeploy.
-2. On Android Chrome, wait for the **Install PushUS** bottom dock or use Chrome's install menu, then install and launch PushUS from the home screen.
+2. Install PushUS:
+   - **Android Chrome:** wait for the **Install PushUS** bottom dock or use Chrome's install menu, then install and launch PushUS from the home screen.
+   - **iPhone:** tap Share, then **Add to Home Screen**, then launch PushUS from the home screen.
 3. Open **Settings → Push reminders**.
 4. **Turn on** push reminders — allow browser notifications.
 5. Set active hours to include the current hour.
@@ -46,7 +48,7 @@ If secrets are missing, the workflow exits cleanly with a skip message (no faile
 7. Run the cron workflow manually (or wait for the next hour).
 8. Confirm a notification: *You still have N push-ups to bank today.*
 
-**iOS:** Add the site to the home screen (PWA) for reliable web push.
+**iOS:** Add the site to the home screen for reliable web push. Normal browser tabs are not the recommended path.
 
 **Android Chrome:** Install PushUS before relying on reminders. Installed web apps are not affected by Chrome's automatic notification permission removal for quiet website notifications.
 

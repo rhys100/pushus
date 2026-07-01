@@ -496,8 +496,8 @@ export function SettingsPage() {
                 </div>
 
                 <p className="rounded-[var(--radius-md)] border border-accent/20 bg-accent/10 px-3 py-2 text-xs text-text-muted">
-                  Android tip: install PushUS when the prompt appears. Installed apps keep reminders
-                  active when Chrome quietens normal website notifications.
+                  Install tip: on Android, use the install prompt. On iPhone, tap Share, then Add
+                  to Home Screen. Installed apps keep reminders more reliable.
                 </p>
 
                 <div className="grid grid-cols-2 gap-3">

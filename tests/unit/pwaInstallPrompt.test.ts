@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  getPwaInstallPlatform,
   isAndroidUserAgent,
+  isIosUserAgent,
   shouldShowPwaInstallPrompt,
 } from '@/lib/pwaInstallPrompt'
 
@@ -12,7 +14,7 @@ const baseInput = {
   promptAvailable: true,
   isInstalled: false,
   promptDismissed: false,
-  isAndroid: true,
+  platform: 'android' as const,
 }
 
 describe('PWA install prompt', () => {
@@ -27,16 +29,43 @@ describe('PWA install prompt', () => {
     )
   })
 
+  it('detects iOS user agents', () => {
+    const iphone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15'
+
+    expect(isIosUserAgent(iphone)).toBe(true)
+    expect(getPwaInstallPlatform(iphone)).toBe('ios')
+    expect(
+      getPwaInstallPlatform(
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15',
+        'MacIntel',
+        5,
+      ),
+    ).toBe('ios')
+    expect(getPwaInstallPlatform('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36')).toBe(
+      'other',
+    )
+  })
+
   it('shows for eligible Android members when install prompt is available', () => {
     expect(shouldShowPwaInstallPrompt(baseInput)).toBe(true)
+  })
+
+  it('shows for eligible iOS members without a native install prompt event', () => {
+    expect(
+      shouldShowPwaInstallPrompt({
+        ...baseInput,
+        platform: 'ios',
+        promptAvailable: false,
+      }),
+    ).toBe(true)
   })
 
   it('hides when the browser has not exposed install prompt yet', () => {
     expect(shouldShowPwaInstallPrompt({ ...baseInput, promptAvailable: false })).toBe(false)
   })
 
-  it('hides outside Android', () => {
-    expect(shouldShowPwaInstallPrompt({ ...baseInput, isAndroid: false })).toBe(false)
+  it('hides outside Android and iOS', () => {
+    expect(shouldShowPwaInstallPrompt({ ...baseInput, platform: 'other' })).toBe(false)
   })
 
   it('hides when already installed or dismissed', () => {

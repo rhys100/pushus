@@ -13,11 +13,13 @@ function promptBottomClass(pathname: string): string {
 }
 
 export function PwaInstallPrompt() {
-  const { visible, installing, install, dismiss, pathname } = usePwaInstallPrompt()
+  const { visible, installing, platform, install, dismiss, pathname } = usePwaInstallPrompt()
 
   if (!visible) {
     return null
   }
+
+  const isIos = platform === 'ios'
 
   return (
     <div
@@ -34,12 +36,13 @@ export function PwaInstallPrompt() {
           Install PushUS for reliable reminders
         </p>
         <p className="mt-1 text-sm text-text-muted">
-          Android keeps installed web apps awake for reminders, even when Chrome quietens normal
-          website notifications.
+          {isIos
+            ? 'On iPhone, tap Share, then Add to Home Screen. PushUS opens like an app and keeps reminders more reliable.'
+            : 'Android keeps installed web apps awake for reminders, even when Chrome quietens normal website notifications.'}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <Button loading={installing} onClick={() => void install()}>
-            Install PushUS
+            {isIos ? 'Got it' : 'Install PushUS'}
           </Button>
           <Button variant="secondary" disabled={installing} onClick={dismiss}>
             Not now
