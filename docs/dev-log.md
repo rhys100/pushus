@@ -26,6 +26,13 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-01 (PWA open-in-app button)
+
+**Fixed**
+- Open-app dock had no action that launches the installed app — only dismiss buttons
+- Android now has a real **Open in app** link (navigation capturing) plus manifest `launch_handler`
+- iOS copy is explicit: Safari cannot auto-open the home screen app; numbered steps added
+
 ### 2026-07-01 (PWA open-app prompt fix)
 
 **Fixed**

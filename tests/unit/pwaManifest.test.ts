@@ -15,9 +15,10 @@ type WebAppManifest = {
   start_url?: string
   scope?: string
   display?: string
+  launch_handler?: { client_mode?: string }
   icons?: ManifestIcon[]
   prefer_related_applications?: boolean
-  related_applications?: Array<{ platform?: string; url?: string }>
+  related_applications?: Array<{ platform?: string; url?: string; id?: string }>
 }
 
 const root = path.resolve(__dirname, '../..')
@@ -46,6 +47,7 @@ describe('PWA manifest', () => {
         id: '/',
       },
     ])
+    expect(manifest.launch_handler).toEqual({ client_mode: 'focus-existing' })
   })
 
   it('declares required 192 and 512 PNG icons', () => {

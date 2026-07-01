@@ -1,4 +1,4 @@
-import { forwardRef, type ButtonHTMLAttributes } from 'react'
+import { forwardRef, type AnchorHTMLAttributes, type ButtonHTMLAttributes } from 'react'
 import { cn } from '@/lib/cn'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
@@ -6,6 +6,11 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant
   loading?: boolean
+  fullWidth?: boolean
+}
+
+export type ButtonLinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
+  variant?: ButtonVariant
   fullWidth?: boolean
 }
 
@@ -45,6 +50,30 @@ function Spinner() {
   )
 }
 
+const buttonBaseClass =
+  'inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-[var(--radius-md)] px-5 py-2.5 text-sm font-semibold tracking-tight transition-[background-color,border-color,opacity,transform] duration-[var(--duration-fast)] ease-[var(--ease-out)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg'
+
+export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>(
+  ({ variant = 'primary', fullWidth = false, className, children, ...props }, ref) => {
+    return (
+      <a
+        ref={ref}
+        className={cn(
+          buttonBaseClass,
+          fullWidth && 'w-full',
+          variantStyles[variant],
+          className,
+        )}
+        {...props}
+      >
+        {children}
+      </a>
+    )
+  },
+)
+
+ButtonLink.displayName = 'ButtonLink'
+
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
@@ -68,9 +97,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={isDisabled}
         aria-busy={loading || undefined}
         className={cn(
-          'inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-[var(--radius-md)] px-5 py-2.5',
-          'text-sm font-semibold tracking-tight transition-[background-color,border-color,opacity,transform] duration-[var(--duration-fast)] ease-[var(--ease-out)]',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
+          buttonBaseClass,
           'disabled:pointer-events-none disabled:opacity-45',
           fullWidth && 'w-full',
           variantStyles[variant],
