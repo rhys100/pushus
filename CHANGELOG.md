@@ -20,6 +20,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **Open installed app prompt** now appears on Today and when install is inferred from push reminders, a dismissed iOS install prompt, or Android `getInstalledRelatedApps` (manifest uses origin-relative `related_applications`)
 - Blank screen on local dev when `.env` is missing — show a setup screen instead of crashing on Supabase init
 - Push reminder service worker is preserved during app update refreshes, so browser subscriptions are not silently broken by clearing old builds
 - Push notifications now use generated PWA icon and badge assets instead of a missing favicon file

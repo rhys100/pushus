@@ -1,5 +1,11 @@
-import { PWA_INSTALL_PROMPT_EXCLUDED_PATHS } from '@/lib/pwaInstallPrompt'
 import type { PwaInstallPlatform } from '@/lib/pwaInstallPrompt'
+
+export const PWA_OPEN_APP_PROMPT_EXCLUDED_PATHS = [
+  '/login',
+  '/auth/callback',
+  '/onboarding/profile',
+  '/settings/training',
+] as const
 
 export type PwaOpenAppPromptVisibilityInput = {
   pathname: string
@@ -8,8 +14,31 @@ export type PwaOpenAppPromptVisibilityInput = {
   appAccessAllowed: boolean
   isStandalone: boolean
   pwaKnownInstalled: boolean
+  installPromptDismissed: boolean
+  pushEnabled: boolean
   promptDismissed: boolean
   platform: PwaInstallPlatform
+}
+
+export function isPwaLikelyInstalledForOpenPrompt(input: {
+  pwaKnownInstalled: boolean
+  platform: PwaInstallPlatform
+  installPromptDismissed: boolean
+  pushEnabled: boolean
+}): boolean {
+  if (input.pwaKnownInstalled) {
+    return true
+  }
+
+  if (input.pushEnabled && input.platform !== 'other') {
+    return true
+  }
+
+  if (input.platform === 'ios' && input.installPromptDismissed) {
+    return true
+  }
+
+  return false
 }
 
 export function shouldShowPwaOpenAppPrompt(input: PwaOpenAppPromptVisibilityInput): boolean {
@@ -33,7 +62,14 @@ export function shouldShowPwaOpenAppPrompt(input: PwaOpenAppPromptVisibilityInpu
     return false
   }
 
-  if (!input.pwaKnownInstalled) {
+  if (
+    !isPwaLikelyInstalledForOpenPrompt({
+      pwaKnownInstalled: input.pwaKnownInstalled,
+      platform: input.platform,
+      installPromptDismissed: input.installPromptDismissed,
+      pushEnabled: input.pushEnabled,
+    })
+  ) {
     return false
   }
 
@@ -41,7 +77,7 @@ export function shouldShowPwaOpenAppPrompt(input: PwaOpenAppPromptVisibilityInpu
     return false
   }
 
-  if (PWA_INSTALL_PROMPT_EXCLUDED_PATHS.some((path) => input.pathname.startsWith(path))) {
+  if (PWA_OPEN_APP_PROMPT_EXCLUDED_PATHS.some((path) => input.pathname.startsWith(path))) {
     return false
   }
 

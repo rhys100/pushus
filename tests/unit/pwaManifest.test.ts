@@ -42,7 +42,8 @@ describe('PWA manifest', () => {
     expect(manifest.related_applications).toEqual([
       {
         platform: 'webapp',
-        url: 'https://www.pushus.app/manifest.webmanifest',
+        url: '/manifest.webmanifest',
+        id: '/',
       },
     ])
   })
