@@ -498,6 +498,11 @@ export function SettingsPage() {
                   </Button>
                 </div>
 
+                <p className="rounded-[var(--radius-md)] border border-accent/20 bg-accent/10 px-3 py-2 text-xs text-text-muted">
+                  Install tip: on Android, use the install prompt. On iPhone, tap Share, then Add
+                  to Home Screen. Installed apps keep reminders more reliable.
+                </p>
+
                 <div className="grid grid-cols-2 gap-3">
                   <label className="space-y-1">
                     <span className="text-xs font-medium text-text-muted">From</span>

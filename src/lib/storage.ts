@@ -2,6 +2,7 @@ const ACTIVE_GROUP_KEY = 'pushus_active_group_id'
 const PENDING_INVITE_CODE_KEY = 'pushus_pending_invite_code'
 const PROFILE_COMPLETED_KEY = 'pushus_profile_completed'
 const PUSH_PROMPT_DISMISSED_PREFIX = 'pushus-push-prompt-dismissed'
+const PWA_INSTALL_PROMPT_DISMISSED_PREFIX = 'pushus-pwa-install-prompt-dismissed'
 
 export function getPendingInviteCode(): string | null {
   try {
@@ -79,6 +80,22 @@ export function isPushPromptDismissed(userId: string): boolean {
 export function dismissPushPrompt(userId: string): void {
   try {
     localStorage.setItem(`${PUSH_PROMPT_DISMISSED_PREFIX}:${userId}`, '1')
+  } catch {
+    // ignore
+  }
+}
+
+export function isPwaInstallPromptDismissed(userId: string): boolean {
+  try {
+    return localStorage.getItem(`${PWA_INSTALL_PROMPT_DISMISSED_PREFIX}:${userId}`) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function dismissPwaInstallPrompt(userId: string): void {
+  try {
+    localStorage.setItem(`${PWA_INSTALL_PROMPT_DISMISSED_PREFIX}:${userId}`, '1')
   } catch {
     // ignore
   }

@@ -359,6 +359,7 @@ For exploratory ideas without locked rules, see [product-roadmap.md](./product-r
 | **Injury/sub-out stops push reminders** | Beta |
 | Beta frequency: **hourly**, **every 2 hours**, or **once per local day** (user-configurable) | Beta |
 | Default active hours for new users: **7am–7pm** | Beta |
+| Android and iOS users should be guided to **install the PushUS PWA** for reliable reminders; Android installed web apps avoid Chrome's automatic notification permission removal, and iOS reminders should use the home-screen app path | Beta |
 | Future reminder frequency: **custom intervals** | Future |
 | **Banter notifications:** opt-in only | Future |
 | **Weekly gentle check-in** while injury-paused | Future |

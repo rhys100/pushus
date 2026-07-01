@@ -1,5 +1,17 @@
 /* PushUS service worker — web push only (no web-push npm in browser). */
 
+self.addEventListener('install', () => {
+  self.skipWaiting()
+})
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim())
+})
+
+// Keep network behaviour unchanged while satisfying older Chromium PWA checks that expect
+// a fetch-capable service worker.
+self.addEventListener('fetch', () => {})
+
 self.addEventListener('push', (event) => {
   let payload = {
     title: 'PushUS',
@@ -18,8 +30,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body: payload.body,
-      icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
+      icon: '/pwa/icon-192.png',
+      badge: '/pwa/notification-badge-96.png',
       tag: 'pushus-reminder',
       data: { url: payload.url },
     }),

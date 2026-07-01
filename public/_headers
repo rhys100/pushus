@@ -18,7 +18,7 @@
 /manifest.webmanifest
   Cache-Control: no-cache, must-revalidate
 
-/icons/*
+/pwa/*
   Cache-Control: public, max-age=31536000, immutable
 
 /assets/*

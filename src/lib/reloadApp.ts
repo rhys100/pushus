@@ -4,12 +4,18 @@ export const MAX_RELOAD_ATTEMPTS = 3
 export async function clearAppCaches(): Promise<void> {
   if ('serviceWorker' in navigator) {
     const registrations = await navigator.serviceWorker.getRegistrations()
-    await Promise.all(registrations.map((registration) => registration.unregister()))
+    await Promise.all(
+      registrations.map((registration) =>
+        typeof registration.update === 'function'
+          ? registration.update().catch(() => undefined)
+          : Promise.resolve(),
+      ),
+    )
   }
 
   if ('caches' in window) {
-    const keys = await caches.keys()
-    await Promise.all(keys.map((key) => caches.delete(key)))
+    const keys = await window.caches.keys()
+    await Promise.all(keys.map((key) => window.caches.delete(key)))
   }
 }
 

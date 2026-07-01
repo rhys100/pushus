@@ -26,12 +26,19 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
-### 2026-07-01 (iOS PWA)
+### 2026-07-01 (Android/iOS PWA install + push reliability)
 
 **Shipped**
-- iOS PWA install tags (`apple-mobile-web-app-*`, `apple-touch-icon`), PNG icons (180/192/512), manifest `id` + `scope`
+- Android-installable PWA manifest with generated 192/512 and maskable icons
+- iOS home-screen metadata and Apple touch icon
 - `src/lib/pwa.ts` detects iOS Safari vs standalone home-screen app; Settings + push prompt show Add to Home Screen guidance
-- `npm run pwa:icons` generates icons from `favicon.svg` during build
+- Bottom-dock **Install PushUS** prompt for eligible Android and iOS users before push reminders
+- App update refresh keeps the push service worker registered instead of unregistering subscriptions
+- Push notifications use real PWA icon and badge assets
+- `npm run pwa:generate` generates icons from `favicon.svg` during build
+
+**Tests**
+- Focused PWA/push unit tests passing
 
 **Next**
 - Rhys spot-check Add to Home Screen on iPhone, then enable push from installed app
