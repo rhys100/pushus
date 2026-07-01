@@ -16,10 +16,13 @@ import {
 } from '@/lib/pwaOpenAppPrompt'
 import { setPwaInstallDockVisible } from '@/lib/pwaInstallDockVisibility'
 import {
+  acknowledgePwaOpenAppPromptOpen,
+  clearPwaOpenAppPromptSessionSnooze,
   dismissPwaOpenAppPrompt,
   isPwaInstallPromptDismissed,
   isPwaKnownInstalled,
   isPwaOpenAppPromptDismissed,
+  isPwaOpenAppPromptSnoozedForSession,
   markPwaKnownInstalled,
 } from '@/lib/storage'
 import { useAuth } from '@/providers/AuthProvider'
@@ -43,6 +46,7 @@ export function usePwaOpenAppPrompt() {
   const location = useLocation()
   const userId = session?.user?.id
   const [promptDismissed, setPromptDismissed] = useState(false)
+  const [sessionSnoozed, setSessionSnoozed] = useState(false)
   const [installPromptDismissed, setInstallPromptDismissed] = useState(false)
   const [pwaKnownInstalled, setPwaKnownInstalled] = useState(() => {
     syncPwaKnownInstalledFromDisplayMode()
@@ -51,9 +55,45 @@ export function usePwaOpenAppPrompt() {
   const platform = useMemo(getPlatform, [])
   const pushEnabled = prefs?.push_enabled ?? false
 
+  const refreshDismissState = useCallback(() => {
+    if (!userId) {
+      setPromptDismissed(false)
+      setSessionSnoozed(false)
+      return
+    }
+
+    setPromptDismissed(isPwaOpenAppPromptDismissed(userId))
+    setSessionSnoozed(isPwaOpenAppPromptSnoozedForSession(userId))
+    setInstallPromptDismissed(isPwaInstallPromptDismissed(userId))
+  }, [userId])
+
   useEffect(() => {
-    setPromptDismissed(userId ? isPwaOpenAppPromptDismissed(userId) : false)
-    setInstallPromptDismissed(userId ? isPwaInstallPromptDismissed(userId) : false)
+    refreshDismissState()
+  }, [refreshDismissState])
+
+  useEffect(() => {
+    if (!userId || isStandaloneDisplayMode()) {
+      return
+    }
+
+    const restoreReminderOnBrowserReturn = () => {
+      if (isStandaloneDisplayMode()) {
+        return
+      }
+
+      clearPwaOpenAppPromptSessionSnooze(userId)
+      setSessionSnoozed(false)
+      setPromptDismissed(isPwaOpenAppPromptDismissed(userId))
+    }
+
+    restoreReminderOnBrowserReturn()
+    window.addEventListener('pageshow', restoreReminderOnBrowserReturn)
+    document.addEventListener('visibilitychange', restoreReminderOnBrowserReturn)
+
+    return () => {
+      window.removeEventListener('pageshow', restoreReminderOnBrowserReturn)
+      document.removeEventListener('visibilitychange', restoreReminderOnBrowserReturn)
+    }
   }, [userId])
 
   useEffect(() => {
@@ -118,6 +158,7 @@ export function usePwaOpenAppPrompt() {
       installPromptDismissed,
       pushEnabled,
       promptDismissed,
+      sessionSnoozed,
       platform,
     })
   }, [
@@ -132,6 +173,7 @@ export function usePwaOpenAppPrompt() {
     installPromptDismissed,
     pushEnabled,
     promptDismissed,
+    sessionSnoozed,
     platform,
   ])
 
@@ -140,20 +182,33 @@ export function usePwaOpenAppPrompt() {
     return () => setPwaInstallDockVisible('open-app', false)
   }, [visible])
 
-  const dismiss = useCallback(() => {
+  const dismissPermanently = useCallback(() => {
     if (!userId) {
       return
     }
 
     dismissPwaOpenAppPrompt(userId)
+    clearPwaOpenAppPromptSessionSnooze(userId)
     setPromptDismissed(true)
+    setSessionSnoozed(false)
+  }, [userId])
+
+  const acknowledgeOpenInApp = useCallback(() => {
+    if (!userId) {
+      return
+    }
+
+    acknowledgePwaOpenAppPromptOpen(userId)
+    setPromptDismissed(false)
+    setSessionSnoozed(true)
   }, [userId])
 
   return {
     visible,
     confidence,
     platform,
-    dismiss,
+    dismissPermanently,
+    acknowledgeOpenInApp,
     pathname: location.pathname,
   }
 }

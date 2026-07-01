@@ -17,6 +17,7 @@ export type PwaOpenAppPromptVisibilityInput = {
   installPromptDismissed: boolean
   pushEnabled: boolean
   promptDismissed: boolean
+  sessionSnoozed: boolean
   platform: PwaInstallPlatform
 }
 
@@ -74,6 +75,10 @@ export function shouldShowPwaOpenAppPrompt(input: PwaOpenAppPromptVisibilityInpu
   }
 
   if (input.promptDismissed) {
+    return false
+  }
+
+  if (input.sessionSnoozed) {
     return false
   }
 
