@@ -1,11 +1,13 @@
 ﻿import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppUpdateChecker } from '@/components/AppUpdateChecker'
+import { ConfigErrorScreen } from '@/components/ConfigErrorScreen'
 import { RequireAuth } from '@/components/auth/RequireAuth'
 import { TabLayout } from '@/components/layout/TabLayout'
 import { Skeleton } from '@/components/ui'
 import { useAppServiceWorker } from '@/hooks/useAppServiceWorker'
 import { useNotificationClickNavigation } from '@/hooks/useNotificationClickNavigation'
+import { isSupabaseConfigured } from '@/lib/supabase'
 import { TodayPage } from '@/pages/TodayPage'
 
 const PushNotificationPrompt = lazy(() =>
@@ -96,6 +98,10 @@ function AppServiceWorkerRegistration() {
 }
 
 export default function App() {
+  if (!isSupabaseConfigured) {
+    return <ConfigErrorScreen />
+  }
+
   return (
     <>
       <AppServiceWorkerRegistration />

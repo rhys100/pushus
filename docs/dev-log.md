@@ -26,6 +26,12 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-01 (blank app load fix)
+
+**Fixed**
+- Local dev no longer shows a blank screen when `.env` is missing — setup screen explains required Supabase vars
+- Playwright smoke tests always boot Vite in `e2e` mode so `.env.e2e` is loaded
+
 ### 2026-07-01 (Android/iOS PWA install + push reliability)
 
 **Shipped**
