@@ -26,6 +26,13 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-01 (aggressive open-app reminders)
+
+**Fixed**
+- Open in app no longer behaves like a permanent dismiss; it snoozes only for the current visit and re-shows when you return to PushUS in Chrome
+- Tapping Open in app clears a previous "don't remind" choice so repeat open clicks keep the reminder enabled
+- Secondary button renamed to **Don't remind me again**
+
 ### 2026-07-01 (PWA open-in-app button)
 
 **Fixed**

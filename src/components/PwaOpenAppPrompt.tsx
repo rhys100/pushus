@@ -15,7 +15,8 @@ function promptBottomClass(pathname: string): string {
 }
 
 export function PwaOpenAppPrompt() {
-  const { visible, confidence, platform, dismiss, pathname } = usePwaOpenAppPrompt()
+  const { visible, confidence, platform, dismissPermanently, acknowledgeOpenInApp, pathname } =
+    usePwaOpenAppPrompt()
   const openInAppUrl = useMemo(() => {
     if (typeof window === 'undefined') {
       return buildPwaOpenInAppUrl(pathname)
@@ -69,12 +70,14 @@ export function PwaOpenAppPrompt() {
         ) : null}
         <div className="mt-3 flex flex-wrap gap-2">
           {canTryOpenInApp ? (
-            <ButtonLink href={openInAppUrl}>Open in app</ButtonLink>
+            <ButtonLink href={openInAppUrl} onClick={acknowledgeOpenInApp}>
+              Open in app
+            </ButtonLink>
           ) : (
-            <Button onClick={dismiss}>OK, I&apos;ll use the home screen icon</Button>
+            <Button onClick={acknowledgeOpenInApp}>OK, I&apos;ll use the home screen icon</Button>
           )}
-          <Button variant="secondary" onClick={dismiss}>
-            {canTryOpenInApp ? 'Keep using browser' : 'Not now'}
+          <Button variant="secondary" onClick={dismissPermanently}>
+            Don&apos;t remind me again
           </Button>
         </div>
       </div>

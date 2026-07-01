@@ -14,6 +14,7 @@ const baseInput = {
   installPromptDismissed: false,
   pushEnabled: false,
   promptDismissed: false,
+  sessionSnoozed: false,
   platform: 'android' as const,
 }
 
@@ -65,8 +66,9 @@ describe('PWA open app prompt', () => {
     ).toBe(false)
   })
 
-  it('hides when dismissed or outside mobile platforms', () => {
+  it('hides when dismissed, snoozed for the session, or outside mobile platforms', () => {
     expect(shouldShowPwaOpenAppPrompt({ ...baseInput, promptDismissed: true })).toBe(false)
+    expect(shouldShowPwaOpenAppPrompt({ ...baseInput, sessionSnoozed: true })).toBe(false)
     expect(shouldShowPwaOpenAppPrompt({ ...baseInput, platform: 'other' })).toBe(false)
   })
 
