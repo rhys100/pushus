@@ -7,6 +7,7 @@ import { TabLayout } from '@/components/layout/TabLayout'
 import { Skeleton } from '@/components/ui'
 import { useAppServiceWorker } from '@/hooks/useAppServiceWorker'
 import { useNotificationClickNavigation } from '@/hooks/useNotificationClickNavigation'
+import { usePwaLaunchHandler } from '@/hooks/usePwaLaunchHandler'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { TodayPage } from '@/pages/TodayPage'
 
@@ -97,6 +98,11 @@ function NotificationClickNavigation() {
   return null
 }
 
+function PwaLaunchHandlerRegistration() {
+  usePwaLaunchHandler()
+  return null
+}
+
 function AppServiceWorkerRegistration() {
   useAppServiceWorker()
   return null
@@ -110,6 +116,7 @@ export default function App() {
   return (
     <>
       <AppServiceWorkerRegistration />
+      <PwaLaunchHandlerRegistration />
       <NotificationClickNavigation />
       <AppUpdateChecker />
       <Suspense fallback={null}>

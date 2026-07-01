@@ -1,6 +1,8 @@
-import { Button } from '@/components/ui'
+import { useMemo } from 'react'
+import { Button, ButtonLink } from '@/components/ui'
 import { usePwaOpenAppPrompt } from '@/hooks/usePwaOpenAppPrompt'
 import { cn } from '@/lib/cn'
+import { buildPwaOpenInAppUrl, canTryOpenInInstalledApp } from '@/lib/pwaOpenInApp'
 
 const TAB_NAV_PATHS = ['/leaderboard', '/activity', '/group', '/settings'] as const
 
@@ -14,12 +16,20 @@ function promptBottomClass(pathname: string): string {
 
 export function PwaOpenAppPrompt() {
   const { visible, confidence, platform, dismiss, pathname } = usePwaOpenAppPrompt()
+  const openInAppUrl = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return buildPwaOpenInAppUrl(pathname)
+    }
+
+    return buildPwaOpenInAppUrl(pathname, window.location.origin)
+  }, [pathname])
 
   if (!visible) {
     return null
   }
 
   const isIos = platform === 'ios'
+  const canTryOpenInApp = canTryOpenInInstalledApp(platform)
   const knownInstalled = confidence === 'known'
 
   return (
@@ -34,21 +44,37 @@ export function PwaOpenAppPrompt() {
       <div className="dock-scrim" aria-hidden="true" />
       <div className="dock-panel px-4 pb-3 pt-3">
         <p className="text-sm font-semibold text-text-primary">
-          Open PushUS from your home screen
+          {isIos ? 'Use the PushUS home screen app' : 'Open PushUS in the installed app'}
         </p>
         <p className="mt-1 text-sm text-text-muted">
-          {isIos
-            ? knownInstalled
-              ? 'You have PushUS on your home screen. Open that icon for reliable reminders — this Safari tab cannot replace the installed app.'
-              : 'If you added PushUS to your home screen, open that icon for reliable reminders — this Safari tab cannot replace the installed app.'
-            : knownInstalled
-              ? 'PushUS is installed on this phone. Open it from your home screen or app drawer for reliable reminders.'
-              : 'If you installed PushUS on this phone, open it from your home screen or app drawer for reliable reminders.'}
+          {isIos ? (
+            <>
+              Safari cannot switch to the home screen app for you. Go to your home screen and tap
+              the PushUS icon
+              {knownInstalled ? ' you already added' : ''} for reliable reminders.
+            </>
+          ) : (
+            <>
+              Tap <span className="font-medium text-text-primary">Open in app</span> to launch the
+              installed PushUS app. If Chrome stays in this tab, open PushUS from your home screen or
+              app drawer.
+            </>
+          )}
         </p>
+        {isIos ? (
+          <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-text-muted">
+            <li>Leave this Safari tab or press the home button.</li>
+            <li>Tap the PushUS icon on your home screen.</li>
+          </ol>
+        ) : null}
         <div className="mt-3 flex flex-wrap gap-2">
-          <Button onClick={dismiss}>Got it</Button>
+          {canTryOpenInApp ? (
+            <ButtonLink href={openInAppUrl}>Open in app</ButtonLink>
+          ) : (
+            <Button onClick={dismiss}>OK, I&apos;ll use the home screen icon</Button>
+          )}
           <Button variant="secondary" onClick={dismiss}>
-            Not now
+            {canTryOpenInApp ? 'Keep using browser' : 'Not now'}
           </Button>
         </div>
       </div>

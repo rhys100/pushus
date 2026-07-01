@@ -2,7 +2,7 @@
 export { AvatarChip, type AvatarChipProps } from './AvatarChip'
 export { Badge, type BadgeProps, type BadgeVariant } from './Badge'
 export { BottomNav, type BottomNavProps, type NavItem } from './BottomNav'
-export { Button, type ButtonProps, type ButtonVariant } from './Button'
+export { Button, ButtonLink, type ButtonLinkProps, type ButtonProps, type ButtonVariant } from './Button'
 export { Card, type CardProps } from './Card'
 export { EmptyState, type EmptyStateProps } from './EmptyState'
 export { GoalProgressBar, GoalProgressFraction, type GoalProgressBarProps } from './GoalProgressBar'
