@@ -29,6 +29,12 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 **Notes**
 - Lint follow-up on open-app availability hook after merge
 
+### 2026-07-01 (Android Open in app intent)
+
+**Fixed**
+- Open in app on Android Chrome now tries `window.open` then an Android intent URL so the installed WebAPK can launch
+- Manifest `launch_handler` set to `navigate-new` for captured launches
+
 ### 2026-07-01 (Android open-app detection fix)
 
 **Fixed**

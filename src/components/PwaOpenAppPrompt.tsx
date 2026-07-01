@@ -1,8 +1,7 @@
-import { useMemo } from 'react'
-import { Button, ButtonLink } from '@/components/ui'
+import { Button } from '@/components/ui'
 import { usePwaOpenAppPrompt } from '@/hooks/usePwaOpenAppPrompt'
 import { cn } from '@/lib/cn'
-import { buildPwaOpenInAppUrl, canTryOpenInInstalledApp } from '@/lib/pwaOpenInApp'
+import { canTryOpenInInstalledApp, openInstalledPwa } from '@/lib/pwaOpenInApp'
 
 const TAB_NAV_PATHS = ['/leaderboard', '/activity', '/group', '/settings'] as const
 
@@ -17,13 +16,6 @@ function promptBottomClass(pathname: string): string {
 export function PwaOpenAppPrompt() {
   const { visible, confidence, platform, dismissPermanently, acknowledgeOpenInApp, pathname } =
     usePwaOpenAppPrompt()
-  const openInAppUrl = useMemo(() => {
-    if (typeof window === 'undefined') {
-      return buildPwaOpenInAppUrl(pathname)
-    }
-
-    return buildPwaOpenInAppUrl(pathname, window.location.origin)
-  }, [pathname])
 
   if (!visible) {
     return null
@@ -32,6 +24,16 @@ export function PwaOpenAppPrompt() {
   const isIos = platform === 'ios'
   const canTryOpenInApp = canTryOpenInInstalledApp(platform)
   const knownInstalled = confidence === 'known'
+
+  const handleOpenInApp = () => {
+    acknowledgeOpenInApp()
+
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    openInstalledPwa(pathname, window.location.origin)
+  }
 
   return (
     <div
@@ -56,9 +58,8 @@ export function PwaOpenAppPrompt() {
             </>
           ) : (
             <>
-              Tap <span className="font-medium text-text-primary">Open in app</span> to launch the
-              installed PushUS app. If Chrome stays in this tab, open PushUS from your home screen or
-              app drawer.
+              Tap <span className="font-medium text-text-primary">Open in app</span>. If Chrome asks,
+              choose PushUS. If nothing happens, open PushUS from your home screen or app drawer.
             </>
           )}
         </p>
@@ -70,9 +71,7 @@ export function PwaOpenAppPrompt() {
         ) : null}
         <div className="mt-3 flex flex-wrap gap-2">
           {canTryOpenInApp ? (
-            <ButtonLink href={openInAppUrl} onClick={acknowledgeOpenInApp}>
-              Open in app
-            </ButtonLink>
+            <Button onClick={handleOpenInApp}>Open in app</Button>
           ) : (
             <Button onClick={acknowledgeOpenInApp}>OK, I&apos;ll use the home screen icon</Button>
           )}
