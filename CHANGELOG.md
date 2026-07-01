@@ -19,6 +19,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Blank screen on local dev when `.env` is missing — show a setup screen instead of crashing on Supabase init
 - Push reminder service worker is preserved during app update refreshes, so browser subscriptions are not silently broken by clearing old builds
 - Push notifications now use generated PWA icon and badge assets instead of a missing favicon file
 - Circular logger ring handle and progress arc share the same angle; dial anchors rep 5 at bottom and rep 10 at top with even 36° spacing
