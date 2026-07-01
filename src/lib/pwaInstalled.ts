@@ -39,7 +39,12 @@ export async function detectPwaInstalledViaBrowserApi(): Promise<boolean> {
 
   try {
     const relatedApps = await getInstalledRelatedApps()
-    const installed = relatedApps.some((app) => app.platform === 'webapp')
+    const installed = relatedApps.some(
+      (app) =>
+        app.platform === 'webapp' ||
+        app.id === '/' ||
+        (typeof app.url === 'string' && app.url.includes('manifest.webmanifest')),
+    )
 
     if (installed) {
       markPwaKnownInstalled()

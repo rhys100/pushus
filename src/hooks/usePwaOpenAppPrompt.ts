@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { useLocation } from 'react-router-dom'
 import {
   detectPwaInstalledViaBrowserApi,
@@ -10,6 +10,11 @@ import {
   isStandaloneDisplayMode,
   type PwaInstallPlatform,
 } from '@/lib/pwaInstallPrompt'
+import {
+  isAndroidInstallPromptUnavailable,
+  isInstallPromptCheckComplete,
+  subscribeInstallPromptAvailability,
+} from '@/lib/pwaInstallPromptAvailability'
 import {
   isPwaLikelyInstalledForOpenPrompt,
   shouldShowPwaOpenAppPrompt,
@@ -54,6 +59,15 @@ export function usePwaOpenAppPrompt() {
   })
   const platform = useMemo(getPlatform, [])
   const pushEnabled = prefs?.push_enabled ?? false
+  const installPromptCheckComplete = useSyncExternalStore(
+    subscribeInstallPromptAvailability,
+    isInstallPromptCheckComplete,
+    () => false,
+  )
+  const androidInstallPromptUnavailable = useMemo(
+    () => isAndroidInstallPromptUnavailable(platform),
+    [platform, installPromptCheckComplete],
+  )
 
   const refreshDismissState = useCallback(() => {
     if (!userId) {
@@ -124,6 +138,7 @@ export function usePwaOpenAppPrompt() {
         platform,
         installPromptDismissed,
         pushEnabled,
+        androidInstallPromptUnavailable,
       })
     ) {
       return
@@ -133,7 +148,13 @@ export function usePwaOpenAppPrompt() {
       markPwaKnownInstalled()
       setPwaKnownInstalled(true)
     }
-  }, [pwaKnownInstalled, platform, installPromptDismissed, pushEnabled])
+  }, [
+    pwaKnownInstalled,
+    platform,
+    installPromptDismissed,
+    pushEnabled,
+    androidInstallPromptUnavailable,
+  ])
 
   const confidence = useMemo<'known' | 'likely'>(() => {
     if (pwaKnownInstalled) {
@@ -157,6 +178,7 @@ export function usePwaOpenAppPrompt() {
       pwaKnownInstalled,
       installPromptDismissed,
       pushEnabled,
+      androidInstallPromptUnavailable,
       promptDismissed,
       sessionSnoozed,
       platform,
@@ -172,6 +194,7 @@ export function usePwaOpenAppPrompt() {
     pwaKnownInstalled,
     installPromptDismissed,
     pushEnabled,
+    androidInstallPromptUnavailable,
     promptDismissed,
     sessionSnoozed,
     platform,

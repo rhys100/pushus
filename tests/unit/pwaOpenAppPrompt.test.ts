@@ -13,6 +13,7 @@ const baseInput = {
   pwaKnownInstalled: true,
   installPromptDismissed: false,
   pushEnabled: false,
+  androidInstallPromptUnavailable: false,
   promptDismissed: false,
   sessionSnoozed: false,
   platform: 'android' as const,
@@ -23,13 +24,24 @@ describe('PWA open app prompt', () => {
     expect(shouldShowPwaOpenAppPrompt(baseInput)).toBe(true)
   })
 
-  it('infers install from push reminders or a dismissed iOS install prompt', () => {
+  it('infers install from push reminders, a dismissed iOS install prompt, or no Android install offer', () => {
     expect(
       isPwaLikelyInstalledForOpenPrompt({
         pwaKnownInstalled: false,
         platform: 'android',
         installPromptDismissed: false,
         pushEnabled: true,
+        androidInstallPromptUnavailable: false,
+      }),
+    ).toBe(true)
+
+    expect(
+      isPwaLikelyInstalledForOpenPrompt({
+        pwaKnownInstalled: false,
+        platform: 'android',
+        installPromptDismissed: false,
+        pushEnabled: false,
+        androidInstallPromptUnavailable: true,
       }),
     ).toBe(true)
 
@@ -38,6 +50,16 @@ describe('PWA open app prompt', () => {
         ...baseInput,
         pwaKnownInstalled: false,
         pushEnabled: true,
+        androidInstallPromptUnavailable: false,
+      }),
+    ).toBe(true)
+
+    expect(
+      shouldShowPwaOpenAppPrompt({
+        ...baseInput,
+        pwaKnownInstalled: false,
+        pushEnabled: false,
+        androidInstallPromptUnavailable: true,
       }),
     ).toBe(true)
 
@@ -47,6 +69,7 @@ describe('PWA open app prompt', () => {
         pwaKnownInstalled: false,
         platform: 'ios',
         installPromptDismissed: true,
+        androidInstallPromptUnavailable: false,
       }),
     ).toBe(true)
   })
@@ -62,6 +85,7 @@ describe('PWA open app prompt', () => {
         pwaKnownInstalled: false,
         installPromptDismissed: false,
         pushEnabled: false,
+        androidInstallPromptUnavailable: false,
       }),
     ).toBe(false)
   })
