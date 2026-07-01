@@ -13,6 +13,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ### Added
 
 - Installable Android and iOS PWA setup with generated app icons, iPhone home-screen metadata, and a bottom-dock install prompt for more reliable reminders
+- **Open installed app prompt:** when a member opens PushUS in the mobile browser but has previously used the home-screen app (or Android reports the web app installed), a bottom dock nudges them to open PushUS from the home screen instead
 - Optional profile **name initial** (single letter, e.g. Rhys E) on onboarding and in Settings
 - **Personal mate labels** on the Group Members list — tap a mate to rename for yourself; synced to your account; shown as `Your label (their name)`
 - **iOS PWA support:** home-screen install meta tags, PNG app icons, manifest `id`/`scope`, and in-app guidance when push reminders need Add to Home Screen on iPhone/iPad

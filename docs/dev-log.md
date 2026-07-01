@@ -26,6 +26,16 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-01 (PWA open-from-home-screen prompt)
+
+**Shipped**
+- Bottom dock when mobile browser detects PushUS was previously opened from the home-screen app (local flag) or Android `getInstalledRelatedApps` reports the web app installed
+- Install prompt now hides once install is known, so members are not asked to install again after opening the browser tab by mistake
+
+**Notes**
+- Cannot auto-launch the installed PWA from a browser tab; prompt is guidance only
+- iOS has no install-detection API — relies on the stored flag after first standalone open
+
 ### 2026-07-01 (blank app load fix)
 
 **Fixed**

@@ -12,6 +12,12 @@
   "lang": "en-AU",
   "categories": ["fitness", "health", "social"],
   "prefer_related_applications": false,
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "https://www.pushus.app/manifest.webmanifest"
+    }
+  ],
   "icons": [
     {
       "src": "/pwa/icon-192.png",

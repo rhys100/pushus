@@ -13,6 +13,7 @@ export type PwaInstallPromptVisibilityInput = {
   appAccessAllowed: boolean
   promptAvailable: boolean
   isInstalled: boolean
+  pwaKnownInstalled: boolean
   promptDismissed: boolean
   platform: PwaInstallPlatform
 }
@@ -79,6 +80,10 @@ export function shouldShowPwaInstallPrompt(
   }
 
   if (input.isInstalled) {
+    return false
+  }
+
+  if (input.pwaKnownInstalled) {
     return false
   }
 
