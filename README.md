@@ -57,10 +57,11 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 
 - [x] Direct-drag circular logger (no plus button)
 - [x] One lap = 10 push-ups on the ring
-- [x] **Bank Push-ups** main CTA
+- [x] Centre tap inside ring to add one rep (hands-free logging)
+- [x] **Bank Push-ups** CTA (appears after ring interaction)
 - [x] Undo after banking
 - [x] Edit and delete your entries
-- [x] Daily total and today's entries on the Log screen
+- [x] Daily total and progress on the Log screen (progress card above ring)
 - [x] Log daily set planner (bank-about target, set N of M, sets remaining)
 - [x] Reps-in-reserve effort feedback on training-day banks (plan auto-tunes from RIR)
 - [x] Entry audit log foundation
@@ -70,7 +71,7 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 ### Social and group
 
 - [x] Leaderboard (day, week, month views; daily goal progress on Day view; percent progress for other members)
-- [x] Activity feed
+- [x] Activity feed (Group stream + **My log** personal history with month calendar)
 - [x] Emoji reactions
 - [x] Group invite tools
 - [x] Branded social share previews for invite links (Cloudflare Pages Functions + default OG image)

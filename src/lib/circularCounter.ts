@@ -72,12 +72,12 @@ export function snapAngleToRep(totalAngleDegrees: number): number {
   return countToAngle(angleToTotalCount(totalAngleDegrees))
 }
 
-/** Snap a pointer ring angle (0–360°) to the first-lap rep position. */
+/** @deprecated Incremental drag no longer jumps on pointer down; kept for reference. */
 export function rawAngleFromPointerDown(ringAngle: number): number {
   return Math.max(0, snapAngleToRep(ringAngle))
 }
 
-/** Jump to a rep slot on the current lap, preserving completed full revolutions. */
+/** @deprecated Incremental drag no longer jumps on pointer down; kept for reference. */
 export function ringAngleToRawAngle(ringAngle: number, currentRaw: number): number {
   if (currentRaw <= 0) {
     return rawAngleFromPointerDown(ringAngle)

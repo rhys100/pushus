@@ -5,7 +5,7 @@ import {
   useBankPushups,
   useDayTotal,
   useRecordEntryEffort,
-  useTodayEntries,
+  useDayEntries,
   useUndoLastEntry,
 } from '@/hooks/useTodayData'
 import { useGroupBillingStatus, useGroupSubscription } from '@/hooks/useBilling'
@@ -22,7 +22,6 @@ import { SetEffortSheet } from '@/components/logger/SetEffortSheet'
 import { SorenessCheckInSheet } from '@/components/logger/SorenessCheckInSheet'
 import { ChallengeMaxCheckInCard } from '@/components/today/ChallengeMaxCheckInCard'
 import { DayProgressCard } from '@/components/today/DayProgressCard'
-import { TodayEntriesList } from '@/components/today/TodayEntriesList'
 import { useAuth } from '@/providers/AuthProvider'
 import { useTrainingPlan } from '@/hooks/useTrainingPlan'
 import { useSorenessCheckin } from '@/hooks/useSorenessCheckin'
@@ -50,10 +49,7 @@ export function TodayPage() {
   const billingStatusQuery = useGroupBillingStatus(activeGroup?.id)
   const subscriptionQuery = useGroupSubscription(activeGroup?.id)
   const { data: dayTotal = 0, isLoading: totalLoading } = useDayTotal(activeGroup)
-  const { data: entries = [], isLoading: entriesLoading } = useTodayEntries(
-    activeGroup,
-    user?.id,
-  )
+  const { data: entries = [] } = useDayEntries(activeGroup, user?.id)
 
   const bankPushups = useBankPushups()
   const recordEntryEffort = useRecordEntryEffort()
@@ -61,6 +57,7 @@ export function TodayPage() {
   const loggerRef = useRef<CircularLoggerHandle>(null)
   const [canBank, setCanBank] = useState(false)
   const [dragCount, setDragCount] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
   const [effortEntryId, setEffortEntryId] = useState<string | null>(null)
   const [effortAskedToday, setEffortAskedToday] = useState(false)
   const [maxSetMode, setMaxSetMode] = useState(false)
@@ -257,11 +254,13 @@ export function TodayPage() {
     wizardCompleted,
   ])
 
+  const showBankButton = isDragging || dragCount > 0
+
   if (groupLoading || !activeGroup) {
     return (
       <div className="space-y-4">
-        <Skeleton className="mx-auto h-[min(72vw,280px)] w-[min(72vw,280px)] rounded-full" />
         <Skeleton className="h-16 w-full rounded-[var(--radius-lg)]" />
+        <Skeleton className="mx-auto h-[min(72vw,308px)] w-[min(72vw,308px)] rounded-full" />
       </div>
     )
   }
@@ -291,33 +290,6 @@ export function TodayPage() {
           </p>
         ) : null}
 
-        <CircularLogger
-          ref={loggerRef}
-          onCountChange={setDragCount}
-          onCanBankChange={setCanBank}
-          onBank={handleBank}
-          disabled={bankPushups.isPending}
-          showDragHint={showHint}
-          onHintDismiss={dismissHint}
-          className="px-0 py-0"
-        />
-
-        <BankPushupsButton
-          placement="inline"
-          disabled={!canBank}
-          loading={bankPushups.isPending}
-          showDisabledHint={dragCount === 0}
-          onBank={handleBank}
-        />
-
-        {showCheckIn ? (
-          <ChallengeMaxCheckInCard
-            maxSetModeActive={maxSetMode}
-            onTryMaxSet={() => setMaxSetMode(true)}
-            onStickToPlan={() => setShowMaxCheckInCard(false)}
-          />
-        ) : null}
-
         <DayProgressCard
           variant="compact"
           bankedToday={dayTotal}
@@ -328,12 +300,35 @@ export function TodayPage() {
           todayPrescription={todayPrescription}
         />
 
-        <TodayEntriesList
-          group={activeGroup}
-          entries={entries}
-          loading={entriesLoading && entries.length === 0}
-          className="mt-4"
+        {showCheckIn ? (
+          <ChallengeMaxCheckInCard
+            maxSetModeActive={maxSetMode}
+            onTryMaxSet={() => setMaxSetMode(true)}
+            onStickToPlan={() => setShowMaxCheckInCard(false)}
+          />
+        ) : null}
+
+        <CircularLogger
+          ref={loggerRef}
+          onCountChange={setDragCount}
+          onCanBankChange={setCanBank}
+          onDraggingChange={setIsDragging}
+          onBank={handleBank}
+          disabled={bankPushups.isPending}
+          showDragHint={showHint}
+          onHintDismiss={dismissHint}
+          className="px-0 py-0"
         />
+
+        {showBankButton ? (
+          <BankPushupsButton
+            placement="inline"
+            disabled={!canBank}
+            loading={bankPushups.isPending}
+            onBank={handleBank}
+            className="transition-opacity duration-[var(--duration-fast)]"
+          />
+        ) : null}
       </div>
 
       <SetEffortSheet

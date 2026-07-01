@@ -15,20 +15,20 @@ import {
   CIRCULAR_COUNTER,
   countToAngle,
   normalizeAngleDelta,
-  rawAngleFromPointerDown,
-  ringAngleToRawAngle,
   snapAngleToRep,
 } from '@/lib/circularCounter'
 import { isPointOnRingTrack, pointerToRingAngle } from '@/lib/loggerHitTest'
 import { useCircularCounter } from '@/hooks/useCircularCounter'
 import { primeRepFeedback, pulseRepHapticDelta } from '@/lib/repHaptic'
 
-const RING_SIZE = 280
+const RING_SIZE = 308
 const RING_CENTER = RING_SIZE / 2
-const RING_RADIUS = 112
-const RING_STROKE = 14
-const RING_HIT_STROKE = 28
-const HANDLE_RADIUS = 13
+const RING_RADIUS = 123
+const RING_STROKE = 15
+const RING_HIT_STROKE = 31
+const HANDLE_RADIUS = 14
+const CENTER_HIT_RADIUS = RING_RADIUS - RING_STROKE - 8
+const RING_CONTAINER_SIZE = 'min(72vw,308px)'
 const REP_TICK_ANGLES = Array.from(
   { length: CIRCULAR_COUNTER.repsPerRevolution - 1 },
   (_, index) => (index + 1) * CIRCULAR_COUNTER.degreesPerRep,
@@ -44,6 +44,7 @@ export type CircularLoggerProps = {
   onCountChange?: (count: number) => void
   onCanBankChange?: (canBank: boolean) => void
   onBank?: () => void
+  onDraggingChange?: (dragging: boolean) => void
   disabled?: boolean
   showDragHint?: boolean
   onHintDismiss?: () => void
@@ -97,6 +98,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
       onCountChange,
       onCanBankChange,
       onBank,
+      onDraggingChange,
       disabled = false,
       showDragHint = false,
       onHintDismiss,
@@ -124,6 +126,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
     const [handleTickKey, setHandleTickKey] = useState(0)
     const [isDragging, setIsDragging] = useState(false)
     const previousCountRef = useRef(count)
+    const centerTapRef = useRef<{ x: number; y: number } | null>(null)
 
     angleRef.current = angle
     disabledRef.current = disabled
@@ -182,6 +185,10 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
       }
     }, [canBank, onCanBankChange])
 
+    useEffect(() => {
+      onDraggingChange?.(isDragging)
+    }, [isDragging, onDraggingChange])
+
     const displayCount = isDragging ? countRef.current : count
     const completedLap =
       displayCount > 0 && displayCount % CIRCULAR_COUNTER.repsPerRevolution === 0
@@ -232,6 +239,30 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
       },
       [onCanBankChange, onCountChange],
     )
+
+    const incrementRep = useCallback(() => {
+      if (disabledRef.current) {
+        return
+      }
+
+      onHintDismiss?.()
+
+      const currentCount = countRef.current
+      const nextCount = currentCount + 1
+      const nextAngle = countToAngle(nextCount)
+
+      if (angleToTotalCount(nextAngle) <= currentCount) {
+        return
+      }
+
+      primeRepFeedback()
+      pulseRepHapticDelta(currentCount, nextCount)
+      syncAngleState(nextAngle)
+      notifyCountChange(nextCount)
+      lastHapticCountRef.current = nextCount
+      setCountPulsing(true)
+      setHandleTickKey((current) => current + 1)
+    }, [notifyCountChange, onHintDismiss, syncAngleState])
 
     const applyDragAt = useCallback(
       (clientX: number, clientY: number, haptic: boolean) => {
@@ -311,20 +342,13 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
         }
 
         const ringAngle = pointerToRingAngle(clientX, clientY, rect)
-        const startRaw =
-          countRef.current === 0
-            ? rawAngleFromPointerDown(ringAngle)
-            : ringAngleToRawAngle(ringAngle, angleRef.current)
-        const startCount = angleToTotalCount(startRaw)
+        const startRaw = angleRef.current
+        const startCount = countRef.current
 
         primeRepFeedback()
         syncAngleState(startRaw)
         notifyCountChange(startCount)
         lastHapticCountRef.current = startCount
-
-        if (startCount > 0) {
-          setCountPulsing(true)
-        }
 
         dragStateRef.current = {
           lastPointerAngle: ringAngle,
@@ -443,19 +467,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
 
       if (event.key === 'ArrowUp' || event.key === 'ArrowRight') {
         event.preventDefault()
-        onHintDismiss?.()
-
-        const currentCount = countRef.current
-        const nextCount = currentCount + 1
-        const nextAngle = countToAngle(nextCount)
-
-        if (angleToTotalCount(nextAngle) > currentCount) {
-          pulseRepHapticDelta(currentCount, nextCount)
-          setAngle(nextAngle)
-          countRef.current = nextCount
-          lastHapticCountRef.current = nextCount
-        }
-
+        incrementRep()
         return
       }
 
@@ -465,10 +477,47 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
         const currentCount = countRef.current
 
         if (currentCount > 0) {
-          setAngle(countToAngle(currentCount - 1))
-          countRef.current = currentCount - 1
+          const nextCount = currentCount - 1
+          syncAngleState(countToAngle(nextCount))
+          notifyCountChange(nextCount)
+          lastHapticCountRef.current = nextCount
         }
       }
+    }
+
+    const handleCenterPointerDown = (event: ReactPointerEvent<SVGCircleElement>) => {
+      if (disabled) {
+        return
+      }
+
+      event.preventDefault()
+      event.stopPropagation()
+      centerTapRef.current = { x: event.clientX, y: event.clientY }
+    }
+
+    const handleCenterPointerUp = (event: ReactPointerEvent<SVGCircleElement>) => {
+      if (disabled || isDragging) {
+        centerTapRef.current = null
+        return
+      }
+
+      const start = centerTapRef.current
+      centerTapRef.current = null
+
+      if (!start) {
+        return
+      }
+
+      const dx = event.clientX - start.x
+      const dy = event.clientY - start.y
+
+      if (dx * dx + dy * dy > 100) {
+        return
+      }
+
+      event.preventDefault()
+      event.stopPropagation()
+      incrementRep()
     }
 
     return (
@@ -477,7 +526,10 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
         className={cn('flex justify-center px-4 py-1', className)}
         style={{ touchAction: isDragging ? 'none' : undefined }}
       >
-        <div className="relative h-[min(72vw,280px)] w-[min(72vw,280px)]">
+        <div
+          className="relative"
+          style={{ height: RING_CONTAINER_SIZE, width: RING_CONTAINER_SIZE }}
+        >
           <svg
             ref={ringRef}
             role="slider"
@@ -576,6 +628,22 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
                 disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'
               }
               onPointerDown={handleRingPointerDown}
+            />
+
+            <circle
+              data-testid="logger-center-hit"
+              cx={RING_CENTER}
+              cy={RING_CENTER}
+              r={CENTER_HIT_RADIUS}
+              fill="transparent"
+              pointerEvents={disabled ? 'none' : 'all'}
+              className={disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
+              aria-label="Add one rep"
+              onPointerDown={handleCenterPointerDown}
+              onPointerUp={handleCenterPointerUp}
+              onPointerCancel={() => {
+                centerTapRef.current = null
+              }}
             />
 
             {showHandle ? (

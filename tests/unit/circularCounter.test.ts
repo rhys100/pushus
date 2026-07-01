@@ -6,7 +6,6 @@ import {
   CIRCULAR_COUNTER,
   normalizeAngleDelta,
   rawAngleFromPointerDown,
-  ringAngleToRawAngle,
   snapAngleToRep,
 } from '../../src/lib/circularCounter'
 
@@ -115,32 +114,13 @@ describe('circularCounter', () => {
     })
   })
 
-  describe('rawAngleFromPointerDown', () => {
-    it('snaps first-lap touch at 6 o’clock to rep 5', () => {
-      expect(rawAngleFromPointerDown(180)).toBe(countToAngle(5))
-      expect(angleToTotalCount(rawAngleFromPointerDown(180))).toBe(5)
-    })
+  describe('incremental drag contract', () => {
+    it('legacy jump helpers snap far from top; incremental drag starts at current angle', () => {
+      const atRestRaw = 0
+      const pointerAtLeftOfTop = 330
 
-    it('returns 0 for top-of-ring touch at rest', () => {
-      expect(rawAngleFromPointerDown(0)).toBe(0)
-    })
-  })
-
-  describe('ringAngleToRawAngle', () => {
-    it('preserves completed revolutions when jumping on ring', () => {
-      const currentRaw = countToAngle(21)
-      const jumped = ringAngleToRawAngle(180, currentRaw)
-
-      expect(Math.floor(jumped / 360)).toBe(Math.floor(currentRaw / 360))
-      expect(angleToTotalCount(jumped)).toBeGreaterThan(20)
-    })
-
-    it('maps twelve o’clock tap to rep 1, not zero, when count is partial', () => {
-      const currentRaw = countToAngle(5)
-      const jumped = ringAngleToRawAngle(0, currentRaw)
-
-      expect(angleToTotalCount(jumped)).toBe(1)
-      expect(jumped).toBe(countToAngle(1))
+      expect(rawAngleFromPointerDown(pointerAtLeftOfTop)).toBeGreaterThan(0)
+      expect(angleToTotalCount(atRestRaw)).toBe(0)
     })
   })
 

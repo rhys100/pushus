@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { repHistoryKeys } from '@/hooks/useRepHistory'
 import { formatInTimeZone } from 'date-fns-tz'
 import { activityFeedKeys, type ActivityFeedItem } from '@/hooks/useActivityFeed'
 import { groupDailyTargetsKeys } from '@/hooks/useGroupDailyTargets'
@@ -49,7 +50,7 @@ async function fetchDayTotal(groupId: string, loggedFor: string): Promise<number
   return data ?? 0
 }
 
-async function fetchTodayEntries(
+async function fetchDayEntries(
   groupId: string,
   loggedFor: string,
   userId: string,
@@ -71,29 +72,43 @@ async function fetchTodayEntries(
   return (data ?? []) as PushupEntry[]
 }
 
-export function useDayTotal(group: Group | null | undefined) {
-  const loggedFor = group ? getGroupLocalDateString(group.timezone) : ''
+export function useDayTotal(
+  group: Group | null | undefined,
+  loggedFor?: string,
+) {
+  const todayLoggedFor = group ? getGroupLocalDateString(group.timezone) : ''
+  const date = loggedFor ?? todayLoggedFor
 
   return useQuery({
-    queryKey: todayKeys.dayTotal(group?.id ?? '', loggedFor),
-    queryFn: () => fetchDayTotal(group!.id, loggedFor),
-    enabled: Boolean(group?.id),
+    queryKey: todayKeys.dayTotal(group?.id ?? '', date),
+    queryFn: () => fetchDayTotal(group!.id, date),
+    enabled: Boolean(group?.id && date),
     staleTime: 30_000,
   })
 }
 
+export function useDayEntries(
+  group: Group | null | undefined,
+  userId: string | undefined,
+  loggedFor?: string,
+) {
+  const todayLoggedFor = group ? getGroupLocalDateString(group.timezone) : ''
+  const date = loggedFor ?? todayLoggedFor
+
+  return useQuery({
+    queryKey: todayKeys.entries(group?.id ?? '', date),
+    queryFn: () => fetchDayEntries(group!.id, date, userId!),
+    enabled: Boolean(group?.id && userId && date),
+    staleTime: 30_000,
+  })
+}
+
+/** @deprecated Use useDayEntries */
 export function useTodayEntries(
   group: Group | null | undefined,
   userId: string | undefined,
 ) {
-  const loggedFor = group ? getGroupLocalDateString(group.timezone) : ''
-
-  return useQuery({
-    queryKey: todayKeys.entries(group?.id ?? '', loggedFor),
-    queryFn: () => fetchTodayEntries(group!.id, loggedFor, userId!),
-    enabled: Boolean(group?.id && userId),
-    staleTime: 30_000,
-  })
+  return useDayEntries(group, userId)
 }
 
 type BankPushupsInput = {
@@ -113,11 +128,15 @@ type UpdateEntryInput = {
   group: Group
   entryId: string
   count: number
+  /** Entry date (`logged_for`). Required for My log history edits; defaults to today. */
+  loggedFor?: string
 }
 
 type DeleteEntryInput = {
   group: Group
   entryId: string
+  /** Entry date (`logged_for`). Required for My log history deletes; defaults to today. */
+  loggedFor?: string
 }
 
 type LeaderboardSnapshot = {
@@ -215,16 +234,39 @@ function restoreLeaderboardSnapshots(
   }
 }
 
+function resolveEntryLoggedFor(group: Group, loggedFor?: string): string {
+  return loggedFor ?? getGroupLocalDateString(group.timezone)
+}
+
+export function dayCacheKeys(group: Group, loggedFor?: string) {
+  const date = resolveEntryLoggedFor(group, loggedFor)
+
+  return {
+    date,
+    totalKey: todayKeys.dayTotal(group.id, date),
+    entriesKey: todayKeys.entries(group.id, date),
+  }
+}
+
+function invalidateDayRelatedQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+  group: Group,
+  loggedFor?: string,
+) {
+  const { totalKey, entriesKey } = dayCacheKeys(group, loggedFor)
+
+  queryClient.invalidateQueries({ queryKey: totalKey })
+  queryClient.invalidateQueries({ queryKey: entriesKey })
+  queryClient.invalidateQueries({ queryKey: repHistoryKeys.all })
+  invalidateLeaderboardQueries(queryClient, group)
+  queryClient.invalidateQueries({ queryKey: activityFeedKeys.feed(group.id) })
+}
+
 function invalidateTodayRelatedQueries(
   queryClient: ReturnType<typeof useQueryClient>,
   group: Group,
 ) {
-  const loggedFor = getGroupLocalDateString(group.timezone)
-
-  queryClient.invalidateQueries({ queryKey: todayKeys.dayTotal(group.id, loggedFor) })
-  queryClient.invalidateQueries({ queryKey: todayKeys.entries(group.id, loggedFor) })
-  invalidateLeaderboardQueries(queryClient, group)
-  queryClient.invalidateQueries({ queryKey: activityFeedKeys.feed(group.id) })
+  invalidateDayRelatedQueries(queryClient, group)
 }
 
 export function useBankPushups() {
@@ -441,10 +483,8 @@ export function useUpdateEntry() {
 
       return data as PushupEntry
     },
-    onMutate: async ({ group, entryId, count }) => {
-      const loggedFor = getGroupLocalDateString(group.timezone)
-      const totalKey = todayKeys.dayTotal(group.id, loggedFor)
-      const entriesKey = todayKeys.entries(group.id, loggedFor)
+    onMutate: async ({ group, entryId, count, loggedFor }) => {
+      const { totalKey, entriesKey } = dayCacheKeys(group, loggedFor)
 
       await queryClient.cancelQueries({ queryKey: totalKey })
       await queryClient.cancelQueries({ queryKey: entriesKey })
@@ -464,18 +504,18 @@ export function useUpdateEntry() {
 
       return { previousTotal, previousEntries, totalKey, entriesKey }
     },
-    onError: (_error, { group }, context) => {
+    onError: (_error, { group, loggedFor }, context) => {
       if (!context) {
         return
       }
 
       queryClient.setQueryData(context.totalKey, context.previousTotal)
       queryClient.setQueryData(context.entriesKey, context.previousEntries)
-      invalidateTodayRelatedQueries(queryClient, group)
+      invalidateDayRelatedQueries(queryClient, group, loggedFor)
     },
-    onSettled: (_data, error, { group }) => {
+    onSettled: (_data, error, { group, loggedFor }) => {
       if (!error) {
-        invalidateTodayRelatedQueries(queryClient, group)
+        invalidateDayRelatedQueries(queryClient, group, loggedFor)
       }
     },
   })
@@ -496,10 +536,8 @@ export function useDeleteEntry() {
 
       return data as PushupEntry
     },
-    onMutate: async ({ group, entryId }) => {
-      const loggedFor = getGroupLocalDateString(group.timezone)
-      const totalKey = todayKeys.dayTotal(group.id, loggedFor)
-      const entriesKey = todayKeys.entries(group.id, loggedFor)
+    onMutate: async ({ group, entryId, loggedFor }) => {
+      const { totalKey, entriesKey } = dayCacheKeys(group, loggedFor)
 
       await queryClient.cancelQueries({ queryKey: totalKey })
       await queryClient.cancelQueries({ queryKey: entriesKey })
@@ -520,18 +558,18 @@ export function useDeleteEntry() {
 
       return { previousTotal, previousEntries, totalKey, entriesKey }
     },
-    onError: (_error, { group }, context) => {
+    onError: (_error, { group, loggedFor }, context) => {
       if (!context) {
         return
       }
 
       queryClient.setQueryData(context.totalKey, context.previousTotal)
       queryClient.setQueryData(context.entriesKey, context.previousEntries)
-      invalidateTodayRelatedQueries(queryClient, group)
+      invalidateDayRelatedQueries(queryClient, group, loggedFor)
     },
-    onSettled: (_data, error, { group }) => {
+    onSettled: (_data, error, { group, loggedFor }) => {
       if (!error) {
-        invalidateTodayRelatedQueries(queryClient, group)
+        invalidateDayRelatedQueries(queryClient, group, loggedFor)
       }
     },
   })
@@ -560,8 +598,7 @@ export function useRecordEntryEffort() {
       return data as PushupEntry
     },
     onSuccess: (entry, { group }) => {
-      const loggedFor = getGroupLocalDateString(group.timezone)
-      const entriesKey = todayKeys.entries(group.id, loggedFor)
+      const entriesKey = todayKeys.entries(group.id, entry.logged_for)
 
       queryClient.setQueryData<PushupEntry[]>(entriesKey, (current = []) =>
         current.map((row) => (row.id === entry.id ? entry : row)),

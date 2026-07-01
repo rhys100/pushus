@@ -14,11 +14,19 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 - Optional profile **name initial** (single letter, e.g. Rhys E) on onboarding and in Settings
 - **Personal mate labels** on the Group Members list — tap a mate to rename for yourself; synced to your account; shown as `Your label (their name)`
+- **Feed → My log:** personal rep history with month calendar, daily totals, and set list (moved from Log page)
+- **Centre tap on ring:** tap inside the dial to add one rep (hands-free / nose-friendly logging)
+
+### Changed
+
+- **Log page layout:** daily progress card above the ring; today's entries moved to Feed → My log
+- **Bank Push-ups** button appears only after you start interacting with the ring (drag, centre tap, or keyboard)
+- Circular logger ring **10% larger**; drag is incremental only (no jump to rep 10 on grab)
 
 ### Fixed
 
-- Circular logger ring handle and progress arc share the same angle; dial anchors rep 5 at bottom and rep 10 at top with even 36° spacing
-- `update_my_profile` now checks private-beta app access (same gate as onboarding profile save)
+- Circular logger no longer jumps to 10 reps when grabbing the handle slightly left of top from zero
+- Feed → My log: edit/delete on past days now refreshes that day's totals and entry list (not just today)
 ---
 
 ## [1.2.0] - 2026-06-29

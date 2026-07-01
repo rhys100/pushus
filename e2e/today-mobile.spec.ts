@@ -13,9 +13,7 @@ async function seedAuthSession(page: Page) {
 
 async function gotoTodayReady(page: Page) {
   await page.goto('/today', { waitUntil: 'networkidle' })
-  await expect(page.getByRole('button', { name: /Bank Push-ups/i })).toBeVisible({
-    timeout: 20_000,
-  })
+  await expect(page.locator('svg[role="slider"]')).toBeVisible({ timeout: 20_000 })
 }
 
 async function assertLogNavContained(page: Page) {
@@ -33,28 +31,33 @@ async function assertLogNavContained(page: Page) {
   }
 }
 
-async function assertLogPageHeroOrder(page: Page) {
+async function assertLogPageHeroOrder(page: Page, expectBankVisible: boolean) {
   const ring = page.locator('svg[role="slider"]')
-  const bank = page.getByRole('button', { name: /Bank Push-ups/i })
   const plan = page.getByTestId('day-progress-card')
-  const entries = page.getByRole('heading', { name: /Today's entries/i })
+  const bank = page.getByRole('button', { name: /Bank Push-ups/i })
 
-  const ringBox = await ring.boundingBox()
-  const bankBox = await bank.boundingBox()
   const planBox = await plan.boundingBox()
-  const entriesBox = await entries.boundingBox()
+  const ringBox = await ring.boundingBox()
 
-  expect(ringBox).not.toBeNull()
-  expect(bankBox).not.toBeNull()
   expect(planBox).not.toBeNull()
-  expect(entriesBox).not.toBeNull()
+  expect(ringBox).not.toBeNull()
 
-  if (ringBox && bankBox && planBox && entriesBox) {
-    expect(ringBox.y + ringBox.height).toBeLessThanOrEqual(bankBox.y + 2)
-    expect(bankBox.y + bankBox.height).toBeLessThanOrEqual(planBox.y + 2)
-    expect(planBox.y + planBox.height).toBeLessThanOrEqual(entriesBox.y + 2)
+  if (planBox && ringBox) {
+    expect(planBox.y + planBox.height).toBeLessThanOrEqual(ringBox.y + 2)
   }
 
+  if (expectBankVisible) {
+    const bankBox = await bank.boundingBox()
+    expect(bankBox).not.toBeNull()
+
+    if (ringBox && bankBox) {
+      expect(ringBox.y + ringBox.height).toBeLessThanOrEqual(bankBox.y + 2)
+    }
+  } else {
+    await expect(bank).toHaveCount(0)
+  }
+
+  await expect(page.getByRole('heading', { name: /Today's entries/i })).toHaveCount(0)
   await assertLogNavContained(page)
 }
 
@@ -100,20 +103,19 @@ test.describe('today mobile layout', () => {
     { width: 390, height: 844 },
     { width: 430, height: 932 },
   ]) {
-    test(`layout at ${viewport.width}x${viewport.height} — count 0 shows hint and hero order`, async ({
+    test(`layout at ${viewport.width}x${viewport.height} — count 0 hides bank and shows ring hint`, async ({
       page,
     }) => {
       await page.setViewportSize(viewport)
       await gotoTodayReady(page)
 
-      const bank = page.getByRole('button', { name: /Bank Push-ups/i })
-      await expect(page.getByText('Drag the ring to bank more')).toBeVisible()
-      await expect(bank).toBeDisabled()
+      await expect(page.getByText('Drag the ring', { exact: true })).toBeVisible()
+      await expect(page.getByRole('button', { name: /Bank Push-ups/i })).toHaveCount(0)
       await expect(page.getByText('Private beta')).toHaveCount(0)
-      await assertLogPageHeroOrder(page)
+      await assertLogPageHeroOrder(page, false)
     })
 
-    test(`layout at ${viewport.width}x${viewport.height} — count 1 enables bank with hero order`, async ({
+    test(`layout at ${viewport.width}x${viewport.height} — count 1 reveals bank with hero order`, async ({
       page,
     }) => {
       await page.setViewportSize(viewport)
@@ -124,7 +126,7 @@ test.describe('today mobile layout', () => {
       const bank = page.getByRole('button', { name: /Bank Push-ups/i })
       await expect(bank).toBeEnabled()
       await expect(page.getByTestId('bank-disabled-hint')).toHaveCount(0)
-      await assertLogPageHeroOrder(page)
+      await assertLogPageHeroOrder(page, true)
     })
 
     test(`layout at ${viewport.width}x${viewport.height} — count 7 keeps hero order`, async ({
@@ -134,7 +136,7 @@ test.describe('today mobile layout', () => {
       await gotoTodayReady(page)
 
       await setRingCount(page, 7)
-      await assertLogPageHeroOrder(page)
+      await assertLogPageHeroOrder(page, true)
     })
 
     test(`layout at ${viewport.width}x${viewport.height} — count 10 keeps hero order`, async ({
@@ -144,25 +146,43 @@ test.describe('today mobile layout', () => {
       await gotoTodayReady(page)
 
       await setRingCount(page, 10)
-      await assertLogPageHeroOrder(page)
+      await assertLogPageHeroOrder(page, true)
     })
   }
 
-  test('touch ring at bottom snaps count without keyboard', async ({ page }) => {
+  test('drag ring incrementally from zero without jump to ten', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await gotoTodayReady(page)
 
     const ringHit = page.getByTestId('logger-ring-hit')
     const hitBox = await ringHit.boundingBox()
+    const ring = page.locator('svg[role="slider"]')
 
     expect(hitBox).not.toBeNull()
 
     if (hitBox) {
-      await page.mouse.click(hitBox.x + hitBox.width / 2, hitBox.y + hitBox.height - 6)
+      const startX = hitBox.x + hitBox.width / 2
+      const startY = hitBox.y + 4
+      await page.mouse.move(startX, startY)
+      await page.mouse.down()
+      await page.mouse.move(startX - 12, startY + 8, { steps: 4 })
+      await page.mouse.up()
     }
 
-    const ring = page.locator('svg[role="slider"]')
-    await expect(ring).toHaveAttribute('aria-valuenow', '6')
+    const count = Number(await ring.getAttribute('aria-valuenow'))
+    expect(count).toBeGreaterThan(0)
+    expect(count).toBeLessThanOrEqual(2)
+  })
+
+  test('centre tap adds one rep', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await gotoTodayReady(page)
+
+    const centerHit = page.getByTestId('logger-center-hit')
+    await centerHit.click()
+
+    await expect(page.locator('svg[role="slider"]')).toHaveAttribute('aria-valuenow', '1')
+    await expect(page.getByRole('button', { name: /Bank Push-ups/i })).toBeVisible()
   })
 
   test('ring handle stays visible at zero after drag hint dismissed', async ({ page }) => {
@@ -175,24 +195,6 @@ test.describe('today mobile layout', () => {
     const ring = page.locator('svg[role="slider"]')
     await expect(ring.locator('[data-testid="logger-handle-visible"]')).toHaveCount(1)
     await expect(page.getByText('Drag the ring', { exact: true })).toHaveCount(0)
-    await expect(page.getByText('Drag the ring to bank more')).toBeVisible()
-    await assertLogPageHeroOrder(page)
-  })
-
-  test('log page scrolls when swiping outside the ring', async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 })
-    await gotoTodayReady(page)
-
-    const entriesHeading = page.getByRole('heading', { name: /Today's entries/i })
-    await entriesHeading.scrollIntoViewIfNeeded()
-
-    const scrollBefore = await page.evaluate(() => window.scrollY)
-    await page.mouse.move(195, 500)
-    await page.mouse.down()
-    await page.mouse.move(195, 350, { steps: 8 })
-    await page.mouse.up()
-
-    const scrollAfter = await page.evaluate(() => window.scrollY)
-    expect(scrollAfter).not.toBe(scrollBefore)
+    await assertLogPageHeroOrder(page, false)
   })
 })

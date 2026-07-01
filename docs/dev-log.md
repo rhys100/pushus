@@ -26,6 +26,16 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-02 (log page UX refresh)
+
+**Shipped**
+- Log page: progress card above ring; bank button hidden until ring interaction; ring 10% larger with centre tap +1
+- Ring drag incremental-only fix (no jump to 10 on grab)
+- Feed tab: Group / My log segments; personal history calendar + daily entries moved off Log page
+
+**Next**
+- Manual spot-check ring drag on real phone; Feed My log calendar on past months with data
+
 ### 2026-06-29 (ring dial alignment)
 
 **Fixed**

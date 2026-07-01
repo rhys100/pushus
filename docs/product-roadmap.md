@@ -19,11 +19,11 @@ Public-friendly view of where PushUS is today and where it may go.
 
 ### Logging
 
-- Direct-drag circular logger (no plus button); one lap = 10 push-ups
-- Bank Push-ups, undo, edit/delete entries, daily total, entry audit foundation
+- Direct-drag circular logger (no plus button); one lap = 10 push-ups; centre tap +1; incremental drag
+- Bank Push-ups (after ring interaction), undo, edit/delete entries, daily total, entry audit foundation
 - Per-rep haptic tick while dragging (where the browser supports vibration)
-- Handle-only drag with larger grab target; smoother ring interaction on mobile
-- Log page layout: progress card, ring, scrollable entries, fixed bank strip above nav
+- Handle drag with larger grab target; smoother ring interaction on mobile
+- Log page layout: progress card above ring; personal entry history on Feed → My log
 
 ### Training and settings
 
@@ -41,7 +41,7 @@ Public-friendly view of where PushUS is today and where it may go.
 ### Social and group
 
 - Leaderboard (day, week, month; day view shows percent progress for others, exact target for self)
-- Activity feed with emoji reactions (🔥 💪 👏 in beta; no self-reactions)
+- Activity feed with Group / My log segments; emoji reactions (🔥 💪 👏 in beta; no self-reactions)
 - Branded social share previews for invite links (Cloudflare Pages)
 - Invite tools and member management
 
