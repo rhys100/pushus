@@ -3,7 +3,7 @@ const PENDING_INVITE_CODE_KEY = 'pushus_pending_invite_code'
 const PROFILE_COMPLETED_KEY = 'pushus_profile_completed'
 const PUSH_PROMPT_DISMISSED_PREFIX = 'pushus-push-prompt-dismissed'
 const PWA_INSTALL_PROMPT_DISMISSED_PREFIX = 'pushus-pwa-install-prompt-dismissed'
-const PWA_OPEN_APP_PROMPT_DISMISSED_PREFIX = 'pushus-pwa-open-app-prompt-dismissed'
+const PWA_OPEN_APP_PROMPT_DISMISSED_PREFIX = 'pushus-pwa-open-app-never-remind-v2'
 const PWA_OPEN_APP_PROMPT_SNOOZED_SESSION_PREFIX = 'pushus-pwa-open-app-prompt-snoozed'
 const PWA_KNOWN_INSTALLED_KEY = 'pushus-pwa-known-installed'
 

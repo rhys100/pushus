@@ -26,6 +26,13 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-01 (Android open-app detection fix)
+
+**Fixed**
+- Dead zone on Android Chrome when PWA already installed: no install prompt, no open-app dock
+- Infer installed when `beforeinstallprompt` never fires after load (Chrome behaviour for installed PWAs)
+- Reset permanent-dismiss storage key so earlier test dismissals stop blocking the dock
+
 ### 2026-07-01 (aggressive open-app reminders)
 
 **Fixed**

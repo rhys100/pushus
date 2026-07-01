@@ -17,6 +17,11 @@ import {
   setPwaInstallDockVisible,
   subscribePwaInstallDockVisibility,
 } from '@/lib/pwaInstallDockVisibility'
+import {
+  INSTALL_PROMPT_CHECK_MS,
+  noteInstallPromptAvailable,
+  completeInstallPromptCheckUnavailable,
+} from '@/lib/pwaInstallPromptAvailability'
 import { syncPwaKnownInstalledFromDisplayMode } from '@/lib/pwaInstalled'
 import { useAuth } from '@/providers/AuthProvider'
 
@@ -84,6 +89,7 @@ export function usePwaInstallPrompt() {
   useEffect(() => {
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault()
+      noteInstallPromptAvailable()
       setDeferredPrompt(event as BeforeInstallPromptEvent)
     }
 
@@ -103,11 +109,16 @@ export function usePwaInstallPrompt() {
       }
     }
 
+    const installPromptCheckTimeout = window.setTimeout(() => {
+      completeInstallPromptCheckUnavailable()
+    }, INSTALL_PROMPT_CHECK_MS)
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
     window.addEventListener('appinstalled', handleAppInstalled)
     displayModeQuery?.addEventListener('change', handleDisplayModeChange)
 
     return () => {
+      window.clearTimeout(installPromptCheckTimeout)
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
       window.removeEventListener('appinstalled', handleAppInstalled)
       displayModeQuery?.removeEventListener('change', handleDisplayModeChange)
