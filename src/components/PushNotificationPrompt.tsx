@@ -1,6 +1,8 @@
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/cn'
+import { getIosPwaInstallHint } from '@/lib/pwa'
 import { usePushNotificationPrompt } from '@/hooks/usePushNotificationPrompt'
+import { useNotificationPreferences } from '@/providers/NotificationPreferencesProvider'
 
 const TAB_NAV_PATHS = ['/leaderboard', '/activity', '/group', '/settings'] as const
 
@@ -14,6 +16,8 @@ function promptBottomClass(pathname: string): string {
 
 export function PushNotificationPrompt() {
   const { visible, enabling, error, enable, dismiss, pathname } = usePushNotificationPrompt()
+  const { pushSupport } = useNotificationPreferences()
+  const needsIosInstall = pushSupport === 'ios_needs_install'
 
   if (!visible) {
     return null
@@ -31,22 +35,34 @@ export function PushNotificationPrompt() {
       <div className="dock-scrim" aria-hidden="true" />
       <div className="dock-panel px-4 pb-3 pt-3">
       <p className="text-sm font-semibold text-text-primary">Stay on track with push reminders</p>
-      <p className="mt-1 text-sm text-text-muted">
-        We send hourly reminders if you are behind your goal, between 7am and 7pm in your
-        timezone. Change hours, frequency, or pause in Settings.
-      </p>
+      {needsIosInstall ? (
+        <p className="mt-1 text-sm text-text-muted">{getIosPwaInstallHint()}</p>
+      ) : (
+        <p className="mt-1 text-sm text-text-muted">
+          We send hourly reminders if you are behind your goal, between 7am and 7pm in your
+          timezone. Change hours, frequency, or pause in Settings.
+        </p>
+      )}
       {error ? (
         <p className="mt-2 text-xs text-danger" role="alert">
           {error}
         </p>
       ) : null}
       <div className="mt-3 flex flex-wrap gap-2">
-        <Button loading={enabling} onClick={() => void enable()}>
-          Enable reminders
-        </Button>
-        <Button variant="secondary" disabled={enabling} onClick={dismiss}>
-          Not now
-        </Button>
+        {needsIosInstall ? (
+          <Button variant="secondary" onClick={dismiss}>
+            Got it
+          </Button>
+        ) : (
+          <>
+            <Button loading={enabling} onClick={() => void enable()}>
+              Enable reminders
+            </Button>
+            <Button variant="secondary" disabled={enabling} onClick={dismiss}>
+              Not now
+            </Button>
+          </>
+        )}
       </div>
       </div>
     </div>
