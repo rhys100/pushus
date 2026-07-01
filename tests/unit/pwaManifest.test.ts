@@ -47,7 +47,7 @@ describe('PWA manifest', () => {
         id: '/',
       },
     ])
-    expect(manifest.launch_handler).toEqual({ client_mode: 'focus-existing' })
+    expect(manifest.launch_handler).toEqual({ client_mode: 'navigate-new' })
   })
 
   it('declares required 192 and 512 PNG icons', () => {

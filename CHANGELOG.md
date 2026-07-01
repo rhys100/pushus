@@ -22,6 +22,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 - **Open installed app prompt** now appears on Today and when install is inferred from push reminders, a dismissed iOS install prompt, or Android `getInstalledRelatedApps` (manifest uses origin-relative `related_applications`)
 - **Open in app** button on Android uses a real in-scope link plus `launch_handler` so Chrome can launch the installed PWA; iOS shows home-screen steps because Safari cannot switch apps automatically
+- **Android Open in app:** uses `window.open` then an Android intent URL fallback so Chrome can launch the installed WebAPK instead of reloading the browser tab
 - **Open-app reminders:** tapping **Open in app** only snoozes the dock for the current visit and clears any prior permanent dismiss; **Don't remind me again** is the only way to stop future browser reminders
 - **Android Chrome open-app detection:** if Chrome does not offer install (already installed PWA), the open-app dock now appears even when local install flags were never set; permanent dismiss storage key bumped so old test dismissals reset
 - Blank screen on local dev when `.env` is missing — show a setup screen instead of crashing on Supabase init
