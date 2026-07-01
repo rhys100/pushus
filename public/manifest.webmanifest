@@ -1,8 +1,8 @@
 {
+  "id": "/",
   "name": "PushUS",
   "short_name": "PushUS",
   "description": "Bank push-ups with your mates. Privacy-first push-up challenge app.",
-  "id": "/",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",

@@ -1,9 +1,11 @@
+import { needsIosHomeScreenInstall } from '@/lib/pwa'
 import { supabase } from '@/lib/supabase'
 
 export type PushSupportStatus =
   | 'supported'
   | 'unsupported'
   | 'missing_vapid_key'
+  | 'ios_needs_install'
 
 export type PushPermissionStatus = NotificationPermission | 'unsupported'
 
@@ -36,6 +38,10 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 
 export function getPushSupportStatus(): PushSupportStatus {
+  if (needsIosHomeScreenInstall()) {
+    return 'ios_needs_install'
+  }
+
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
     return 'unsupported'
   }
