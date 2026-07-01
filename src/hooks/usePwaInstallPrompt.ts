@@ -3,6 +3,8 @@ import { useLocation } from 'react-router-dom'
 import {
   dismissPwaInstallPrompt,
   isPwaInstallPromptDismissed,
+  isPwaKnownInstalled,
+  markPwaKnownInstalled,
 } from '@/lib/storage'
 import {
   getPwaInstallPlatform,
@@ -15,6 +17,7 @@ import {
   setPwaInstallDockVisible,
   subscribePwaInstallDockVisibility,
 } from '@/lib/pwaInstallDockVisibility'
+import { syncPwaKnownInstalledFromDisplayMode } from '@/lib/pwaInstalled'
 import { useAuth } from '@/providers/AuthProvider'
 
 type BeforeInstallPromptUserChoice = {
@@ -63,6 +66,10 @@ export function usePwaInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [installing, setInstalling] = useState(false)
   const [isInstalled, setIsInstalled] = useState(getIsInstalled)
+  const [pwaKnownInstalled, setPwaKnownInstalled] = useState(() => {
+    syncPwaKnownInstalledFromDisplayMode()
+    return isPwaKnownInstalled()
+  })
   const [promptDismissed, setPromptDismissed] = useState(false)
   const platform = useMemo(getPlatform, [])
 
@@ -71,18 +78,30 @@ export function usePwaInstallPrompt() {
   }, [userId])
 
   useEffect(() => {
+    setPwaKnownInstalled(syncPwaKnownInstalledFromDisplayMode())
+  }, [])
+
+  useEffect(() => {
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault()
       setDeferredPrompt(event as BeforeInstallPromptEvent)
     }
 
     const handleAppInstalled = () => {
+      markPwaKnownInstalled()
+      setPwaKnownInstalled(true)
       setIsInstalled(true)
       setDeferredPrompt(null)
     }
 
     const displayModeQuery = window.matchMedia?.('(display-mode: standalone)')
-    const handleDisplayModeChange = () => setIsInstalled(getIsInstalled())
+    const handleDisplayModeChange = () => {
+      const standalone = getIsInstalled()
+      setIsInstalled(standalone)
+      if (standalone) {
+        setPwaKnownInstalled(syncPwaKnownInstalledFromDisplayMode())
+      }
+    }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
     window.addEventListener('appinstalled', handleAppInstalled)
@@ -107,6 +126,7 @@ export function usePwaInstallPrompt() {
       appAccessAllowed: appAccess.allowed,
       promptAvailable: Boolean(deferredPrompt),
       isInstalled,
+      pwaKnownInstalled,
       promptDismissed,
       platform,
     })
@@ -120,13 +140,14 @@ export function usePwaInstallPrompt() {
     appAccess.allowed,
     deferredPrompt,
     isInstalled,
+    pwaKnownInstalled,
     promptDismissed,
     platform,
   ])
 
   useEffect(() => {
-    setPwaInstallDockVisible(visible)
-    return () => setPwaInstallDockVisible(false)
+    setPwaInstallDockVisible('install', visible)
+    return () => setPwaInstallDockVisible('install', false)
   }, [visible])
 
   const dismiss = useCallback(() => {
@@ -154,6 +175,8 @@ export function usePwaInstallPrompt() {
       setDeferredPrompt(null)
 
       if (choice.outcome === 'accepted') {
+        markPwaKnownInstalled()
+        setPwaKnownInstalled(true)
         setIsInstalled(true)
       } else {
         dismiss()

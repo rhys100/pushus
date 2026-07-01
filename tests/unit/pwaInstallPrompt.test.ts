@@ -13,6 +13,7 @@ const baseInput = {
   appAccessAllowed: true,
   promptAvailable: true,
   isInstalled: false,
+  pwaKnownInstalled: false,
   promptDismissed: false,
   platform: 'android' as const,
 }
@@ -70,6 +71,7 @@ describe('PWA install prompt', () => {
 
   it('hides when already installed or dismissed', () => {
     expect(shouldShowPwaInstallPrompt({ ...baseInput, isInstalled: true })).toBe(false)
+    expect(shouldShowPwaInstallPrompt({ ...baseInput, pwaKnownInstalled: true })).toBe(false)
     expect(shouldShowPwaInstallPrompt({ ...baseInput, promptDismissed: true })).toBe(false)
   })
 

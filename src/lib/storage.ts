@@ -3,6 +3,8 @@ const PENDING_INVITE_CODE_KEY = 'pushus_pending_invite_code'
 const PROFILE_COMPLETED_KEY = 'pushus_profile_completed'
 const PUSH_PROMPT_DISMISSED_PREFIX = 'pushus-push-prompt-dismissed'
 const PWA_INSTALL_PROMPT_DISMISSED_PREFIX = 'pushus-pwa-install-prompt-dismissed'
+const PWA_OPEN_APP_PROMPT_DISMISSED_PREFIX = 'pushus-pwa-open-app-prompt-dismissed'
+const PWA_KNOWN_INSTALLED_KEY = 'pushus-pwa-known-installed'
 
 export function getPendingInviteCode(): string | null {
   try {
@@ -96,6 +98,38 @@ export function isPwaInstallPromptDismissed(userId: string): boolean {
 export function dismissPwaInstallPrompt(userId: string): void {
   try {
     localStorage.setItem(`${PWA_INSTALL_PROMPT_DISMISSED_PREFIX}:${userId}`, '1')
+  } catch {
+    // ignore
+  }
+}
+
+export function isPwaKnownInstalled(): boolean {
+  try {
+    return localStorage.getItem(PWA_KNOWN_INSTALLED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function markPwaKnownInstalled(): void {
+  try {
+    localStorage.setItem(PWA_KNOWN_INSTALLED_KEY, '1')
+  } catch {
+    // ignore
+  }
+}
+
+export function isPwaOpenAppPromptDismissed(userId: string): boolean {
+  try {
+    return localStorage.getItem(`${PWA_OPEN_APP_PROMPT_DISMISSED_PREFIX}:${userId}`) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function dismissPwaOpenAppPrompt(userId: string): void {
+  try {
+    localStorage.setItem(`${PWA_OPEN_APP_PROMPT_DISMISSED_PREFIX}:${userId}`, '1')
   } catch {
     // ignore
   }

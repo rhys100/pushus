@@ -17,6 +17,7 @@ type WebAppManifest = {
   display?: string
   icons?: ManifestIcon[]
   prefer_related_applications?: boolean
+  related_applications?: Array<{ platform?: string; url?: string }>
 }
 
 const root = path.resolve(__dirname, '../..')
@@ -38,6 +39,12 @@ describe('PWA manifest', () => {
       manifest.display,
     )
     expect(manifest.prefer_related_applications).toBe(false)
+    expect(manifest.related_applications).toEqual([
+      {
+        platform: 'webapp',
+        url: 'https://www.pushus.app/manifest.webmanifest',
+      },
+    ])
   })
 
   it('declares required 192 and 512 PNG icons', () => {

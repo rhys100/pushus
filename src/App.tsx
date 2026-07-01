@@ -20,6 +20,11 @@ const PwaInstallPrompt = lazy(() =>
     default: m.PwaInstallPrompt,
   })),
 )
+const PwaOpenAppPrompt = lazy(() =>
+  import('@/components/PwaOpenAppPrompt').then((m) => ({
+    default: m.PwaOpenAppPrompt,
+  })),
+)
 const LoginPage = lazy(() =>
   import('@/pages/LoginPage').then((m) => ({ default: m.LoginPage })),
 )
@@ -109,6 +114,7 @@ export default function App() {
       <AppUpdateChecker />
       <Suspense fallback={null}>
         <PwaInstallPrompt />
+        <PwaOpenAppPrompt />
         <PushNotificationPrompt />
       </Suspense>
       <Routes>
