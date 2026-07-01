@@ -26,6 +26,9 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+**Notes**
+- Lint follow-up on open-app availability hook after merge
+
 ### 2026-07-01 (Android open-app detection fix)
 
 **Fixed**

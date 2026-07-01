@@ -59,15 +59,12 @@ export function usePwaOpenAppPrompt() {
   })
   const platform = useMemo(getPlatform, [])
   const pushEnabled = prefs?.push_enabled ?? false
-  const installPromptCheckComplete = useSyncExternalStore(
+  useSyncExternalStore(
     subscribeInstallPromptAvailability,
     isInstallPromptCheckComplete,
     () => false,
   )
-  const androidInstallPromptUnavailable = useMemo(
-    () => isAndroidInstallPromptUnavailable(platform),
-    [platform, installPromptCheckComplete],
-  )
+  const androidInstallPromptUnavailable = isAndroidInstallPromptUnavailable(platform)
 
   const refreshDismissState = useCallback(() => {
     if (!userId) {
