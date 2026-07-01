@@ -8,6 +8,7 @@ PushUS sends optional reminders when you are behind your goal during your chosen
 
 - **Browser:** `public/sw.js` service worker receives push events via the native Push API (no `web-push` in the frontend bundle).
 - **Frontend:** `src/lib/notifications/registerPush.ts` registers the service worker, requests permission, and stores subscriptions in Supabase.
+- **PWA:** `public/manifest.webmanifest`, PNG icons under `public/icons/`, and Apple home-screen meta tags in `index.html`. On iPhone/iPad, web push only works after **Add to Home Screen** — `src/lib/pwa.ts` detects this and shows install guidance in Settings and the push prompt.
 - **Database:** `notification_preferences`, `push_subscriptions`, and `notification_events` (see `supabase/migrations/0005_notifications.sql`).
 - **Sender:** `supabase/functions/send-push-reminders` edge function (cron-style) uses `web-push` with VAPID keys.
 

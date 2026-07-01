@@ -32,7 +32,7 @@ export function shouldShowPushNotificationPrompt(input: PushPromptVisibilityInpu
     return false
   }
 
-  if (input.pushSupport !== 'supported') {
+  if (input.pushSupport === 'unsupported' || input.pushSupport === 'missing_vapid_key') {
     return false
   }
 

@@ -26,6 +26,16 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-01 (iOS PWA)
+
+**Shipped**
+- iOS PWA install tags (`apple-mobile-web-app-*`, `apple-touch-icon`), PNG icons (180/192/512), manifest `id` + `scope`
+- `src/lib/pwa.ts` detects iOS Safari vs standalone home-screen app; Settings + push prompt show Add to Home Screen guidance
+- `npm run pwa:icons` generates icons from `favicon.svg` during build
+
+**Next**
+- Rhys spot-check Add to Home Screen on iPhone, then enable push from installed app
+
 ### 2026-06-29 (ring dial alignment)
 
 **Fixed**
