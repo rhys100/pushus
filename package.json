@@ -7,8 +7,9 @@
   "license": "AGPL-3.0-only",
   "scripts": {
     "dev": "vite",
-    "build": "npm run og:generate && tsc -b && vite build",
+    "build": "npm run og:generate && npm run pwa:generate && tsc -b && vite build",
     "og:generate": "node --experimental-strip-types scripts/generate-og-assets.ts",
+    "pwa:generate": "node --experimental-strip-types scripts/generate-pwa-assets.ts",
     "build:stats": "npm run build && node scripts/build-stats.mjs",
     "preview": "vite preview",
     "lint": "eslint .",

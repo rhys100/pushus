@@ -32,6 +32,9 @@ beforeEach(() => {
       set href(value: string) {
         href = value
       },
+      replace(value: string) {
+        href = value
+      },
     },
     history: {
       replaceState: (_state: unknown, _title: string, url?: string | URL | null) => {
@@ -82,4 +85,31 @@ test('clearReloadAttempts removes stored attempts', () => {
   incrementReloadAttempt('abc123')
   clearReloadAttempts('abc123')
   expect(getReloadAttemptCount('abc123')).toBe(0)
+})
+
+test('clearAppCaches updates service workers without unregistering push subscriptions', async () => {
+  const update = vi.fn().mockResolvedValue(undefined)
+  const unregister = vi.fn().mockResolvedValue(true)
+  const deleteCache = vi.fn().mockResolvedValue(true)
+
+  vi.stubGlobal('navigator', {
+    serviceWorker: {
+      getRegistrations: vi.fn().mockResolvedValue([{ update, unregister }]),
+    },
+  })
+  vi.stubGlobal('window', {
+    ...window,
+    caches: {
+      keys: vi.fn().mockResolvedValue(['vite-cache', 'image-cache']),
+      delete: deleteCache,
+    },
+  })
+
+  const { clearAppCaches } = await import('@/lib/reloadApp')
+  await clearAppCaches()
+
+  expect(update).toHaveBeenCalledOnce()
+  expect(unregister).not.toHaveBeenCalled()
+  expect(deleteCache).toHaveBeenCalledWith('vite-cache')
+  expect(deleteCache).toHaveBeenCalledWith('image-cache')
 })

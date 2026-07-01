@@ -4,12 +4,18 @@ import { AppUpdateChecker } from '@/components/AppUpdateChecker'
 import { RequireAuth } from '@/components/auth/RequireAuth'
 import { TabLayout } from '@/components/layout/TabLayout'
 import { Skeleton } from '@/components/ui'
+import { useAppServiceWorker } from '@/hooks/useAppServiceWorker'
 import { useNotificationClickNavigation } from '@/hooks/useNotificationClickNavigation'
 import { TodayPage } from '@/pages/TodayPage'
 
 const PushNotificationPrompt = lazy(() =>
   import('@/components/PushNotificationPrompt').then((m) => ({
     default: m.PushNotificationPrompt,
+  })),
+)
+const PwaInstallPrompt = lazy(() =>
+  import('@/components/PwaInstallPrompt').then((m) => ({
+    default: m.PwaInstallPrompt,
   })),
 )
 const LoginPage = lazy(() =>
@@ -84,12 +90,19 @@ function NotificationClickNavigation() {
   return null
 }
 
+function AppServiceWorkerRegistration() {
+  useAppServiceWorker()
+  return null
+}
+
 export default function App() {
   return (
     <>
+      <AppServiceWorkerRegistration />
       <NotificationClickNavigation />
       <AppUpdateChecker />
       <Suspense fallback={null}>
+        <PwaInstallPrompt />
         <PushNotificationPrompt />
       </Suspense>
       <Routes>

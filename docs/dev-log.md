@@ -26,6 +26,17 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-01 (Android PWA install + push reliability)
+
+**Shipped**
+- Android-installable PWA manifest with generated 192/512 and maskable icons
+- Bottom-dock **Install PushUS** prompt for eligible Android users before push reminders
+- App update refresh keeps the push service worker registered instead of unregistering subscriptions
+- Push notifications use real PWA icon and badge assets
+
+**Tests**
+- Focused PWA/push unit tests passing
+
 ### 2026-06-29 (ring dial alignment)
 
 **Fixed**
