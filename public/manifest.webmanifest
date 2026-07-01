@@ -15,7 +15,8 @@
   "related_applications": [
     {
       "platform": "webapp",
-      "url": "https://www.pushus.app/manifest.webmanifest"
+      "url": "/manifest.webmanifest",
+      "id": "/"
     }
   ],
   "icons": [

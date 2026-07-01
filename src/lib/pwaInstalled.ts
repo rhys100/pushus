@@ -20,17 +20,22 @@ export function syncPwaKnownInstalledFromDisplayMode(): boolean {
   return true
 }
 
-export async function detectPwaInstalledViaBrowserApi(): Promise<boolean> {
+export function hasGetInstalledRelatedAppsSupport(): boolean {
   if (typeof navigator === 'undefined') {
     return false
   }
 
-  const getInstalledRelatedApps = (navigator as NavigatorWithInstalledRelatedApps)
-    .getInstalledRelatedApps
+  return typeof (navigator as NavigatorWithInstalledRelatedApps).getInstalledRelatedApps ===
+    'function'
+}
 
-  if (!getInstalledRelatedApps) {
+export async function detectPwaInstalledViaBrowserApi(): Promise<boolean> {
+  if (!hasGetInstalledRelatedAppsSupport()) {
     return false
   }
+
+  const getInstalledRelatedApps = (navigator as NavigatorWithInstalledRelatedApps)
+    .getInstalledRelatedApps!
 
   try {
     const relatedApps = await getInstalledRelatedApps()

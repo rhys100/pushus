@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   detectPwaInstalledViaBrowserApi,
+  hasGetInstalledRelatedAppsSupport,
   syncPwaKnownInstalledFromDisplayMode,
 } from '@/lib/pwaInstalled'
 
@@ -50,10 +51,11 @@ describe('PWA installed detection', () => {
   it('detects installed webapp via getInstalledRelatedApps', async () => {
     vi.stubGlobal('navigator', {
       getInstalledRelatedApps: vi.fn().mockResolvedValue([
-        { platform: 'webapp', url: 'https://www.pushus.app/manifest.webmanifest' },
+        { platform: 'webapp', url: '/manifest.webmanifest', id: '/' },
       ]),
     })
 
+    expect(hasGetInstalledRelatedAppsSupport()).toBe(true)
     await expect(detectPwaInstalledViaBrowserApi()).resolves.toBe(true)
     expect(storage.get(PWA_KNOWN_INSTALLED_KEY)).toBe('1')
   })

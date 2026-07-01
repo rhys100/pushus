@@ -163,6 +163,8 @@ export function usePwaInstallPrompt() {
   const install = useCallback(async () => {
     if (!deferredPrompt) {
       if (platform === 'ios') {
+        markPwaKnownInstalled()
+        setPwaKnownInstalled(true)
         dismiss()
       }
       return

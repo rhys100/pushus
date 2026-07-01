@@ -26,6 +26,13 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-01 (PWA open-app prompt fix)
+
+**Fixed**
+- Open-app banner excluded `/today` (default route) — now shows there
+- Broader install inference: push reminders on, iOS install prompt dismissed, Android `getInstalledRelatedApps` on any supporting browser
+- Manifest `related_applications` uses relative manifest URL + `id` for cross-origin installs
+
 ### 2026-07-01 (PWA open-from-home-screen prompt)
 
 **Shipped**

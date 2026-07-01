@@ -13,13 +13,14 @@ function promptBottomClass(pathname: string): string {
 }
 
 export function PwaOpenAppPrompt() {
-  const { visible, platform, dismiss, pathname } = usePwaOpenAppPrompt()
+  const { visible, confidence, platform, dismiss, pathname } = usePwaOpenAppPrompt()
 
   if (!visible) {
     return null
   }
 
   const isIos = platform === 'ios'
+  const knownInstalled = confidence === 'known'
 
   return (
     <div
@@ -37,8 +38,12 @@ export function PwaOpenAppPrompt() {
         </p>
         <p className="mt-1 text-sm text-text-muted">
           {isIos
-            ? 'You have PushUS on your home screen. Open that icon for reliable reminders — this Safari tab cannot replace the installed app.'
-            : 'PushUS is installed on this phone. Open it from your home screen or app drawer for reliable reminders.'}
+            ? knownInstalled
+              ? 'You have PushUS on your home screen. Open that icon for reliable reminders — this Safari tab cannot replace the installed app.'
+              : 'If you added PushUS to your home screen, open that icon for reliable reminders — this Safari tab cannot replace the installed app.'
+            : knownInstalled
+              ? 'PushUS is installed on this phone. Open it from your home screen or app drawer for reliable reminders.'
+              : 'If you installed PushUS on this phone, open it from your home screen or app drawer for reliable reminders.'}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <Button onClick={dismiss}>Got it</Button>
