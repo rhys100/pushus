@@ -21,14 +21,14 @@ import { isPointOnRingTrack, pointerToRingAngle } from '@/lib/loggerHitTest'
 import { useCircularCounter } from '@/hooks/useCircularCounter'
 import { primeRepFeedback, pulseRepHapticDelta } from '@/lib/repHaptic'
 
-const RING_SIZE = 308
+const RING_SIZE = 336
 const RING_CENTER = RING_SIZE / 2
-const RING_RADIUS = 123
-const RING_STROKE = 15
-const RING_HIT_STROKE = 31
-const HANDLE_RADIUS = 14
+const RING_RADIUS = 134
+const RING_STROKE = 17
+const RING_HIT_STROKE = 34
+const HANDLE_RADIUS = 16
 const CENTER_HIT_RADIUS = RING_RADIUS - RING_STROKE - 8
-const RING_CONTAINER_SIZE = 'min(72vw,308px)'
+const RING_CONTAINER_SIZE = 'min(72vw,336px)'
 const REP_TICK_ANGLES = Array.from(
   { length: CIRCULAR_COUNTER.repsPerRevolution - 1 },
   (_, index) => (index + 1) * CIRCULAR_COUNTER.degreesPerRep,
@@ -687,7 +687,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
                 'font-mono font-bold tabular-nums leading-none text-text-primary',
                 countPulsing && 'logger-count-pulse',
               )}
-              style={{ fontSize: 'var(--text-hero)' }}
+              style={{ fontSize: 'var(--text-hero-logger)' }}
             >
               {displayCount}
             </span>

@@ -260,7 +260,7 @@ export function TodayPage() {
     return (
       <div className="space-y-4">
         <Skeleton className="h-16 w-full rounded-[var(--radius-lg)]" />
-        <Skeleton className="mx-auto h-[min(72vw,308px)] w-[min(72vw,308px)] rounded-full" />
+        <Skeleton className="mx-auto h-[min(72vw,336px)] w-[min(72vw,336px)] rounded-full" />
       </div>
     )
   }
@@ -274,7 +274,7 @@ export function TodayPage() {
 
   return (
     <>
-      <div className="flex flex-col pb-[var(--log-page-scroll-pad-inline)]">
+      <div className="flex flex-col pb-[var(--log-page-scroll-pad-inline)] pt-[var(--log-progress-card-height)]">
         {billingConfig.enabled ? (
           <BillingBanner
             className="mb-3"

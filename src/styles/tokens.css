@@ -29,6 +29,7 @@
   --font-display: 'DM Sans', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   --text-hero: clamp(3.5rem, 18vw, 5.5rem);
+  --text-hero-logger: clamp(4.2rem, 21.6vw, 6.6rem);
 
   --shadow-glow-accent: 0 0 24px var(--color-accent-muted);
 
@@ -44,6 +45,7 @@
   --bank-cta-height: 3.25rem;
   --bank-hint-height: 1.25rem;
   --log-bank-strip-height: calc(var(--bank-cta-height) + 1.5rem + var(--bank-hint-height));
+  --log-progress-card-height: 5.5rem;
   --log-page-scroll-pad: calc(var(--log-bank-strip-height) + 0.5rem);
   --log-page-scroll-pad-inline: calc(var(--bottom-nav-height) + 0.5rem);
   --toast-top: calc(env(safe-area-inset-top, 0px) + 4.25rem);

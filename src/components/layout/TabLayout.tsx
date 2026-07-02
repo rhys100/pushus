@@ -23,7 +23,7 @@ const tabChunkPrefetches: Partial<Record<NavItem, () => Promise<unknown>>> = {
 function TabPageLoader() {
   return (
     <div className="space-y-4">
-      <Skeleton className="mx-auto h-[min(72vw,280px)] w-[min(72vw,280px)] rounded-full" />
+      <Skeleton className="mx-auto h-[min(72vw,336px)] w-[min(72vw,336px)] rounded-full" />
       <Skeleton className="h-16 w-full rounded-[var(--radius-lg)]" />
     </div>
   )

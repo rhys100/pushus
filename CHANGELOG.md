@@ -24,10 +24,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 - **Log page layout:** daily progress card above the ring; today's entries moved to Feed → My log
 - **Bank Push-ups** button appears only after you start interacting with the ring (drag, centre tap, or keyboard)
-- Circular logger ring **10% larger**; drag is incremental only (no jump to rep 10 on grab)
+- Circular logger ring **20% larger** (rep count scaled to match); drag is incremental only (no jump to rep 10 on grab)
+- Log page adds top breathing room equal to the progress card height
 
 ### Fixed
 
+- **Feed → My log** no longer crashes on first open before the selected date initialises
 - **Open installed app prompt** now appears on Today and when install is inferred from push reminders, a dismissed iOS install prompt, or Android `getInstalledRelatedApps` (manifest uses origin-relative `related_applications`)
 - **Open in app** button on Android uses a real in-scope link plus `launch_handler` so Chrome can launch the installed PWA; iOS shows home-screen steps because Safari cannot switch apps automatically
 - **Android Open in app:** uses `window.open` then an Android intent URL fallback so Chrome can launch the installed WebAPK instead of reloading the browser tab

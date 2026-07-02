@@ -26,6 +26,12 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-02 (log page spacing + My log fix)
+
+**Fixed**
+- Feed → My log crash when selected date was still empty on first render
+- Log page top padding; ring/rep count scaled to 20% above original size
+
 ### 2026-07-02 (log page UX refresh)
 
 **Shipped**

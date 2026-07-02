@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { format, parseISO, startOfMonth } from 'date-fns'
+import { parseISO, startOfMonth } from 'date-fns'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 import {
   aggregateRepSummaryByDate,
@@ -12,8 +12,9 @@ import {
 } from '@/hooks/useTodayData'
 import { useAuth } from '@/providers/AuthProvider'
 import { DayEntriesList } from '@/components/today/DayEntriesList'
-import { Skeleton } from '@/components/ui/Skeleton'
+import { EmptyState, Skeleton } from '@/components/ui'
 import { RepCalendar } from '@/components/feed/RepCalendar'
+import { formatSelectedDayLabel } from '@/lib/repHistoryFormat'
 
 export function RepHistoryPanel() {
   const { user } = useAuth()
@@ -31,27 +32,30 @@ export function RepHistoryPanel() {
     setMonthStart(startOfMonth(parseISO(`${todayDate}T12:00:00`)))
   }, [todayDate])
 
-  const { data: monthSummary = [], isLoading: summaryLoading } = useRepHistorySummary(
-    activeGroup,
-    user?.id,
-    monthStart,
-  )
-  const { data: dayTotal = 0, isLoading: totalLoading } = useDayTotal(
-    activeGroup,
-    selectedDate || undefined,
-  )
-  const { data: entries = [], isLoading: entriesLoading } = useDayEntries(
-    activeGroup,
-    user?.id,
-    selectedDate || undefined,
-  )
+  const ready = Boolean(activeGroup && user && todayDate && selectedDate)
+
+  const {
+    data: monthSummary = [],
+    isLoading: summaryLoading,
+    isError: summaryError,
+  } = useRepHistorySummary(activeGroup, user?.id, monthStart)
+  const {
+    data: dayTotal = 0,
+    isLoading: totalLoading,
+    isError: totalError,
+  } = useDayTotal(activeGroup, ready ? selectedDate : undefined)
+  const {
+    data: entries = [],
+    isLoading: entriesLoading,
+    isError: entriesError,
+  } = useDayEntries(activeGroup, user?.id, ready ? selectedDate : undefined)
 
   const summariesByDate = useMemo(
     () => aggregateRepSummaryByDate(monthSummary),
     [monthSummary],
   )
 
-  if (!activeGroup || !user || !todayDate) {
+  if (!ready) {
     return (
       <div className="space-y-3">
         <Skeleton className="h-12 w-full rounded-[var(--radius-lg)]" />
@@ -60,10 +64,17 @@ export function RepHistoryPanel() {
     )
   }
 
-  const selectedHeading =
-    selectedDate === todayDate
-      ? 'Today'
-      : format(parseISO(`${selectedDate}T12:00:00`), 'EEE d MMM')
+  if (summaryError || totalError || entriesError) {
+    return (
+      <EmptyState
+        className="rounded-[var(--radius-lg)] border border-border bg-surface"
+        title="Could not load your log"
+        description="Check your connection and try again."
+      />
+    )
+  }
+
+  const selectedHeading = formatSelectedDayLabel(selectedDate, todayDate)
 
   return (
     <div className="space-y-4">
@@ -88,9 +99,7 @@ export function RepHistoryPanel() {
 
       <RepCalendar
         monthStart={monthStart}
-        onMonthChange={(nextMonth) => {
-          setMonthStart(nextMonth)
-        }}
+        onMonthChange={setMonthStart}
         selectedDate={selectedDate}
         onSelectDate={setSelectedDate}
         todayDate={todayDate}
@@ -102,7 +111,7 @@ export function RepHistoryPanel() {
       ) : null}
 
       <DayEntriesList
-        group={activeGroup}
+        group={activeGroup!}
         entries={entries}
         selectedDate={selectedDate}
         todayDate={todayDate}
