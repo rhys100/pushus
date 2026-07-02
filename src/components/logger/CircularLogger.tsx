@@ -17,16 +17,22 @@ import {
   normalizeAngleDelta,
   snapAngleToRep,
 } from '@/lib/circularCounter'
-import { isPointOnRingTrack, pointerToRingAngle } from '@/lib/loggerHitTest'
+import {
+  canStartRingDrag,
+  LOGGER_HANDLE_GRAB_RADIUS,
+  LOGGER_RING_SIZE,
+  pointerToRingAngle,
+} from '@/lib/loggerHitTest'
 import { useCircularCounter } from '@/hooks/useCircularCounter'
 import { primeRepFeedback, pulseRepHapticDelta } from '@/lib/repHaptic'
 
-const RING_SIZE = 336
+const RING_SIZE = LOGGER_RING_SIZE
 const RING_CENTER = RING_SIZE / 2
 const RING_RADIUS = 134
 const RING_STROKE = 17
 const RING_HIT_STROKE = 34
 const HANDLE_RADIUS = 16
+const HANDLE_GRAB_RADIUS = LOGGER_HANDLE_GRAB_RADIUS
 const CENTER_HIT_RADIUS = RING_RADIUS - RING_STROKE - 8
 const RING_CONTAINER_SIZE = 'min(72vw,336px)'
 const REP_TICK_ANGLES = Array.from(
@@ -118,6 +124,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
 
     const ringRef = useRef<SVGSVGElement>(null)
     const ringTrackHitRef = useRef<SVGCircleElement>(null)
+    const handleGrabHitRef = useRef<SVGCircleElement>(null)
     const ringContainerRef = useRef<HTMLDivElement>(null)
     const dragStateRef = useRef<{ lastPointerAngle: number; rawAngle: number } | null>(
       null,
@@ -337,7 +344,28 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
           return
         }
 
-        if (!isPointOnRingTrack(clientX, clientY, rect, RING_RADIUS, RING_HIT_STROKE)) {
+        const currentCount = countRef.current
+        const completedLap =
+          currentCount > 0 && currentCount % CIRCULAR_COUNTER.repsPerRevolution === 0
+        const visualAngle = completedLap
+          ? 0
+          : countToAngle(currentCount) % CIRCULAR_COUNTER.degreesPerRevolution
+        const grabHandlePoint = polarToCartesian(
+          RING_CENTER,
+          RING_CENTER,
+          RING_RADIUS,
+          visualAngle,
+        )
+
+        if (
+          !canStartRingDrag(clientX, clientY, rect, {
+            ringRadius: RING_RADIUS,
+            ringHitStroke: RING_HIT_STROKE,
+            handlePoint: grabHandlePoint,
+            handleGrabRadius: HANDLE_GRAB_RADIUS,
+            ringSize: RING_SIZE,
+          })
+        ) {
           return
         }
 
@@ -414,9 +442,11 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
     }, [applyDragAt, endDragSession, isDragging])
 
     useEffect(() => {
-      const hitTarget = ringTrackHitRef.current
+      const hitTargets = [ringTrackHitRef.current, handleGrabHitRef.current].filter(
+        (target): target is SVGCircleElement => target != null,
+      )
 
-      if (!hitTarget || disabled) {
+      if (hitTargets.length === 0 || disabled) {
         return
       }
 
@@ -433,12 +463,20 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
         beginDragAt(touch.clientX, touch.clientY)
       }
 
-      hitTarget.addEventListener('touchstart', onTouchStart, { passive: true })
+      for (const hitTarget of hitTargets) {
+        hitTarget.addEventListener('touchstart', onTouchStart, { passive: true })
+      }
 
       return () => {
-        hitTarget.removeEventListener('touchstart', onTouchStart)
+        for (const hitTarget of hitTargets) {
+          hitTarget.removeEventListener('touchstart', onTouchStart)
+        }
       }
     }, [beginDragAt, disabled])
+
+    const startDragFromPointer = (clientX: number, clientY: number) => {
+      beginDragAt(clientX, clientY)
+    }
 
     const handleRingPointerDown = (event: ReactPointerEvent<SVGCircleElement>) => {
       if (disabled || event.pointerType === 'touch') {
@@ -447,7 +485,17 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
 
       event.preventDefault()
       event.stopPropagation()
-      beginDragAt(event.clientX, event.clientY)
+      startDragFromPointer(event.clientX, event.clientY)
+    }
+
+    const handleGrabPointerDown = (event: ReactPointerEvent<SVGCircleElement>) => {
+      if (disabled) {
+        return
+      }
+
+      event.preventDefault()
+      event.stopPropagation()
+      startDragFromPointer(event.clientX, event.clientY)
     }
 
     const handleKeyDown = (event: KeyboardEvent<SVGSVGElement>) => {
@@ -647,21 +695,37 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
             />
 
             {showHandle ? (
-              <circle
-                data-testid="logger-handle-visible"
-                cx={handlePoint.x}
-                cy={handlePoint.y}
-                r={HANDLE_RADIUS}
-                fill="var(--color-accent)"
-                stroke="var(--color-bg)"
-                strokeWidth={3}
-                pointerEvents="none"
-                className={cn(
-                  showZeroHint && 'logger-handle-pulse',
-                  !showZeroHint && count === 0 && !isDragging && 'logger-handle-idle',
-                  handleTickKey > 0 && 'logger-handle-tick',
-                )}
-              />
+              <>
+                <circle
+                  ref={handleGrabHitRef}
+                  data-testid="logger-handle-hit"
+                  cx={handlePoint.x}
+                  cy={handlePoint.y}
+                  r={HANDLE_GRAB_RADIUS}
+                  fill="transparent"
+                  pointerEvents={disabled ? 'none' : 'all'}
+                  className={
+                    disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'
+                  }
+                  aria-hidden="true"
+                  onPointerDown={handleGrabPointerDown}
+                />
+                <circle
+                  data-testid="logger-handle-visible"
+                  cx={handlePoint.x}
+                  cy={handlePoint.y}
+                  r={HANDLE_RADIUS}
+                  fill="var(--color-accent)"
+                  stroke="var(--color-bg)"
+                  strokeWidth={3}
+                  pointerEvents="none"
+                  className={cn(
+                    showZeroHint && 'logger-handle-pulse',
+                    !showZeroHint && count === 0 && !isDragging && 'logger-handle-idle',
+                    handleTickKey > 0 && 'logger-handle-tick',
+                  )}
+                />
+              </>
             ) : null}
 
             {showZeroHint ? (

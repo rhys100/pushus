@@ -24,6 +24,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 - **Log page layout:** daily progress card above the ring; today's entries moved to Feed → My log
 - **Bank Push-ups** button appears only after you start interacting with the ring (drag, centre tap, or keyboard)
+- **Ring handle grab zone:** larger thumb-sized hit target around the orange dot; easier to start a drag when you're near the handle, not only on the dot
 - Circular logger ring **20% larger** (rep count scaled to match); drag is incremental only (no jump to rep 10 on grab)
 - Log page adds top breathing room equal to the progress card height
 

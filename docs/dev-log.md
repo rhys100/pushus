@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-02 (ring handle grab zone)
+
+**Fixed**
+- Orange handle hard to grab on mobile: thumb-sized invisible hit target, `canStartRingDrag`, hit-test ring size aligned to 336px
+
 ### 2026-07-02 (log page spacing + My log fix)
 
 **Fixed**

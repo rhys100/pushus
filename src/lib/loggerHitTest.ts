@@ -1,4 +1,6 @@
-export const LOGGER_RING_SIZE = 280
+export const LOGGER_RING_SIZE = 336
+/** Thumb-sized grab target around the handle (SVG viewBox units). */
+export const LOGGER_HANDLE_GRAB_RADIUS = 32
 
 export type Point = {
   x: number
@@ -74,4 +76,49 @@ export function isPointOnRingTrack(
   }
 
   return distance >= trackInner && distance <= trackOuter
+}
+
+export type RingDragHitOptions = {
+  ringRadius: number
+  ringHitStroke: number
+  handlePoint: Point
+  handleGrabRadius?: number
+  ringSize?: number
+  trackHitPadding?: number
+}
+
+/** True when a drag can start on the ring track or near the handle grab zone. */
+export function canStartRingDrag(
+  clientX: number,
+  clientY: number,
+  rect: DOMRect,
+  options: RingDragHitOptions,
+): boolean {
+  const ringSize = options.ringSize ?? LOGGER_RING_SIZE
+  const handleGrabRadius = options.handleGrabRadius ?? LOGGER_HANDLE_GRAB_RADIUS
+  const trackHitPadding = options.trackHitPadding ?? 10
+
+  if (
+    isNearHandle(
+      clientX,
+      clientY,
+      rect,
+      options.handlePoint,
+      handleGrabRadius,
+      ringSize,
+    )
+  ) {
+    return true
+  }
+
+  return isPointOnRingTrack(
+    clientX,
+    clientY,
+    rect,
+    options.ringRadius,
+    options.ringHitStroke,
+    ringSize,
+    0.4,
+    trackHitPadding,
+  )
 }
