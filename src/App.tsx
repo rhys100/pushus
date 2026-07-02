@@ -1,15 +1,29 @@
 ﻿import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppUpdateChecker } from '@/components/AppUpdateChecker'
+import { ConfigErrorScreen } from '@/components/ConfigErrorScreen'
 import { RequireAuth } from '@/components/auth/RequireAuth'
 import { TabLayout } from '@/components/layout/TabLayout'
 import { Skeleton } from '@/components/ui'
+import { useAppServiceWorker } from '@/hooks/useAppServiceWorker'
 import { useNotificationClickNavigation } from '@/hooks/useNotificationClickNavigation'
+import { usePwaLaunchHandler } from '@/hooks/usePwaLaunchHandler'
+import { isSupabaseConfigured } from '@/lib/supabase'
 import { TodayPage } from '@/pages/TodayPage'
 
 const PushNotificationPrompt = lazy(() =>
   import('@/components/PushNotificationPrompt').then((m) => ({
     default: m.PushNotificationPrompt,
+  })),
+)
+const PwaInstallPrompt = lazy(() =>
+  import('@/components/PwaInstallPrompt').then((m) => ({
+    default: m.PwaInstallPrompt,
+  })),
+)
+const PwaOpenAppPrompt = lazy(() =>
+  import('@/components/PwaOpenAppPrompt').then((m) => ({
+    default: m.PwaOpenAppPrompt,
   })),
 )
 const LoginPage = lazy(() =>
@@ -84,12 +98,30 @@ function NotificationClickNavigation() {
   return null
 }
 
+function PwaLaunchHandlerRegistration() {
+  usePwaLaunchHandler()
+  return null
+}
+
+function AppServiceWorkerRegistration() {
+  useAppServiceWorker()
+  return null
+}
+
 export default function App() {
+  if (!isSupabaseConfigured) {
+    return <ConfigErrorScreen />
+  }
+
   return (
     <>
+      <AppServiceWorkerRegistration />
+      <PwaLaunchHandlerRegistration />
       <NotificationClickNavigation />
       <AppUpdateChecker />
       <Suspense fallback={null}>
+        <PwaInstallPrompt />
+        <PwaOpenAppPrompt />
         <PushNotificationPrompt />
       </Suspense>
       <Routes>

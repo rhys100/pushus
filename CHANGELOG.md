@@ -12,10 +12,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Installable Android and iOS PWA setup with generated app icons, iPhone home-screen metadata, and a bottom-dock install prompt for more reliable reminders
+- **Open installed app prompt:** when a member opens PushUS in the mobile browser but has previously used the home-screen app (or Android reports the web app installed), a bottom dock nudges them to open PushUS from the home screen instead
 - Optional profile **name initial** (single letter, e.g. Rhys E) on onboarding and in Settings
 - **Personal mate labels** on the Group Members list — tap a mate to rename for yourself; synced to your account; shown as `Your label (their name)`
 - **Feed → My log:** personal rep history with month calendar, daily totals, and set list (moved from Log page)
 - **Centre tap on ring:** tap inside the dial to add one rep (hands-free / nose-friendly logging)
+- **iOS PWA support:** home-screen install meta tags, PNG app icons, manifest `id`/`scope`, and in-app guidance when push reminders need Add to Home Screen on iPhone/iPad
 
 ### Changed
 
@@ -25,8 +28,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **Open installed app prompt** now appears on Today and when install is inferred from push reminders, a dismissed iOS install prompt, or Android `getInstalledRelatedApps` (manifest uses origin-relative `related_applications`)
+- **Open in app** button on Android uses a real in-scope link plus `launch_handler` so Chrome can launch the installed PWA; iOS shows home-screen steps because Safari cannot switch apps automatically
+- **Android Open in app:** uses `window.open` then an Android intent URL fallback so Chrome can launch the installed WebAPK instead of reloading the browser tab
+- **Open-app reminders:** tapping **Open in app** only snoozes the dock for the current visit and clears any prior permanent dismiss; **Don't remind me again** is the only way to stop future browser reminders
+- **Android Chrome open-app detection:** if Chrome does not offer install (already installed PWA), the open-app dock now appears even when local install flags were never set; permanent dismiss storage key bumped so old test dismissals reset
+- Blank screen on local dev when `.env` is missing — show a setup screen instead of crashing on Supabase init
+- Push reminder service worker is preserved during app update refreshes, so browser subscriptions are not silently broken by clearing old builds
+- Push notifications now use generated PWA icon and badge assets instead of a missing favicon file
+- Circular logger ring handle and progress arc share the same angle; dial anchors rep 5 at bottom and rep 10 at top with even 36° spacing
 - Circular logger no longer jumps to 10 reps when grabbing the handle slightly left of top from zero
 - Feed → My log: edit/delete on past days now refreshes that day's totals and entry list (not just today)
+- `update_my_profile` now checks private-beta app access (same gate as onboarding profile save)
 ---
 
 ## [1.2.0] - 2026-06-29

@@ -19,6 +19,7 @@ import { formatDayTargetSetsDetail } from '@/lib/training/planEngine'
 import type { ReminderIntervalHours } from '@/lib/notificationEligibility'
 import { useNotificationPreferences } from '@/providers/NotificationPreferencesProvider'
 import { getErrorMessage } from '@/lib/errors'
+import { getIosPwaInstallHint } from '@/lib/pwa'
 
 function hourOptions() {
   return Array.from({ length: 24 }, (_, hour) => ({
@@ -460,9 +461,11 @@ export function SettingsPage() {
           <>
             {!pushConfigured ? (
               <p className="rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-xs text-text-muted">
-                {pushSupport === 'unsupported'
-                  ? 'This browser does not support web push.'
-                  : 'Push is not configured on this deployment yet.'}
+                {pushSupport === 'ios_needs_install'
+                  ? getIosPwaInstallHint()
+                  : pushSupport === 'unsupported'
+                    ? 'This browser does not support web push.'
+                    : 'Push is not configured on this deployment yet.'}
               </p>
             ) : (
               <div className="space-y-3">
@@ -494,6 +497,11 @@ export function SettingsPage() {
                     {pushButtonLabel()}
                   </Button>
                 </div>
+
+                <p className="rounded-[var(--radius-md)] border border-accent/20 bg-accent/10 px-3 py-2 text-xs text-text-muted">
+                  Install tip: on Android, use the install prompt. On iPhone, tap Share, then Add
+                  to Home Screen. Installed apps keep reminders more reliable.
+                </p>
 
                 <div className="grid grid-cols-2 gap-3">
                   <label className="space-y-1">

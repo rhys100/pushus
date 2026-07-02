@@ -94,9 +94,10 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 - [x] Row Level Security on group data
 - [x] Cloudflare Pages–friendly static SPA build
 - [x] Per-route browser titles and Open Graph meta for public pages
+- [x] Installable Android and iOS PWA setup with app icons, install prompt, and open-from-home-screen nudge when the browser tab is opened by mistake
 - [x] AGPL-3.0-only licence
 - [x] Self-hostable Community mode
-- [x] Optional web push reminders (behind goal, user timezone, configurable frequency)
+- [x] Optional web push reminders (behind goal, user timezone, configurable frequency; installable app path for more reliable mobile delivery)
 
 ---
 

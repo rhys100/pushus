@@ -36,6 +36,76 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 **Next**
 - Manual spot-check ring drag on real phone; Feed My log calendar on past months with data
 
+**Notes**
+- Lint follow-up on open-app availability hook after merge
+
+### 2026-07-01 (Android Open in app intent)
+
+**Fixed**
+- Open in app on Android Chrome now tries `window.open` then an Android intent URL so the installed WebAPK can launch
+- Manifest `launch_handler` set to `navigate-new` for captured launches
+
+### 2026-07-01 (Android open-app detection fix)
+
+**Fixed**
+- Dead zone on Android Chrome when PWA already installed: no install prompt, no open-app dock
+- Infer installed when `beforeinstallprompt` never fires after load (Chrome behaviour for installed PWAs)
+- Reset permanent-dismiss storage key so earlier test dismissals stop blocking the dock
+
+### 2026-07-01 (aggressive open-app reminders)
+
+**Fixed**
+- Open in app no longer behaves like a permanent dismiss; it snoozes only for the current visit and re-shows when you return to PushUS in Chrome
+- Tapping Open in app clears a previous "don't remind" choice so repeat open clicks keep the reminder enabled
+- Secondary button renamed to **Don't remind me again**
+
+### 2026-07-01 (PWA open-in-app button)
+
+**Fixed**
+- Open-app dock had no action that launches the installed app — only dismiss buttons
+- Android now has a real **Open in app** link (navigation capturing) plus manifest `launch_handler`
+- iOS copy is explicit: Safari cannot auto-open the home screen app; numbered steps added
+
+### 2026-07-01 (PWA open-app prompt fix)
+
+**Fixed**
+- Open-app banner excluded `/today` (default route) — now shows there
+- Broader install inference: push reminders on, iOS install prompt dismissed, Android `getInstalledRelatedApps` on any supporting browser
+- Manifest `related_applications` uses relative manifest URL + `id` for cross-origin installs
+
+### 2026-07-01 (PWA open-from-home-screen prompt)
+
+**Shipped**
+- Bottom dock when mobile browser detects PushUS was previously opened from the home-screen app (local flag) or Android `getInstalledRelatedApps` reports the web app installed
+- Install prompt now hides once install is known, so members are not asked to install again after opening the browser tab by mistake
+
+**Notes**
+- Cannot auto-launch the installed PWA from a browser tab; prompt is guidance only
+- iOS has no install-detection API — relies on the stored flag after first standalone open
+
+### 2026-07-01 (blank app load fix)
+
+**Fixed**
+- Local dev no longer shows a blank screen when `.env` is missing — setup screen explains required Supabase vars
+- Playwright smoke tests always boot Vite in `e2e` mode so `.env.e2e` is loaded
+
+### 2026-07-01 (Android/iOS PWA install + push reliability)
+
+**Shipped**
+- Android-installable PWA manifest with generated 192/512 and maskable icons
+- iOS home-screen metadata and Apple touch icon
+- `src/lib/pwa.ts` detects iOS Safari vs standalone home-screen app; Settings + push prompt show Add to Home Screen guidance
+- Bottom-dock **Install PushUS** prompt for eligible Android and iOS users before push reminders
+- App update refresh keeps the push service worker registered instead of unregistering subscriptions
+- Push notifications use real PWA icon and badge assets
+- `npm run pwa:generate` generates icons from `favicon.svg` during build
+
+**Tests**
+- Focused PWA/push unit tests passing
+
+**Next**
+- Rhys spot-check Add to Home Screen on iPhone, then enable push from installed app
+
 ### 2026-06-29 (ring dial alignment)
 
 **Fixed**

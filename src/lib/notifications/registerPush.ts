@@ -1,9 +1,11 @@
+import { needsIosHomeScreenInstall } from '@/lib/pwa'
 import { supabase } from '@/lib/supabase'
 
 export type PushSupportStatus =
   | 'supported'
   | 'unsupported'
   | 'missing_vapid_key'
+  | 'ios_needs_install'
 
 export type PushPermissionStatus = NotificationPermission | 'unsupported'
 
@@ -36,6 +38,10 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 
 export function getPushSupportStatus(): PushSupportStatus {
+  if (needsIosHomeScreenInstall()) {
+    return 'ios_needs_install'
+  }
+
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
     return 'unsupported'
   }
@@ -56,6 +62,22 @@ export function getPushPermissionStatus(): PushPermissionStatus {
   return Notification.permission
 }
 
+export async function registerAppServiceWorker(): Promise<ServiceWorkerRegistration> {
+  if (!('serviceWorker' in navigator)) {
+    throw new PushRegistrationError(
+      'Service workers are not supported in this browser.',
+      'unsupported',
+    )
+  }
+
+  const registration = await navigator.serviceWorker.register('/sw.js', {
+    scope: '/',
+  })
+
+  await navigator.serviceWorker.ready
+  return registration
+}
+
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration> {
   const support = getPushSupportStatus()
   if (support === 'unsupported') {
@@ -72,12 +94,7 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
     )
   }
 
-  const registration = await navigator.serviceWorker.register('/sw.js', {
-    scope: '/',
-  })
-
-  await navigator.serviceWorker.ready
-  return registration
+  return registerAppServiceWorker()
 }
 
 export async function subscribeToPush(
