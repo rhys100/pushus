@@ -4,6 +4,7 @@ import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { appConfig } from '@/lib/config'
 import { APP_BUILD_ID } from '@/lib/buildId'
 import { APP_VERSION } from '@/lib/appVersionLabel'
+import { noticeBannerClass } from '@/lib/noticeStyles'
 import { PAGE_BOTTOM_PADDING } from '@/lib/layout'
 
 function licenseUrl(): string {
@@ -67,7 +68,7 @@ export function AboutPage() {
           </section>
 
           {appConfig.isModifiedFork ? (
-            <section className="rounded-[var(--radius-md)] border border-warning/40 bg-warning/10 px-4 py-3">
+            <section className={noticeBannerClass('warning')}>
               <h2 className="text-sm font-semibold text-text-primary">Modified version</h2>
               <p className="mt-1 text-sm leading-relaxed text-text-muted">
                 This deployment is a modified fork of PushUS. It is not the official PushUS Cloud

@@ -26,6 +26,12 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-03 (notification banner readability)
+
+- **Fixed:** Toasts and inline banners (billing, training wizard warnings, settings plan saved, max-set callouts) now use shared opaque `noticeStyles` surfaces — no more unreadable transparent green squiggles over page text.
+- **Tests:** `tests/unit/noticeStyles.test.ts`
+- **Next:** Spot-check invite copy toast on mobile Settings after deploy.
+
 ### 2026-07-03 (nose hint below Bank; ring layout jump fix)
 
 - **Nose-hold hint** extracted to `NoseHoldHint` and moved below the Bank CTA on `/today` and `/dev/preview` (was between ring and Bank inside the centred flex column).

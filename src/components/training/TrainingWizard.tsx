@@ -11,8 +11,8 @@ import {
   recommendFromWizard,
   type WizardAnswers,
 } from '@/lib/training/planEngine'
+import { noticeInlineClass } from '@/lib/noticeStyles'
 import {
-  buildTrustModeLabel,
   deriveHistoryConfidence,
   derivePlanCalibration,
   hasUsableVolumeHistory,
@@ -420,7 +420,7 @@ export function TrainingWizard({
               ) : null}
 
               {calibration.maxCleanMismatchWarning ? (
-                <p className="rounded-[var(--radius-md)] border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-text-primary">
+                <p className={noticeInlineClass('warning')}>
                   {calibration.maxCleanMismatchWarning}
                 </p>
               ) : null}
@@ -515,10 +515,7 @@ export function TrainingWizard({
               {daysSelected} day{daysSelected === 1 ? '' : 's'} selected
             </p>
             {dayWarnings.map((warning) => (
-              <p
-                key={warning}
-                className="rounded-[var(--radius-md)] border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-text-primary"
-              >
+              <p key={warning} className={noticeInlineClass('warning')}>
                 {warning}
               </p>
             ))}

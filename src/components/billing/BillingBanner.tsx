@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { Link } from 'react-router-dom'
 import { billingConfig, daysUntil } from '@/lib/billing'
 import { cn } from '@/lib/cn'
+import { noticeSurfaceClass } from '@/lib/noticeStyles'
 import type { GroupSubscriptionOwner } from '@/lib/billing'
 
 type BillingBannerProps = {
@@ -82,9 +83,9 @@ function bannerCopy(
 }
 
 const toneStyles = {
-  info: 'border-border bg-surface text-text-primary',
-  warning: 'border-warning/40 bg-warning/10 text-text-primary',
-  danger: 'border-danger/40 bg-danger/10 text-text-primary',
+  info: noticeSurfaceClass.info,
+  warning: noticeSurfaceClass.warning,
+  danger: noticeSurfaceClass.danger,
 }
 
 export const BillingBanner = memo(function BillingBanner({

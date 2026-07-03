@@ -13,6 +13,8 @@ import { useGroupBillingStatus, useGroupSubscription } from '@/hooks/useBilling'
 import { BillingBanner } from '@/components/billing/BillingBanner'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useToast } from '@/components/ui/Toast'
+import { cn } from '@/lib/cn'
+import { noticeInlineClass } from '@/lib/noticeStyles'
 import { billingConfig } from '@/lib/billing'
 import {
   CircularLogger,
@@ -343,7 +345,7 @@ export function TodayPage() {
         ) : null}
 
         {maxSetMode ? (
-          <p className="mb-2 rounded-[var(--radius-md)] border border-accent/40 bg-accent-muted/30 px-3 py-2 text-xs font-medium text-text-primary">
+          <p className={cn(noticeInlineClass('accent'), 'mb-2 font-medium')}>
             Max set mode — one clean set, stop when form breaks.
           </p>
         ) : null}

@@ -7,6 +7,7 @@ import { useTabPageMeta } from '@/components/layout/TabPageMeta'
 import { appConfig } from '@/lib/config'
 import { AVATAR_EMOJIS } from '@/lib/emojis'
 import { cn } from '@/lib/cn'
+import { noticeBannerClass, noticeInlineClass } from '@/lib/noticeStyles'
 import { formatProfileName } from '@/lib/memberDisplayName'
 import { supabase } from '@/lib/supabase'
 import { timezoneOptions } from '@/lib/timezones'
@@ -205,7 +206,7 @@ export function SettingsPage() {
       {planSavedMessage ? (
         <div
           role="status"
-          className="flex items-start gap-3 rounded-[var(--radius-md)] border border-success/30 bg-success/10 px-4 py-3"
+          className={cn(noticeBannerClass('success'), 'flex items-start gap-3')}
         >
           <p className="flex-1 text-sm leading-snug text-text-primary">{planSavedMessage}</p>
           <button
@@ -398,7 +399,7 @@ export function SettingsPage() {
           )}
         </div>
         {pendingMax && plan?.max_clean_set && cappedMax ? (
-          <div className="rounded-[var(--radius-md)] border border-accent/40 bg-accent-muted/20 px-3 py-3">
+          <div className={cn(noticeInlineClass('accent'), 'px-3 py-3 text-sm')}>
             <p className="text-sm font-medium text-text-primary">Max clean check-in</p>
             <p className="mt-1 text-xs text-text-muted">
               You logged {pendingMax} in one set. Apply a capped update to {cappedMax} (plan max{' '}
@@ -498,7 +499,7 @@ export function SettingsPage() {
                   </Button>
                 </div>
 
-                <p className="rounded-[var(--radius-md)] border border-accent/20 bg-accent/10 px-3 py-2 text-xs text-text-muted">
+                <p className={cn(noticeInlineClass('accent'), 'text-text-muted')}>
                   Install tip: on Android, use the install prompt. On iPhone, tap Share, then Add
                   to Home Screen. Installed apps keep reminders more reliable.
                 </p>
