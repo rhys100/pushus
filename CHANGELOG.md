@@ -27,10 +27,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ### Changed
 
 - **Visual restyle (chunky glow):** near-black background, hot-orange gradient pill buttons with layered glow, thicker card borders, and bigger radii. Circular logger ring is about twice as thick with rim highlights, a glowing gradient arc, and a knob-style handle
-- **Log page layout:** Bank CTA on top (always visible; disabled at 0 reps), a compact training-plan strip directly beneath it, ring centred, daily progress card at the bottom; today's entries live in Feed → My log
+- **Log page layout:** compact training-plan strip on top, ring centred beneath it, and the Bank CTA directly below the ring (always visible; disabled at 0 reps); today's entries live in Feed → My log
 - **Lap-based ring fill:** the ring fills one full lap every 10 reps and starts a fresh lap in a new colour on the next rep, ramping from cool to hot across 10 laps (up to 100 reps). Completed laps sit under the current lap as a solid ring
 - **Logger feel:** the current lap draws as a tapering comet "snake" — a bright glowing head at the handle that thins and fades back to the lap start; per-rep ratchet tick sound and haptic while dragging, accented at 5 and 10
-- **Nose/chin reps gesture:** hold the centre of the ring for 2 seconds to open nose-tap mode (replaces the separate button). A dismissible hint under the ring teaches the gesture, with a "Don't remind me again" option
+- **Nose/chin reps gesture:** hold the centre of the ring for 1.5 seconds to open nose-tap mode (replaces the separate button). A dismissible hint under the ring teaches the gesture, with a "Don't remind me again" option
 - OG social share images regenerated to match the new palette
 - **Ring handle grab zone:** larger thumb-sized hit target around the orange dot; easier to start a drag when you're near the handle, not only on the dot
 - Circular logger ring **20% larger** (rep count scaled to match); drag is incremental only (no jump to rep 10 on grab)
@@ -38,7 +38,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
-- **Set structure back on the Log plan strip:** the compact daily plan strip now shows the reps-per-set line (e.g. "3 sets of 15") again, which was dropped when the plan info moved below the Bank CTA. Also removed a duplicated "set X of Y" that appeared both in the headline and appended after it
+- **Ring drag no longer scrolls the page:** the logger ring now sets `touch-action: none` permanently (it was only applied mid-drag, so the first part of every touch-drag panned the page — the ring appeared to "move down" and not stay put)
+- **Open in app now launches the installed PWA:** the button used a plain `intent://` https URL, which Chrome just reloaded in the browser tab (it can't target the WebAPK). It now navigates to a registered custom protocol (`web+pushus://open`, declared in the manifest) so Chrome hands off to the standalone app. Members on an older install must reopen the app once to update it before the hand-off works
+- **Log summary shows the set plan:** the compact daily summary is now a clean three-stat row — current set (e.g. "3 of 4"), reps to bank next (e.g. "~12"), and today's total (e.g. "12/45") — so the per-set target and set progress are always visible at a glance
 - **Open in app button hidden on Log page:** the open-installed-app dock now sits above the bottom nav on `/today` (it was pinned to the screen bottom, so its buttons rendered behind the nav bar). Guarded by a unit test; see [docs/pwa-open-in-app.md](docs/pwa-open-in-app.md)
 - **Theming tokens:** colours are now RGB-triplet tokens with `<alpha-value>`, so Tailwind opacity modifiers (`border-accent/50`, `bg-danger/15`) emit real CSS. They previously produced nothing
 - **Feed → My log** no longer crashes on first open before the selected date initialises

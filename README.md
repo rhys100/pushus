@@ -59,7 +59,7 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 - [x] One lap = 10 push-ups on the ring; each lap fills in a new colour, ramping cool → hot across 10 laps (up to 100 reps)
 - [x] Current lap draws as a tapering comet "snake" with a glowing head at the handle
 - [x] Centre tap inside ring to add one rep (hands-free logging)
-- [x] Hold the ring centre for 2 seconds to open nose-tap mode (dismissible hint teaches the gesture)
+- [x] Hold the ring centre for 1.5 seconds to open nose-tap mode (dismissible hint teaches the gesture)
 - [x] **Bank Push-ups** CTA on the Log page (always visible; disabled at 0 reps)
 - [x] Nose-tap mode: fullscreen tap-to-rep logging with your nose or chin, with confirm sound, vibration, and four saved skins (Bricks, Classic, Ripple, Burst)
 - [x] Undo after banking

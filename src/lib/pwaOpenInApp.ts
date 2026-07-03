@@ -1,5 +1,20 @@
 const OPEN_APP_ENTRY_PATH = '/today'
 
+/**
+ * Custom scheme the installed PWA registers via manifest `protocol_handlers`.
+ *
+ * Navigating to `web+pushus://open` from a browser tab (on a user gesture) asks
+ * Android to hand the URL to the installed standalone app instead of opening
+ * another browser tab. We use this instead of an `intent://` VIEW URL because a
+ * plain https VIEW intent has no way to target the WebAPK — Chrome is itself a
+ * valid https handler, so it just reloads the page in the tab. A registered
+ * custom protocol resolves to the PWA specifically.
+ *
+ * Caveat: this only works once the installed app has been updated to a build
+ * whose manifest declares the handler. Older installs must be reinstalled.
+ */
+export const PWA_LAUNCH_PROTOCOL = 'web+pushus'
+
 export function buildPwaOpenInAppUrl(pathname: string, origin = 'https://www.pushus.app'): string {
   const safePath = pathname.startsWith('/') ? pathname : OPEN_APP_ENTRY_PATH
   const url = new URL(safePath, origin)
@@ -7,31 +22,17 @@ export function buildPwaOpenInAppUrl(pathname: string, origin = 'https://www.pus
   return url.toString()
 }
 
-export function buildAndroidOpenInAppIntentUrl(
-  pathname: string,
-  origin = 'https://www.pushus.app',
-): string {
-  const httpsUrl = buildPwaOpenInAppUrl(pathname, origin)
-  const target = new URL(httpsUrl)
-  const intentTarget = `${target.host}${target.pathname}${target.search}`
-
-  return (
-    `intent://${intentTarget}` +
-    '#Intent;' +
-    'scheme=https;' +
-    'action=android.intent.action.VIEW;' +
-    'category=android.intent.category.BROWSABLE;' +
-    `S.browser_fallback_url=${encodeURIComponent(httpsUrl)};` +
-    'end'
-  )
+/** URL that triggers the installed PWA's protocol handler from a user gesture. */
+export function buildPwaProtocolLaunchUrl(): string {
+  return `${PWA_LAUNCH_PROTOCOL}://open`
 }
 
-export function openInstalledPwa(pathname: string, origin = 'https://www.pushus.app'): void {
+export function openInstalledPwa(): void {
   if (typeof window === 'undefined') {
     return
   }
 
-  window.location.assign(buildAndroidOpenInAppIntentUrl(pathname, origin))
+  window.location.href = buildPwaProtocolLaunchUrl()
 }
 
 export function canTryOpenInInstalledApp(platform: 'android' | 'ios' | 'other'): boolean {

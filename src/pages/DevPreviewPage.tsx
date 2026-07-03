@@ -5,7 +5,6 @@ import {
 } from '@/components/logger/CircularLogger'
 import { BankPushupsButton } from '@/components/logger/BankPushupsButton'
 import { NoseTapMode } from '@/components/logger/NoseTapMode'
-import { Card } from '@/components/ui/Card'
 import { DayProgressCard } from '@/components/today/DayProgressCard'
 import type { TodayPrescription } from '@/lib/training/planEngine'
 
@@ -41,15 +40,9 @@ export function DevPreviewPage() {
         <span className="text-xs text-text-muted">dev preview</span>
       </header>
 
-      <BankPushupsButton
-        placement="inline"
-        disabled={count === 0}
-        onBank={() => loggerRef.current?.unwind()}
-      />
-
       <DayProgressCard
         variant="compact"
-        className="mt-2 w-full"
+        className="w-full"
         bankedToday={count}
         banksLogged={count > 0 ? 1 : 0}
         hasPlan
@@ -66,25 +59,13 @@ export function DevPreviewPage() {
           showNoseHint={showNoseHint}
           onNoseHintDismiss={() => setShowNoseHint(false)}
         />
-      </div>
 
-      <div className="flex flex-col items-center gap-3 pb-4">
-        <Card className="w-full">
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div>
-              <p className="text-lg font-bold text-accent">4</p>
-              <p className="text-xs uppercase tracking-wide text-text-muted">Sets today</p>
-            </div>
-            <div>
-              <p className="text-lg font-bold text-accent">25</p>
-              <p className="text-xs uppercase tracking-wide text-text-muted">Best set</p>
-            </div>
-            <div>
-              <p className="text-lg font-bold text-accent">63%</p>
-              <p className="text-xs uppercase tracking-wide text-text-muted">Goal</p>
-            </div>
-          </div>
-        </Card>
+        <BankPushupsButton
+          placement="inline"
+          disabled={count === 0}
+          onBank={() => loggerRef.current?.unwind()}
+          className="mt-5"
+        />
       </div>
 
       <NoseTapMode

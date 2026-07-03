@@ -6,7 +6,7 @@ import { GoalProgressBar } from '@/components/ui/GoalProgressBar'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { cn } from '@/lib/cn'
 import { computeDailySetPlan } from '@/lib/training/dailySetPlan'
-import { formatDayTargetSetsDetail, type TodayPrescription } from '@/lib/training/planEngine'
+import { type TodayPrescription } from '@/lib/training/planEngine'
 
 export type DayProgressCardProps = {
   bankedToday: number
@@ -60,11 +60,6 @@ export const DayProgressCard = memo(function DayProgressCard({
     )
   }, [prescription, hasPlan, target, isRestDay, bankedToday, banksLogged])
 
-  const setsDetail =
-    prescription && !isRestDay && prescription.sets > 0
-      ? formatDayTargetSetsDetail(prescription)
-      : ''
-
   if (!hasPlan && !loading) {
     return (
       <Card
@@ -92,70 +87,60 @@ export const DayProgressCard = memo(function DayProgressCard({
   }
 
   if (variant === 'compact') {
+    const statValueClass = 'text-lg font-bold tabular-nums text-accent'
+    const statLabelClass =
+      'mt-0.5 text-[0.625rem] font-medium uppercase tracking-wide text-text-muted'
+    const setValue =
+      setPlan?.currentSetNumber && setPlan.setsPlanned > 0
+        ? `${setPlan.currentSetNumber} of ${setPlan.setsPlanned}`
+        : '—'
+
     return (
-      <Card
-        padding="sm"
-        data-testid="day-progress-card"
-        className={cn('mt-3', className)}
-      >
-        <div className="flex items-center justify-between gap-2">
-          {loading ? (
-            <Skeleton className="h-5 w-24" />
-          ) : isRestDay ? (
-            <p className="font-mono text-sm font-semibold tabular-nums text-text-primary">
-              {bankedToday}
-              <span className="ml-1 text-xs font-medium text-text-muted">banked</span>
+      <Card data-testid="day-progress-card" className={cn('mt-3', className)}>
+        {loading ? (
+          <div className="grid grid-cols-3 gap-3">
+            <Skeleton className="mx-auto h-9 w-16" />
+            <Skeleton className="mx-auto h-9 w-16" />
+            <Skeleton className="mx-auto h-9 w-16" />
+          </div>
+        ) : isRestDay ? (
+          <div className="text-center">
+            <p className={statValueClass}>Recovery</p>
+            <p className={statLabelClass}>
+              {bankedToday > 0 ? `${bankedToday} banked · no target today` : 'No target today'}
             </p>
-          ) : (
-            <p className="font-mono text-sm font-semibold tabular-nums text-text-primary">
-              {bankedToday}
-              <span className="text-text-muted"> / {target}</span>
-              <span className="ml-1.5 text-xs font-medium text-text-muted">today</span>
+          </div>
+        ) : setPlan?.goalHit ? (
+          <div className="text-center">
+            <p className={statValueClass}>Goal hit</p>
+            <p className={statLabelClass}>
+              {bankedToday}/{target} · {banksLogged} set{banksLogged === 1 ? '' : 's'} banked
             </p>
-          )}
-
-          {!loading && !isRestDay && setPlan ? (
-            <Badge variant={dayTypeBadgeVariant(setPlan.dayType)} className="shrink-0 capitalize">
-              {setPlan.dayTypeLabel}
-            </Badge>
-          ) : null}
-
-          {!loading && isRestDay ? (
-            <span className="text-xs font-medium text-text-muted">Recovery</span>
-          ) : null}
-        </div>
-
-        {!isRestDay && setPlan ? (
+          </div>
+        ) : setPlan ? (
           <>
-            <GoalProgressBar
-              current={bankedToday}
-              target={target}
-              ariaLabel="Daily push-up progress"
-              className="mt-2"
-              barClassName="h-1.5"
-            />
-
-            {!loading ? (
-              <>
-                <p className="mt-1.5 line-clamp-1 text-xs text-text-muted">
-                  {setPlan.headline}
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div>
+                <p className={statValueClass}>{setValue}</p>
+                <p className={statLabelClass}>Set</p>
+              </div>
+              <div>
+                <p className={statValueClass}>~{setPlan.nextBankTarget}</p>
+                <p className={statLabelClass}>Bank next</p>
+              </div>
+              <div>
+                <p className={statValueClass}>
+                  {bankedToday}
+                  <span className="text-text-muted">/{target}</span>
                 </p>
-                {setsDetail ? (
-                  <p className="mt-0.5 line-clamp-1 text-xs font-medium text-text-secondary">
-                    {setsDetail}
-                  </p>
-                ) : null}
-                {prescription?.safetyNote ? (
-                  <p className="mt-1 text-xs text-text-muted">{prescription.safetyNote}</p>
-                ) : null}
-              </>
-            ) : (
-              <Skeleton className="mt-2 h-3 w-full" />
-            )}
+                <p className={statLabelClass}>Today</p>
+              </div>
+            </div>
+            <p className="mt-2 text-center text-xs text-text-muted">
+              {prescription?.safetyNote ?? `${setPlan.dayTypeLabel} day`}
+            </p>
           </>
-        ) : (
-          <p className="mt-1.5 text-xs text-text-muted">{setPlan?.headline ?? 'Recovery day'}</p>
-        )}
+        ) : null}
       </Card>
     )
   }

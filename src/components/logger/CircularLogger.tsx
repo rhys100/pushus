@@ -61,7 +61,7 @@ export type CircularLoggerHandle = {
 }
 
 /** Hold the ring centre this long to trigger the long-press action (nose mode). */
-const CENTER_HOLD_MS = 2000
+const CENTER_HOLD_MS = 1500
 const HOLD_RADIUS = 70
 const HOLD_CIRCUMFERENCE = 2 * Math.PI * HOLD_RADIUS
 /** Comet head/tail styling for the current-lap snake. */
@@ -602,7 +602,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
         }
 
         // A press that started on the centre can slide into a ring drag; cancel
-        // the pending 2s hold so nose mode never opens mid-logging.
+        // the pending 1.5s hold so nose mode never opens mid-logging.
         if (centerHoldTimerRef.current) {
           window.clearTimeout(centerHoldTimerRef.current)
           centerHoldTimerRef.current = 0
@@ -779,7 +779,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
       centerTapRef.current = { x: event.clientX, y: event.clientY }
       centerHoldFiredRef.current = false
 
-      // Hold the centre for 2s to open nose mode; a quick tap still adds one rep.
+      // Hold the centre for 1.5s to open nose mode; a quick tap still adds one rep.
       if (onLongPressCenter && !unwindingRef.current) {
         setCenterHolding(true)
         centerHoldTimerRef.current = window.setTimeout(() => {
@@ -873,7 +873,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
             aria-disabled={disabled || undefined}
             viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
             className={cn(
-              'absolute inset-0 h-full w-full select-none outline-none',
+              'absolute inset-0 h-full w-full touch-none select-none outline-none',
               disabled ? 'cursor-not-allowed opacity-60' : '',
               'focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-4 focus-visible:ring-offset-bg',
             )}
@@ -1194,7 +1194,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
           <div className="mt-3 flex flex-col items-center gap-1 text-center">
             <p className="max-w-[16rem] text-[0.8125rem] leading-snug text-text-secondary">
               <span className="font-semibold text-text-primary">Nose or chin reps:</span>{' '}
-              hold the centre of the ring for 2 seconds
+              hold the centre of the ring for 1.5 seconds
             </p>
             {onNoseHintDismiss ? (
               <button

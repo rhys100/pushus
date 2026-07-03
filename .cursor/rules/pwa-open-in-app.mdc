@@ -18,8 +18,13 @@ easy to break silently. Protect these invariants:
 - The source of truth is `PWA_OPEN_APP_PROMPT_BOTTOM_NAV_PATHS` /
   `pwaOpenAppPromptSitsAboveBottomNav()` in `src/lib/pwaOpenAppPrompt.ts`. Add
   any new bottom-nav route there — do not hardcode path lists in the component.
-- Android keeps the real **Open in app** intent-URL launch; iOS shows honest
-  home-screen steps with no fake open button.
+- Android's **Open in app** launches the installed PWA via the registered custom
+  protocol `web+pushus://open` (`openInstalledPwa()` +
+  `public/manifest.webmanifest` `protocol_handlers`). Do NOT switch this back to a
+  plain `intent://` https VIEW URL — Chrome self-handles https and just reloads
+  the tab instead of opening the WebAPK. Keep the manifest `protocol_handlers`
+  scheme in sync with `PWA_LAUNCH_PROTOCOL` in `src/lib/pwaOpenInApp.ts`.
+- iOS shows honest home-screen steps with no fake open button.
 
 Before finishing any change to these files, run `npm test` and keep
 `tests/unit/pwaOpenAppPrompt.test.ts` green (it guards dock placement and

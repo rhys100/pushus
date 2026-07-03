@@ -26,12 +26,7 @@ export function PwaOpenAppPrompt() {
 
   const handleOpenInApp = () => {
     acknowledgeOpenInApp()
-
-    if (typeof window === 'undefined') {
-      return
-    }
-
-    openInstalledPwa(pathname, window.location.origin)
+    openInstalledPwa()
   }
 
   return (
@@ -58,7 +53,8 @@ export function PwaOpenAppPrompt() {
           ) : (
             <>
               Tap <span className="font-medium text-text-primary">Open in app</span>. If Chrome asks,
-              choose PushUS. If nothing happens, open PushUS from your home screen or app drawer.
+              choose PushUS. If nothing happens, open PushUS once from your home screen to update it,
+              then try again.
             </>
           )}
         </p>

@@ -9,6 +9,12 @@
   "launch_handler": {
     "client_mode": "navigate-new"
   },
+  "protocol_handlers": [
+    {
+      "protocol": "web+pushus",
+      "url": "/today?source=open-app&h=%s"
+    }
+  ],
   "background_color": "#0b1220",
   "theme_color": "#0b1220",
   "orientation": "portrait-primary",

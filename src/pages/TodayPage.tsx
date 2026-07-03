@@ -355,17 +355,9 @@ export function TodayPage() {
           />
         ) : null}
 
-        <BankPushupsButton
-          placement="inline"
-          disabled={!canBank}
-          loading={bankPushups.isPending}
-          onBank={handleBank}
-          className="transition-opacity duration-[var(--duration-fast)]"
-        />
-
         <DayProgressCard
           variant="compact"
-          className="mt-2 w-full"
+          className="w-full"
           bankedToday={dayTotal}
           banksLogged={entries.length}
           loading={(totalLoading && dayTotal === 0) || planLoading}
@@ -386,6 +378,14 @@ export function TodayPage() {
             showNoseHint={showNoseHint}
             onNoseHintDismiss={dismissNoseHint}
             className="px-0 py-0"
+          />
+
+          <BankPushupsButton
+            placement="inline"
+            disabled={!canBank}
+            loading={bankPushups.isPending}
+            onBank={handleBank}
+            className="mt-5 transition-opacity duration-[var(--duration-fast)]"
           />
         </div>
       </div>

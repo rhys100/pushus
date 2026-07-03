@@ -19,6 +19,7 @@ type WebAppManifest = {
   icons?: ManifestIcon[]
   prefer_related_applications?: boolean
   related_applications?: Array<{ platform?: string; url?: string; id?: string }>
+  protocol_handlers?: Array<{ protocol?: string; url?: string }>
 }
 
 const root = path.resolve(__dirname, '../..')
@@ -48,6 +49,16 @@ describe('PWA manifest', () => {
       },
     ])
     expect(manifest.launch_handler).toEqual({ client_mode: 'navigate-new' })
+  })
+
+  // The "Open in app" button navigates to web+pushus://open; the installed PWA
+  // must register that scheme as a protocol handler for Chrome to hand off to
+  // the standalone app. The %s placeholder is required by the manifest spec.
+  it('registers the custom protocol handler used by Open in app', () => {
+    const handler = manifest.protocol_handlers?.find((h) => h.protocol === 'web+pushus')
+    expect(handler).toBeTruthy()
+    expect(handler?.url).toContain('%s')
+    expect(handler?.url?.startsWith('/')).toBe(true)
   })
 
   it('declares required 192 and 512 PNG icons', () => {
