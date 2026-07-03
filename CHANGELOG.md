@@ -38,6 +38,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **Open in app dock after PWA install:** manifest now serves an absolute `related_applications` URL per origin so `getInstalledRelatedApps()` detects the installed WebAPK; open-app prompt re-checks on navigation and `appinstalled`
 - **Push settings duplicate error:** install hint no longer repeats in red when tapping Enable reminders without an installed PWA
 - **Bank Push-ups disabled state:** uses secondary button styling at 0 reps so label stays readable
 - **Nose-hold hint dismiss link:** higher contrast on "Don't remind me again"

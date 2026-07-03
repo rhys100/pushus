@@ -74,7 +74,22 @@ describe('PWA installed detection', () => {
     })
 
     const relatedApp = await getInstalledWebAppRelatedApp()
+    expect(relatedApp).toBeTruthy()
     expect(readWebApkPackageId(relatedApp)).toBe('org.chromium.webapk.abc123_v2')
+  })
+
+  it('detects installed webapps when Chrome only returns a WebAPK id', async () => {
+    vi.stubGlobal('navigator', {
+      getInstalledRelatedApps: vi.fn().mockResolvedValue([
+        {
+          id: 'org.chromium.webapk.abc123_v2',
+        },
+      ]),
+    })
+
+    await expect(getInstalledWebAppRelatedApp()).resolves.toMatchObject({
+      id: 'org.chromium.webapk.abc123_v2',
+    })
   })
 
   it('ignores missing getInstalledRelatedApps support', async () => {

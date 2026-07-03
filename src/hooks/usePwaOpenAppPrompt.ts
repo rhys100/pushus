@@ -4,7 +4,7 @@ import { getPwaInstallPlatform, isStandaloneDisplayMode, type PwaInstallPlatform
 import { shouldShowPwaOpenAppPrompt } from '@/lib/pwaOpenAppPrompt'
 import { setPwaInstallDockVisible } from '@/lib/pwaInstallDockVisibility'
 import { refreshPwaInstallStatus } from '@/lib/pwaInstallStatus'
-import { syncPwaKnownInstalledFromDisplayMode } from '@/lib/pwaInstalled'
+import { detectPwaInstalledViaBrowserApi, syncPwaKnownInstalledFromDisplayMode } from '@/lib/pwaInstalled'
 import {
   acknowledgePwaOpenAppPromptOpen,
   clearPwaOpenAppPromptSessionSnooze,
@@ -13,6 +13,7 @@ import {
   isPwaKnownInstalled,
   isPwaOpenAppPromptDismissed,
   isPwaOpenAppPromptSnoozedForSession,
+  markPwaKnownInstalled,
 } from '@/lib/storage'
 import { useAuth } from '@/providers/AuthProvider'
 import { useNotificationPreferences } from '@/providers/NotificationPreferencesProvider'
@@ -97,10 +98,33 @@ export function usePwaOpenAppPrompt() {
   }, [refreshInstallState])
 
   useEffect(() => {
+    const handleAppInstalled = () => {
+      markPwaKnownInstalled()
+      setPwaKnownInstalled(true)
+      void refreshInstallState()
+    }
+
+    window.addEventListener('appinstalled', handleAppInstalled)
+    return () => window.removeEventListener('appinstalled', handleAppInstalled)
+  }, [refreshInstallState])
+
+  useEffect(() => {
     if (installStatus) {
       setPwaKnownInstalled(installStatus.isInstalled)
     }
   }, [installStatus])
+
+  useEffect(() => {
+    if (isStandaloneDisplayMode()) {
+      return
+    }
+
+    void detectPwaInstalledViaBrowserApi().then((installed) => {
+      if (installed) {
+        setPwaKnownInstalled(true)
+      }
+    })
+  }, [location.pathname])
 
   const confidence = useMemo<'known' | 'likely'>(() => {
     if (pwaKnownInstalled) {

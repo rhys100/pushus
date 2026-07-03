@@ -1,5 +1,5 @@
 ﻿import { execSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -45,13 +45,54 @@ function appVersionPlugin(buildId: string, version: string, appUrl: string): Plu
   }
 }
 
+function pwaManifestPlugin(appUrl: string): Plugin {
+  const manifestPaths = new Set(['/manifest.json', '/manifest.webmanifest'])
+
+  function manifestJson(origin: string): string {
+    const manifestUrl = `${origin.replace(/\/$/, '')}/manifest.json`
+    const manifestPath = path.resolve(__dirname, 'public/manifest.json')
+    const base = JSON.parse(readFileSync(manifestPath, 'utf8')) as Record<string, unknown>
+    base.related_applications = [{ platform: 'webapp', url: manifestUrl, id: '/' }]
+    return `${JSON.stringify(base, null, 2)}\n`
+  }
+
+  return {
+    name: 'pwa-manifest',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const urlPath = req.url?.split('?')[0]
+        if (!urlPath || !manifestPaths.has(urlPath)) {
+          next()
+          return
+        }
+
+        const host = req.headers.host ?? 'localhost:5173'
+        const proto = req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http'
+        const origin = host.includes('localhost') ? `${proto}://${host}` : appUrl
+        const body = manifestJson(origin)
+
+        res.statusCode = 200
+        res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8')
+        res.setHeader('Cache-Control', 'no-cache, must-revalidate')
+        res.end(body)
+      })
+    },
+    writeBundle(options) {
+      const outDir = options.dir ?? path.resolve(__dirname, 'dist')
+      const body = manifestJson(appUrl)
+      writeFileSync(path.join(outDir, 'manifest.json'), body)
+      writeFileSync(path.join(outDir, 'manifest.webmanifest'), body)
+    },
+  }
+}
+
 export default defineConfig(({ mode }) => {
   const buildId = mode === 'development' ? 'dev' : getBuildId()
   const appVersion = readAppVersion()
   const appUrl = (process.env.VITE_APP_URL ?? 'https://www.pushus.app').replace(/\/$/, '')
 
   return {
-    plugins: [react(), appVersionPlugin(buildId, appVersion, appUrl)],
+    plugins: [react(), appVersionPlugin(buildId, appVersion, appUrl), pwaManifestPlugin(appUrl)],
     define: {
       __APP_BUILD_ID__: JSON.stringify(buildId),
       __APP_VERSION__: JSON.stringify(appVersion),
