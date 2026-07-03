@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
-  buildAndroidOpenInAppIntentUrl,
   buildPwaOpenInAppUrl,
   buildPwaProtocolLaunchUrl,
   canTryOpenInInstalledApp,
   openInstalledPwa,
   PWA_LAUNCH_PROTOCOL,
+  PWA_OPEN_ENTRY_PATH,
+  resolvePwaOpenPath,
 } from '@/lib/pwaOpenInApp'
 
 describe('PWA open in app link', () => {
@@ -19,6 +20,7 @@ describe('PWA open in app link', () => {
     expect(buildPwaOpenInAppUrl('settings', 'https://www.pushus.app')).toBe(
       'https://www.pushus.app/today?source=open-app',
     )
+    expect(resolvePwaOpenPath(undefined)).toBe(PWA_OPEN_ENTRY_PATH)
   })
 
   it('keeps the desktop custom protocol helper', () => {
@@ -26,29 +28,31 @@ describe('PWA open in app link', () => {
     expect(buildPwaProtocolLaunchUrl()).toBe('web+pushus://open')
   })
 
-  it('builds an Android intent without browser fallback by default', () => {
-    const intent = buildAndroidOpenInAppIntentUrl('/leaderboard', 'https://pushus.app')
-    expect(intent).toContain('intent://pushus.app/leaderboard?source=open-app')
-    expect(intent).not.toContain('S.browser_fallback_url')
-  })
-
-  it('can target a WebAPK package when Chrome exposes it', () => {
-    const intent = buildAndroidOpenInAppIntentUrl('/today', 'https://pushus.app', {
-      webApkPackage: 'org.chromium.webapk.test_v2',
-    })
-    expect(intent).toContain('package=org.chromium.webapk.test_v2;')
-  })
-
-  it('assigns an intent URL without https fallback when opening', () => {
-    const assign = vi.fn()
+  it('opens an in-scope https URL in a new browsing context', () => {
+    const open = vi.fn().mockReturnValue({})
     vi.stubGlobal('window', {
-      location: { pathname: '/leaderboard', origin: 'https://pushus.app', assign },
+      location: { pathname: '/leaderboard', origin: 'https://pushus.app' },
+      open,
     })
 
-    openInstalledPwa('/leaderboard', 'https://pushus.app')
+    expect(openInstalledPwa('/leaderboard', 'https://pushus.app')).toBe(true)
+    expect(open).toHaveBeenCalledWith(
+      'https://pushus.app/leaderboard?source=open-app',
+      '_blank',
+      'noopener,noreferrer',
+    )
 
-    expect(assign).toHaveBeenCalledTimes(1)
-    expect(String(assign.mock.calls[0][0])).not.toContain('S.browser_fallback_url')
+    vi.unstubAllGlobals()
+  })
+
+  it('reports false when popup is blocked', () => {
+    const open = vi.fn().mockReturnValue(null)
+    vi.stubGlobal('window', {
+      location: { pathname: '/leaderboard', origin: 'https://pushus.app' },
+      open,
+    })
+
+    expect(openInstalledPwa('/leaderboard', 'https://pushus.app')).toBe(false)
 
     vi.unstubAllGlobals()
   })

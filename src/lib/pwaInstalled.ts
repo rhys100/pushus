@@ -34,7 +34,8 @@ function isInstalledWebApp(app: InstalledRelatedApp): boolean {
   return (
     app.platform === 'webapp' ||
     app.id === '/' ||
-    (typeof app.url === 'string' && app.url.includes('manifest.webmanifest'))
+    (typeof app.url === 'string' &&
+      (app.url.includes('manifest.json') || app.url.includes('manifest.webmanifest')))
   )
 }
 

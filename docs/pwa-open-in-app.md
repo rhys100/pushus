@@ -12,60 +12,39 @@ This is easy to break without noticing, so it has a guard test and this doc.
 | Piece | File |
 |-------|------|
 | Visibility + platform logic | `src/lib/pwaOpenAppPrompt.ts` |
-| Launch / intent handling | `src/lib/pwaOpenInApp.ts` |
+| Launch handling | `src/lib/pwaOpenInApp.ts` |
 | Dock UI | `src/components/PwaOpenAppPrompt.tsx` |
 | Show/hide hook | `src/hooks/usePwaOpenAppPrompt.ts` |
-| Protocol handler (desktop) | `public/manifest.webmanifest` (`protocol_handlers`) |
-| Tests | `tests/unit/pwaOpenAppPrompt.test.ts`, `tests/unit/pwaOpenAppPromptStorage.test.ts`, `tests/unit/pwaOpenInApp.test.ts`, `tests/unit/pwaManifest.test.ts` |
+| Manifest | `public/manifest.json` (+ legacy `manifest.webmanifest`) |
+| Tests | `tests/unit/pwaOpenAppPrompt.test.ts`, `tests/unit/pwaOpenInApp.test.ts`, `tests/unit/pwaManifest.test.ts` |
 
 ## Behaviour
 
-- **Android:** Chrome **cannot reliably auto-launch** the installed WebAPK while
-  you are already browsing the same site in a browser tab. https links,
-  `web+pushus://`, and intent URLs with `S.browser_fallback_url` all tend to
-  reload the tab (the flash members report) instead of opening the standalone app.
+- **Android:** primary button **Open in app** calls `openInstalledPwa()`, which
+  uses `window.open(inScopeHttpsUrl, '_blank', 'noopener,noreferrer')`. There is
+  no `launchPwa()` API — the installed WebAPK intercepts in-scope https URLs
+  opened in a **new browsing context**.
 
-  The dock therefore leads with **honest home-screen steps** and a primary
-  **Got it — I'll use the home screen icon** button. A secondary **Try open in
-  app anyway** fires an Android intent **without** browser fallback, optionally
-  scoped to `org.chromium.webapk.*` when `getInstalledRelatedApps()` exposes it.
+  **Never use** `window.location.href`, `location.assign`, SPA `navigate()`, or
+  `intent://` with https fallback for this flow — they stay in the browser tab.
 
-  Do not bring back a primary **Open in app** button that promises automatic
-  hand-off from Chrome — it misleads members when the platform cannot deliver.
-- **iOS:** Safari cannot switch to a home-screen app, so there is **no** fake
-  open button — just honest numbered steps to tap the home-screen icon.
+  Install detection uses `navigator.getInstalledRelatedApps()` (Android Chrome
+  84+). The manifest declares `related_applications` with `platform: "webapp"`
+  and `url: "/manifest.json"`.
+- **iOS:** Safari cannot detect or open the home-screen app programmatically —
+  honest numbered home-screen steps only.
+- **Standalone:** suppress the dock when `display-mode: standalone`.
 - **Don't remind me again:** permanent dismiss (per account, localStorage).
-- **Got it / Try open in app:** snoozes the dock for the current visit only; it
-  returns on `pageshow` / tab visibility when the member is back in the browser.
-
-We only show it once install is inferred (`isPwaLikelyInstalledForOpenPrompt`):
-known-installed, push enabled, a dismissed iOS install prompt, or Android never
-offering an install prompt.
+- **Open in app:** snoozes the dock for the current visit only.
 
 ## Critical UI invariant — do not regress
 
 On member tab routes (`/today`, `/leaderboard`, `/activity`, `/group`,
-`/settings`) the app renders a **fixed bottom navigation bar**. The open-app dock
-is also fixed to the bottom, so it **must be offset above the nav** with
-`bottom-[var(--bottom-nav-height)]`. If it sits at `bottom-0`, the dock's action
-buttons render **behind the nav bar and become untappable** — the prompt text
-still shows, so it looks like the button "disappeared".
-
-This is exactly what happened once `/today` started showing the prompt but was
-missing from the offset list. The source of truth is now
-`PWA_OPEN_APP_PROMPT_BOTTOM_NAV_PATHS` / `pwaOpenAppPromptSitsAboveBottomNav()`
-in `src/lib/pwaOpenAppPrompt.ts`.
-
-Routes **without** a bottom nav (e.g. `/group/billing`, `/group/create`,
-`/about`, `/join`) keep the dock at the screen bottom.
+`/settings`) the open-app dock **must** sit above the bottom nav via
+`bottom-[var(--bottom-nav-height)]`. Source of truth:
+`PWA_OPEN_APP_PROMPT_BOTTOM_NAV_PATHS` in `src/lib/pwaOpenAppPrompt.ts`.
 
 ## Checked before every PR
 
-`npm test` runs `tests/unit/pwaOpenAppPrompt.test.ts`, which asserts:
-
-1. The prompt shows on `/today` and all member tab routes.
-2. The dock is offset above the nav on every member tab route (incl. `/today`).
-3. The dock stays at the screen bottom on routes without a bottom nav.
-
-If you add a new bottom-nav route or change the Log page layout, update
-`PWA_OPEN_APP_PROMPT_BOTTOM_NAV_PATHS` and keep these tests green.
+`npm test` runs `tests/unit/pwaOpenAppPrompt.test.ts` and
+`tests/unit/pwaOpenInApp.test.ts`.

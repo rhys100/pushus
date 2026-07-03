@@ -1,6 +1,6 @@
 ---
 description: Open-in-installed-app prompt invariants (dock must clear the bottom nav)
-globs: src/components/PwaOpenAppPrompt.tsx,src/lib/pwaOpenAppPrompt.ts,src/lib/pwaOpenInApp.ts,src/hooks/usePwaOpenAppPrompt.ts,src/pages/TodayPage.tsx,src/components/ui/BottomNav.tsx
+globs: src/components/PwaOpenAppPrompt.tsx,src/lib/pwaOpenAppPrompt.ts,src/lib/pwaOpenInApp.ts,src/hooks/usePwaOpenAppPrompt.ts,public/manifest.json,public/manifest.webmanifest,index.html
 alwaysApply: false
 ---
 
@@ -8,23 +8,17 @@ alwaysApply: false
 
 Full doc: [docs/pwa-open-in-app.md](../../docs/pwa-open-in-app.md).
 
-The bottom dock that nudges mobile-browser members to open the installed PWA is
-easy to break silently. Protect these invariants:
+Protect these invariants:
 
-- On member tab routes (`/today`, `/leaderboard`, `/activity`, `/group`,
-  `/settings`) a fixed bottom nav is shown. The dock MUST be offset above it via
-  `bottom-[var(--bottom-nav-height)]`, or its buttons render behind the nav and
-  become untappable (the text still shows, so it looks like the button vanished).
-- The source of truth is `PWA_OPEN_APP_PROMPT_BOTTOM_NAV_PATHS` /
-  `pwaOpenAppPromptSitsAboveBottomNav()` in `src/lib/pwaOpenAppPrompt.ts`. Add
-  any new bottom-nav route there — do not hardcode path lists in the component.
-- Android cannot auto-launch the installed WebAPK from an in-tab Chrome session.
-  Primary CTA is honest home-screen steps (**Got it — I'll use the home screen
-  icon**). Optional **Try open in app anyway** uses an intent without
-  `S.browser_fallback_url` (never a primary https/`web+` link that reloads the
-  tab). Do not restore a misleading primary **Open in app** auto-launch button.
-- iOS shows honest home-screen steps with no fake open button.
+- On member tab routes, the dock MUST sit above the bottom nav via
+  `bottom-[var(--bottom-nav-height)]`.
+- Android **Open in app** must call `openInstalledPwa()` →
+  `window.open(inScopeHttpsUrl, '_blank', 'noopener,noreferrer')`. Never
+  `location.assign`, SPA navigation, `web+pushus://`, or intent fallback URLs.
+- iOS: home-screen instructions only — no fake open button.
+- Suppress when `display-mode: standalone`.
+- `index.html` links `rel="manifest" href="/manifest.json"`.
+- `related_applications` uses `platform: "webapp"` and `url: "/manifest.json"`.
 
-Before finishing any change to these files, run `npm test` and keep
-`tests/unit/pwaOpenAppPrompt.test.ts` green (it guards dock placement and
-visibility, including on `/today`).
+Run `npm test` and keep `tests/unit/pwaOpenAppPrompt.test.ts` and
+`tests/unit/pwaOpenInApp.test.ts` green.
