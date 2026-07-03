@@ -38,7 +38,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
-- **Open in app vs install dock:** Android browser tabs now show **Open in app** when Chrome no longer offers install (likely WebAPK already on home screen); install dock hidden in that case. Settings push section adds **Open in app** button when eligible
+- **Reset open-in-app dock:** Settings → Push reminders shows **Show it again** when the bottom dock was permanently dismissed; **Open in app** also clears the dismiss
 - **Open in app dock after PWA install:** manifest serves absolute `related_applications` URL per origin for `getInstalledRelatedApps()`
 - **Push settings duplicate error:** install hint no longer repeats in red when tapping Enable reminders without an installed PWA
 - **Bank Push-ups disabled state:** uses secondary button styling at 0 reps so label stays readable

@@ -21,9 +21,13 @@ import { getGroupLocalDateString } from '@/hooks/useTodayData'
 import type { ReminderIntervalHours } from '@/lib/notificationEligibility'
 import { useNotificationPreferences } from '@/providers/NotificationPreferencesProvider'
 import { getErrorMessage } from '@/lib/errors'
-import { getPwaInstallHintForPush } from '@/lib/pwa'
+import { getPwaInstallHintForPush, isStandalonePwa } from '@/lib/pwa'
 import { openInstalledPwa } from '@/lib/pwaOpenInApp'
 import { readPwaInstallPlatform } from '@/lib/pwaInstallStatus'
+import {
+  isPwaOpenAppPromptDismissed,
+  resetPwaOpenAppPromptReminders,
+} from '@/lib/storage'
 
 function hourOptions() {
   return Array.from({ length: 24 }, (_, hour) => ({
@@ -85,8 +89,10 @@ export function SettingsPage() {
   const [profileEmoji, setProfileEmoji] = useState<string>(AVATAR_EMOJIS[0])
   const [profileTimezone, setProfileTimezone] = useState('UTC')
   const [savingProfile, setSavingProfile] = useState(false)
+  const [openAppPromptDismissed, setOpenAppPromptDismissed] = useState(false)
   const hours = hourOptions()
   const pushPlatform = readPwaInstallPlatform()
+  const inBrowserTab = !isStandalonePwa()
   const pushReady = pushSupport === 'supported'
   const needsPwaInstall = pushSupport === 'needs_pwa_install'
   const canOpenInstalledApp = installStatus?.isOpenAppEligible ?? false
@@ -130,6 +136,21 @@ export function SettingsPage() {
   })
 
   useEffect(() => {
+    if (!user?.id) {
+      setOpenAppPromptDismissed(false)
+      return
+    }
+
+    const syncOpenAppDismiss = () => {
+      setOpenAppPromptDismissed(isPwaOpenAppPromptDismissed(user.id))
+    }
+
+    syncOpenAppDismiss()
+    window.addEventListener('pushus:pwa-open-app-recheck', syncOpenAppDismiss)
+    return () => window.removeEventListener('pushus:pwa-open-app-recheck', syncOpenAppDismiss)
+  }, [user?.id])
+
+  useEffect(() => {
     if (!profile) return
     setProfileDisplayName(profile.display_name)
     setProfileInitial(profile.name_initial ?? '')
@@ -167,11 +188,25 @@ export function SettingsPage() {
     }
 
     if (needsPwaInstall && canOpenInstalledApp) {
+      if (user?.id) {
+        resetPwaOpenAppPromptReminders(user.id)
+        setOpenAppPromptDismissed(false)
+      }
       openInstalledPwa(location.pathname, window.location.origin)
       return
     }
 
     await enablePush()
+  }
+
+  function handleResetOpenAppReminders() {
+    if (!user?.id) {
+      return
+    }
+
+    resetPwaOpenAppPromptReminders(user.id)
+    setOpenAppPromptDismissed(false)
+    toast({ message: 'Open-in-app reminder restored.', variant: 'success' })
   }
 
   async function handleHoursChange(field: 'active_hours_start' | 'active_hours_end', value: number) {
@@ -501,6 +536,19 @@ export function SettingsPage() {
                     {canOpenInstalledApp
                       ? 'Reminders only work in the installed home-screen app. Tap Open in app, then turn on reminders there.'
                       : getPwaInstallHintForPush(pushPlatform)}
+                  </p>
+                ) : null}
+
+                {inBrowserTab && canOpenInstalledApp && openAppPromptDismissed ? (
+                  <p className="text-xs text-text-muted">
+                    Open-in-app reminder hidden.{' '}
+                    <button
+                      type="button"
+                      className="font-medium text-accent underline underline-offset-2"
+                      onClick={handleResetOpenAppReminders}
+                    >
+                      Show it again
+                    </button>
                   </p>
                 ) : null}
                 <div className="flex items-center justify-between gap-3">
