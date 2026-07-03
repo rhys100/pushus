@@ -1,25 +1,10 @@
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import {
-  getInstalledWebAppRelatedApp,
-  hasGetInstalledRelatedAppsSupport,
-  syncPwaKnownInstalledFromDisplayMode,
-} from '@/lib/pwaInstalled'
-import {
-  getPwaInstallPlatform,
-  isStandaloneDisplayMode,
-  type PwaInstallPlatform,
-} from '@/lib/pwaInstallPrompt'
-import {
-  isAndroidInstallPromptUnavailable,
-  isInstallPromptCheckComplete,
-  subscribeInstallPromptAvailability,
-} from '@/lib/pwaInstallPromptAvailability'
-import {
-  isPwaLikelyInstalledForOpenPrompt,
-  shouldShowPwaOpenAppPrompt,
-} from '@/lib/pwaOpenAppPrompt'
+import { getPwaInstallPlatform, isStandaloneDisplayMode, type PwaInstallPlatform } from '@/lib/pwaInstallPrompt'
+import { shouldShowPwaOpenAppPrompt } from '@/lib/pwaOpenAppPrompt'
 import { setPwaInstallDockVisible } from '@/lib/pwaInstallDockVisibility'
+import { refreshPwaInstallStatus } from '@/lib/pwaInstallStatus'
+import { syncPwaKnownInstalledFromDisplayMode } from '@/lib/pwaInstalled'
 import {
   acknowledgePwaOpenAppPromptOpen,
   clearPwaOpenAppPromptSessionSnooze,
@@ -28,7 +13,6 @@ import {
   isPwaKnownInstalled,
   isPwaOpenAppPromptDismissed,
   isPwaOpenAppPromptSnoozedForSession,
-  markPwaKnownInstalled,
 } from '@/lib/storage'
 import { useAuth } from '@/providers/AuthProvider'
 import { useNotificationPreferences } from '@/providers/NotificationPreferencesProvider'
@@ -47,7 +31,7 @@ function getPlatform(): PwaInstallPlatform {
 
 export function usePwaOpenAppPrompt() {
   const { session, profileOnboarded, appAccess, profileReady, appAccessLoading } = useAuth()
-  const { prefs } = useNotificationPreferences()
+  const { prefs, installStatus } = useNotificationPreferences()
   const location = useLocation()
   const userId = session?.user?.id
   const [promptDismissed, setPromptDismissed] = useState(false)
@@ -59,12 +43,12 @@ export function usePwaOpenAppPrompt() {
   })
   const platform = useMemo(getPlatform, [])
   const pushEnabled = prefs?.push_enabled ?? false
-  useSyncExternalStore(
-    subscribeInstallPromptAvailability,
-    isInstallPromptCheckComplete,
-    () => false,
-  )
-  const androidInstallPromptUnavailable = isAndroidInstallPromptUnavailable(platform)
+
+  const refreshInstallState = useCallback(async () => {
+    const status = await refreshPwaInstallStatus()
+    setPwaKnownInstalled(status.isInstalled)
+    return status
+  }, [])
 
   const refreshDismissState = useCallback(() => {
     if (!userId) {
@@ -95,6 +79,7 @@ export function usePwaOpenAppPrompt() {
       clearPwaOpenAppPromptSessionSnooze(userId)
       setSessionSnoozed(false)
       setPromptDismissed(isPwaOpenAppPromptDismissed(userId))
+      void refreshInstallState()
     }
 
     restoreReminderOnBrowserReturn()
@@ -105,60 +90,17 @@ export function usePwaOpenAppPrompt() {
       window.removeEventListener('pageshow', restoreReminderOnBrowserReturn)
       document.removeEventListener('visibilitychange', restoreReminderOnBrowserReturn)
     }
-  }, [userId])
+  }, [userId, refreshInstallState])
 
   useEffect(() => {
-    const knownInstalled = syncPwaKnownInstalledFromDisplayMode()
-    setPwaKnownInstalled(knownInstalled)
-
-    if (!hasGetInstalledRelatedAppsSupport()) {
-      return
-    }
-
-    let cancelled = false
-
-    void getInstalledWebAppRelatedApp().then((relatedApp) => {
-      if (cancelled) {
-        return
-      }
-
-      if (!relatedApp) {
-        return
-      }
-
-      markPwaKnownInstalled()
-      setPwaKnownInstalled(true)
-    })
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
+    void refreshInstallState()
+  }, [refreshInstallState])
 
   useEffect(() => {
-    if (
-      !isPwaLikelyInstalledForOpenPrompt({
-        pwaKnownInstalled,
-        platform,
-        installPromptDismissed,
-        pushEnabled,
-        androidInstallPromptUnavailable,
-      })
-    ) {
-      return
+    if (installStatus) {
+      setPwaKnownInstalled(installStatus.isInstalled)
     }
-
-    if (!pwaKnownInstalled) {
-      markPwaKnownInstalled()
-      setPwaKnownInstalled(true)
-    }
-  }, [
-    pwaKnownInstalled,
-    platform,
-    installPromptDismissed,
-    pushEnabled,
-    androidInstallPromptUnavailable,
-  ])
+  }, [installStatus])
 
   const confidence = useMemo<'known' | 'likely'>(() => {
     if (pwaKnownInstalled) {
@@ -182,7 +124,7 @@ export function usePwaOpenAppPrompt() {
       pwaKnownInstalled,
       installPromptDismissed,
       pushEnabled,
-      androidInstallPromptUnavailable,
+      androidInstallPromptUnavailable: false,
       promptDismissed,
       sessionSnoozed,
       platform,
@@ -198,7 +140,6 @@ export function usePwaOpenAppPrompt() {
     pwaKnownInstalled,
     installPromptDismissed,
     pushEnabled,
-    androidInstallPromptUnavailable,
     promptDismissed,
     sessionSnoozed,
     platform,

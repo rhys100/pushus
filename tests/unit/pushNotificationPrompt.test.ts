@@ -40,6 +40,12 @@ test('hides prompt when push unsupported', () => {
   ).toBe(false)
 })
 
+test('shows prompt when PWA install is required', () => {
+  expect(
+    shouldShowPushNotificationPrompt({ ...baseInput, pushSupport: 'needs_pwa_install' }),
+  ).toBe(true)
+})
+
 test('shows prompt when iOS needs home screen install', () => {
   expect(
     shouldShowPushNotificationPrompt({ ...baseInput, pushSupport: 'ios_needs_install' }),

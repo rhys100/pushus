@@ -25,54 +25,27 @@ describe('PWA open app prompt', () => {
     expect(shouldShowPwaOpenAppPrompt(baseInput)).toBe(true)
   })
 
-  it('infers install from push reminders, a dismissed iOS install prompt, or no Android install offer', () => {
+  it('only treats verified install state as likely installed', () => {
     expect(
       isPwaLikelyInstalledForOpenPrompt({
-        pwaKnownInstalled: false,
-        platform: 'android',
-        installPromptDismissed: false,
-        pushEnabled: true,
-        androidInstallPromptUnavailable: false,
+        pwaKnownInstalled: true,
       }),
     ).toBe(true)
 
     expect(
       isPwaLikelyInstalledForOpenPrompt({
         pwaKnownInstalled: false,
-        platform: 'android',
-        installPromptDismissed: false,
-        pushEnabled: false,
-        androidInstallPromptUnavailable: true,
       }),
-    ).toBe(true)
+    ).toBe(false)
 
     expect(
       shouldShowPwaOpenAppPrompt({
         ...baseInput,
         pwaKnownInstalled: false,
         pushEnabled: true,
-        androidInstallPromptUnavailable: false,
-      }),
-    ).toBe(true)
-
-    expect(
-      shouldShowPwaOpenAppPrompt({
-        ...baseInput,
-        pwaKnownInstalled: false,
-        pushEnabled: false,
         androidInstallPromptUnavailable: true,
       }),
-    ).toBe(true)
-
-    expect(
-      shouldShowPwaOpenAppPrompt({
-        ...baseInput,
-        pwaKnownInstalled: false,
-        platform: 'ios',
-        installPromptDismissed: true,
-        androidInstallPromptUnavailable: false,
-      }),
-    ).toBe(true)
+    ).toBe(false)
   })
 
   it('hides when already running in standalone mode', () => {
@@ -122,9 +95,6 @@ describe('PWA open app prompt', () => {
     }
   })
 
-  // Regression guard: the open-app dock must sit ABOVE the bottom nav on every
-  // member tab route (incl. /today) so its action buttons are not hidden behind
-  // the nav bar. See docs/pwa-open-in-app.md.
   it('offsets the dock above the bottom nav on all member tab routes', () => {
     for (const pathname of ['/today', '/leaderboard', '/activity', '/group', '/settings']) {
       expect(pwaOpenAppPromptSitsAboveBottomNav(pathname)).toBe(true)

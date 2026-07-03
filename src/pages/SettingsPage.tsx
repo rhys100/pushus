@@ -21,7 +21,8 @@ import { getGroupLocalDateString } from '@/hooks/useTodayData'
 import type { ReminderIntervalHours } from '@/lib/notificationEligibility'
 import { useNotificationPreferences } from '@/providers/NotificationPreferencesProvider'
 import { getErrorMessage } from '@/lib/errors'
-import { getIosPwaInstallHint } from '@/lib/pwa'
+import { getPwaInstallHintForPush } from '@/lib/pwa'
+import { readPwaInstallPlatform } from '@/lib/pwaInstallStatus'
 
 function hourOptions() {
   return Array.from({ length: 24 }, (_, hour) => ({
@@ -83,7 +84,11 @@ export function SettingsPage() {
   const [profileTimezone, setProfileTimezone] = useState('UTC')
   const [savingProfile, setSavingProfile] = useState(false)
   const hours = hourOptions()
-  const pushConfigured = pushSupport === 'supported'
+  const pushPlatform = readPwaInstallPlatform()
+  const pushReady = pushSupport === 'supported'
+  const needsPwaInstall = pushSupport === 'needs_pwa_install'
+  const pushUnavailable =
+    pushSupport === 'unsupported' || pushSupport === 'missing_vapid_key'
   const displayError = localError ?? prefsError
   const isRestDay = hasPlan && (todayPrescription?.isRestDay || dailyTarget === 0)
   const pendingMax = plan?.pending_max_clean_update
@@ -473,16 +478,19 @@ export function SettingsPage() {
           <p className="text-sm text-text-muted">Loading notification settings…</p>
         ) : (
           <>
-            {!pushConfigured ? (
+            {pushUnavailable ? (
               <p className="rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-xs text-text-muted">
-                {pushSupport === 'ios_needs_install'
-                  ? getIosPwaInstallHint()
-                  : pushSupport === 'unsupported'
-                    ? 'This browser does not support web push.'
-                    : 'Push is not configured on this deployment yet.'}
+                {pushSupport === 'unsupported'
+                  ? 'This browser does not support web push.'
+                  : 'Push is not configured on this deployment yet.'}
               </p>
             ) : (
               <div className="space-y-3">
+                {needsPwaInstall ? (
+                  <p className={cn(noticeInlineClass('accent'), 'text-text-muted')}>
+                    {getPwaInstallHintForPush(pushPlatform)}
+                  </p>
+                ) : null}
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm text-text-primary">Reminders</p>
@@ -504,7 +512,7 @@ export function SettingsPage() {
                     variant={prefs?.push_enabled ? 'secondary' : 'primary'}
                     loading={registering || saving}
                     disabled={
-                      !pushConfigured || (pushPermission === 'denied' && !prefs?.push_enabled)
+                      pushPermission === 'denied' && !prefs?.push_enabled
                     }
                     onClick={() => void handleTogglePush()}
                   >
@@ -512,10 +520,12 @@ export function SettingsPage() {
                   </Button>
                 </div>
 
-                <p className={cn(noticeInlineClass('accent'), 'text-text-muted')}>
-                  Install tip: on Android, use the install prompt. On iPhone, tap Share, then Add
-                  to Home Screen. Installed apps keep reminders more reliable.
-                </p>
+                {pushReady ? (
+                  <p className={cn(noticeInlineClass('accent'), 'text-text-muted')}>
+                    Reminders only work in the installed home-screen app. If you removed PushUS,
+                    turn reminders off and on again after reinstalling.
+                  </p>
+                ) : null}
 
                 <div className="grid grid-cols-2 gap-3">
                   <label className="space-y-1">

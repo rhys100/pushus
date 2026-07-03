@@ -20,6 +20,7 @@ export function usePushNotificationPrompt() {
     error,
     pushSupport,
     pushPermission,
+    installStatusLoading,
   } = useNotificationPreferences()
   const installOpenAppDockVisible = useInstallOpenAppDockVisible()
 
@@ -30,7 +31,7 @@ export function usePushNotificationPrompt() {
   }, [userId])
 
   const visible = useMemo(() => {
-    if (!userId || !profileReady || appAccessLoading || prefsLoading || installOpenAppDockVisible) {
+    if (!userId || !profileReady || appAccessLoading || prefsLoading || installStatusLoading || installOpenAppDockVisible) {
       return false
     }
 
@@ -49,6 +50,7 @@ export function usePushNotificationPrompt() {
     profileReady,
     appAccessLoading,
     prefsLoading,
+    installStatusLoading,
     location.pathname,
     session,
     profileOnboarded,

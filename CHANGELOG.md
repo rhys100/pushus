@@ -38,6 +38,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **Push reminders require installed PWA:** Android and iOS block enabling reminders in a normal browser tab; toggling reminders re-checks install status via `getInstalledRelatedApps()` and re-shows the install prompt when needed
+- **Stale PWA install detection after uninstall:** clears the local install flag when Android Chrome reports no related webapp, so the install dock can appear again
 - **Open in app on Android:** launches the installed WebAPK via `window.open()` to an in-scope https URL in a new tab (`noopener,noreferrer`) — the only reliable web method on Chrome Android. Added canonical `manifest.json`, aligned `start_url` to `/today`, and restored a primary **Open in app** button on the dock
 - **Bottom dock prompt design:** floating card with accent bar, stronger shadow, full-width stacked buttons on mobile success, warning, danger, and accent notifications now use opaque surfaces instead of 10–30% transparent tints, so copy stays legible when toasts float over page content (e.g. invite copy confirmation on Settings)
 - **Bottom dock prompts:** install, open-app, and push reminder docks use a solid surface panel with clearer secondary buttons; tab pages reserve scroll space so content is not hidden behind the dock
