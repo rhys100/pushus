@@ -1,5 +1,5 @@
 import { isStandalonePwa } from '@/lib/pwa'
-import { isPwaKnownInstalled, markPwaKnownInstalled } from '@/lib/storage'
+import { isPwaKnownInstalled, markPwaStandaloneProof } from '@/lib/storage'
 
 export type InstalledRelatedApp = {
   id?: string
@@ -17,7 +17,7 @@ export function syncPwaKnownInstalledFromDisplayMode(): boolean {
     return isPwaKnownInstalled()
   }
 
-  markPwaKnownInstalled()
+  markPwaStandaloneProof()
   return true
 }
 
@@ -78,6 +78,6 @@ export async function detectPwaInstalledViaBrowserApi(): Promise<boolean> {
     return false
   }
 
-  markPwaKnownInstalled()
+  markPwaStandaloneProof()
   return true
 }

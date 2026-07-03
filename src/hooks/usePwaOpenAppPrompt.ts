@@ -4,16 +4,15 @@ import { getPwaInstallPlatform, isStandaloneDisplayMode, type PwaInstallPlatform
 import { shouldShowPwaOpenAppPrompt } from '@/lib/pwaOpenAppPrompt'
 import { setPwaInstallDockVisible } from '@/lib/pwaInstallDockVisibility'
 import { refreshPwaInstallStatus } from '@/lib/pwaInstallStatus'
-import { detectPwaInstalledViaBrowserApi, syncPwaKnownInstalledFromDisplayMode } from '@/lib/pwaInstalled'
+import { detectPwaInstalledViaBrowserApi } from '@/lib/pwaInstalled'
 import {
   acknowledgePwaOpenAppPromptOpen,
   clearPwaOpenAppPromptSessionSnooze,
   dismissPwaOpenAppPrompt,
   isPwaInstallPromptDismissed,
-  isPwaKnownInstalled,
   isPwaOpenAppPromptDismissed,
   isPwaOpenAppPromptSnoozedForSession,
-  markPwaKnownInstalled,
+  markPwaStandaloneProof,
 } from '@/lib/storage'
 import { useAuth } from '@/providers/AuthProvider'
 import { useNotificationPreferences } from '@/providers/NotificationPreferencesProvider'
@@ -38,16 +37,13 @@ export function usePwaOpenAppPrompt() {
   const [promptDismissed, setPromptDismissed] = useState(false)
   const [sessionSnoozed, setSessionSnoozed] = useState(false)
   const [installPromptDismissed, setInstallPromptDismissed] = useState(false)
-  const [pwaKnownInstalled, setPwaKnownInstalled] = useState(() => {
-    syncPwaKnownInstalledFromDisplayMode()
-    return isPwaKnownInstalled()
-  })
+  const [isOpenAppEligible, setIsOpenAppEligible] = useState(false)
   const platform = useMemo(getPlatform, [])
   const pushEnabled = prefs?.push_enabled ?? false
 
   const refreshInstallState = useCallback(async () => {
     const status = await refreshPwaInstallStatus()
-    setPwaKnownInstalled(status.isInstalled)
+    setIsOpenAppEligible(status.isOpenAppEligible)
     return status
   }, [])
 
@@ -99,8 +95,8 @@ export function usePwaOpenAppPrompt() {
 
   useEffect(() => {
     const handleAppInstalled = () => {
-      markPwaKnownInstalled()
-      setPwaKnownInstalled(true)
+      markPwaStandaloneProof()
+      setIsOpenAppEligible(true)
       void refreshInstallState()
     }
 
@@ -110,7 +106,7 @@ export function usePwaOpenAppPrompt() {
 
   useEffect(() => {
     if (installStatus) {
-      setPwaKnownInstalled(installStatus.isInstalled)
+      setIsOpenAppEligible(installStatus.isOpenAppEligible)
     }
   }, [installStatus])
 
@@ -121,18 +117,18 @@ export function usePwaOpenAppPrompt() {
 
     void detectPwaInstalledViaBrowserApi().then((installed) => {
       if (installed) {
-        setPwaKnownInstalled(true)
+        setIsOpenAppEligible(true)
       }
     })
   }, [location.pathname])
 
   const confidence = useMemo<'known' | 'likely'>(() => {
-    if (pwaKnownInstalled) {
+    if (installStatus?.isInstalledForPush) {
       return 'known'
     }
 
     return 'likely'
-  }, [pwaKnownInstalled])
+  }, [installStatus?.isInstalledForPush])
 
   const visible = useMemo(() => {
     if (!userId || !profileReady || appAccessLoading) {
@@ -145,7 +141,8 @@ export function usePwaOpenAppPrompt() {
       profileOnboarded,
       appAccessAllowed: appAccess.allowed,
       isStandalone: isStandaloneDisplayMode(),
-      pwaKnownInstalled,
+      pwaKnownInstalled: isOpenAppEligible,
+      isOpenAppEligible,
       installPromptDismissed,
       pushEnabled,
       androidInstallPromptUnavailable: false,
@@ -161,7 +158,7 @@ export function usePwaOpenAppPrompt() {
     session,
     profileOnboarded,
     appAccess.allowed,
-    pwaKnownInstalled,
+    isOpenAppEligible,
     installPromptDismissed,
     pushEnabled,
     promptDismissed,
