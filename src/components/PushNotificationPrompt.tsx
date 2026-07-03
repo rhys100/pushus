@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui'
 import {
   BottomDockPrompt,
+  dockPromptPrimaryButtonClass,
   dockPromptSecondaryButtonClass,
 } from '@/components/BottomDockPrompt'
 import { getIosPwaInstallHint } from '@/lib/pwa'
@@ -32,14 +33,22 @@ export function PushNotificationPrompt() {
           {error}
         </p>
       ) : null}
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         {needsIosInstall ? (
-          <Button variant="secondary" className={dockPromptSecondaryButtonClass} onClick={dismiss}>
+          <Button
+            variant="secondary"
+            className={dockPromptSecondaryButtonClass}
+            onClick={dismiss}
+          >
             Got it
           </Button>
         ) : (
           <>
-            <Button loading={enabling} onClick={() => void enable()}>
+            <Button
+              loading={enabling}
+              className={dockPromptPrimaryButtonClass}
+              onClick={() => void enable()}
+            >
               Enable reminders
             </Button>
             <Button

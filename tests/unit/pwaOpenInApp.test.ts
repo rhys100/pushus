@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   PWA_LAUNCH_PROTOCOL,
+  buildAndroidOpenInAppIntentUrl,
   buildPwaOpenInAppUrl,
   buildPwaProtocolLaunchUrl,
   canTryOpenInInstalledApp,
@@ -19,13 +20,18 @@ describe('PWA open in app link', () => {
     )
   })
 
-  // The launch button uses the PWA's registered custom protocol so Chrome hands
-  // off to the installed standalone app. A plain https intent:// can't target
-  // the WebAPK, so Chrome just reloads the tab. The scheme must match the
-  // manifest protocol_handlers entry. See docs/pwa-open-in-app.md.
-  it('launches via the registered custom protocol scheme', () => {
+  it('keeps the desktop custom protocol helper', () => {
     expect(PWA_LAUNCH_PROTOCOL).toBe('web+pushus')
     expect(buildPwaProtocolLaunchUrl()).toBe('web+pushus://open')
+  })
+
+  it('builds an Android intent URL with https fallback', () => {
+    expect(buildAndroidOpenInAppIntentUrl('/leaderboard', 'https://pushus.app')).toContain(
+      'intent://pushus.app/leaderboard?source=open-app',
+    )
+    expect(buildAndroidOpenInAppIntentUrl('/leaderboard', 'https://pushus.app')).toContain(
+      'S.browser_fallback_url=',
+    )
   })
 
   it('only offers direct open attempts on Android', () => {

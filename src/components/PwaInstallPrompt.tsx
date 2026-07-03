@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui'
 import {
   BottomDockPrompt,
+  dockPromptPrimaryButtonClass,
   dockPromptSecondaryButtonClass,
 } from '@/components/BottomDockPrompt'
 import { usePwaInstallPrompt } from '@/hooks/usePwaInstallPrompt'
@@ -22,8 +23,12 @@ export function PwaInstallPrompt() {
           ? 'On iPhone, tap Share, then Add to Home Screen. PushUS opens like an app and keeps reminders more reliable.'
           : 'Android keeps installed web apps awake for reminders, even when Chrome quietens normal website notifications.'}
       </p>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Button loading={installing} onClick={() => void install()}>
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        <Button
+          loading={installing}
+          className={dockPromptPrimaryButtonClass}
+          onClick={() => void install()}
+        >
           {isIos ? 'Got it' : 'Install PushUS'}
         </Button>
         <Button
