@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { useLoggerDragHint } from '@/hooks/useLoggerDragHint'
+import { useNoseHoldHint } from '@/hooks/useNoseHoldHint'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 import {
   useBankPushups,
@@ -10,7 +11,6 @@ import {
 } from '@/hooks/useTodayData'
 import { useGroupBillingStatus, useGroupSubscription } from '@/hooks/useBilling'
 import { BillingBanner } from '@/components/billing/BillingBanner'
-import { Button } from '@/components/ui/Button'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useToast } from '@/components/ui/Toast'
 import { billingConfig } from '@/lib/billing'
@@ -48,6 +48,7 @@ export function TodayPage() {
     plan,
   } = useTrainingPlan(user?.id, activeGroup?.id, planTimezone)
   const { showHint, dismissHint } = useLoggerDragHint()
+  const { showNoseHint, dismissNoseHint } = useNoseHoldHint()
   const billingStatusQuery = useGroupBillingStatus(activeGroup?.id)
   const subscriptionQuery = useGroupSubscription(activeGroup?.id)
   const { data: dayTotal = 0, isLoading: totalLoading } = useDayTotal(activeGroup)
@@ -362,32 +363,29 @@ export function TodayPage() {
           className="transition-opacity duration-[var(--duration-fast)]"
         />
 
+        <DayProgressCard
+          variant="compact"
+          className="mt-2 w-full"
+          bankedToday={dayTotal}
+          banksLogged={entries.length}
+          loading={(totalLoading && dayTotal === 0) || planLoading}
+          hasPlan={hasPlan}
+          dailyTarget={dailyTarget}
+          todayPrescription={todayPrescription}
+        />
+
         <div className="flex flex-1 flex-col items-center justify-center py-4">
           <CircularLogger
             ref={loggerRef}
             onCanBankChange={setCanBank}
             onBank={handleBank}
+            onLongPressCenter={() => setNoseTapOpen(true)}
             disabled={bankPushups.isPending}
             showDragHint={showHint}
             onHintDismiss={dismissHint}
+            showNoseHint={showNoseHint}
+            onNoseHintDismiss={dismissNoseHint}
             className="px-0 py-0"
-          />
-        </div>
-
-        <div className="flex flex-col items-center gap-3 pb-4">
-          <Button type="button" fullWidth onClick={() => setNoseTapOpen(true)}>
-            👃 Nose/chin reps
-          </Button>
-
-          <DayProgressCard
-            variant="compact"
-            className="mt-0 w-full"
-            bankedToday={dayTotal}
-            banksLogged={entries.length}
-            loading={(totalLoading && dayTotal === 0) || planLoading}
-            hasPlan={hasPlan}
-            dailyTarget={dailyTarget}
-            todayPrescription={todayPrescription}
           />
         </div>
       </div>

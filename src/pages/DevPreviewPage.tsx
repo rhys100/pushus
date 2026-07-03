@@ -5,8 +5,22 @@ import {
 } from '@/components/logger/CircularLogger'
 import { BankPushupsButton } from '@/components/logger/BankPushupsButton'
 import { NoseTapMode } from '@/components/logger/NoseTapMode'
-import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { DayProgressCard } from '@/components/today/DayProgressCard'
+import type { TodayPrescription } from '@/lib/training/planEngine'
+
+const SAMPLE_PRESCRIPTION: TodayPrescription = {
+  dayType: 'moderate',
+  target: 45,
+  setSize: 15,
+  sets: 3,
+  label: 'Moderate — 3 sets of 15',
+  isRestDay: false,
+  mesocycleWeek: 2,
+  suggestMaxCheckIn: false,
+  safetyNote: null,
+  dayTypeLabel: 'Moderate',
+}
 
 /**
  * Dev-only showcase of the core UI without auth or a backend.
@@ -16,6 +30,7 @@ export function DevPreviewPage() {
   const loggerRef = useRef<CircularLoggerHandle>(null)
   const [count, setCount] = useState(0)
   const [noseTapOpen, setNoseTapOpen] = useState(false)
+  const [showNoseHint, setShowNoseHint] = useState(true)
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col px-4 pb-3 pt-8">
@@ -32,15 +47,28 @@ export function DevPreviewPage() {
         onBank={() => loggerRef.current?.unwind()}
       />
 
+      <DayProgressCard
+        variant="compact"
+        className="mt-2 w-full"
+        bankedToday={count}
+        banksLogged={count > 0 ? 1 : 0}
+        hasPlan
+        dailyTarget={SAMPLE_PRESCRIPTION.target}
+        todayPrescription={SAMPLE_PRESCRIPTION}
+      />
+
       <div className="flex flex-1 flex-col items-center justify-center py-4">
-        <CircularLogger ref={loggerRef} onCountChange={setCount} showDragHint />
+        <CircularLogger
+          ref={loggerRef}
+          onCountChange={setCount}
+          onLongPressCenter={() => setNoseTapOpen(true)}
+          showDragHint
+          showNoseHint={showNoseHint}
+          onNoseHintDismiss={() => setShowNoseHint(false)}
+        />
       </div>
 
       <div className="flex flex-col items-center gap-3 pb-4">
-        <Button type="button" fullWidth onClick={() => setNoseTapOpen(true)}>
-          👃 Nose/chin reps
-        </Button>
-
         <Card className="w-full">
           <div className="grid grid-cols-3 gap-3 text-center">
             <div>

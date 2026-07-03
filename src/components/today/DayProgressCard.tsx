@@ -6,7 +6,7 @@ import { GoalProgressBar } from '@/components/ui/GoalProgressBar'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { cn } from '@/lib/cn'
 import { computeDailySetPlan } from '@/lib/training/dailySetPlan'
-import type { TodayPrescription } from '@/lib/training/planEngine'
+import { formatDayTargetSetsDetail, type TodayPrescription } from '@/lib/training/planEngine'
 
 export type DayProgressCardProps = {
   bankedToday: number
@@ -59,6 +59,11 @@ export const DayProgressCard = memo(function DayProgressCard({
       banksLogged,
     )
   }, [prescription, hasPlan, target, isRestDay, bankedToday, banksLogged])
+
+  const setsDetail =
+    prescription && !isRestDay && prescription.sets > 0
+      ? formatDayTargetSetsDetail(prescription)
+      : ''
 
   if (!hasPlan && !loading) {
     return (
@@ -134,10 +139,12 @@ export const DayProgressCard = memo(function DayProgressCard({
               <>
                 <p className="mt-1.5 line-clamp-1 text-xs text-text-muted">
                   {setPlan.headline}
-                  {!setPlan.goalHit && setPlan.currentSetNumber && setPlan.setsPlanned > 0
-                    ? ` · set ${setPlan.currentSetNumber} of ${setPlan.setsPlanned}`
-                    : ''}
                 </p>
+                {setsDetail ? (
+                  <p className="mt-0.5 line-clamp-1 text-xs font-medium text-text-secondary">
+                    {setsDetail}
+                  </p>
+                ) : null}
                 {prescription?.safetyNote ? (
                   <p className="mt-1 text-xs text-text-muted">{prescription.safetyNote}</p>
                 ) : null}
