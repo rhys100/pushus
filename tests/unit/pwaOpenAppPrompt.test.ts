@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   isPwaLikelyInstalledForOpenPrompt,
+  pwaOpenAppPromptSitsAboveBottomNav,
   shouldShowPwaOpenAppPrompt,
 } from '@/lib/pwaOpenAppPrompt'
 
@@ -118,6 +119,21 @@ describe('PWA open app prompt', () => {
   it('shows on tab routes with bottom navigation', () => {
     for (const pathname of ['/leaderboard', '/activity', '/group', '/settings', '/today']) {
       expect(shouldShowPwaOpenAppPrompt({ ...baseInput, pathname })).toBe(true)
+    }
+  })
+
+  // Regression guard: the open-app dock must sit ABOVE the bottom nav on every
+  // member tab route (incl. /today) so its action buttons are not hidden behind
+  // the nav bar. See docs/pwa-open-in-app.md.
+  it('offsets the dock above the bottom nav on all member tab routes', () => {
+    for (const pathname of ['/today', '/leaderboard', '/activity', '/group', '/settings']) {
+      expect(pwaOpenAppPromptSitsAboveBottomNav(pathname)).toBe(true)
+    }
+  })
+
+  it('keeps the dock at the screen bottom on routes without a bottom nav', () => {
+    for (const pathname of ['/join', '/about', '/group/create', '/group/billing']) {
+      expect(pwaOpenAppPromptSitsAboveBottomNav(pathname)).toBe(false)
     }
   })
 })

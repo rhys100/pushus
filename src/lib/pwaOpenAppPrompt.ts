@@ -7,6 +7,28 @@ export const PWA_OPEN_APP_PROMPT_EXCLUDED_PATHS = [
   '/settings/training',
 ] as const
 
+/**
+ * Member tab routes that render inside TabLayout and therefore show the fixed
+ * bottom navigation bar. On these routes the open-app dock must sit ABOVE the
+ * nav, or its action buttons render behind the nav and become untappable.
+ * Exact-match only: sub-routes like /group/billing have no bottom nav.
+ */
+export const PWA_OPEN_APP_PROMPT_BOTTOM_NAV_PATHS = [
+  '/today',
+  '/leaderboard',
+  '/activity',
+  '/group',
+  '/settings',
+] as const
+
+/**
+ * True when the current route shows the bottom nav, so the open-app dock must
+ * be offset above it. See tests/unit/pwaOpenAppPrompt.test.ts.
+ */
+export function pwaOpenAppPromptSitsAboveBottomNav(pathname: string): boolean {
+  return (PWA_OPEN_APP_PROMPT_BOTTOM_NAV_PATHS as readonly string[]).includes(pathname)
+}
+
 export type PwaOpenAppPromptVisibilityInput = {
   pathname: string
   isAuthenticated: boolean

@@ -26,6 +26,20 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-03 (open-in-app dock fix + docs)
+
+**Fixed**
+- Open-app dock buttons hidden behind the bottom nav on `/today`: `/today` was missing from the nav-offset path list, so the dock sat at `bottom-0` behind the nav bar. Moved the path list into `pwaOpenAppPromptSitsAboveBottomNav()` (`src/lib/pwaOpenAppPrompt.ts`) and offset all member tab routes above the nav.
+
+**Docs**
+- Added [docs/pwa-open-in-app.md](./pwa-open-in-app.md) and `.cursor/rules/pwa-open-in-app.mdc` documenting the feature + the dock-above-nav invariant so it is not silently re-broken.
+
+**Tests**
+- Added guard tests in `tests/unit/pwaOpenAppPrompt.test.ts` for dock placement across member tab routes and non-nav routes.
+
+**Notes**
+- Also synced README/CHANGELOG for the merged PR #10 (chunky glow UI, nose-tap mode, bank ritual) which had shipped without doc updates.
+
 ### 2026-07-02 (ring handle grab zone)
 
 **Fixed**
