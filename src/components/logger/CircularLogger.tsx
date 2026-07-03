@@ -24,14 +24,25 @@ import {
   pointerToRingAngle,
 } from '@/lib/loggerHitTest'
 import { useCircularCounter } from '@/hooks/useCircularCounter'
-import { primeRepFeedback, pulseRepHapticDelta } from '@/lib/repHaptic'
+import {
+  playClickClack,
+  playDoosh,
+  playRepTick,
+  playUnwindTick,
+} from '@/lib/dinkSound'
+import {
+  isRepHapticSupported,
+  primeRepFeedback,
+  pulseRepHapticDelta,
+  repHapticPatternForCount,
+} from '@/lib/repHaptic'
 
 const RING_SIZE = LOGGER_RING_SIZE
 const RING_CENTER = RING_SIZE / 2
-const RING_RADIUS = 134
-const RING_STROKE = 17
-const RING_HIT_STROKE = 34
-const HANDLE_RADIUS = 16
+const RING_RADIUS = 130
+const RING_STROKE = 30
+const RING_HIT_STROKE = 44
+const HANDLE_RADIUS = 24
 const HANDLE_GRAB_RADIUS = LOGGER_HANDLE_GRAB_RADIUS
 const CENTER_HIT_RADIUS = RING_RADIUS - RING_STROKE - 8
 const RING_CONTAINER_SIZE = 'min(72vw,336px)'
@@ -43,7 +54,19 @@ const REP_TICK_ANGLES = Array.from(
 export type CircularLoggerHandle = {
   getCount: () => number
   reset: () => void
+  /** Animate the counter back to 0 with an S-curve spin-down and per-rep trill. */
+  unwind: () => void
 }
+
+/** Trail behind the handle fades out over this arc span — 1/5 of the circle. */
+const TRAIL_DEGREES = 72
+const TRAIL_SEGMENTS = 18
+
+/** Mecha lock-in after the unwind lands on zero: expand → settle → DOOOSH. */
+type LockInPhase = 'expand' | 'settle' | 'doosh' | null
+const LOCK_IN_SETTLE_AT_MS = 170
+const LOCK_IN_DOOSH_AT_MS = 340
+const LOCK_IN_DONE_AT_MS = 1350
 
 export type CircularLoggerProps = {
   onRepTick?: (count: number) => void
@@ -132,24 +155,150 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
     const [countPulsing, setCountPulsing] = useState(false)
     const [handleTickKey, setHandleTickKey] = useState(0)
     const [isDragging, setIsDragging] = useState(false)
+    const [unwindAngle, setUnwindAngle] = useState<number | null>(null)
+    const unwindingRef = useRef(false)
+    const unwindRafRef = useRef(0)
+    const [lockInPhase, setLockInPhase] = useState<LockInPhase>(null)
+    const lockInTimeoutsRef = useRef<number[]>([])
     const previousCountRef = useRef(count)
     const centerTapRef = useRef<{ x: number; y: number } | null>(null)
 
     angleRef.current = angle
     disabledRef.current = disabled
 
+    const clearLockIn = useCallback(() => {
+      for (const timeoutId of lockInTimeoutsRef.current) {
+        window.clearTimeout(timeoutId)
+      }
+
+      lockInTimeoutsRef.current = []
+      setLockInPhase(null)
+    }, [])
+
     const resetLogger = useCallback(() => {
+      window.cancelAnimationFrame(unwindRafRef.current)
+      unwindingRef.current = false
+      setUnwindAngle(null)
       setHandleTickKey(0)
+      clearLockIn()
       reset()
-    }, [reset])
+    }, [clearLockIn, reset])
+
+    const runLockIn = useCallback(() => {
+      clearLockIn()
+      setLockInPhase('expand')
+      playClickClack()
+
+      const schedule = (fn: () => void, delayMs: number) => {
+        lockInTimeoutsRef.current.push(window.setTimeout(fn, delayMs))
+      }
+
+      schedule(() => setLockInPhase('settle'), LOCK_IN_SETTLE_AT_MS)
+      schedule(() => {
+        setLockInPhase('doosh')
+        playDoosh()
+
+        if (isRepHapticSupported()) {
+          navigator.vibrate([90, 30, 140])
+        }
+      }, LOCK_IN_DOOSH_AT_MS)
+      schedule(() => setLockInPhase(null), LOCK_IN_DONE_AT_MS)
+    }, [clearLockIn])
+
+    const notifyCountChange = useCallback(
+      (nextCount: number) => {
+        countRef.current = nextCount
+
+        if (nextCount !== previousCountRef.current) {
+          onCountChange?.(nextCount)
+          previousCountRef.current = nextCount
+        }
+
+        const nextCanBank = nextCount > 0
+
+        if (nextCanBank !== canBankRef.current) {
+          canBankRef.current = nextCanBank
+          onCanBankChange?.(nextCanBank)
+        }
+      },
+      [onCanBankChange, onCountChange],
+    )
+
+    const unwind = useCallback(() => {
+      if (unwindingRef.current) {
+        return
+      }
+
+      const startAngle = angleRef.current
+      const startCount = countRef.current
+
+      if (startAngle <= 0 || startCount <= 0) {
+        resetLogger()
+        return
+      }
+
+      unwindingRef.current = true
+      const duration = Math.min(2400, 700 + startCount * 55)
+      const startTime = performance.now()
+      let lastTick = startCount
+
+      const step = (now: number) => {
+        const t = Math.min(1, (now - startTime) / duration)
+        // Ease-in-out cubic — the slow S curve.
+        const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+        const angleNow = startAngle * (1 - eased)
+        setUnwindAngle(angleNow)
+
+        const remaining = Math.max(
+          0,
+          Math.ceil(angleNow / CIRCULAR_COUNTER.degreesPerRep - 1e-6),
+        )
+
+        if (remaining < lastTick) {
+          lastTick = remaining
+          playUnwindTick(remaining, startCount)
+
+          if (isRepHapticSupported()) {
+            // Notch tick per rep; stronger patterns at 5s, strongest at 10s.
+            navigator.vibrate(
+              remaining > 0 ? repHapticPatternForCount(remaining) : 18,
+            )
+          }
+        }
+
+        if (t < 1) {
+          unwindRafRef.current = window.requestAnimationFrame(step)
+        } else {
+          unwindingRef.current = false
+          setUnwindAngle(null)
+          setHandleTickKey(0)
+          reset()
+          notifyCountChange(0)
+          runLockIn()
+        }
+      }
+
+      unwindRafRef.current = window.requestAnimationFrame(step)
+    }, [notifyCountChange, reset, resetLogger, runLockIn])
+
+    useEffect(() => {
+      return () => {
+        window.cancelAnimationFrame(unwindRafRef.current)
+
+        for (const timeoutId of lockInTimeoutsRef.current) {
+          window.clearTimeout(timeoutId)
+        }
+      }
+    }, [])
 
     useImperativeHandle(
       ref,
       () => ({
-        getCount: () => countRef.current,
+        getCount: () => (unwindingRef.current ? 0 : countRef.current),
         reset: resetLogger,
+        unwind,
       }),
-      [resetLogger],
+      [resetLogger, unwind],
     )
 
     useEffect(() => {
@@ -196,25 +345,59 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
       onDraggingChange?.(isDragging)
     }, [isDragging, onDraggingChange])
 
-    const displayCount = isDragging ? countRef.current : count
-    const completedLap =
-      displayCount > 0 && displayCount % CIRCULAR_COUNTER.repsPerRevolution === 0
-    const visualAngle = completedLap
-      ? 0
-      : countToAngle(displayCount) % CIRCULAR_COUNTER.degreesPerRevolution
-    const handleAngle = visualAngle
+    const isUnwinding = unwindAngle !== null
+    const baseDisplayCount = isDragging ? countRef.current : count
+    const displayCount = isUnwinding
+      ? Math.max(0, Math.ceil(unwindAngle / CIRCULAR_COUNTER.degreesPerRep - 1e-6))
+      : baseDisplayCount
+    // Cumulative angle (can exceed 360° across laps) driving handle + trail.
+    const totalAngle = isUnwinding ? unwindAngle : countToAngle(baseDisplayCount)
+    const headAngle = (() => {
+      if (totalAngle <= 0) {
+        return 0
+      }
+
+      const withinLap = totalAngle % CIRCULAR_COUNTER.degreesPerRevolution
+      return withinLap === 0 ? CIRCULAR_COUNTER.degreesPerRevolution : withinLap
+    })()
+    const handleAngle = headAngle % CIRCULAR_COUNTER.degreesPerRevolution
     const handlePoint = polarToCartesian(RING_CENTER, RING_CENTER, RING_RADIUS, handleAngle)
     const showZeroHint = showDragHint && displayCount === 0 && !disabled && !isDragging
     const showHandle = !disabled
-    const progressEnd = visualAngle
-    const arcPath =
-      !completedLap && progressEnd > 0
-        ? describeArc(RING_CENTER, RING_CENTER, RING_RADIUS, 0, progressEnd)
-        : ''
+
+    // Comet trail: the arc fades out over the trailing 1/5 of the circle.
+    // Past the first lap the tail may wrap behind 12 o'clock; within the
+    // first lap it clamps at the start.
+    const canWrap = totalAngle > CIRCULAR_COUNTER.degreesPerRevolution
+    const trailSegments: { d: string; opacity: number; head: boolean }[] = []
+
+    if (headAngle > 0) {
+      const segmentSpan = TRAIL_DEGREES / TRAIL_SEGMENTS
+
+      for (let i = 0; i < TRAIL_SEGMENTS; i += 1) {
+        const end = headAngle - segmentSpan * i
+        let start = end - segmentSpan - 0.6
+
+        if (!canWrap) {
+          if (end <= 0) {
+            break
+          }
+
+          start = Math.max(0, start)
+        }
+
+        trailSegments.push({
+          d: describeArc(RING_CENTER, RING_CENTER, RING_RADIUS, start, end),
+          opacity: 1 - i / TRAIL_SEGMENTS,
+          head: i === 0,
+        })
+      }
+    }
 
     const maybePulseHaptic = useCallback((nextCount: number) => {
       if (nextCount > lastHapticCountRef.current) {
         pulseRepHapticDelta(lastHapticCountRef.current, nextCount)
+        playRepTick(nextCount)
         lastHapticCountRef.current = nextCount
       }
     }, [])
@@ -228,27 +411,8 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
       [setAngle],
     )
 
-    const notifyCountChange = useCallback(
-      (nextCount: number) => {
-        countRef.current = nextCount
-
-        if (nextCount !== previousCountRef.current) {
-          onCountChange?.(nextCount)
-          previousCountRef.current = nextCount
-        }
-
-        const nextCanBank = nextCount > 0
-
-        if (nextCanBank !== canBankRef.current) {
-          canBankRef.current = nextCanBank
-          onCanBankChange?.(nextCanBank)
-        }
-      },
-      [onCanBankChange, onCountChange],
-    )
-
     const incrementRep = useCallback(() => {
-      if (disabledRef.current) {
+      if (disabledRef.current || unwindingRef.current) {
         return
       }
 
@@ -264,6 +428,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
 
       primeRepFeedback()
       pulseRepHapticDelta(currentCount, nextCount)
+      playRepTick(nextCount)
       syncAngleState(nextAngle)
       notifyCountChange(nextCount)
       lastHapticCountRef.current = nextCount
@@ -334,7 +499,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
 
     const beginDragAt = useCallback(
       (clientX: number, clientY: number) => {
-        if (disabledRef.current) {
+        if (disabledRef.current || unwindingRef.current) {
           return
         }
 
@@ -499,7 +664,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
     }
 
     const handleKeyDown = (event: KeyboardEvent<SVGSVGElement>) => {
-      if (disabled) {
+      if (disabled || unwindingRef.current) {
         return
       }
 
@@ -575,9 +740,20 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
         style={{ touchAction: isDragging ? 'none' : undefined }}
       >
         <div
-          className="relative"
+          className={cn(
+            'relative',
+            lockInPhase === 'expand' && 'logger-lockin-expand',
+            lockInPhase === 'settle' && 'logger-lockin-settle',
+            lockInPhase === 'doosh' && 'logger-lockin-doosh',
+          )}
           style={{ height: RING_CONTAINER_SIZE, width: RING_CONTAINER_SIZE }}
         >
+          {lockInPhase === 'doosh' ? (
+            <div
+              aria-hidden="true"
+              className="logger-doosh-flash pointer-events-none absolute inset-[-12%] rounded-full"
+            />
+          ) : null}
           <svg
             ref={ringRef}
             role="slider"
@@ -601,11 +777,24 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
                 <feDropShadow
                   dx="0"
                   dy="0"
-                  stdDeviation="6"
+                  stdDeviation="10"
                   floodColor="var(--color-accent)"
-                  floodOpacity="0.35"
+                  floodOpacity="0.65"
                 />
               </filter>
+              <filter id="logger-handle-glow" x="-100%" y="-100%" width="300%" height="300%">
+                <feDropShadow
+                  dx="0"
+                  dy="0"
+                  stdDeviation="8"
+                  floodColor="var(--color-accent)"
+                  floodOpacity="0.8"
+                />
+              </filter>
+              <linearGradient id="logger-arc-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="var(--color-accent-hot)" />
+                <stop offset="100%" stopColor="var(--color-accent-deep)" />
+              </linearGradient>
             </defs>
 
             <circle
@@ -613,9 +802,26 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
               cy={RING_CENTER}
               r={RING_RADIUS}
               fill="none"
-              stroke="var(--color-border)"
+              stroke="var(--color-surface)"
               strokeWidth={RING_STROKE}
-              opacity={0.65}
+              pointerEvents="none"
+            />
+            <circle
+              cx={RING_CENTER}
+              cy={RING_CENTER}
+              r={RING_RADIUS + RING_STROKE / 2}
+              fill="none"
+              stroke="rgba(255,255,255,0.07)"
+              strokeWidth={1.5}
+              pointerEvents="none"
+            />
+            <circle
+              cx={RING_CENTER}
+              cy={RING_CENTER}
+              r={RING_RADIUS - RING_STROKE / 2}
+              fill="none"
+              stroke="rgba(0,0,0,0.55)"
+              strokeWidth={1.5}
               pointerEvents="none"
             />
 
@@ -640,27 +846,22 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
               )
             })}
 
-            <circle
-              cx={RING_CENTER}
-              cy={RING_CENTER}
-              r={RING_RADIUS}
-              fill="none"
-              stroke="var(--color-accent)"
-              strokeWidth={RING_STROKE}
-              opacity={completedLap ? 1 : 0}
+            <g
               pointerEvents="none"
-              filter={isDragging ? undefined : 'url(#logger-glow)'}
-            />
-
-            <path
-              d={arcPath}
-              fill="none"
-              stroke="var(--color-accent)"
-              strokeWidth={RING_STROKE}
-              strokeLinecap="butt"
-              pointerEvents="none"
-              filter={isDragging ? undefined : 'url(#logger-glow)'}
-            />
+              filter={isDragging || isUnwinding ? undefined : 'url(#logger-glow)'}
+            >
+              {trailSegments.map((segment, index) => (
+                <path
+                  key={index}
+                  d={segment.d}
+                  fill="none"
+                  stroke="url(#logger-arc-gradient)"
+                  strokeWidth={RING_STROKE - 4}
+                  strokeLinecap={segment.head ? 'round' : 'butt'}
+                  opacity={segment.opacity}
+                />
+              ))}
+            </g>
 
             <circle
               ref={ringTrackHitRef}
@@ -710,21 +911,40 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
                   aria-hidden="true"
                   onPointerDown={handleGrabPointerDown}
                 />
-                <circle
+                <g
                   data-testid="logger-handle-visible"
-                  cx={handlePoint.x}
-                  cy={handlePoint.y}
-                  r={HANDLE_RADIUS}
-                  fill="var(--color-accent)"
-                  stroke="var(--color-bg)"
-                  strokeWidth={3}
                   pointerEvents="none"
                   className={cn(
                     showZeroHint && 'logger-handle-pulse',
                     !showZeroHint && count === 0 && !isDragging && 'logger-handle-idle',
                     handleTickKey > 0 && 'logger-handle-tick',
                   )}
-                />
+                  style={{ transformOrigin: `${handlePoint.x}px ${handlePoint.y}px` }}
+                >
+                  <circle
+                    cx={handlePoint.x}
+                    cy={handlePoint.y}
+                    r={HANDLE_RADIUS}
+                    fill="#17171d"
+                    stroke="var(--color-accent)"
+                    strokeWidth={3}
+                    filter="url(#logger-handle-glow)"
+                  />
+                  <circle
+                    cx={handlePoint.x}
+                    cy={handlePoint.y}
+                    r={HANDLE_RADIUS - 8}
+                    fill="none"
+                    stroke="rgba(255,255,255,0.12)"
+                    strokeWidth={1.5}
+                  />
+                  <circle
+                    cx={handlePoint.x}
+                    cy={handlePoint.y}
+                    r={5}
+                    fill="var(--color-accent)"
+                  />
+                </g>
               </>
             ) : null}
 
@@ -746,15 +966,32 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
             className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
             aria-hidden="true"
           >
-            <span
-              className={cn(
-                'font-mono font-bold tabular-nums leading-none text-text-primary',
-                countPulsing && 'logger-count-pulse',
-              )}
-              style={{ fontSize: 'var(--text-hero-logger)' }}
-            >
-              {displayCount}
-            </span>
+            {lockInPhase === 'doosh' ? (
+              <span
+                className="logger-banked-stamp font-mono font-bold leading-none text-accent"
+                style={{
+                  fontSize: 'clamp(2.2rem, 11vw, 3.4rem)',
+                  letterSpacing: '0.14em',
+                  textShadow:
+                    '0 0 18px rgba(255, 107, 53, 0.85), 0 0 56px rgba(255, 77, 0, 0.5)',
+                }}
+              >
+                BANKED
+              </span>
+            ) : (
+              <span
+                className={cn(
+                  'font-mono font-bold tabular-nums leading-none text-text-primary',
+                  countPulsing && 'logger-count-pulse',
+                )}
+                style={{
+                  fontSize: 'var(--text-hero-logger)',
+                  textShadow: '0 0 24px rgba(241, 245, 249, 0.35)',
+                }}
+              >
+                {displayCount}
+              </span>
+            )}
             <span className="mt-2 text-[0.8125rem] font-medium uppercase tracking-[0.18em] text-text-muted">
               reps
             </span>

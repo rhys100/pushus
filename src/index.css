@@ -69,22 +69,196 @@
 @keyframes logger-handle-tick {
   0% {
     opacity: 1;
-    stroke-width: 3px;
+    transform: scale(1);
   }
 
   35% {
-    opacity: 0.75;
-    stroke-width: 5px;
+    opacity: 0.85;
+    transform: scale(1.12);
   }
 
   100% {
     opacity: 1;
-    stroke-width: 3px;
+    transform: scale(1);
   }
 }
 
 .logger-handle-tick {
   animation: logger-handle-tick var(--duration-fast) var(--ease-out);
+}
+
+/* Mecha lock-in after the bank unwind: expand (click clack) → settle
+   (anticipation) → DOOOSH slam with glow burst + BANKED stamp. */
+.logger-lockin-expand {
+  transform: scale(1.06);
+  transition: transform 160ms var(--ease-out);
+}
+
+.logger-lockin-settle {
+  transform: scale(0.965);
+  transition: transform 150ms cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+@keyframes logger-doosh {
+  0% {
+    transform: scale(0.965);
+  }
+
+  28% {
+    transform: scale(1.14);
+  }
+
+  55% {
+    transform: scale(0.985);
+  }
+
+  75% {
+    transform: scale(1.02);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.logger-lockin-doosh {
+  animation: logger-doosh 460ms var(--ease-out) forwards;
+}
+
+@keyframes logger-doosh-flash {
+  0% {
+    opacity: 0.85;
+    transform: scale(0.7);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.25);
+  }
+}
+
+.logger-doosh-flash {
+  background: radial-gradient(
+    circle,
+    rgba(255, 138, 61, 0.5) 0%,
+    rgba(255, 107, 53, 0.28) 45%,
+    transparent 72%
+  );
+  animation: logger-doosh-flash 620ms var(--ease-out) forwards;
+}
+
+@keyframes logger-banked-stamp {
+  0% {
+    opacity: 0;
+    transform: scale(2.1) rotate(-6deg);
+  }
+
+  38% {
+    opacity: 1;
+    transform: scale(0.92) rotate(0.5deg);
+  }
+
+  58% {
+    transform: scale(1.05) rotate(0deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.logger-banked-stamp {
+  animation: logger-banked-stamp 320ms var(--ease-out) forwards;
+}
+
+@keyframes nose-tap-flash {
+  0% {
+    box-shadow:
+      inset 0 0 0 3px var(--color-accent),
+      inset 0 0 64px rgba(255, 107, 53, 0.45);
+    opacity: 1;
+  }
+
+  100% {
+    box-shadow:
+      inset 0 0 0 3px transparent,
+      inset 0 0 64px rgba(255, 107, 53, 0);
+    opacity: 0;
+  }
+}
+
+.nose-tap-flash {
+  animation: nose-tap-flash 320ms var(--ease-out);
+}
+
+/* Brick-quake skin: amplitude (--qa, unitless px scale) and shockwave
+   arrival delay (--qd) are set per brick from the tap distance. */
+@keyframes brick-quake {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+
+  18% {
+    transform: translate(calc(var(--qa, 0) * 1px), calc(var(--qa, 0) * -0.7px))
+      rotate(calc(var(--qa, 0) * 0.5deg));
+  }
+
+  38% {
+    transform: translate(calc(var(--qa, 0) * -0.9px), calc(var(--qa, 0) * 0.6px))
+      rotate(calc(var(--qa, 0) * -0.45deg));
+  }
+
+  58% {
+    transform: translate(calc(var(--qa, 0) * 0.55px), calc(var(--qa, 0) * -0.4px))
+      rotate(calc(var(--qa, 0) * 0.3deg));
+  }
+
+  78% {
+    transform: translate(calc(var(--qa, 0) * -0.3px), calc(var(--qa, 0) * 0.2px))
+      rotate(calc(var(--qa, 0) * -0.15deg));
+  }
+
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+}
+
+.brick-quake {
+  animation: brick-quake 520ms var(--ease-out);
+  animation-delay: var(--qd, 0ms);
+}
+
+@keyframes nose-tap-ripple {
+  0% {
+    opacity: 1;
+    transform: scale(0.4);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(9);
+  }
+}
+
+.nose-tap-ripple {
+  animation: nose-tap-ripple 550ms var(--ease-out) forwards;
+}
+
+@keyframes nose-tap-burst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(var(--bx, 0), var(--by, 0)) scale(0.3);
+  }
+}
+
+.nose-tap-burst {
+  animation: nose-tap-burst 480ms var(--ease-out) forwards;
 }
 
 @layer components {
@@ -101,6 +275,6 @@
   }
 
   .dock-label {
-    text-shadow: 0 1px 3px rgba(11, 18, 32, 0.95);
+    text-shadow: 0 1px 3px rgba(10, 10, 13, 0.95);
   }
 }

@@ -74,6 +74,9 @@ const ChallengesPage = lazy(() =>
 const AchievementsPage = lazy(() =>
   import('@/pages/AchievementsPage').then((m) => ({ default: m.AchievementsPage })),
 )
+const DevPreviewPage = lazy(() =>
+  import('@/pages/DevPreviewPage').then((m) => ({ default: m.DevPreviewPage })),
+)
 const TrainingSettingsPage = lazy(() =>
   import('@/pages/TrainingSettingsPage').then((m) => ({ default: m.TrainingSettingsPage })),
 )
@@ -264,6 +267,17 @@ export default function App() {
             </LazyPage>
           }
         />
+
+        {import.meta.env.DEV ? (
+          <Route
+            path="/dev/preview"
+            element={
+              <LazyPage>
+                <DevPreviewPage />
+              </LazyPage>
+            }
+          />
+        ) : null}
 
         <Route path="/" element={<Navigate to="/today" replace />} />
         <Route path="*" element={<Navigate to="/today" replace />} />

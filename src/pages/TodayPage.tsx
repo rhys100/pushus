@@ -10,6 +10,7 @@ import {
 } from '@/hooks/useTodayData'
 import { useGroupBillingStatus, useGroupSubscription } from '@/hooks/useBilling'
 import { BillingBanner } from '@/components/billing/BillingBanner'
+import { Button } from '@/components/ui/Button'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useToast } from '@/components/ui/Toast'
 import { billingConfig } from '@/lib/billing'
@@ -18,6 +19,7 @@ import {
   type CircularLoggerHandle,
 } from '@/components/logger/CircularLogger'
 import { BankPushupsButton } from '@/components/logger/BankPushupsButton'
+import { NoseTapMode } from '@/components/logger/NoseTapMode'
 import { SetEffortSheet } from '@/components/logger/SetEffortSheet'
 import { SorenessCheckInSheet } from '@/components/logger/SorenessCheckInSheet'
 import { ChallengeMaxCheckInCard } from '@/components/today/ChallengeMaxCheckInCard'
@@ -56,13 +58,12 @@ export function TodayPage() {
   const undoLastEntry = useUndoLastEntry()
   const loggerRef = useRef<CircularLoggerHandle>(null)
   const [canBank, setCanBank] = useState(false)
-  const [dragCount, setDragCount] = useState(0)
-  const [isDragging, setIsDragging] = useState(false)
   const [effortEntryId, setEffortEntryId] = useState<string | null>(null)
   const [effortAskedToday, setEffortAskedToday] = useState(false)
   const [maxSetMode, setMaxSetMode] = useState(false)
   const [showMaxCheckInCard, setShowMaxCheckInCard] = useState(true)
   const [showSorenessSheet, setShowSorenessSheet] = useState(false)
+  const [noseTapOpen, setNoseTapOpen] = useState(false)
   const [sorenessPromptedToday, setSorenessPromptedToday] = useState(false)
 
   const { status: sorenessStatus, saveStatus, saving: sorenessSaving } = useSorenessCheckin(
@@ -146,8 +147,7 @@ export function TodayPage() {
         },
         isMaxCheckin,
       })
-      loggerRef.current?.reset()
-      setDragCount(0)
+      loggerRef.current?.unwind()
       dismissHint()
 
       if (isMaxCheckin) {
@@ -254,7 +254,63 @@ export function TodayPage() {
     wizardCompleted,
   ])
 
-  const showBankButton = isDragging || dragCount > 0
+  const handleNoseTapBank = useCallback(
+    async (count: number) => {
+      if (!activeGroup || !user || !profile || bankPushups.isPending || count <= 0) {
+        return
+      }
+
+      try {
+        await bankPushups.mutateAsync({
+          group: activeGroup,
+          count,
+          userId: user.id,
+          profile: {
+            user_id: user.id,
+            display_name: profile.display_name,
+            avatar_emoji: profile.avatar_emoji,
+            avatar_color: profile.avatar_color,
+          },
+          isMaxCheckin: false,
+        })
+        setNoseTapOpen(false)
+        toast({
+          message: `${count} nose-tap push-ups banked.`,
+          variant: 'success',
+          durationMs: 6000,
+          actionLabel: 'Undo',
+          onAction: () => {
+            undoLastEntry.mutate(
+              { group: activeGroup, userId: user.id },
+              {
+                onSuccess: () => {
+                  toast({
+                    message: 'Last entry undone.',
+                    variant: 'default',
+                    durationMs: 4000,
+                  })
+                },
+                onError: () => {
+                  toast({
+                    message: 'Could not undo. Try again.',
+                    variant: 'danger',
+                    durationMs: 5000,
+                  })
+                },
+              },
+            )
+          },
+        })
+      } catch {
+        toast({
+          message: 'Could not bank push-ups. Try again.',
+          variant: 'danger',
+          durationMs: 5000,
+        })
+      }
+    },
+    [activeGroup, bankPushups, profile, toast, undoLastEntry, user],
+  )
 
   if (groupLoading || !activeGroup) {
     return (
@@ -274,7 +330,7 @@ export function TodayPage() {
 
   return (
     <>
-      <div className="flex flex-col pb-[var(--log-page-scroll-pad-inline)] pt-[var(--log-progress-card-height)]">
+      <div className="flex min-h-[calc(100dvh-var(--bottom-nav-height)-1.5rem)] flex-col pb-2 pt-8">
         {billingConfig.enabled ? (
           <BillingBanner
             className="mb-3"
@@ -290,16 +346,6 @@ export function TodayPage() {
           </p>
         ) : null}
 
-        <DayProgressCard
-          variant="compact"
-          bankedToday={dayTotal}
-          banksLogged={entries.length}
-          loading={(totalLoading && dayTotal === 0) || planLoading}
-          hasPlan={hasPlan}
-          dailyTarget={dailyTarget}
-          todayPrescription={todayPrescription}
-        />
-
         {showCheckIn ? (
           <ChallengeMaxCheckInCard
             maxSetModeActive={maxSetMode}
@@ -308,28 +354,50 @@ export function TodayPage() {
           />
         ) : null}
 
-        <CircularLogger
-          ref={loggerRef}
-          onCountChange={setDragCount}
-          onCanBankChange={setCanBank}
-          onDraggingChange={setIsDragging}
+        <BankPushupsButton
+          placement="inline"
+          disabled={!canBank}
+          loading={bankPushups.isPending}
           onBank={handleBank}
-          disabled={bankPushups.isPending}
-          showDragHint={showHint}
-          onHintDismiss={dismissHint}
-          className="px-0 py-0"
+          className="transition-opacity duration-[var(--duration-fast)]"
         />
 
-        {showBankButton ? (
-          <BankPushupsButton
-            placement="inline"
-            disabled={!canBank}
-            loading={bankPushups.isPending}
+        <div className="flex flex-1 flex-col items-center justify-center py-4">
+          <CircularLogger
+            ref={loggerRef}
+            onCanBankChange={setCanBank}
             onBank={handleBank}
-            className="transition-opacity duration-[var(--duration-fast)]"
+            disabled={bankPushups.isPending}
+            showDragHint={showHint}
+            onHintDismiss={dismissHint}
+            className="px-0 py-0"
           />
-        ) : null}
+        </div>
+
+        <div className="flex flex-col items-center gap-3 pb-4">
+          <Button type="button" fullWidth onClick={() => setNoseTapOpen(true)}>
+            👃 Nose/chin reps
+          </Button>
+
+          <DayProgressCard
+            variant="compact"
+            className="mt-0 w-full"
+            bankedToday={dayTotal}
+            banksLogged={entries.length}
+            loading={(totalLoading && dayTotal === 0) || planLoading}
+            hasPlan={hasPlan}
+            dailyTarget={dailyTarget}
+            todayPrescription={todayPrescription}
+          />
+        </div>
       </div>
+
+      <NoseTapMode
+        open={noseTapOpen}
+        banking={bankPushups.isPending}
+        onBank={(count) => void handleNoseTapBank(count)}
+        onExit={() => setNoseTapOpen(false)}
+      />
 
       <SetEffortSheet
         open={effortEntryId !== null}
