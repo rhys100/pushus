@@ -13,6 +13,7 @@ import {
 } from '@/lib/training/planEngine'
 import { noticeInlineClass } from '@/lib/noticeStyles'
 import {
+  buildTrustModeLabel,
   deriveHistoryConfidence,
   derivePlanCalibration,
   hasUsableVolumeHistory,
