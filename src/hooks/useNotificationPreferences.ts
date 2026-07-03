@@ -208,6 +208,11 @@ export function useNotificationPreferencesState(userId: string | undefined) {
       setRegistering(false)
       return saved
     } catch (err) {
+      if (err instanceof PushRegistrationError && err.code === 'needs_pwa_install') {
+        setRegistering(false)
+        return false
+      }
+
       const message =
         err instanceof PushRegistrationError
           ? err.message

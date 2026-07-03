@@ -148,6 +148,7 @@ export function SettingsPage() {
 
   function pushButtonLabel(): string {
     if (prefs?.push_enabled) return 'Turn off'
+    if (needsPwaInstall) return 'Install app to enable'
     if (pushPermission === 'granted') return 'Enable reminders'
     if (pushPermission === 'denied') return 'Blocked'
     return 'Allow notifications'

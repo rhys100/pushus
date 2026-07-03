@@ -38,6 +38,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **Push settings duplicate error:** install hint no longer repeats in red when tapping Enable reminders without an installed PWA
+- **Bank Push-ups disabled state:** uses secondary button styling at 0 reps so label stays readable
+- **Nose-hold hint dismiss link:** higher contrast on "Don't remind me again"
+- **Android install dock after uninstall:** shows manual Chrome menu steps when `beforeinstallprompt` is unavailable (Add to Home screen / Install app)
 - **Push reminders require installed PWA:** Android and iOS block enabling reminders in a normal browser tab; toggling reminders re-checks install status via `getInstalledRelatedApps()` and re-shows the install prompt when needed
 - **Stale PWA install detection after uninstall:** clears the local install flag when Android Chrome reports no related webapp, so the install dock can appear again
 - **Open in app on Android:** launches the installed WebAPK via `window.open()` to an in-scope https URL in a new tab (`noopener,noreferrer`) — the only reliable web method on Chrome Android. Added canonical `manifest.json`, aligned `start_url` to `/today`, and restored a primary **Open in app** button on the dock

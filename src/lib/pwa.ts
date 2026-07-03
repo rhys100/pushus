@@ -2,7 +2,7 @@ const IOS_PWA_INSTALL_HINT =
   'On iPhone or iPad, add PushUS to your Home Screen first: tap Share, then Add to Home Screen. Open PushUS from that icon, then return here to turn on reminders.'
 
 const ANDROID_PWA_INSTALL_HINT =
-  'Install PushUS from the prompt below, or use Chrome menu → Install app. Reminders only work in the installed app — not in a normal browser tab.'
+  'Add PushUS to your home screen: tap Chrome menu (⋮) → Add to Home screen or Install app. Open it from that icon, then turn on reminders here.'
 
 export function isIosDevice(): boolean {
   if (typeof navigator === 'undefined') {

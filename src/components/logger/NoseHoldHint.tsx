@@ -28,7 +28,7 @@ export function NoseHoldHint({ show = false, onDismiss, className }: NoseHoldHin
             <button
               type="button"
               onClick={onDismiss}
-              className="text-[0.6875rem] font-medium text-text-muted underline decoration-dotted underline-offset-4 transition hover:text-text-secondary"
+              className="text-[0.6875rem] font-medium text-text-secondary underline decoration-text-secondary/50 underline-offset-4 transition hover:text-text-primary hover:decoration-text-primary/60"
             >
               Don&rsquo;t remind me again
             </button>
