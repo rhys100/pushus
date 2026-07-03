@@ -19,8 +19,10 @@ import {
 } from '@/lib/pwaInstallDockVisibility'
 import {
   INSTALL_PROMPT_CHECK_MS,
+  isInstallPromptCheckComplete,
   noteInstallPromptAvailable,
   completeInstallPromptCheckUnavailable,
+  subscribeInstallPromptAvailability,
 } from '@/lib/pwaInstallPromptAvailability'
 import { syncPwaKnownInstalledFromDisplayMode } from '@/lib/pwaInstalled'
 import { refreshPwaInstallStatus } from '@/lib/pwaInstallStatus'
@@ -78,6 +80,12 @@ export function usePwaInstallPrompt() {
   })
   const [promptDismissed, setPromptDismissed] = useState(false)
   const platform = useMemo(getPlatform, [])
+  useSyncExternalStore(
+    subscribeInstallPromptAvailability,
+    isInstallPromptCheckComplete,
+    () => false,
+  )
+  const installPromptCheckComplete = isInstallPromptCheckComplete()
 
   useEffect(() => {
     setPromptDismissed(userId ? isPwaInstallPromptDismissed(userId) : false)
@@ -163,6 +171,7 @@ export function usePwaInstallPrompt() {
       profileOnboarded,
       appAccessAllowed: appAccess.allowed,
       promptAvailable: Boolean(deferredPrompt),
+      installPromptCheckComplete,
       isInstalled,
       pwaKnownInstalled,
       promptDismissed,
@@ -177,6 +186,7 @@ export function usePwaInstallPrompt() {
     profileOnboarded,
     appAccess.allowed,
     deferredPrompt,
+    installPromptCheckComplete,
     isInstalled,
     pwaKnownInstalled,
     promptDismissed,
@@ -200,9 +210,7 @@ export function usePwaInstallPrompt() {
 
   const install = useCallback(async () => {
     if (!deferredPrompt) {
-      if (platform === 'ios') {
-        dismiss()
-      }
+      dismiss()
       return
     }
 
@@ -233,5 +241,6 @@ export function usePwaInstallPrompt() {
     install,
     dismiss,
     pathname: location.pathname,
+    hasNativeInstallPrompt: Boolean(deferredPrompt),
   }
 }

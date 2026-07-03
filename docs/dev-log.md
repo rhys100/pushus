@@ -26,6 +26,13 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-03 (PWA push UI bug fixes)
+
+- **Fixed:** Duplicate red install error on Settings when enabling push without PWA.
+- **Fixed:** Disabled Bank Push-ups button contrast at 0 reps.
+- **Fixed:** Nose-hold "Don't remind me again" link contrast.
+- **Fixed:** Android install dock shows manual Chrome steps when native install prompt unavailable.
+
 ### 2026-07-03 (push requires PWA install)
 
 - **Fixed:** Push reminders gated on installed PWA (Android + iOS). Enable attempts re-check install via `getInstalledRelatedApps()` and re-show install prompt.

@@ -12,6 +12,7 @@ export type PwaInstallPromptVisibilityInput = {
   profileOnboarded: boolean
   appAccessAllowed: boolean
   promptAvailable: boolean
+  installPromptCheckComplete: boolean
   isInstalled: boolean
   pwaKnownInstalled: boolean
   promptDismissed: boolean
@@ -75,7 +76,7 @@ export function shouldShowPwaInstallPrompt(
     return false
   }
 
-  if (input.platform === 'android' && !input.promptAvailable) {
+  if (input.platform === 'android' && !input.installPromptCheckComplete) {
     return false
   }
 

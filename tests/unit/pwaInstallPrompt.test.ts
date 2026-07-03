@@ -12,6 +12,7 @@ const baseInput = {
   profileOnboarded: true,
   appAccessAllowed: true,
   promptAvailable: true,
+  installPromptCheckComplete: true,
   isInstalled: false,
   pwaKnownInstalled: false,
   promptDismissed: false,
@@ -61,8 +62,24 @@ describe('PWA install prompt', () => {
     ).toBe(true)
   })
 
-  it('hides when the browser has not exposed install prompt yet', () => {
-    expect(shouldShowPwaInstallPrompt({ ...baseInput, promptAvailable: false })).toBe(false)
+  it('shows manual Android install guidance after the native prompt check finishes', () => {
+    expect(
+      shouldShowPwaInstallPrompt({
+        ...baseInput,
+        promptAvailable: false,
+        installPromptCheckComplete: true,
+      }),
+    ).toBe(true)
+  })
+
+  it('waits for the Android install prompt check before showing manual guidance', () => {
+    expect(
+      shouldShowPwaInstallPrompt({
+        ...baseInput,
+        promptAvailable: false,
+        installPromptCheckComplete: false,
+      }),
+    ).toBe(false)
   })
 
   it('hides outside Android and iOS', () => {

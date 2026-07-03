@@ -43,6 +43,7 @@ export function BankPushupsButton({
 
         <Button
           type="button"
+          variant={isInactive ? 'secondary' : 'primary'}
           fullWidth
           loading={loading}
           disabled={disabled}
@@ -53,9 +54,8 @@ export function BankPushupsButton({
             isInline ? '' : 'pointer-events-auto',
             'min-h-[var(--bank-cta-height)] text-base',
             'transition-[background-color,border-color,opacity,transform,box-shadow] duration-[var(--duration-fast)] active:scale-[0.98]',
-            isInactive
-              ? 'border border-border bg-surface text-text-muted shadow-none hover:brightness-100'
-              : 'shadow-[var(--shadow-glow-accent)]',
+            !isInactive && 'shadow-[var(--shadow-glow-accent)]',
+            isInactive && 'disabled:opacity-100',
           )}
         >
           Bank Push-ups
