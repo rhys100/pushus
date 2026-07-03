@@ -26,6 +26,12 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-03 (push requires PWA install)
+
+- **Fixed:** Push reminders gated on installed PWA (Android + iOS). Enable attempts re-check install via `getInstalledRelatedApps()` and re-show install prompt.
+- **Fixed:** Stale install flag cleared after Android uninstall so install dock works again.
+- **Tests:** `tests/unit/pwaInstallStatus.test.ts`, updated open-app prompt tests.
+
 ### 2026-07-03 (Android open in app via window.open)
 
 - **Fixed:** `openInstalledPwa()` uses `window.open(inScopeUrl, '_blank', 'noopener,noreferrer')` — no location.assign or intent URLs.

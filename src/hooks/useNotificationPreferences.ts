@@ -1,13 +1,21 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import {
   ensurePushSubscriptionForUser,
   getPushPermissionStatus,
   getPushSupportStatus,
   PushRegistrationError,
+  resolvePushSupportStatus,
   unregisterPushForUser,
 } from '@/lib/notifications/registerPush'
 import type { NotificationPreferencesInput } from '@/lib/notificationEligibility'
+import { getPwaInstallHintForPush } from '@/lib/pwa'
+import {
+  type PwaInstallStatus,
+  readPwaInstallPlatform,
+  refreshPwaInstallStatus,
+} from '@/lib/pwaInstallStatus'
+import { clearPwaInstallPromptDismiss } from '@/lib/storage'
 
 export type NotificationPreferences = NotificationPreferencesInput & {
   user_id: string
@@ -59,6 +67,32 @@ export function useNotificationPreferencesState(userId: string | undefined) {
   const [saving, setSaving] = useState(false)
   const [registering, setRegistering] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [installStatus, setInstallStatus] = useState<PwaInstallStatus | null>(null)
+  const [installStatusLoading, setInstallStatusLoading] = useState(true)
+  const platform = useMemo(readPwaInstallPlatform, [])
+
+  const refreshInstallStatus = useCallback(async () => {
+    setInstallStatusLoading(true)
+    const status = await refreshPwaInstallStatus()
+    setInstallStatus(status)
+    setInstallStatusLoading(false)
+    return status
+  }, [])
+
+  useEffect(() => {
+    void refreshInstallStatus()
+  }, [refreshInstallStatus])
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void refreshInstallStatus()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [refreshInstallStatus])
 
   const persistPreferences = useCallback(
     async (
@@ -137,6 +171,11 @@ export function useNotificationPreferencesState(userId: string | undefined) {
     [prefs, persistPreferences],
   )
 
+  const pushSupport = useMemo(
+    () => resolvePushSupportStatus(installStatus),
+    [installStatus],
+  )
+
   const enablePush = useCallback(async () => {
     if (!userId) return false
 
@@ -144,6 +183,26 @@ export function useNotificationPreferencesState(userId: string | undefined) {
     setError(null)
 
     try {
+      const status = await refreshInstallStatus()
+      const support = resolvePushSupportStatus(status)
+
+      if (support === 'needs_pwa_install') {
+        clearPwaInstallPromptDismiss(userId)
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('pushus:pwa-install-recheck'))
+        }
+        throw new PushRegistrationError(getPwaInstallHintForPush(platform), 'needs_pwa_install')
+      }
+
+      if (support !== 'supported') {
+        throw new PushRegistrationError(
+          support === 'missing_vapid_key'
+            ? 'Push is not configured on this deployment (missing VAPID public key).'
+            : 'Push notifications are not supported in this browser.',
+          support === 'missing_vapid_key' ? 'missing_vapid_key' : 'unsupported',
+        )
+      }
+
       await ensurePushSubscriptionForUser(userId)
       const saved = await persistPreferences(prefs, { push_enabled: true })
       setRegistering(false)
@@ -160,7 +219,7 @@ export function useNotificationPreferencesState(userId: string | undefined) {
       setRegistering(false)
       return false
     }
-  }, [userId, prefs, persistPreferences])
+  }, [userId, prefs, persistPreferences, platform, refreshInstallStatus])
 
   const disablePush = useCallback(async () => {
     if (!userId) return false
@@ -171,6 +230,7 @@ export function useNotificationPreferencesState(userId: string | undefined) {
     try {
       await unregisterPushForUser(userId)
       const saved = await persistPreferences(prefs, { push_enabled: false })
+      await refreshInstallStatus()
       setRegistering(false)
       return saved
     } catch (err) {
@@ -180,7 +240,7 @@ export function useNotificationPreferencesState(userId: string | undefined) {
       setRegistering(false)
       return false
     }
-  }, [userId, prefs, persistPreferences])
+  }, [userId, prefs, persistPreferences, refreshInstallStatus])
 
   return {
     prefs,
@@ -192,7 +252,11 @@ export function useNotificationPreferencesState(userId: string | undefined) {
     updatePreferences,
     enablePush,
     disablePush,
-    pushSupport: getPushSupportStatus(),
+    refreshInstallStatus,
+    installStatus,
+    installStatusLoading,
+    pushSupport,
     pushPermission: getPushPermissionStatus(),
+    pushCapability: getPushSupportStatus(),
   }
 }

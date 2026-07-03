@@ -23,6 +23,7 @@ import {
   completeInstallPromptCheckUnavailable,
 } from '@/lib/pwaInstallPromptAvailability'
 import { syncPwaKnownInstalledFromDisplayMode } from '@/lib/pwaInstalled'
+import { refreshPwaInstallStatus } from '@/lib/pwaInstallStatus'
 import { useAuth } from '@/providers/AuthProvider'
 
 type BeforeInstallPromptUserChoice = {
@@ -83,7 +84,33 @@ export function usePwaInstallPrompt() {
   }, [userId])
 
   useEffect(() => {
-    setPwaKnownInstalled(syncPwaKnownInstalledFromDisplayMode())
+    const syncDismissState = () => {
+      if (userId) {
+        setPromptDismissed(isPwaInstallPromptDismissed(userId))
+      }
+    }
+
+    window.addEventListener('pushus:pwa-install-recheck', syncDismissState)
+    return () => window.removeEventListener('pushus:pwa-install-recheck', syncDismissState)
+  }, [userId])
+
+  useEffect(() => {
+    void refreshPwaInstallStatus().then((status) => {
+      setPwaKnownInstalled(status.isInstalled)
+    })
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'visible' || isStandaloneDisplayMode()) {
+        return
+      }
+
+      void refreshPwaInstallStatus().then((status) => {
+        setPwaKnownInstalled(status.isInstalled)
+      })
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [])
 
   useEffect(() => {
@@ -174,8 +201,6 @@ export function usePwaInstallPrompt() {
   const install = useCallback(async () => {
     if (!deferredPrompt) {
       if (platform === 'ios') {
-        markPwaKnownInstalled()
-        setPwaKnownInstalled(true)
         dismiss()
       }
       return

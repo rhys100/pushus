@@ -46,28 +46,8 @@ export type PwaOpenAppPromptVisibilityInput = {
 
 export function isPwaLikelyInstalledForOpenPrompt(input: {
   pwaKnownInstalled: boolean
-  platform: PwaInstallPlatform
-  installPromptDismissed: boolean
-  pushEnabled: boolean
-  androidInstallPromptUnavailable: boolean
 }): boolean {
-  if (input.pwaKnownInstalled) {
-    return true
-  }
-
-  if (input.pushEnabled && input.platform !== 'other') {
-    return true
-  }
-
-  if (input.platform === 'ios' && input.installPromptDismissed) {
-    return true
-  }
-
-  if (input.androidInstallPromptUnavailable) {
-    return true
-  }
-
-  return false
+  return input.pwaKnownInstalled
 }
 
 export function shouldShowPwaOpenAppPrompt(input: PwaOpenAppPromptVisibilityInput): boolean {
@@ -94,10 +74,6 @@ export function shouldShowPwaOpenAppPrompt(input: PwaOpenAppPromptVisibilityInpu
   if (
     !isPwaLikelyInstalledForOpenPrompt({
       pwaKnownInstalled: input.pwaKnownInstalled,
-      platform: input.platform,
-      installPromptDismissed: input.installPromptDismissed,
-      pushEnabled: input.pushEnabled,
-      androidInstallPromptUnavailable: input.androidInstallPromptUnavailable,
     })
   ) {
     return false

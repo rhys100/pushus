@@ -120,6 +120,22 @@ export function markPwaKnownInstalled(): void {
   }
 }
 
+export function clearPwaKnownInstalled(): void {
+  try {
+    localStorage.removeItem(PWA_KNOWN_INSTALLED_KEY)
+  } catch {
+    // ignore
+  }
+}
+
+export function clearPwaInstallPromptDismiss(userId: string): void {
+  try {
+    localStorage.removeItem(`${PWA_INSTALL_PROMPT_DISMISSED_PREFIX}:${userId}`)
+  } catch {
+    // ignore
+  }
+}
+
 export function isPwaOpenAppPromptDismissed(userId: string): boolean {
   try {
     return localStorage.getItem(`${PWA_OPEN_APP_PROMPT_DISMISSED_PREFIX}:${userId}`) === '1'

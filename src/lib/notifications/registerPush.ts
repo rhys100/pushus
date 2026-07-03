@@ -1,3 +1,5 @@
+import type { PwaInstallStatus } from '@/lib/pwaInstallStatus'
+import { needsPwaInstallForPush, readPwaInstallPlatform } from '@/lib/pwaInstallStatus'
 import { needsIosHomeScreenInstall } from '@/lib/pwa'
 import { supabase } from '@/lib/supabase'
 
@@ -6,6 +8,7 @@ export type PushSupportStatus =
   | 'unsupported'
   | 'missing_vapid_key'
   | 'ios_needs_install'
+  | 'needs_pwa_install'
 
 export type PushPermissionStatus = NotificationPermission | 'unsupported'
 
@@ -17,7 +20,8 @@ export class PushRegistrationError extends Error {
       | 'permission_denied'
       | 'missing_vapid_key'
       | 'not_authenticated'
-      | 'save_failed',
+      | 'save_failed'
+      | 'needs_pwa_install',
   ) {
     super(message)
     this.name = 'PushRegistrationError'
@@ -52,6 +56,26 @@ export function getPushSupportStatus(): PushSupportStatus {
   }
 
   return 'supported'
+}
+
+export function resolvePushSupportStatus(
+  installStatus: PwaInstallStatus | null,
+): PushSupportStatus {
+  const base = getPushSupportStatus()
+
+  if (base === 'unsupported' || base === 'missing_vapid_key') {
+    return base
+  }
+
+  if (base === 'ios_needs_install' || needsPwaInstallForPush(installStatus, readPwaInstallPlatform())) {
+    return 'needs_pwa_install'
+  }
+
+  return 'supported'
+}
+
+export function pushSupportAllowsEnable(status: PushSupportStatus): boolean {
+  return status === 'supported'
 }
 
 export function getPushPermissionStatus(): PushPermissionStatus {

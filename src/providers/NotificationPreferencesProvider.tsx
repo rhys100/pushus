@@ -9,6 +9,7 @@ import {
 } from '@/hooks/useNotificationPreferences'
 import type { NotificationPreferencesInput } from '@/lib/notificationEligibility'
 import type { PushPermissionStatus, PushSupportStatus } from '@/lib/notifications/registerPush'
+import type { PwaInstallStatus } from '@/lib/pwaInstallStatus'
 import { useAuth } from '@/providers/AuthProvider'
 
 type NotificationPreferencesContextValue = {
@@ -21,8 +22,12 @@ type NotificationPreferencesContextValue = {
   updatePreferences: (patch: Partial<NotificationPreferencesInput>) => Promise<boolean>
   enablePush: () => Promise<boolean>
   disablePush: () => Promise<boolean>
+  refreshInstallStatus: () => Promise<PwaInstallStatus>
+  installStatus: PwaInstallStatus | null
+  installStatusLoading: boolean
   pushSupport: PushSupportStatus
   pushPermission: PushPermissionStatus
+  pushCapability: PushSupportStatus
 }
 
 const NotificationPreferencesContext =
