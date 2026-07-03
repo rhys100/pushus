@@ -64,6 +64,15 @@ export function usePwaOpenAppPrompt() {
   }, [refreshDismissState])
 
   useEffect(() => {
+    const syncDismissState = () => {
+      refreshDismissState()
+    }
+
+    window.addEventListener('pushus:pwa-open-app-recheck', syncDismissState)
+    return () => window.removeEventListener('pushus:pwa-open-app-recheck', syncDismissState)
+  }, [refreshDismissState])
+
+  useEffect(() => {
     if (!userId || isStandaloneDisplayMode()) {
       return
     }

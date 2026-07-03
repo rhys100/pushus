@@ -5,6 +5,7 @@ import {
   dismissPwaOpenAppPrompt,
   isPwaOpenAppPromptDismissed,
   isPwaOpenAppPromptSnoozedForSession,
+  resetPwaOpenAppPromptReminders,
 } from '@/lib/storage'
 
 const USER_ID = 'user-123'
@@ -59,6 +60,16 @@ describe('PWA open app prompt storage', () => {
 
     clearPwaOpenAppPromptSessionSnooze(USER_ID)
 
+    expect(isPwaOpenAppPromptSnoozedForSession(USER_ID)).toBe(false)
+  })
+
+  it('resetPwaOpenAppPromptReminders clears permanent dismiss and session snooze', () => {
+    dismissPwaOpenAppPrompt(USER_ID)
+    acknowledgePwaOpenAppPromptOpen(USER_ID)
+
+    resetPwaOpenAppPromptReminders(USER_ID)
+
+    expect(isPwaOpenAppPromptDismissed(USER_ID)).toBe(false)
     expect(isPwaOpenAppPromptSnoozedForSession(USER_ID)).toBe(false)
   })
 })

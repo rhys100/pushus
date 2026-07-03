@@ -180,6 +180,15 @@ export function clearPwaOpenAppPromptDismiss(userId: string): void {
   }
 }
 
+export function resetPwaOpenAppPromptReminders(userId: string): void {
+  clearPwaOpenAppPromptDismiss(userId)
+  clearPwaOpenAppPromptSessionSnooze(userId)
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('pushus:pwa-open-app-recheck'))
+  }
+}
+
 export function dismissPwaOpenAppPrompt(userId: string): void {
   try {
     localStorage.setItem(`${PWA_OPEN_APP_PROMPT_DISMISSED_PREFIX}:${userId}`, '1')

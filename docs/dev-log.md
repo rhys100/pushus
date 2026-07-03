@@ -26,6 +26,10 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-03 (reset open-in-app dock dismiss)
+
+- **Fixed:** Settings link to restore open-in-app bottom dock after "Don't remind me again".
+
 ### 2026-07-03 (open-app vs install dock)
 
 - **Fixed:** Installed Android users stuck on install dock — open-app eligible when Chrome no longer offers install; Settings **Open in app** for push.
