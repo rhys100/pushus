@@ -7,4 +7,5 @@ import {
 test('page bottom padding tokens include safe area and nav height', () => {
   expect(PAGE_BOTTOM_PADDING).toContain('safe-area-inset-bottom')
   expect(PAGE_BOTTOM_PADDING_WITH_NAV).toContain('var(--bottom-nav-height)')
+  expect(PAGE_BOTTOM_PADDING_WITH_NAV).toContain('var(--bottom-dock-prompt-reserve')
 })

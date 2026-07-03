@@ -76,7 +76,9 @@
 
   /* Fixed bottom chrome (nav, bank strip, wizard actions) */
   --dock-bg: #0a0a0d;
+  --dock-panel-bg: var(--color-surface);
   --dock-scrim-height: 1.5rem;
+  --bottom-dock-prompt-reserve: 0px;
   --dock-shadow: 0 -10px 36px rgba(0, 0, 0, 0.55);
   --wizard-dock-height: calc(var(--dock-scrim-height) + var(--bank-cta-height) + 1.5rem);
 }

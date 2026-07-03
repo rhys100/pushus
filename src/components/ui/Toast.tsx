@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react'
 import { cn } from '@/lib/cn'
+import { noticeSurfaceClass } from '@/lib/noticeStyles'
 
 export type ToastVariant = 'default' | 'success' | 'danger'
 
@@ -37,9 +38,9 @@ const ToastContext = createContext<ToastContextValue | null>(null)
 const DEFAULT_DURATION_MS = 5000
 
 const variantStyles: Record<ToastVariant, string> = {
-  default: 'border-border bg-surface text-text-primary',
-  success: 'border-success/30 bg-success/10 text-text-primary',
-  danger: 'border-danger/30 bg-danger/10 text-text-primary',
+  default: noticeSurfaceClass.default,
+  success: noticeSurfaceClass.success,
+  danger: noticeSurfaceClass.danger,
 }
 
 function ToastItem({
@@ -65,7 +66,7 @@ function ToastItem({
       role="status"
       aria-live="polite"
       className={cn(
-        'pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-[var(--radius-md)] border px-4 py-3 shadow-lg',
+        'pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-[var(--radius-md)] border px-4 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.55)]',
         'animate-[toast-in_200ms_var(--ease-out)]',
         variantStyles[variant],
       )}

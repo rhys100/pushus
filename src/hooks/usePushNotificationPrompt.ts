@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '@/providers/AuthProvider'
 import { useNotificationPreferences } from '@/providers/NotificationPreferencesProvider'
-import { usePwaInstallDockVisible } from '@/hooks/usePwaInstallPrompt'
+import { useInstallOpenAppDockVisible } from '@/hooks/useBottomDockPromptVisible'
 import { shouldShowPushNotificationPrompt } from '@/lib/pushNotificationPrompt'
+import { setBottomDockPromptVisible } from '@/lib/pwaInstallDockVisibility'
 import { dismissPushPrompt, isPushPromptDismissed } from '@/lib/storage'
 
 export function usePushNotificationPrompt() {
@@ -20,7 +21,7 @@ export function usePushNotificationPrompt() {
     pushSupport,
     pushPermission,
   } = useNotificationPreferences()
-  const pwaInstallDockVisible = usePwaInstallDockVisible()
+  const installOpenAppDockVisible = useInstallOpenAppDockVisible()
 
   const [promptDismissed, setPromptDismissed] = useState(false)
 
@@ -29,7 +30,7 @@ export function usePushNotificationPrompt() {
   }, [userId])
 
   const visible = useMemo(() => {
-    if (!userId || !profileReady || appAccessLoading || prefsLoading || pwaInstallDockVisible) {
+    if (!userId || !profileReady || appAccessLoading || prefsLoading || installOpenAppDockVisible) {
       return false
     }
 
@@ -56,8 +57,13 @@ export function usePushNotificationPrompt() {
     pushPermission,
     prefs?.push_enabled,
     promptDismissed,
-    pwaInstallDockVisible,
+    installOpenAppDockVisible,
   ])
+
+  useEffect(() => {
+    setBottomDockPromptVisible('push', visible)
+    return () => setBottomDockPromptVisible('push', false)
+  }, [visible])
 
   const dismiss = useCallback(() => {
     if (!userId) {

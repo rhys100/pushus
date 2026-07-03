@@ -1,5 +1,7 @@
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { cn } from '@/lib/cn'
+import { noticeSurfaceClass } from '@/lib/noticeStyles'
 
 export type ChallengeMaxCheckInCardProps = {
   onTryMaxSet: () => void
@@ -13,7 +15,7 @@ export function ChallengeMaxCheckInCard({
   maxSetModeActive = false,
 }: ChallengeMaxCheckInCardProps) {
   return (
-    <Card padding="sm" className="mt-3 border-accent/30 bg-accent-muted/20">
+    <Card padding="sm" className={cn('mt-3', noticeSurfaceClass.accent)}>
       <p className="text-sm font-medium text-text-primary">
         Feeling good? Try a clean max set today.
       </p>

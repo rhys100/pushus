@@ -1,13 +1,35 @@
 const visibleSources = new Set<string>()
 const subscribers = new Set<() => void>()
 
-export type PwaDockSource = 'install' | 'open-app'
+export type BottomDockPromptSource = 'install' | 'open-app' | 'push'
 
-export function getPwaInstallDockVisible(): boolean {
+/** Height reserved above bottom nav when a dock prompt is showing. */
+const DOCK_PROMPT_RESERVE = '9.5rem'
+
+let dockPromptReserve = '0px'
+
+export function getDockPromptReserve(): string {
+  return dockPromptReserve
+}
+
+export function getBottomDockPromptVisible(): boolean {
   return visibleSources.size > 0
 }
 
-export function setPwaInstallDockVisible(source: PwaDockSource, visible: boolean): void {
+/** Install / open-app docks only — push defers to these, not to itself. */
+export function getInstallOpenAppDockVisible(): boolean {
+  return visibleSources.has('install') || visibleSources.has('open-app')
+}
+
+function syncDockPromptReserve(): void {
+  dockPromptReserve = visibleSources.size > 0 ? DOCK_PROMPT_RESERVE : '0px'
+
+  if (typeof document !== 'undefined') {
+    document.documentElement.style.setProperty('--bottom-dock-prompt-reserve', dockPromptReserve)
+  }
+}
+
+export function setBottomDockPromptVisible(source: BottomDockPromptSource, visible: boolean): void {
   const hadVisible = visibleSources.size > 0
 
   if (visible) {
@@ -17,6 +39,8 @@ export function setPwaInstallDockVisible(source: PwaDockSource, visible: boolean
   }
 
   const hasVisible = visibleSources.size > 0
+  syncDockPromptReserve()
+
   if (hadVisible === hasVisible) {
     return
   }
@@ -24,7 +48,24 @@ export function setPwaInstallDockVisible(source: PwaDockSource, visible: boolean
   subscribers.forEach((notify) => notify())
 }
 
-export function subscribePwaInstallDockVisibility(notify: () => void): () => void {
+export function subscribeBottomDockPromptVisibility(notify: () => void): () => void {
   subscribers.add(notify)
   return () => subscribers.delete(notify)
 }
+
+/** @deprecated Use getInstallOpenAppDockVisible for push deferral; getBottomDockPromptVisible for layout */
+export function getPwaInstallDockVisible(): boolean {
+  return getInstallOpenAppDockVisible()
+}
+
+/** @deprecated Use setBottomDockPromptVisible */
+export function setPwaInstallDockVisible(source: 'install' | 'open-app', visible: boolean): void {
+  setBottomDockPromptVisible(source, visible)
+}
+
+/** @deprecated Use subscribeBottomDockPromptVisibility */
+export function subscribePwaInstallDockVisibility(notify: () => void): () => void {
+  return subscribeBottomDockPromptVisibility(notify)
+}
+
+export type PwaDockSource = BottomDockPromptSource

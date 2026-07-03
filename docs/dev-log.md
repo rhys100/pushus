@@ -26,6 +26,15 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-03 (notification banner readability)
+
+- **Fixed:** Toasts and inline banners (billing, training wizard warnings, settings plan saved, max-set callouts) now use shared opaque `noticeStyles` surfaces — no more unreadable transparent green squiggles over page text.
+- **Fixed:** Bottom dock prompts (install, open PWA, push reminders) — solid surface panel, readable secondary buttons, scroll reserve on tab pages so leaderboard/settings content is not buried under the dock.
+- **Fixed:** Settings training plan week grid — filled day chips, today highlighted in profile timezone.
+- **Tests:** `tests/unit/noticeStyles.test.ts`
+- **CI:** restored missing `buildTrustModeLabel` import in TrainingWizard
+- **Next:** Spot-check invite copy toast on mobile Settings after deploy.
+
 ### 2026-07-03 (nose hint below Bank; ring layout jump fix)
 
 - **Nose-hold hint** extracted to `NoseHoldHint` and moved below the Bank CTA on `/today` and `/dev/preview` (was between ring and Bank inside the centred flex column).

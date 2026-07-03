@@ -7,6 +7,7 @@ import { useTabPageMeta } from '@/components/layout/TabPageMeta'
 import { appConfig } from '@/lib/config'
 import { AVATAR_EMOJIS } from '@/lib/emojis'
 import { cn } from '@/lib/cn'
+import { noticeBannerClass, noticeInlineClass } from '@/lib/noticeStyles'
 import { formatProfileName } from '@/lib/memberDisplayName'
 import { supabase } from '@/lib/supabase'
 import { timezoneOptions } from '@/lib/timezones'
@@ -15,7 +16,8 @@ import { useProfile } from '@/hooks/useProfile'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 import { useTrainingPlan } from '@/hooks/useTrainingPlan'
 import { capPlanMaxUpdate } from '@/lib/training/maxCleanUpdate'
-import { formatDayTargetSetsDetail } from '@/lib/training/planEngine'
+import { formatDayTargetSetsDetail, dayOfWeekFromIso } from '@/lib/training/planEngine'
+import { getGroupLocalDateString } from '@/hooks/useTodayData'
 import type { ReminderIntervalHours } from '@/lib/notificationEligibility'
 import { useNotificationPreferences } from '@/providers/NotificationPreferencesProvider'
 import { getErrorMessage } from '@/lib/errors'
@@ -89,6 +91,7 @@ export function SettingsPage() {
     pendingMax && plan?.max_clean_set
       ? capPlanMaxUpdate(plan.max_clean_set, pendingMax)
       : null
+  const todayDayIndex = dayOfWeekFromIso(getGroupLocalDateString(planTimezone), planTimezone)
 
   async function handleConfirmMaxClean() {
     try {
@@ -205,7 +208,7 @@ export function SettingsPage() {
       {planSavedMessage ? (
         <div
           role="status"
-          className="flex items-start gap-3 rounded-[var(--radius-md)] border border-success/30 bg-success/10 px-4 py-3"
+          className={cn(noticeBannerClass('success'), 'flex items-start gap-3')}
         >
           <p className="flex-1 text-sm leading-snug text-text-primary">{planSavedMessage}</p>
           <button
@@ -398,7 +401,7 @@ export function SettingsPage() {
           )}
         </div>
         {pendingMax && plan?.max_clean_set && cappedMax ? (
-          <div className="rounded-[var(--radius-md)] border border-accent/40 bg-accent-muted/20 px-3 py-3">
+          <div className={cn(noticeInlineClass('accent'), 'px-3 py-3 text-sm')}>
             <p className="text-sm font-medium text-text-primary">Max clean check-in</p>
             <p className="mt-1 text-xs text-text-muted">
               You logged {pendingMax} in one set. Apply a capped update to {cappedMax} (plan max{' '}
@@ -423,15 +426,26 @@ export function SettingsPage() {
           </div>
         ) : null}
         {wizardCompleted && weeklySchedule ? (
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-1.5">
             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((label, index) => {
               const day = weeklySchedule[index as 0 | 1 | 2 | 3 | 4 | 5 | 6]
+              const isToday = todayDayIndex === index
               return (
                 <div
                   key={`${label}-${index}`}
-                  className="flex flex-col items-center rounded-[var(--radius-sm)] border border-border px-1 py-1.5 text-center"
+                  className={cn(
+                    'flex flex-col items-center rounded-[var(--radius-sm)] border bg-bg px-1 py-1.5 text-center',
+                    isToday ? 'border-accent/60 ring-1 ring-accent/25' : 'border-border',
+                  )}
                 >
-                  <span className="text-[10px] font-medium text-text-muted">{label}</span>
+                  <span
+                    className={cn(
+                      'text-[10px] font-medium',
+                      isToday ? 'text-accent' : 'text-text-muted',
+                    )}
+                  >
+                    {label}
+                  </span>
                   <span className="font-mono text-xs font-semibold text-text-primary">
                     {day.target > 0 ? day.target : '—'}
                   </span>
@@ -498,7 +512,7 @@ export function SettingsPage() {
                   </Button>
                 </div>
 
-                <p className="rounded-[var(--radius-md)] border border-accent/20 bg-accent/10 px-3 py-2 text-xs text-text-muted">
+                <p className={cn(noticeInlineClass('accent'), 'text-text-muted')}>
                   Install tip: on Android, use the install prompt. On iPhone, tap Share, then Add
                   to Home Screen. Installed apps keep reminders more reliable.
                 </p>
