@@ -16,7 +16,8 @@ import { useProfile } from '@/hooks/useProfile'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 import { useTrainingPlan } from '@/hooks/useTrainingPlan'
 import { capPlanMaxUpdate } from '@/lib/training/maxCleanUpdate'
-import { formatDayTargetSetsDetail } from '@/lib/training/planEngine'
+import { formatDayTargetSetsDetail, dayOfWeekFromIso } from '@/lib/training/planEngine'
+import { getGroupLocalDateString } from '@/hooks/useTodayData'
 import type { ReminderIntervalHours } from '@/lib/notificationEligibility'
 import { useNotificationPreferences } from '@/providers/NotificationPreferencesProvider'
 import { getErrorMessage } from '@/lib/errors'
@@ -90,6 +91,7 @@ export function SettingsPage() {
     pendingMax && plan?.max_clean_set
       ? capPlanMaxUpdate(plan.max_clean_set, pendingMax)
       : null
+  const todayDayIndex = dayOfWeekFromIso(getGroupLocalDateString(planTimezone), planTimezone)
 
   async function handleConfirmMaxClean() {
     try {
@@ -424,15 +426,26 @@ export function SettingsPage() {
           </div>
         ) : null}
         {wizardCompleted && weeklySchedule ? (
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-1.5">
             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((label, index) => {
               const day = weeklySchedule[index as 0 | 1 | 2 | 3 | 4 | 5 | 6]
+              const isToday = todayDayIndex === index
               return (
                 <div
                   key={`${label}-${index}`}
-                  className="flex flex-col items-center rounded-[var(--radius-sm)] border border-border px-1 py-1.5 text-center"
+                  className={cn(
+                    'flex flex-col items-center rounded-[var(--radius-sm)] border bg-bg px-1 py-1.5 text-center',
+                    isToday ? 'border-accent/60 ring-1 ring-accent/25' : 'border-border',
+                  )}
                 >
-                  <span className="text-[10px] font-medium text-text-muted">{label}</span>
+                  <span
+                    className={cn(
+                      'text-[10px] font-medium',
+                      isToday ? 'text-accent' : 'text-text-muted',
+                    )}
+                  >
+                    {label}
+                  </span>
                   <span className="font-mono text-xs font-semibold text-text-primary">
                     {day.target > 0 ? day.target : '—'}
                   </span>

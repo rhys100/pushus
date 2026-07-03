@@ -87,7 +87,7 @@ export function AppLayout({
         className={cn(
           'mx-auto w-full max-w-lg flex-1 px-4',
           showNav
-            ? 'pb-[calc(var(--bottom-nav-height)+0.5rem)]'
+            ? 'pb-[calc(var(--bottom-nav-height)+var(--bottom-dock-prompt-reserve,0px)+0.5rem)]'
             : 'pb-[calc(2rem+max(3rem,env(safe-area-inset-bottom,0px)))]',
           title !== null ? 'pt-4' : 'pt-[env(safe-area-inset-top)]',
         )}
