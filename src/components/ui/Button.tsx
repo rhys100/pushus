@@ -16,13 +16,13 @@ export type ButtonLinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    'bg-accent text-bg hover:brightness-110 active:brightness-95 shadow-[0_1px_0_rgba(255,255,255,0.12)_inset]',
+    '[background:var(--gradient-accent)] text-bg hover:brightness-110 active:brightness-95 shadow-[var(--shadow-glow-accent-strong),0_1px_0_rgba(255,255,255,0.25)_inset]',
   secondary:
-    'bg-surface text-text-primary border border-border hover:border-accent/40 hover:bg-surface/90',
+    'bg-surface text-text-primary border-2 border-border hover:border-accent/40 hover:bg-surface/90',
   ghost:
     'bg-transparent text-text-primary hover:bg-surface/80 active:bg-surface',
   danger:
-    'bg-danger/15 text-danger border border-danger/30 hover:bg-danger/25 active:bg-danger/20',
+    'bg-danger/15 text-danger border-2 border-danger/30 hover:bg-danger/25 active:bg-danger/20',
 }
 
 function Spinner() {
@@ -51,7 +51,7 @@ function Spinner() {
 }
 
 const buttonBaseClass =
-  'inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-[var(--radius-md)] px-5 py-2.5 text-sm font-semibold tracking-tight transition-[background-color,border-color,opacity,transform] duration-[var(--duration-fast)] ease-[var(--ease-out)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg'
+  'inline-flex min-h-12 min-w-12 items-center justify-center gap-2 rounded-[var(--radius-full)] px-6 py-3 text-sm font-bold tracking-tight transition-[background-color,border-color,opacity,transform,box-shadow,filter] duration-[var(--duration-fast)] ease-[var(--ease-out)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg'
 
 export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>(
   ({ variant = 'primary', fullWidth = false, className, children, ...props }, ref) => {
