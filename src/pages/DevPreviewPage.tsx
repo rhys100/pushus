@@ -4,6 +4,7 @@ import {
   type CircularLoggerHandle,
 } from '@/components/logger/CircularLogger'
 import { BankPushupsButton } from '@/components/logger/BankPushupsButton'
+import { NoseHoldHint } from '@/components/logger/NoseHoldHint'
 import { NoseTapMode } from '@/components/logger/NoseTapMode'
 import { DayProgressCard } from '@/components/today/DayProgressCard'
 import type { TodayPrescription } from '@/lib/training/planEngine'
@@ -56,8 +57,6 @@ export function DevPreviewPage() {
           onCountChange={setCount}
           onLongPressCenter={() => setNoseTapOpen(true)}
           showDragHint
-          showNoseHint={showNoseHint}
-          onNoseHintDismiss={() => setShowNoseHint(false)}
         />
 
         <BankPushupsButton
@@ -67,6 +66,8 @@ export function DevPreviewPage() {
           className="mt-5"
         />
       </div>
+
+      <NoseHoldHint show={showNoseHint} onDismiss={() => setShowNoseHint(false)} />
 
       <NoseTapMode
         open={noseTapOpen}

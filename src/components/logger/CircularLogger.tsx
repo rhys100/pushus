@@ -88,9 +88,6 @@ export type CircularLoggerProps = {
   disabled?: boolean
   showDragHint?: boolean
   onHintDismiss?: () => void
-  /** Show the dismissible "hold centre for nose reps" teaching hint below the ring. */
-  showNoseHint?: boolean
-  onNoseHintDismiss?: () => void
   className?: string
 }
 
@@ -146,8 +143,6 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
       disabled = false,
       showDragHint = false,
       onHintDismiss,
-      showNoseHint = false,
-      onNoseHintDismiss,
       className,
     },
     ref,
@@ -843,8 +838,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
     return (
       <div
         ref={ringContainerRef}
-        className={cn('flex flex-col items-center px-4 py-1', className)}
-        style={{ touchAction: isDragging ? 'none' : undefined }}
+        className={cn('flex flex-col items-center px-4 py-1 touch-none', className)}
       >
         <div
           className={cn(
@@ -1185,28 +1179,6 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
             ) : null}
           </div>
         </div>
-
-        {onLongPressCenter &&
-        showNoseHint &&
-        !isDragging &&
-        !centerHolding &&
-        lockInPhase === null ? (
-          <div className="mt-3 flex flex-col items-center gap-1 text-center">
-            <p className="max-w-[16rem] text-[0.8125rem] leading-snug text-text-secondary">
-              <span className="font-semibold text-text-primary">Nose or chin reps:</span>{' '}
-              hold the centre of the ring for 1.5 seconds
-            </p>
-            {onNoseHintDismiss ? (
-              <button
-                type="button"
-                onClick={onNoseHintDismiss}
-                className="text-[0.6875rem] font-medium text-text-muted underline decoration-dotted underline-offset-4 transition hover:text-text-secondary"
-              >
-                Don&rsquo;t remind me again
-              </button>
-            ) : null}
-          </div>
-        ) : null}
       </div>
     )
   },

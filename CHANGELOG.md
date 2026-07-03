@@ -38,7 +38,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
-- **Ring drag no longer scrolls the page:** the logger ring now sets `touch-action: none` permanently (it was only applied mid-drag, so the first part of every touch-drag panned the page — the ring appeared to "move down" and not stay put)
+- **Nose-hold hint placement:** the "hold centre for nose reps" teaching hint now sits below the Bank Push-ups button at the bottom of the Log page, and no longer hides when you start dragging (which was shifting the ring upward in the centred layout)
 - **Open in app now launches the installed PWA:** the button used a plain `intent://` https URL, which Chrome just reloaded in the browser tab (it can't target the WebAPK). It now navigates to a registered custom protocol (`web+pushus://open`, declared in the manifest) so Chrome hands off to the standalone app. Members on an older install must reopen the app once to update it before the hand-off works
 - **Log summary shows the set plan:** the compact daily summary is now a clean three-stat row — current set (e.g. "3 of 4"), reps to bank next (e.g. "~12"), and today's total (e.g. "12/45") — so the per-set target and set progress are always visible at a glance
 - **Open in app button hidden on Log page:** the open-installed-app dock now sits above the bottom nav on `/today` (it was pinned to the screen bottom, so its buttons rendered behind the nav bar). Guarded by a unit test; see [docs/pwa-open-in-app.md](docs/pwa-open-in-app.md)

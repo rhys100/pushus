@@ -19,6 +19,7 @@ import {
   type CircularLoggerHandle,
 } from '@/components/logger/CircularLogger'
 import { BankPushupsButton } from '@/components/logger/BankPushupsButton'
+import { NoseHoldHint } from '@/components/logger/NoseHoldHint'
 import { NoseTapMode } from '@/components/logger/NoseTapMode'
 import { SetEffortSheet } from '@/components/logger/SetEffortSheet'
 import { SorenessCheckInSheet } from '@/components/logger/SorenessCheckInSheet'
@@ -375,8 +376,6 @@ export function TodayPage() {
             disabled={bankPushups.isPending}
             showDragHint={showHint}
             onHintDismiss={dismissHint}
-            showNoseHint={showNoseHint}
-            onNoseHintDismiss={dismissNoseHint}
             className="px-0 py-0"
           />
 
@@ -388,6 +387,8 @@ export function TodayPage() {
             className="mt-5 transition-opacity duration-[var(--duration-fast)]"
           />
         </div>
+
+        <NoseHoldHint show={showNoseHint} onDismiss={dismissNoseHint} />
       </div>
 
       <NoseTapMode

@@ -26,6 +26,12 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-03 (nose hint below Bank; ring layout jump fix)
+
+- **Nose-hold hint** extracted to `NoseHoldHint` and moved below the Bank CTA on `/today` and `/dev/preview` (was between ring and Bank inside the centred flex column).
+- **Ring jump on touch:** the hint used to unmount when `isDragging` or `centerHolding` became true, shrinking the centred flex group and pushing the ring down. It now stays visible until the user taps "Don't remind me again" (reserved `min-h` slot while visible).
+- **Touch:** logger outer container also gets permanent `touch-none` (not only the SVG).
+
 ### 2026-07-03 (log page polish: 1.5s hold, drag scroll fix, Bank below ring)
 
 - **Nose hold** shortened from 2s to 1.5s (`CENTER_HOLD_MS`); hint copy + README/CHANGELOG updated.
