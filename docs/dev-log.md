@@ -26,6 +26,12 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-03 (open in app Android + dock card design)
+
+- **Fixed:** Open in app on Android — real https `ButtonLink` with `target="_blank"` instead of `web+pushus://` (protocol_handlers unsupported on Chrome Android).
+- **Fixed:** Bottom dock prompts — floating card UI, accent top bar, full-width mobile buttons.
+- **Docs:** `docs/pwa-open-in-app.md`, cursor rule updated.
+
 ### 2026-07-03 (notification banner readability)
 
 - **Fixed:** Toasts and inline banners (billing, training wizard warnings, settings plan saved, max-set callouts) now use shared opaque `noticeStyles` surfaces — no more unreadable transparent green squiggles over page text.

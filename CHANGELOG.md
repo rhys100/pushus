@@ -38,7 +38,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
-- **Toast and banner readability:** success, warning, danger, and accent notifications now use opaque surfaces instead of 10–30% transparent tints, so copy stays legible when toasts float over page content (e.g. invite copy confirmation on Settings)
+- **Open in app on Android:** the button now opens a real in-scope https link (`ButtonLink`, new tab) so Chrome hands off to the installed WebAPK. The previous `web+pushus://` approach does nothing on Chrome Android because `protocol_handlers` is desktop-only
+- **Bottom dock prompt design:** floating card with accent bar, stronger shadow, full-width stacked buttons on mobile success, warning, danger, and accent notifications now use opaque surfaces instead of 10–30% transparent tints, so copy stays legible when toasts float over page content (e.g. invite copy confirmation on Settings)
 - **Bottom dock prompts:** install, open-app, and push reminder docks use a solid surface panel with clearer secondary buttons; tab pages reserve scroll space so content is not hidden behind the dock
 - **Settings training plan:** weekly day chips use stronger borders, a filled background, and highlight today in the member timezone the "hold centre for nose reps" teaching hint now sits below the Bank Push-ups button at the bottom of the Log page, and no longer hides when you start dragging (which was shifting the ring upward in the centred layout)
 - **Open in app now launches the installed PWA:** the button used a plain `intent://` https URL, which Chrome just reloaded in the browser tab (it can't target the WebAPK). It now navigates to a registered custom protocol (`web+pushus://open`, declared in the manifest) so Chrome hands off to the standalone app. Members on an older install must reopen the app once to update it before the hand-off works

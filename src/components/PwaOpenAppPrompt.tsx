@@ -1,10 +1,11 @@
-import { Button } from '@/components/ui'
+import { Button, ButtonLink } from '@/components/ui'
 import {
   BottomDockPrompt,
+  dockPromptPrimaryButtonClass,
   dockPromptSecondaryButtonClass,
 } from '@/components/BottomDockPrompt'
 import { usePwaOpenAppPrompt } from '@/hooks/usePwaOpenAppPrompt'
-import { canTryOpenInInstalledApp, openInstalledPwa } from '@/lib/pwaOpenInApp'
+import { buildPwaOpenInAppUrl, canTryOpenInInstalledApp } from '@/lib/pwaOpenInApp'
 
 export function PwaOpenAppPrompt() {
   const { visible, confidence, platform, dismissPermanently, acknowledgeOpenInApp, pathname } =
@@ -17,11 +18,10 @@ export function PwaOpenAppPrompt() {
   const isIos = platform === 'ios'
   const canTryOpenInApp = canTryOpenInInstalledApp(platform)
   const knownInstalled = confidence === 'known'
-
-  const handleOpenInApp = () => {
-    acknowledgeOpenInApp()
-    openInstalledPwa()
-  }
+  const openAppUrl =
+    typeof window !== 'undefined'
+      ? buildPwaOpenInAppUrl(pathname, window.location.origin)
+      : buildPwaOpenInAppUrl(pathname)
 
   return (
     <BottomDockPrompt ariaLabel="Open installed PushUS prompt" pathname={pathname}>
@@ -37,9 +37,9 @@ export function PwaOpenAppPrompt() {
           </>
         ) : (
           <>
-            Tap <span className="font-medium text-text-primary">Open in app</span>. If Chrome asks,
-            choose PushUS. If nothing happens, open PushUS once from your home screen to update it,
-            then try again.
+            Tap <span className="font-medium text-text-primary">Open in app</span> below. Android
+            should switch to your installed PushUS. If Chrome stays in the browser, use the
+            home screen icon instead.
           </>
         )}
       </p>
@@ -49,13 +49,27 @@ export function PwaOpenAppPrompt() {
           <li>Tap the PushUS icon on your home screen.</li>
         </ol>
       ) : null}
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         {canTryOpenInApp ? (
-          <Button onClick={handleOpenInApp}>Open in app</Button>
+          <ButtonLink
+            href={openAppUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={dockPromptPrimaryButtonClass}
+            onClick={acknowledgeOpenInApp}
+          >
+            Open in app
+          </ButtonLink>
         ) : (
-          <Button onClick={acknowledgeOpenInApp}>OK, I&apos;ll use the home screen icon</Button>
+          <Button className={dockPromptPrimaryButtonClass} onClick={acknowledgeOpenInApp}>
+            OK, I&apos;ll use the home screen icon
+          </Button>
         )}
-        <Button variant="secondary" className={dockPromptSecondaryButtonClass} onClick={dismissPermanently}>
+        <Button
+          variant="secondary"
+          className={dockPromptSecondaryButtonClass}
+          onClick={dismissPermanently}
+        >
           Don&apos;t remind me again
         </Button>
       </div>
