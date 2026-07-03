@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-03 (open in app honest Android UX)
+
+- **Fixed:** Open in app flash/reload — Chrome cannot hand off from an in-tab session. Android dock now prioritises home-screen steps; Try open in app anyway uses intent without browser fallback.
+- **Docs:** `docs/pwa-open-in-app.md`, cursor rule updated.
+
 ### 2026-07-03 (open in app Android + dock card design)
 
 - **Fixed:** Open in app on Android — real https `ButtonLink` with `target="_blank"` instead of `web+pushus://` (protocol_handlers unsupported on Chrome Android).

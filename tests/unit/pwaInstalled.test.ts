@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   detectPwaInstalledViaBrowserApi,
+  getInstalledWebAppRelatedApp,
   hasGetInstalledRelatedAppsSupport,
+  readWebApkPackageId,
   syncPwaKnownInstalledFromDisplayMode,
 } from '@/lib/pwaInstalled'
 
@@ -58,6 +60,21 @@ describe('PWA installed detection', () => {
     expect(hasGetInstalledRelatedAppsSupport()).toBe(true)
     await expect(detectPwaInstalledViaBrowserApi()).resolves.toBe(true)
     expect(storage.get(PWA_KNOWN_INSTALLED_KEY)).toBe('1')
+  })
+
+  it('reads WebAPK package ids when Chrome exposes them', async () => {
+    vi.stubGlobal('navigator', {
+      getInstalledRelatedApps: vi.fn().mockResolvedValue([
+        {
+          platform: 'webapp',
+          id: 'org.chromium.webapk.abc123_v2',
+          url: '/manifest.webmanifest',
+        },
+      ]),
+    })
+
+    const relatedApp = await getInstalledWebAppRelatedApp()
+    expect(readWebApkPackageId(relatedApp)).toBe('org.chromium.webapk.abc123_v2')
   })
 
   it('ignores missing getInstalledRelatedApps support', async () => {

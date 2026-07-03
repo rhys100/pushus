@@ -1,15 +1,56 @@
-import { Button, ButtonLink } from '@/components/ui'
+import { Button } from '@/components/ui'
 import {
   BottomDockPrompt,
   dockPromptPrimaryButtonClass,
   dockPromptSecondaryButtonClass,
 } from '@/components/BottomDockPrompt'
 import { usePwaOpenAppPrompt } from '@/hooks/usePwaOpenAppPrompt'
-import { buildPwaOpenInAppUrl, canTryOpenInInstalledApp } from '@/lib/pwaOpenInApp'
+import { canTryOpenInInstalledApp, openInstalledPwa } from '@/lib/pwaOpenInApp'
+
+function HomeScreenSteps({ compact = false }: { compact?: boolean }) {
+  return (
+    <ol
+      className={
+        compact
+          ? 'mt-2 list-decimal space-y-1 pl-5 text-sm leading-snug text-text-muted'
+          : 'mt-3 space-y-2'
+      }
+    >
+      {compact ? (
+        <>
+          <li>Press Home or swipe up from the bottom.</li>
+          <li>Tap the PushUS icon on your home screen (not Chrome).</li>
+        </>
+      ) : (
+        <>
+          <li className="flex gap-3 text-sm text-text-primary">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent/15 font-mono text-xs font-bold text-accent">
+              1
+            </span>
+            <span className="pt-0.5">Press Home or swipe up from the bottom of the screen.</span>
+          </li>
+          <li className="flex gap-3 text-sm text-text-primary">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent/15 font-mono text-xs font-bold text-accent">
+              2
+            </span>
+            <span className="pt-0.5">Tap the PushUS icon on your home screen — not the Chrome app.</span>
+          </li>
+        </>
+      )}
+    </ol>
+  )
+}
 
 export function PwaOpenAppPrompt() {
-  const { visible, confidence, platform, dismissPermanently, acknowledgeOpenInApp, pathname } =
-    usePwaOpenAppPrompt()
+  const {
+    visible,
+    confidence,
+    platform,
+    webApkPackage,
+    dismissPermanently,
+    acknowledgeOpenInApp,
+    pathname,
+  } = usePwaOpenAppPrompt()
 
   if (!visible) {
     return null
@@ -18,58 +59,62 @@ export function PwaOpenAppPrompt() {
   const isIos = platform === 'ios'
   const canTryOpenInApp = canTryOpenInInstalledApp(platform)
   const knownInstalled = confidence === 'known'
-  const openAppUrl =
-    typeof window !== 'undefined'
-      ? buildPwaOpenInAppUrl(pathname, window.location.origin)
-      : buildPwaOpenInAppUrl(pathname)
+
+  const handleTryOpenInApp = () => {
+    acknowledgeOpenInApp()
+    openInstalledPwa(pathname, window.location.origin, webApkPackage)
+  }
 
   return (
     <BottomDockPrompt ariaLabel="Open installed PushUS prompt" pathname={pathname}>
-      <p className="text-sm font-semibold text-text-primary">
-        {isIos ? 'Use the PushUS home screen app' : 'Open PushUS in the installed app'}
-      </p>
-      <p className="mt-1 text-sm leading-snug text-text-muted">
-        {isIos ? (
-          <>
-            Safari cannot switch to the home screen app for you. Go to your home screen and tap
-            the PushUS icon
-            {knownInstalled ? ' you already added' : ''} for reliable reminders.
-          </>
-        ) : (
-          <>
-            Tap <span className="font-medium text-text-primary">Open in app</span> below. Android
-            should switch to your installed PushUS. If Chrome stays in the browser, use the
-            home screen icon instead.
-          </>
-        )}
-      </p>
+      <div className="flex items-start gap-3">
+        <img
+          src="/pwa/icon-192.png"
+          alt=""
+          aria-hidden="true"
+          className="h-11 w-11 shrink-0 rounded-[0.85rem] border border-border bg-bg"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-text-primary">
+            {isIos ? 'Use the PushUS home screen app' : 'PushUS is installed — use the home screen app'}
+          </p>
+          <p className="mt-1 text-sm leading-snug text-text-muted">
+            {isIos ? (
+              <>
+                Safari cannot switch apps for you. Open PushUS from your home screen
+                {knownInstalled ? ' (you already added it)' : ''} for reliable reminders and full-screen
+                logging.
+              </>
+            ) : (
+              <>
+                Chrome cannot switch to the installed app from this tab. The home screen icon is the
+                reliable way to open PushUS.
+              </>
+            )}
+          </p>
+        </div>
+      </div>
+
       {isIos ? (
-        <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm leading-snug text-text-muted">
-          <li>Leave this Safari tab or press the home button.</li>
-          <li>Tap the PushUS icon on your home screen.</li>
-        </ol>
-      ) : null}
-      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        <HomeScreenSteps compact />
+      ) : (
+        <HomeScreenSteps />
+      )}
+
+      <div className="mt-4 flex flex-col gap-2">
+        <Button className={dockPromptPrimaryButtonClass} onClick={acknowledgeOpenInApp}>
+          {isIos ? 'Got it' : "Got it — I'll use the home screen icon"}
+        </Button>
         {canTryOpenInApp ? (
-          <ButtonLink
-            href={openAppUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={dockPromptPrimaryButtonClass}
-            onClick={acknowledgeOpenInApp}
+          <Button
+            variant="secondary"
+            className={dockPromptSecondaryButtonClass}
+            onClick={handleTryOpenInApp}
           >
-            Open in app
-          </ButtonLink>
-        ) : (
-          <Button className={dockPromptPrimaryButtonClass} onClick={acknowledgeOpenInApp}>
-            OK, I&apos;ll use the home screen icon
+            Try open in app anyway
           </Button>
-        )}
-        <Button
-          variant="secondary"
-          className={dockPromptSecondaryButtonClass}
-          onClick={dismissPermanently}
-        >
+        ) : null}
+        <Button variant="ghost" className="min-h-10 w-full text-xs text-text-muted" onClick={dismissPermanently}>
           Don&apos;t remind me again
         </Button>
       </div>

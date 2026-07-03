@@ -20,27 +20,23 @@ This is easy to break without noticing, so it has a guard test and this doc.
 
 ## Behaviour
 
-- **Android:** the primary button is **Open in app** — a real `<a href>` to an
-  in-scope **https** URL on the current origin (e.g.
-  `https://pushus.app/leaderboard?source=open-app`) opened in a new tab
-  (`target="_blank"`). Chrome Android registers WebAPK intent filters for all
-  URLs in the PWA scope when the app is installed; a link click hands off to the
-  standalone app.
+- **Android:** Chrome **cannot reliably auto-launch** the installed WebAPK while
+  you are already browsing the same site in a browser tab. https links,
+  `web+pushus://`, and intent URLs with `S.browser_fallback_url` all tend to
+  reload the tab (the flash members report) instead of opening the standalone app.
 
-  **Do not use `web+pushus://` on Android:** `protocol_handlers` in the manifest
-  is **not supported on Chrome Android**. Navigating to `web+pushus://open` does
-  nothing on mobile — that approach only helps desktop Chrome.
+  The dock therefore leads with **honest home-screen steps** and a primary
+  **Got it — I'll use the home screen icon** button. A secondary **Try open in
+  app anyway** fires an Android intent **without** browser fallback, optionally
+  scoped to `org.chromium.webapk.*` when `getInstalledRelatedApps()` exposes it.
 
-  **Do not rely on same-tab `intent://` or `location.href` https alone:** a
-  plain https VIEW in the current Chrome tab just reloads the page. The button
-  must be a user-activated link (see `ButtonLink` in `PwaOpenAppPrompt.tsx`).
-
-  If hand-off still fails, copy tells the member to use the home-screen icon.
+  Do not bring back a primary **Open in app** button that promises automatic
+  hand-off from Chrome — it misleads members when the platform cannot deliver.
 - **iOS:** Safari cannot switch to a home-screen app, so there is **no** fake
   open button — just honest numbered steps to tap the home-screen icon.
 - **Don't remind me again:** permanent dismiss (per account, localStorage).
-- **Open in app:** snoozes the dock for the current visit only; it returns on
-  `pageshow` / tab visibility when the member is back in the browser.
+- **Got it / Try open in app:** snoozes the dock for the current visit only; it
+  returns on `pageshow` / tab visibility when the member is back in the browser.
 
 We only show it once install is inferred (`isPwaLikelyInstalledForOpenPrompt`):
 known-installed, push enabled, a dismissed iOS install prompt, or Android never

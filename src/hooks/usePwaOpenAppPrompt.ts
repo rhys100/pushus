@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { useLocation } from 'react-router-dom'
 import {
-  detectPwaInstalledViaBrowserApi,
+  getInstalledWebAppRelatedApp,
   hasGetInstalledRelatedAppsSupport,
+  readWebApkPackageId,
   syncPwaKnownInstalledFromDisplayMode,
 } from '@/lib/pwaInstalled'
 import {
@@ -57,6 +58,7 @@ export function usePwaOpenAppPrompt() {
     syncPwaKnownInstalledFromDisplayMode()
     return isPwaKnownInstalled()
   })
+  const [webApkPackage, setWebApkPackage] = useState<string | null>(null)
   const platform = useMemo(getPlatform, [])
   const pushEnabled = prefs?.push_enabled ?? false
   useSyncExternalStore(
@@ -111,16 +113,24 @@ export function usePwaOpenAppPrompt() {
     const knownInstalled = syncPwaKnownInstalledFromDisplayMode()
     setPwaKnownInstalled(knownInstalled)
 
-    if (knownInstalled || !hasGetInstalledRelatedAppsSupport()) {
+    if (!hasGetInstalledRelatedAppsSupport()) {
       return
     }
 
     let cancelled = false
 
-    void detectPwaInstalledViaBrowserApi().then((installed) => {
-      if (!cancelled && installed) {
-        setPwaKnownInstalled(true)
+    void getInstalledWebAppRelatedApp().then((relatedApp) => {
+      if (cancelled) {
+        return
       }
+
+      if (!relatedApp) {
+        return
+      }
+
+      markPwaKnownInstalled()
+      setPwaKnownInstalled(true)
+      setWebApkPackage(readWebApkPackageId(relatedApp))
     })
 
     return () => {
@@ -227,6 +237,7 @@ export function usePwaOpenAppPrompt() {
     visible,
     confidence,
     platform,
+    webApkPackage,
     dismissPermanently,
     acknowledgeOpenInApp,
     pathname: location.pathname,

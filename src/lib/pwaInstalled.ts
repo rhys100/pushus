@@ -1,10 +1,11 @@
 import { isStandalonePwa } from '@/lib/pwa'
 import { isPwaKnownInstalled, markPwaKnownInstalled } from '@/lib/storage'
 
-type InstalledRelatedApp = {
+export type InstalledRelatedApp = {
   id?: string
   platform?: string
   url?: string
+  version?: string
 }
 
 type NavigatorWithInstalledRelatedApps = Navigator & {
@@ -29,9 +30,17 @@ export function hasGetInstalledRelatedAppsSupport(): boolean {
     'function'
 }
 
-export async function detectPwaInstalledViaBrowserApi(): Promise<boolean> {
+function isInstalledWebApp(app: InstalledRelatedApp): boolean {
+  return (
+    app.platform === 'webapp' ||
+    app.id === '/' ||
+    (typeof app.url === 'string' && app.url.includes('manifest.webmanifest'))
+  )
+}
+
+export async function getInstalledWebAppRelatedApp(): Promise<InstalledRelatedApp | null> {
   if (!hasGetInstalledRelatedAppsSupport()) {
-    return false
+    return null
   }
 
   const getInstalledRelatedApps = (navigator as NavigatorWithInstalledRelatedApps)
@@ -39,19 +48,28 @@ export async function detectPwaInstalledViaBrowserApi(): Promise<boolean> {
 
   try {
     const relatedApps = await getInstalledRelatedApps()
-    const installed = relatedApps.some(
-      (app) =>
-        app.platform === 'webapp' ||
-        app.id === '/' ||
-        (typeof app.url === 'string' && app.url.includes('manifest.webmanifest')),
-    )
-
-    if (installed) {
-      markPwaKnownInstalled()
-    }
-
-    return installed
+    return relatedApps.find(isInstalledWebApp) ?? null
   } catch {
+    return null
+  }
+}
+
+/** WebAPK package ids look like org.chromium.webapk.* when Chrome exposes them. */
+export function readWebApkPackageId(relatedApp: InstalledRelatedApp | null | undefined): string | null {
+  if (!relatedApp?.id?.startsWith('org.chromium.webapk')) {
+    return null
+  }
+
+  return relatedApp.id
+}
+
+export async function detectPwaInstalledViaBrowserApi(): Promise<boolean> {
+  const relatedApp = await getInstalledWebAppRelatedApp()
+
+  if (!relatedApp) {
     return false
   }
+
+  markPwaKnownInstalled()
+  return true
 }
