@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { buildWebAppManifestForOrigin } from '../../functions/_shared/webAppManifest.ts'
 
 type ManifestIcon = {
   src?: string
@@ -44,14 +45,22 @@ describe('PWA manifest', () => {
       manifest.display,
     )
     expect(manifest.prefer_related_applications).toBe(false)
-    expect(manifest.related_applications).toEqual([
+    expect(manifest.related_applications?.[0]).toMatchObject({
+      platform: 'webapp',
+      id: '/',
+    })
+    expect(manifest.launch_handler).toEqual({ client_mode: 'navigate-new' })
+  })
+
+  it('serves absolute related_applications URLs at runtime via edge manifest handlers', () => {
+    const deployed = buildWebAppManifestForOrigin('https://www.pushus.app')
+    expect(deployed.related_applications).toEqual([
       {
         platform: 'webapp',
-        url: '/manifest.json',
+        url: 'https://www.pushus.app/manifest.json',
         id: '/',
       },
     ])
-    expect(manifest.launch_handler).toEqual({ client_mode: 'navigate-new' })
   })
 
   it('keeps manifest.webmanifest aligned with manifest.json', () => {

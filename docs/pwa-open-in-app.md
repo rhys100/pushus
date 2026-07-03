@@ -30,7 +30,8 @@ This is easy to break without noticing, so it has a guard test and this doc.
 
   Install detection uses `navigator.getInstalledRelatedApps()` (Android Chrome
   84+). The manifest declares `related_applications` with `platform: "webapp"`
-  and `url: "/manifest.json"`.
+  and an **absolute** manifest URL matching the page origin (served dynamically
+  from `functions/manifest.json.ts` so apex and www both work).
 - **iOS:** Safari cannot detect or open the home-screen app programmatically —
   honest numbered home-screen steps only.
 - **Standalone:** suppress the dock when `display-mode: standalone`.

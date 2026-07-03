@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-03 (open in app detection fix)
+
+- **Fixed:** Open in app dock missing after install — dynamic manifest with absolute `related_applications` URL for `getInstalledRelatedApps()`.
+- **Fixed:** WebAPK id matching and re-check on route change / `appinstalled`.
+
 ### 2026-07-03 (PWA push UI bug fixes)
 
 - **Fixed:** Duplicate red install error on Settings when enabling push without PWA.

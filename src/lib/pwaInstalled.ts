@@ -31,8 +31,15 @@ export function hasGetInstalledRelatedAppsSupport(): boolean {
 }
 
 function isInstalledWebApp(app: InstalledRelatedApp): boolean {
+  if (app.platform === 'webapp') {
+    return true
+  }
+
+  if (typeof app.id === 'string' && app.id.startsWith('org.chromium.webapk')) {
+    return true
+  }
+
   return (
-    app.platform === 'webapp' ||
     app.id === '/' ||
     (typeof app.url === 'string' &&
       (app.url.includes('manifest.json') || app.url.includes('manifest.webmanifest')))
