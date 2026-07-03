@@ -22,6 +22,7 @@ import type { ReminderIntervalHours } from '@/lib/notificationEligibility'
 import { useNotificationPreferences } from '@/providers/NotificationPreferencesProvider'
 import { getErrorMessage } from '@/lib/errors'
 import { getPwaInstallHintForPush } from '@/lib/pwa'
+import { openInstalledPwa } from '@/lib/pwaOpenInApp'
 import { readPwaInstallPlatform } from '@/lib/pwaInstallStatus'
 
 function hourOptions() {
@@ -73,6 +74,7 @@ export function SettingsPage() {
     disablePush,
     pushSupport,
     pushPermission,
+    installStatus,
   } = useNotificationPreferences()
 
   const [localError, setLocalError] = useState<string | null>(null)
@@ -87,6 +89,7 @@ export function SettingsPage() {
   const pushPlatform = readPwaInstallPlatform()
   const pushReady = pushSupport === 'supported'
   const needsPwaInstall = pushSupport === 'needs_pwa_install'
+  const canOpenInstalledApp = installStatus?.isOpenAppEligible ?? false
   const pushUnavailable =
     pushSupport === 'unsupported' || pushSupport === 'missing_vapid_key'
   const displayError = localError ?? prefsError
@@ -148,6 +151,7 @@ export function SettingsPage() {
 
   function pushButtonLabel(): string {
     if (prefs?.push_enabled) return 'Turn off'
+    if (needsPwaInstall && canOpenInstalledApp) return 'Open in app'
     if (needsPwaInstall) return 'Install app to enable'
     if (pushPermission === 'granted') return 'Enable reminders'
     if (pushPermission === 'denied') return 'Blocked'
@@ -159,6 +163,11 @@ export function SettingsPage() {
 
     if (prefs?.push_enabled) {
       await disablePush()
+      return
+    }
+
+    if (needsPwaInstall && canOpenInstalledApp) {
+      openInstalledPwa(location.pathname, window.location.origin)
       return
     }
 
@@ -489,7 +498,9 @@ export function SettingsPage() {
               <div className="space-y-3">
                 {needsPwaInstall ? (
                   <p className={cn(noticeInlineClass('accent'), 'text-text-muted')}>
-                    {getPwaInstallHintForPush(pushPlatform)}
+                    {canOpenInstalledApp
+                      ? 'Reminders only work in the installed home-screen app. Tap Open in app, then turn on reminders there.'
+                      : getPwaInstallHintForPush(pushPlatform)}
                   </p>
                 ) : null}
                 <div className="flex items-center justify-between gap-3">

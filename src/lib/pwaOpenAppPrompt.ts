@@ -36,6 +36,7 @@ export type PwaOpenAppPromptVisibilityInput = {
   appAccessAllowed: boolean
   isStandalone: boolean
   pwaKnownInstalled: boolean
+  isOpenAppEligible: boolean
   installPromptDismissed: boolean
   pushEnabled: boolean
   androidInstallPromptUnavailable: boolean
@@ -45,9 +46,9 @@ export type PwaOpenAppPromptVisibilityInput = {
 }
 
 export function isPwaLikelyInstalledForOpenPrompt(input: {
-  pwaKnownInstalled: boolean
+  isOpenAppEligible: boolean
 }): boolean {
-  return input.pwaKnownInstalled
+  return input.isOpenAppEligible
 }
 
 export function shouldShowPwaOpenAppPrompt(input: PwaOpenAppPromptVisibilityInput): boolean {
@@ -73,7 +74,7 @@ export function shouldShowPwaOpenAppPrompt(input: PwaOpenAppPromptVisibilityInpu
 
   if (
     !isPwaLikelyInstalledForOpenPrompt({
-      pwaKnownInstalled: input.pwaKnownInstalled,
+      isOpenAppEligible: input.isOpenAppEligible,
     })
   ) {
     return false

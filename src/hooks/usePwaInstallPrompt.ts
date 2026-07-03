@@ -4,7 +4,7 @@ import {
   dismissPwaInstallPrompt,
   isPwaInstallPromptDismissed,
   isPwaKnownInstalled,
-  markPwaKnownInstalled,
+  markPwaStandaloneProof,
 } from '@/lib/storage'
 import {
   getPwaInstallPlatform,
@@ -78,6 +78,7 @@ export function usePwaInstallPrompt() {
     syncPwaKnownInstalledFromDisplayMode()
     return isPwaKnownInstalled()
   })
+  const [isOpenAppEligible, setIsOpenAppEligible] = useState(false)
   const [promptDismissed, setPromptDismissed] = useState(false)
   const platform = useMemo(getPlatform, [])
   useSyncExternalStore(
@@ -104,7 +105,8 @@ export function usePwaInstallPrompt() {
 
   useEffect(() => {
     void refreshPwaInstallStatus().then((status) => {
-      setPwaKnownInstalled(status.isInstalled)
+      setPwaKnownInstalled(status.isInstalledForPush || status.isOpenAppEligible)
+      setIsOpenAppEligible(status.isOpenAppEligible)
     })
 
     const handleVisibilityChange = () => {
@@ -113,7 +115,8 @@ export function usePwaInstallPrompt() {
       }
 
       void refreshPwaInstallStatus().then((status) => {
-        setPwaKnownInstalled(status.isInstalled)
+        setPwaKnownInstalled(status.isInstalledForPush || status.isOpenAppEligible)
+        setIsOpenAppEligible(status.isOpenAppEligible)
       })
     }
 
@@ -129,8 +132,9 @@ export function usePwaInstallPrompt() {
     }
 
     const handleAppInstalled = () => {
-      markPwaKnownInstalled()
+      markPwaStandaloneProof()
       setPwaKnownInstalled(true)
+      setIsOpenAppEligible(true)
       setIsInstalled(true)
       setDeferredPrompt(null)
     }
@@ -174,6 +178,7 @@ export function usePwaInstallPrompt() {
       installPromptCheckComplete,
       isInstalled,
       pwaKnownInstalled,
+      isOpenAppEligible,
       promptDismissed,
       platform,
     })
@@ -189,6 +194,7 @@ export function usePwaInstallPrompt() {
     installPromptCheckComplete,
     isInstalled,
     pwaKnownInstalled,
+    isOpenAppEligible,
     promptDismissed,
     platform,
   ])
@@ -221,8 +227,9 @@ export function usePwaInstallPrompt() {
       setDeferredPrompt(null)
 
       if (choice.outcome === 'accepted') {
-        markPwaKnownInstalled()
+        markPwaStandaloneProof()
         setPwaKnownInstalled(true)
+        setIsOpenAppEligible(true)
         setIsInstalled(true)
       } else {
         dismiss()

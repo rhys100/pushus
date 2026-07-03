@@ -15,6 +15,7 @@ const baseInput = {
   installPromptCheckComplete: true,
   isInstalled: false,
   pwaKnownInstalled: false,
+  isOpenAppEligible: false,
   promptDismissed: false,
   platform: 'android' as const,
 }
@@ -84,6 +85,10 @@ describe('PWA install prompt', () => {
 
   it('hides outside Android and iOS', () => {
     expect(shouldShowPwaInstallPrompt({ ...baseInput, platform: 'other' })).toBe(false)
+  })
+
+  it('hides when the open-app prompt should take over', () => {
+    expect(shouldShowPwaInstallPrompt({ ...baseInput, isOpenAppEligible: true })).toBe(false)
   })
 
   it('hides when already installed or dismissed', () => {

@@ -6,6 +6,7 @@ const PWA_INSTALL_PROMPT_DISMISSED_PREFIX = 'pushus-pwa-install-prompt-dismissed
 const PWA_OPEN_APP_PROMPT_DISMISSED_PREFIX = 'pushus-pwa-open-app-never-remind-v2'
 const PWA_OPEN_APP_PROMPT_SNOOZED_SESSION_PREFIX = 'pushus-pwa-open-app-prompt-snoozed'
 const PWA_KNOWN_INSTALLED_KEY = 'pushus-pwa-known-installed'
+const PWA_STANDALONE_PROOF_KEY = 'pushus-pwa-standalone-proof'
 
 export function getPendingInviteCode(): string | null {
   try {
@@ -120,9 +121,36 @@ export function markPwaKnownInstalled(): void {
   }
 }
 
+/** Set when the member opens PushUS in standalone or we confirm install via the browser API. */
+export function markPwaStandaloneProof(): void {
+  try {
+    localStorage.setItem(PWA_STANDALONE_PROOF_KEY, String(Date.now()))
+    markPwaKnownInstalled()
+  } catch {
+    // ignore
+  }
+}
+
+export function hasPwaStandaloneProof(): boolean {
+  try {
+    return localStorage.getItem(PWA_STANDALONE_PROOF_KEY) != null
+  } catch {
+    return false
+  }
+}
+
 export function clearPwaKnownInstalled(): void {
   try {
     localStorage.removeItem(PWA_KNOWN_INSTALLED_KEY)
+  } catch {
+    // ignore
+  }
+}
+
+export function clearPwaStandaloneProof(): void {
+  try {
+    localStorage.removeItem(PWA_STANDALONE_PROOF_KEY)
+    clearPwaKnownInstalled()
   } catch {
     // ignore
   }
