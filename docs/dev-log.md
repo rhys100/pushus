@@ -26,6 +26,12 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-03 (Android open in app via window.open)
+
+- **Fixed:** `openInstalledPwa()` uses `window.open(inScopeUrl, '_blank', 'noopener,noreferrer')` — no location.assign or intent URLs.
+- **Manifest:** added `manifest.json`, `start_url` → `/today?source=pwa`, `related_applications.url` → `/manifest.json`, index.html manifest link updated.
+- **UI:** Android dock primary button **Open in app** restored; iOS keeps home-screen steps only.
+
 ### 2026-07-03 (open in app honest Android UX)
 
 - **Fixed:** Open in app flash/reload — Chrome cannot hand off from an in-tab session. Android dock now prioritises home-screen steps; Try open in app anyway uses intent without browser fallback.

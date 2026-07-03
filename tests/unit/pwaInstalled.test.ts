@@ -53,7 +53,7 @@ describe('PWA installed detection', () => {
   it('detects installed webapp via getInstalledRelatedApps', async () => {
     vi.stubGlobal('navigator', {
       getInstalledRelatedApps: vi.fn().mockResolvedValue([
-        { platform: 'webapp', url: '/manifest.webmanifest', id: '/' },
+        { platform: 'webapp', url: '/manifest.json', id: '/' },
       ]),
     })
 
@@ -68,7 +68,7 @@ describe('PWA installed detection', () => {
         {
           platform: 'webapp',
           id: 'org.chromium.webapk.abc123_v2',
-          url: '/manifest.webmanifest',
+          url: '/manifest.json',
         },
       ]),
     })

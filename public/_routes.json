@@ -5,6 +5,7 @@
     "/assets/*",
     "/favicon.svg",
     "/icons.svg",
+    "/manifest.json",
     "/manifest.webmanifest",
     "/pwa/*",
     "/sw.js",

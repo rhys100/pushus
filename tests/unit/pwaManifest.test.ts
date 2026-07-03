@@ -24,6 +24,9 @@ type WebAppManifest = {
 
 const root = path.resolve(__dirname, '../..')
 const manifest = JSON.parse(
+  readFileSync(path.join(root, 'public/manifest.json'), 'utf8'),
+) as WebAppManifest
+const legacyManifest = JSON.parse(
   readFileSync(path.join(root, 'public/manifest.webmanifest'), 'utf8'),
 ) as WebAppManifest
 const indexHtml = readFileSync(path.join(root, 'index.html'), 'utf8')
@@ -35,7 +38,7 @@ function iconsForSize(size: string): ManifestIcon[] {
 describe('PWA manifest', () => {
   it('declares Chrome Android installability fields', () => {
     expect(manifest.name || manifest.short_name).toBeTruthy()
-    expect(manifest.start_url).toBeTruthy()
+    expect(manifest.start_url).toBe('/today?source=pwa')
     expect(manifest.scope).toBe('/')
     expect(['fullscreen', 'standalone', 'minimal-ui', 'window-controls-overlay']).toContain(
       manifest.display,
@@ -44,17 +47,22 @@ describe('PWA manifest', () => {
     expect(manifest.related_applications).toEqual([
       {
         platform: 'webapp',
-        url: '/manifest.webmanifest',
+        url: '/manifest.json',
         id: '/',
       },
     ])
     expect(manifest.launch_handler).toEqual({ client_mode: 'navigate-new' })
   })
 
-  // The "Open in app" button navigates to web+pushus://open; the installed PWA
-  // must register that scheme as a protocol handler for Chrome to hand off to
-  // the standalone app. The %s placeholder is required by the manifest spec.
-  it('registers the custom protocol handler used by Open in app', () => {
+  it('keeps manifest.webmanifest aligned with manifest.json', () => {
+    expect(legacyManifest).toEqual(manifest)
+  })
+
+  it('links manifest.json from index.html', () => {
+    expect(indexHtml).toContain('rel="manifest" href="/manifest.json"')
+  })
+
+  it('registers the custom protocol handler for desktop Chrome', () => {
     const handler = manifest.protocol_handlers?.find((h) => h.protocol === 'web+pushus')
     expect(handler).toBeTruthy()
     expect(handler?.url).toContain('%s')

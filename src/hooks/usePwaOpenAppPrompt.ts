@@ -3,7 +3,6 @@ import { useLocation } from 'react-router-dom'
 import {
   getInstalledWebAppRelatedApp,
   hasGetInstalledRelatedAppsSupport,
-  readWebApkPackageId,
   syncPwaKnownInstalledFromDisplayMode,
 } from '@/lib/pwaInstalled'
 import {
@@ -58,7 +57,6 @@ export function usePwaOpenAppPrompt() {
     syncPwaKnownInstalledFromDisplayMode()
     return isPwaKnownInstalled()
   })
-  const [webApkPackage, setWebApkPackage] = useState<string | null>(null)
   const platform = useMemo(getPlatform, [])
   const pushEnabled = prefs?.push_enabled ?? false
   useSyncExternalStore(
@@ -130,7 +128,6 @@ export function usePwaOpenAppPrompt() {
 
       markPwaKnownInstalled()
       setPwaKnownInstalled(true)
-      setWebApkPackage(readWebApkPackageId(relatedApp))
     })
 
     return () => {
@@ -237,7 +234,6 @@ export function usePwaOpenAppPrompt() {
     visible,
     confidence,
     platform,
-    webApkPackage,
     dismissPermanently,
     acknowledgeOpenInApp,
     pathname: location.pathname,
