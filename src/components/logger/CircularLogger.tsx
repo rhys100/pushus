@@ -6,10 +6,12 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type CSSProperties,
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 import { cn } from '@/lib/cn'
+import { completedLapColorForCount, LAP_COLORS, lapIndexForCount } from '@/lib/loggerLaps'
 import {
   angleToTotalCount,
   CIRCULAR_COUNTER,
@@ -58,9 +60,16 @@ export type CircularLoggerHandle = {
   unwind: () => void
 }
 
-/** Trail behind the handle fades out over this arc span — 1/5 of the circle. */
-const TRAIL_DEGREES = 72
-const TRAIL_SEGMENTS = 18
+/** Hold the ring centre this long to trigger the long-press action (nose mode). */
+const CENTER_HOLD_MS = 2000
+const HOLD_RADIUS = 70
+const HOLD_CIRCUMFERENCE = 2 * Math.PI * HOLD_RADIUS
+/** Comet head/tail styling for the current-lap snake. */
+const HEAD_GLOW_DEGREES = 54
+const HEAD_HIGHLIGHT_DEGREES = 14
+/** Teardrop comet: stroke tapers from a fat head down to a thin wisp at the tail. */
+const TRAIL_HEAD_WIDTH = RING_STROKE - 1
+const TRAIL_TAIL_WIDTH = 4
 
 /** Mecha lock-in after the unwind lands on zero: expand → settle → DOOOSH. */
 type LockInPhase = 'expand' | 'settle' | 'doosh' | null
@@ -74,9 +83,14 @@ export type CircularLoggerProps = {
   onCanBankChange?: (canBank: boolean) => void
   onBank?: () => void
   onDraggingChange?: (dragging: boolean) => void
+  /** Fired when the ring centre is held for CENTER_HOLD_MS (opens nose mode). */
+  onLongPressCenter?: () => void
   disabled?: boolean
   showDragHint?: boolean
   onHintDismiss?: () => void
+  /** Show the dismissible "hold centre for nose reps" teaching hint below the ring. */
+  showNoseHint?: boolean
+  onNoseHintDismiss?: () => void
   className?: string
 }
 
@@ -128,9 +142,12 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
       onCanBankChange,
       onBank,
       onDraggingChange,
+      onLongPressCenter,
       disabled = false,
       showDragHint = false,
       onHintDismiss,
+      showNoseHint = false,
+      onNoseHintDismiss,
       className,
     },
     ref,
@@ -162,6 +179,9 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
     const lockInTimeoutsRef = useRef<number[]>([])
     const previousCountRef = useRef(count)
     const centerTapRef = useRef<{ x: number; y: number } | null>(null)
+    const centerHoldTimerRef = useRef(0)
+    const centerHoldFiredRef = useRef(false)
+    const [centerHolding, setCenterHolding] = useState(false)
 
     angleRef.current = angle
     disabledRef.current = disabled
@@ -288,6 +308,10 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
         for (const timeoutId of lockInTimeoutsRef.current) {
           window.clearTimeout(timeoutId)
         }
+
+        if (centerHoldTimerRef.current) {
+          window.clearTimeout(centerHoldTimerRef.current)
+        }
       }
     }, [])
 
@@ -365,34 +389,63 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
     const showZeroHint = showDragHint && displayCount === 0 && !disabled && !isDragging
     const showHandle = !disabled
 
-    // Comet trail: the arc fades out over the trailing 1/5 of the circle.
-    // Past the first lap the tail may wrap behind 12 o'clock; within the
-    // first lap it clamps at the start.
-    const canWrap = totalAngle > CIRCULAR_COUNTER.degreesPerRevolution
-    const trailSegments: { d: string; opacity: number; head: boolean }[] = []
+    // Lap fill: each lap (10 reps) is one revolution. The current lap draws as
+    // a glowing comet "snake" — bright rounded head at the handle, tapering and
+    // fading back along the arc to the lap start — that closes into a full ring
+    // at 10. The previously completed lap sits underneath as a solid base ring.
+    // Colours ramp gentle → hot across the 10 laps (see src/lib/loggerLaps.ts).
+    const lapIndex = lapIndexForCount(displayCount)
+    const currentLapColor = LAP_COLORS[Math.max(0, Math.min(LAP_COLORS.length - 1, lapIndex))]
+    const baseLapColor = completedLapColorForCount(displayCount)
+    const isFullLap = headAngle >= CIRCULAR_COUNTER.degreesPerRevolution - 0.001
 
-    if (headAngle > 0) {
-      const segmentSpan = TRAIL_DEGREES / TRAIL_SEGMENTS
+    // Comet trail: many short segments from the head backwards. Both the stroke
+    // width and the opacity taper toward the lap start, giving a teardrop comet
+    // — a fat bright head that thins into a faint wisp — rather than a flat ring.
+    const trailSegments: { d: string; opacity: number; width: number; head: boolean }[] = []
 
-      for (let i = 0; i < TRAIL_SEGMENTS; i += 1) {
-        const end = headAngle - segmentSpan * i
-        let start = end - segmentSpan - 0.6
+    if (headAngle > 0 && !isFullLap) {
+      const segments = Math.max(6, Math.min(72, Math.ceil(headAngle / 3.5)))
+      const span = headAngle / segments
 
-        if (!canWrap) {
-          if (end <= 0) {
-            break
-          }
+      for (let i = 0; i < segments; i += 1) {
+        const end = headAngle - span * i
+        const start = Math.max(0, end - span - 0.9)
 
-          start = Math.max(0, start)
+        if (end <= 0.001) {
+          break
         }
 
+        const t = segments <= 1 ? 0 : i / (segments - 1)
         trailSegments.push({
           d: describeArc(RING_CENTER, RING_CENTER, RING_RADIUS, start, end),
-          opacity: 1 - i / TRAIL_SEGMENTS,
+          opacity: Math.max(0.04, Math.pow(1 - t, 1.3)),
+          width: TRAIL_HEAD_WIDTH - (TRAIL_HEAD_WIDTH - TRAIL_TAIL_WIDTH) * t,
           head: i === 0,
         })
       }
     }
+
+    const headGlowPath =
+      headAngle > 4 && !isFullLap
+        ? describeArc(
+            RING_CENTER,
+            RING_CENTER,
+            RING_RADIUS,
+            Math.max(0, headAngle - HEAD_GLOW_DEGREES),
+            headAngle,
+          )
+        : null
+    const headHighlightPath =
+      headAngle > 3 && !isFullLap
+        ? describeArc(
+            RING_CENTER,
+            RING_CENTER,
+            RING_RADIUS,
+            Math.max(0, headAngle - HEAD_HIGHLIGHT_DEGREES),
+            headAngle,
+          )
+        : null
 
     const maybePulseHaptic = useCallback((nextCount: number) => {
       if (nextCount > lastHapticCountRef.current) {
@@ -547,6 +600,15 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
           lastPointerAngle: ringAngle,
           rawAngle: startRaw,
         }
+
+        // A press that started on the centre can slide into a ring drag; cancel
+        // the pending 2s hold so nose mode never opens mid-logging.
+        if (centerHoldTimerRef.current) {
+          window.clearTimeout(centerHoldTimerRef.current)
+          centerHoldTimerRef.current = 0
+        }
+        setCenterHolding(false)
+
         setIsDragging(true)
         onHintDismiss?.()
       },
@@ -698,6 +760,15 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
       }
     }
 
+    const clearCenterHold = () => {
+      if (centerHoldTimerRef.current) {
+        window.clearTimeout(centerHoldTimerRef.current)
+        centerHoldTimerRef.current = 0
+      }
+
+      setCenterHolding(false)
+    }
+
     const handleCenterPointerDown = (event: ReactPointerEvent<SVGCircleElement>) => {
       if (disabled) {
         return
@@ -706,10 +777,46 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
       event.preventDefault()
       event.stopPropagation()
       centerTapRef.current = { x: event.clientX, y: event.clientY }
+      centerHoldFiredRef.current = false
+
+      // Hold the centre for 2s to open nose mode; a quick tap still adds one rep.
+      if (onLongPressCenter && !unwindingRef.current) {
+        setCenterHolding(true)
+        centerHoldTimerRef.current = window.setTimeout(() => {
+          centerHoldTimerRef.current = 0
+          centerHoldFiredRef.current = true
+          setCenterHolding(false)
+
+          if (isRepHapticSupported()) {
+            navigator.vibrate([30, 40, 30])
+          }
+
+          onLongPressCenter()
+        }, CENTER_HOLD_MS)
+      }
+    }
+
+    const handleCenterPointerMove = (event: ReactPointerEvent<SVGCircleElement>) => {
+      const start = centerTapRef.current
+
+      if (!start || centerHoldTimerRef.current === 0) {
+        return
+      }
+
+      const dx = event.clientX - start.x
+      const dy = event.clientY - start.y
+
+      // Moving off the centre (i.e. starting a drag) cancels the hold.
+      if (dx * dx + dy * dy > 196) {
+        clearCenterHold()
+      }
     }
 
     const handleCenterPointerUp = (event: ReactPointerEvent<SVGCircleElement>) => {
-      if (disabled || isDragging) {
+      const holdFired = centerHoldFiredRef.current
+      clearCenterHold()
+
+      if (disabled || isDragging || holdFired) {
         centerTapRef.current = null
         return
       }
@@ -736,7 +843,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
     return (
       <div
         ref={ringContainerRef}
-        className={cn('flex justify-center px-4 py-1', className)}
+        className={cn('flex flex-col items-center px-4 py-1', className)}
         style={{ touchAction: isDragging ? 'none' : undefined }}
       >
         <div
@@ -773,28 +880,9 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
             onKeyDown={handleKeyDown}
           >
             <defs>
-              <filter id="logger-glow" x="-50%" y="-50%" width="200%" height="200%">
-                <feDropShadow
-                  dx="0"
-                  dy="0"
-                  stdDeviation="10"
-                  floodColor="var(--color-accent)"
-                  floodOpacity="0.65"
-                />
+              <filter id="logger-soft-blur" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="6" />
               </filter>
-              <filter id="logger-handle-glow" x="-100%" y="-100%" width="300%" height="300%">
-                <feDropShadow
-                  dx="0"
-                  dy="0"
-                  stdDeviation="8"
-                  floodColor="var(--color-accent)"
-                  floodOpacity="0.8"
-                />
-              </filter>
-              <linearGradient id="logger-arc-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="var(--color-accent-hot)" />
-                <stop offset="100%" stopColor="var(--color-accent-deep)" />
-              </linearGradient>
             </defs>
 
             <circle
@@ -846,21 +934,75 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
               )
             })}
 
-            <g
-              pointerEvents="none"
-              filter={isDragging || isUnwinding ? undefined : 'url(#logger-glow)'}
-            >
-              {trailSegments.map((segment, index) => (
-                <path
-                  key={index}
-                  d={segment.d}
+            <g pointerEvents="none">
+              {baseLapColor ? (
+                <circle
+                  cx={RING_CENTER}
+                  cy={RING_CENTER}
+                  r={RING_RADIUS}
                   fill="none"
-                  stroke="url(#logger-arc-gradient)"
-                  strokeWidth={RING_STROKE - 4}
-                  strokeLinecap={segment.head ? 'round' : 'butt'}
-                  opacity={segment.opacity}
+                  stroke={baseLapColor}
+                  strokeWidth={RING_STROKE - 6}
+                  opacity={0.85}
                 />
-              ))}
+              ) : null}
+
+              {isFullLap ? (
+                <>
+                  <circle
+                    cx={RING_CENTER}
+                    cy={RING_CENTER}
+                    r={RING_RADIUS}
+                    fill="none"
+                    stroke={currentLapColor}
+                    strokeWidth={RING_STROKE + 2}
+                    opacity={0.4}
+                    filter="url(#logger-soft-blur)"
+                  />
+                  <circle
+                    cx={RING_CENTER}
+                    cy={RING_CENTER}
+                    r={RING_RADIUS}
+                    fill="none"
+                    stroke={currentLapColor}
+                    strokeWidth={RING_STROKE - 4}
+                  />
+                </>
+              ) : (
+                <>
+                  {headGlowPath ? (
+                    <path
+                      d={headGlowPath}
+                      fill="none"
+                      stroke={currentLapColor}
+                      strokeWidth={RING_STROKE + 8}
+                      strokeLinecap="round"
+                      opacity={0.55}
+                      filter="url(#logger-soft-blur)"
+                    />
+                  ) : null}
+                  {trailSegments.map((segment, index) => (
+                    <path
+                      key={index}
+                      d={segment.d}
+                      fill="none"
+                      stroke={currentLapColor}
+                      strokeWidth={segment.width}
+                      strokeLinecap="round"
+                      opacity={segment.opacity}
+                    />
+                  ))}
+                  {headHighlightPath ? (
+                    <path
+                      d={headHighlightPath}
+                      fill="none"
+                      stroke="rgba(255,255,255,0.6)"
+                      strokeWidth={RING_STROKE - 14}
+                      strokeLinecap="round"
+                    />
+                  ) : null}
+                </>
+              )}
             </g>
 
             <circle
@@ -889,11 +1031,35 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
               className={disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
               aria-label="Add one rep"
               onPointerDown={handleCenterPointerDown}
+              onPointerMove={handleCenterPointerMove}
               onPointerUp={handleCenterPointerUp}
               onPointerCancel={() => {
+                clearCenterHold()
                 centerTapRef.current = null
               }}
             />
+
+            {centerHolding ? (
+              <circle
+                cx={RING_CENTER}
+                cy={RING_CENTER}
+                r={HOLD_RADIUS}
+                fill="none"
+                stroke="var(--color-accent)"
+                strokeWidth={4}
+                strokeLinecap="round"
+                className="logger-center-hold"
+                style={
+                  {
+                    strokeDasharray: HOLD_CIRCUMFERENCE,
+                    '--hold-circ': HOLD_CIRCUMFERENCE,
+                  } as CSSProperties
+                }
+                transform={`rotate(-90 ${RING_CENTER} ${RING_CENTER})`}
+                pointerEvents="none"
+                aria-hidden="true"
+              />
+            ) : null}
 
             {showHandle ? (
               <>
@@ -924,11 +1090,18 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
                   <circle
                     cx={handlePoint.x}
                     cy={handlePoint.y}
+                    r={HANDLE_RADIUS + 2}
+                    fill={currentLapColor}
+                    opacity={0.55}
+                    filter="url(#logger-soft-blur)"
+                  />
+                  <circle
+                    cx={handlePoint.x}
+                    cy={handlePoint.y}
                     r={HANDLE_RADIUS}
                     fill="#17171d"
-                    stroke="var(--color-accent)"
+                    stroke={currentLapColor}
                     strokeWidth={3}
-                    filter="url(#logger-handle-glow)"
                   />
                   <circle
                     cx={handlePoint.x}
@@ -942,7 +1115,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
                     cx={handlePoint.x}
                     cy={handlePoint.y}
                     r={5}
-                    fill="var(--color-accent)"
+                    fill={currentLapColor}
                   />
                 </g>
               </>
@@ -1005,8 +1178,35 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
                 </span>
               </>
             ) : null}
+            {centerHolding ? (
+              <span className="mt-3 text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-accent">
+                Keep holding…
+              </span>
+            ) : null}
           </div>
         </div>
+
+        {onLongPressCenter &&
+        showNoseHint &&
+        !isDragging &&
+        !centerHolding &&
+        lockInPhase === null ? (
+          <div className="mt-3 flex flex-col items-center gap-1 text-center">
+            <p className="max-w-[16rem] text-[0.8125rem] leading-snug text-text-secondary">
+              <span className="font-semibold text-text-primary">Nose or chin reps:</span>{' '}
+              hold the centre of the ring for 2 seconds
+            </p>
+            {onNoseHintDismiss ? (
+              <button
+                type="button"
+                onClick={onNoseHintDismiss}
+                className="text-[0.6875rem] font-medium text-text-muted underline decoration-dotted underline-offset-4 transition hover:text-text-secondary"
+              >
+                Don&rsquo;t remind me again
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     )
   },

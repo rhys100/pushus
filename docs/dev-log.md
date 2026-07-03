@@ -26,6 +26,26 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-03 (logger laps, comet snake, nose-hold gesture + hint)
+
+**Changed**
+- Lap-based ring fill: ring fills a full lap every 10 reps; each new lap uses the next colour in a cool → hot palette across 10 laps (up to 100 reps). Palette + lap-index maths in `src/lib/loggerLaps.ts` (unit-tested in `tests/unit/loggerLaps.test.ts`). Completed laps render as a solid base ring under the current lap.
+- Current lap draws as a teardrop comet "snake" — trail segments taper in both stroke width (fat head → thin wisp) and opacity (fades to ~0.04), with a blurred head glow and a white highlight tip. Reworked in `src/components/logger/CircularLogger.tsx` after Rhys feedback that the earlier flat-fade trail read as a solid ring.
+- Nose/chin reps: removed the separate button; now a 2-second hold on the ring centre opens nose-tap mode (`onLongPressCenter`). `TodayPage` layout puts the Bank CTA on top, a compact plan strip beneath, then the ring.
+
+**Added**
+- Dismissible teaching hint under the ring: "Nose or chin reps: hold the centre of the ring for 2 seconds" with a "Don't remind me again" action. Persisted via `useNoseHoldHint` / `pushus.nose-hold-hint-v1` (mirrors the existing `useLoggerDragHint`).
+
+**Fixed**
+- Compact daily plan strip lost the reps-per-set line when the plan info moved under the Bank CTA. `DayProgressCard` (compact) now renders `formatDayTargetSetsDetail()` (e.g. "3 sets of 15") and no longer duplicates "set X of Y" (it was in the headline and appended again). Added a sample plan strip to `/dev/preview` so this is QA-able without a backend.
+- Bugbot high finding: the 2s centre-hold timer could survive a press that started on the centre and slid into a ring drag, firing `onLongPressCenter()` mid-logging. `beginDragAt` now clears the pending hold timer and holding state when any drag starts.
+
+**Tests / checks**
+- `npm run lint` (0 errors), `npx tsc -b`, and `npm run build` all pass. Visual QA on `/dev/preview`: comet at 6 (lap 1) and 14 (lap 2) reps, hint render + dismiss.
+
+**Next**
+- Commit + push Slice B as its own PR (Rhys chose a new PR).
+
 ### 2026-07-03 (open-in-app dock fix + docs)
 
 **Fixed**

@@ -245,6 +245,23 @@
   animation: nose-tap-ripple 550ms var(--ease-out) forwards;
 }
 
+/* Ring-centre hold-to-open (nose mode): a progress ring that fills over 2s. */
+@keyframes logger-center-hold {
+  from {
+    stroke-dashoffset: var(--hold-circ, 440);
+    opacity: 0.15;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+    opacity: 0.85;
+  }
+}
+
+.logger-center-hold {
+  animation: logger-center-hold 2000ms linear forwards;
+}
+
 @keyframes nose-tap-burst {
   0% {
     opacity: 1;
