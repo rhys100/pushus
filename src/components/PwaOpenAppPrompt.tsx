@@ -2,11 +2,10 @@ import { Button } from '@/components/ui'
 import { usePwaOpenAppPrompt } from '@/hooks/usePwaOpenAppPrompt'
 import { cn } from '@/lib/cn'
 import { canTryOpenInInstalledApp, openInstalledPwa } from '@/lib/pwaOpenInApp'
-
-const TAB_NAV_PATHS = ['/leaderboard', '/activity', '/group', '/settings'] as const
+import { pwaOpenAppPromptSitsAboveBottomNav } from '@/lib/pwaOpenAppPrompt'
 
 function promptBottomClass(pathname: string): string {
-  if (TAB_NAV_PATHS.some((path) => pathname.startsWith(path))) {
+  if (pwaOpenAppPromptSitsAboveBottomNav(pathname)) {
     return 'bottom-[var(--bottom-nav-height)]'
   }
 

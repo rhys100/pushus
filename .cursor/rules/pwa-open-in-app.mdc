@@ -1,0 +1,26 @@
+---
+description: Open-in-installed-app prompt invariants (dock must clear the bottom nav)
+globs: src/components/PwaOpenAppPrompt.tsx,src/lib/pwaOpenAppPrompt.ts,src/lib/pwaOpenInApp.ts,src/hooks/usePwaOpenAppPrompt.ts,src/pages/TodayPage.tsx,src/components/ui/BottomNav.tsx
+alwaysApply: false
+---
+
+# Open-in-installed-app prompt
+
+Full doc: [docs/pwa-open-in-app.md](../../docs/pwa-open-in-app.md).
+
+The bottom dock that nudges mobile-browser members to open the installed PWA is
+easy to break silently. Protect these invariants:
+
+- On member tab routes (`/today`, `/leaderboard`, `/activity`, `/group`,
+  `/settings`) a fixed bottom nav is shown. The dock MUST be offset above it via
+  `bottom-[var(--bottom-nav-height)]`, or its buttons render behind the nav and
+  become untappable (the text still shows, so it looks like the button vanished).
+- The source of truth is `PWA_OPEN_APP_PROMPT_BOTTOM_NAV_PATHS` /
+  `pwaOpenAppPromptSitsAboveBottomNav()` in `src/lib/pwaOpenAppPrompt.ts`. Add
+  any new bottom-nav route there — do not hardcode path lists in the component.
+- Android keeps the real **Open in app** intent-URL launch; iOS shows honest
+  home-screen steps with no fake open button.
+
+Before finishing any change to these files, run `npm test` and keep
+`tests/unit/pwaOpenAppPrompt.test.ts` green (it guards dock placement and
+visibility, including on `/today`).

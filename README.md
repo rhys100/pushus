@@ -58,14 +58,17 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 - [x] Direct-drag circular logger (no plus button)
 - [x] One lap = 10 push-ups on the ring
 - [x] Centre tap inside ring to add one rep (hands-free logging)
-- [x] **Bank Push-ups** CTA (appears after ring interaction)
+- [x] **Bank Push-ups** CTA on the Log page (always visible; disabled at 0 reps)
+- [x] Nose-tap mode: fullscreen tap-to-rep logging with your nose or chin, with confirm sound, vibration, and four saved skins (Bricks, Classic, Ripple, Burst)
 - [x] Undo after banking
 - [x] Edit and delete your entries
-- [x] Daily total and progress on the Log screen (progress card above ring)
+- [x] Daily total and progress on the Log screen (progress card below ring)
 - [x] Log daily set planner (bank-about target, set N of M, sets remaining)
 - [x] Reps-in-reserve effort feedback on training-day banks (plan auto-tunes from RIR)
 - [x] Entry audit log foundation
-- [x] Per-rep tick while dragging the ring (stepped-slider haptics via ios-vibrator-pro-max on supporting browsers)
+- [x] Per-rep ratchet tick sound and haptic while dragging (accented at 5 and 10)
+- [x] Bank lock-in ritual: S-curve unwind, ascending trill, and slam with a BANKED stamp
+- [x] Synthesised sound cues via Web Audio (no audio asset files; see docs/audio-spec.md)
 - [x] Handle snap animation on each rep for tactile feedback
 
 ### Social and group
@@ -194,6 +197,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Contributions are AGPL-3.0-only. No CLA.
 | [docs/product-roadmap.md](docs/product-roadmap.md) | Product direction |
 | [docs/product-decisions.md](docs/product-decisions.md) | Locked product decisions |
 | [docs/self-hosting.md](docs/self-hosting.md) | Self-hosting guide |
+| [docs/audio-spec.md](docs/audio-spec.md) | UI sound cue spec for audio production |
 | [docs/privacy.md](docs/privacy.md) | Privacy summary |
 | [docs/security.md](docs/security.md) | Security and RLS |
 | [docs/billing.md](docs/billing.md) | Billing architecture (Cloud) |
