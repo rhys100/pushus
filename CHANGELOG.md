@@ -24,6 +24,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Centre tap on ring:** tap inside the dial to add one rep (hands-free / nose-friendly logging)
 - **iOS PWA support:** home-screen install meta tags, PNG app icons, manifest `id`/`scope`, and in-app guidance when push reminders need Add to Home Screen on iPhone/iPad
 
+### Fixed
+
+- **PWA icons on dark Android:** app icon, home-screen shortcut, and push notification badge now use a flat purple lightning bolt (Resvg-safe) instead of rasterising favicon masks/filters that rendered as an invisible black silhouette on dark backgrounds
+
 ### Changed
 
 - **Visual restyle (chunky glow):** near-black background, hot-orange gradient pill buttons with layered glow, thicker card borders, and bigger radii. Circular logger ring is about twice as thick with rim highlights, a glowing gradient arc, and a knob-style handle

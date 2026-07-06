@@ -4,8 +4,7 @@ export const OG_HEIGHT = 630
 export const DEFAULT_TAGLINE = "Bank push-ups. Push your mates. Don't wreck yourself."
 export const INVITE_SUBTITLE = "You're invited to join on PushUS"
 
-const LOGO_PATH =
-  'M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z'
+import { PUSHUS_LOGO_PATH } from './pushusLogo.ts'
 
 export function escapeXml(text: string): string {
   return text
@@ -85,7 +84,7 @@ function buildOgSvg({ appName, tagline = DEFAULT_TAGLINE, groupName }: OgSvgOpti
   <rect x="80" y="80" width="1040" height="470" rx="32" fill="#141c2e" fill-opacity="0.55" stroke="#1e293b" stroke-width="2"/>
   <rect x="80" y="548" width="220" height="6" rx="3" fill="#ff6b35"/>
   <g transform="translate(536 150) scale(2.2)">
-    <path fill="#863bff" d="${LOGO_PATH}"/>
+    <path fill="#863bff" d="${PUSHUS_LOGO_PATH}"/>
   </g>
   ${renderHeadlineLines(headlineLines, headlineStartY, headlineFontSize + 12, headlineFontSize)}
   <text x="600" y="${isInvite ? 410 : 420}" text-anchor="middle" fill="#94a3b8" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="32" font-weight="500">${escapeXml(subtitle)}</text>
