@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-06 (PWA dark-mode icons)
+
+- **Fixed:** PWA app icon, maskable icon, and push notification badge rasterised favicon masks as black silhouettes on dark Android. Generator now uses flat `PUSHUS_LOGO_PATH` (same as OG images); maskable icons use full-bleed square backgrounds.
+- **Tests:** `tests/unit/pwaAssets.test.ts` guards purple/white raster output.
+
 ### 2026-07-03 (reset open-in-app dock dismiss)
 
 - **Fixed:** Settings link to restore open-in-app bottom dock after "Don't remind me again".
