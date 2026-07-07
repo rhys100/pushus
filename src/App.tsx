@@ -80,6 +80,9 @@ const DevPreviewPage = lazy(() =>
 const TrainingSettingsPage = lazy(() =>
   import('@/pages/TrainingSettingsPage').then((m) => ({ default: m.TrainingSettingsPage })),
 )
+const WhatsNewHistoryPage = lazy(() =>
+  import('@/pages/WhatsNewHistoryPage').then((m) => ({ default: m.WhatsNewHistoryPage })),
+)
 
 function PageLoader() {
   return (
@@ -243,6 +246,16 @@ export default function App() {
             <LazyPage>
               <RequireAuth mode="member">
                 <TrainingSettingsPage />
+              </RequireAuth>
+            </LazyPage>
+          }
+        />
+        <Route
+          path="/settings/whats-new"
+          element={
+            <LazyPage>
+              <RequireAuth mode="member">
+                <WhatsNewHistoryPage />
               </RequireAuth>
             </LazyPage>
           }

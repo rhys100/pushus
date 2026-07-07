@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-07 (what's new history + beta sign-off)
+
+- **Added:** Settings → What's new (`/settings/whats-new`) — full launch history grouped by date with `version` badges (new optional field on `NewsItem`); popup gained a "See past updates" link.
+- **Added:** `WHATS_NEW_SIGNOFF` ("Love Rhys + MK 🧡") on the popup and history page while in beta.
+
 ### 2026-07-07 (what's new popup)
 
 - **Added:** "What's new" modal for feature launches. Static catalog in `src/lib/whatsNew.ts` (newest first, stable ids); per-device seen marker `pushus-news-last-seen:{userId}`; join-date filter so new members never see pre-join launches. Mounted in `TabLayout` (member tabs only, so it can't fire mid-onboarding). Pure logic unit-tested in `tests/unit/whatsNew.test.ts`.

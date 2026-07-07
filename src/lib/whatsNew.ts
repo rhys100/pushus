@@ -10,16 +10,22 @@ export type NewsItem = {
   id: string
   /** Launch date (yyyy-MM-dd) — items older than the member's join date are skipped. */
   date: string
+  /** App version the feature shipped in — shown in the Settings history. */
+  version?: string
   emoji: string
   title: string
   body: string
 }
+
+/** Beta sign-off shown on the popup and the Settings history page. */
+export const WHATS_NEW_SIGNOFF = 'Love Rhys + MK 🧡'
 
 /** Newest first. */
 export const NEWS_ITEMS: NewsItem[] = [
   {
     id: '2026-07-07-custom-activities',
     date: '2026-07-07',
+    version: '1.2.0',
     emoji: '🏋️',
     title: 'Custom activities',
     body: 'Track any exercise just for you — calf raises, pull-ups, leg raises — with optional left/right sides. Add one in Settings, then swap from the pill above the ring.',
@@ -27,6 +33,7 @@ export const NEWS_ITEMS: NewsItem[] = [
   {
     id: '2026-07-07-progress-chart',
     date: '2026-07-07',
+    version: '1.2.0',
     emoji: '📈',
     title: 'My progress chart',
     body: 'The Board now charts your daily and weekly trend for push-ups and custom activities — switch to Best set to watch your max climb over time.',
@@ -34,6 +41,7 @@ export const NEWS_ITEMS: NewsItem[] = [
   {
     id: '2026-07-07-board-privacy',
     date: '2026-07-07',
+    version: '1.2.0',
     emoji: '🔢',
     title: 'Show your rep totals',
     body: 'New Settings toggle: let group mates see your actual reps on the day board instead of a percentage.',
@@ -41,6 +49,7 @@ export const NEWS_ITEMS: NewsItem[] = [
   {
     id: '2026-07-07-plus-ten',
     date: '2026-07-07',
+    version: '1.2.0',
     emoji: '➕',
     title: '+10 quick add',
     body: 'Banking sets of 10? Tap +10 under the ring instead of dragging a full lap.',

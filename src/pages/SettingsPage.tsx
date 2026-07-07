@@ -679,6 +679,11 @@ export function SettingsPage() {
       <GroupAdminSettings />
 
       <Card padding="md" className="space-y-2">
+        <SettingsLinkRow
+          to="/settings/whats-new"
+          title="What's new"
+          description="Feature launches and release notes"
+        />
         <SettingsLinkRow to="/about" title={`About ${appConfig.name}`} />
       </Card>
 

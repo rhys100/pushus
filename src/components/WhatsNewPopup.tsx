@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { getLastSeenNewsId, setLastSeenNewsId } from '@/lib/storage'
 import {
   latestNewsId,
   NEWS_ITEMS,
   unseenNewsItems,
+  WHATS_NEW_SIGNOFF,
   type NewsItem,
 } from '@/lib/whatsNew'
 import { useAuth } from '@/providers/AuthProvider'
@@ -16,6 +18,7 @@ import { useAuth } from '@/providers/AuthProvider'
  */
 export function WhatsNewPopup() {
   const { user, profile } = useAuth()
+  const navigate = useNavigate()
   const [items, setItems] = useState<NewsItem[]>([])
   const [open, setOpen] = useState(false)
 
@@ -112,8 +115,24 @@ export function WhatsNewPopup() {
           ))}
         </ul>
 
-        <Button fullWidth className="mt-5" onClick={dismiss}>
+        <p className="mt-4 text-right text-xs font-medium italic text-text-muted">
+          {WHATS_NEW_SIGNOFF}
+        </p>
+
+        <Button fullWidth className="mt-3" onClick={dismiss}>
           Got it
+        </Button>
+
+        <Button
+          variant="ghost"
+          fullWidth
+          className="mt-1 min-h-9 text-xs text-text-muted"
+          onClick={() => {
+            dismiss()
+            navigate('/settings/whats-new')
+          }}
+        >
+          See past updates
         </Button>
       </div>
     </div>
