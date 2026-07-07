@@ -26,6 +26,12 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-07 (exercise pictogram icons)
+
+- **Changed:** icon picker now leads with 10 exercise figure pictograms (pull-up, squat, sit-up, dip, lunge, plank, calf raise, leg raise, jumping jack, dumbbell curl) — equipment/generic marks moved behind a "More icons" toggle (`PRIMARY_ACTIVITY_ICON_IDS` / `MORE_ACTIVITY_ICON_IDS`). Editing an activity whose icon is in the More set auto-expands it.
+- Verified shapes visually by rasterising the catalog with `@resvg/resvg-js` (same tooling as PWA assets) — fixed the dip figure (arms now angle down to the bars).
+- `vite.config.ts` dev server honours `PORT` so preview tooling can run beside another dev server in this folder.
+
 ### 2026-07-07 (design polish pass 1)
 
 - **UX:** sided activities auto-flip the Left/Right toggle after each bank (left set → right is next); Bank button now names the side ("Bank Calf raises (left)") so mis-side logging is obvious before tapping.
@@ -144,10 +150,10 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 **Changed**
 - Lap-based ring fill: ring fills a full lap every 10 reps; each new lap uses the next colour in a cool → hot palette across 10 laps (up to 100 reps). Palette + lap-index maths in `src/lib/loggerLaps.ts` (unit-tested in `tests/unit/loggerLaps.test.ts`). Completed laps render as a solid base ring under the current lap.
 - Current lap draws as a teardrop comet "snake" — trail segments taper in both stroke width (fat head → thin wisp) and opacity (fades to ~0.04), with a blurred head glow and a white highlight tip. Reworked in `src/components/logger/CircularLogger.tsx` after Rhys feedback that the earlier flat-fade trail read as a solid ring.
-- Nose/chin reps: removed the separate button; now a 2-second hold on the ring centre opens nose-tap mode (`onLongPressCenter`). `TodayPage` layout puts the Bank CTA on top, a compact plan strip beneath, then the ring.
+- Nose reps: removed the separate button; now a 2-second hold on the ring centre opens nose-tap mode (`onLongPressCenter`). `TodayPage` layout puts the Bank CTA on top, a compact plan strip beneath, then the ring.
 
 **Added**
-- Dismissible teaching hint under the ring: "Nose or chin reps: hold the centre of the ring for 2 seconds" with a "Don't remind me again" action. Persisted via `useNoseHoldHint` / `pushus.nose-hold-hint-v1` (mirrors the existing `useLoggerDragHint`).
+- Dismissible teaching hint under the ring: "Nose reps: hold the centre of the ring for 2 seconds" with a "Don't remind me again" action. Persisted via `useNoseHoldHint` / `pushus.nose-hold-hint-v1` (mirrors the existing `useLoggerDragHint`).
 
 **Fixed**
 - Compact daily plan strip lost the reps-per-set line when the plan info moved under the Bank CTA. `DayProgressCard` (compact) now renders `formatDayTargetSetsDetail()` (e.g. "3 sets of 15") and no longer duplicates "set X of Y" (it was in the headline and appended again). Added a sample plan strip to `/dev/preview` so this is QA-able without a backend.

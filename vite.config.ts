@@ -1,5 +1,6 @@
 ﻿import { execSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -92,7 +93,15 @@ export default defineConfig(({ mode }) => {
   const appUrl = (process.env.VITE_APP_URL ?? 'https://www.pushus.app').replace(/\/$/, '')
 
   return {
+    // Keep the dep-optimizer cache out of the Dropbox-synced tree: Dropbox
+    // locks vite's deps_temp_* rename (EBUSY) and dev serves nothing but 504s.
+    cacheDir: path.join(os.tmpdir(), 'vite-cache-pushus'),
     plugins: [react(), appVersionPlugin(buildId, appVersion, appUrl), pwaManifestPlugin(appUrl)],
+    // Honour PORT so tooling (e.g. preview harnesses) can assign a free port
+    // when several dev servers share this folder.
+    server: {
+      port: Number(process.env.PORT) || 5173,
+    },
     define: {
       __APP_BUILD_ID__: JSON.stringify(buildId),
       __APP_VERSION__: JSON.stringify(appVersion),
