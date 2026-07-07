@@ -5,6 +5,7 @@ import type { CustomActivity } from '@/types/customActivity'
 export const customActivityKeys = {
   all: ['customActivities'] as const,
   list: (userId: string) => ['customActivities', 'list', userId] as const,
+  archived: (userId: string) => ['customActivities', 'archived', userId] as const,
 }
 
 const ACTIVITY_COLUMNS =
@@ -30,6 +31,30 @@ export function useCustomActivities(userId: string | undefined) {
   return useQuery({
     queryKey: customActivityKeys.list(userId ?? ''),
     queryFn: () => fetchCustomActivities(userId!),
+    enabled: Boolean(userId),
+    staleTime: 60_000,
+  })
+}
+
+async function fetchArchivedCustomActivities(userId: string): Promise<CustomActivity[]> {
+  const { data, error } = await supabase
+    .from('custom_activities')
+    .select(ACTIVITY_COLUMNS)
+    .eq('user_id', userId)
+    .not('archived_at', 'is', null)
+    .order('archived_at', { ascending: false })
+
+  if (error) {
+    throw error
+  }
+
+  return (data ?? []) as CustomActivity[]
+}
+
+export function useArchivedCustomActivities(userId: string | undefined) {
+  return useQuery({
+    queryKey: customActivityKeys.archived(userId ?? ''),
+    queryFn: () => fetchArchivedCustomActivities(userId!),
     enabled: Boolean(userId),
     staleTime: 60_000,
   })
@@ -130,6 +155,34 @@ export function useArchiveCustomActivity() {
     },
     onSuccess: (_data, { userId }) => {
       void queryClient.invalidateQueries({ queryKey: customActivityKeys.list(userId) })
+      void queryClient.invalidateQueries({ queryKey: customActivityKeys.archived(userId) })
+    },
+  })
+}
+
+type RestoreActivityInput = {
+  userId: string
+  activityId: string
+}
+
+/** Bring an archived activity back — its history and progress return with it. */
+export function useRestoreCustomActivity() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ activityId }: RestoreActivityInput) => {
+      const { error } = await supabase
+        .from('custom_activities')
+        .update({ archived_at: null })
+        .eq('id', activityId)
+
+      if (error) {
+        throw error
+      }
+    },
+    onSuccess: (_data, { userId }) => {
+      void queryClient.invalidateQueries({ queryKey: customActivityKeys.list(userId) })
+      void queryClient.invalidateQueries({ queryKey: customActivityKeys.archived(userId) })
     },
   })
 }

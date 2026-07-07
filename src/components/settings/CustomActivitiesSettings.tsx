@@ -10,8 +10,10 @@ import { cn } from '@/lib/cn'
 import { getErrorMessage } from '@/lib/errors'
 import {
   useArchiveCustomActivity,
+  useArchivedCustomActivities,
   useCreateCustomActivity,
   useCustomActivities,
+  useRestoreCustomActivity,
   useUpdateCustomActivity,
 } from '@/hooks/useCustomActivities'
 import { useAuth } from '@/providers/AuthProvider'
@@ -67,14 +69,17 @@ export function CustomActivitiesSettings() {
   const { user } = useAuth()
   const { toast } = useToast()
   const { data: activities = [], isLoading } = useCustomActivities(user?.id)
+  const { data: archivedActivities = [] } = useArchivedCustomActivities(user?.id)
   const createActivity = useCreateCustomActivity()
   const updateActivity = useUpdateCustomActivity()
   const archiveActivity = useArchiveCustomActivity()
+  const restoreActivity = useRestoreCustomActivity()
 
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editor, setEditor] = useState<EditorState>(EMPTY_EDITOR)
   const [showMoreIcons, setShowMoreIcons] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
   const [confirmArchiveId, setConfirmArchiveId] = useState<string | null>(null)
 
   // Archive is destructive-ish (no restore UI yet) — first tap arms the
@@ -93,7 +98,10 @@ export function CustomActivitiesSettings() {
   }
 
   const saving =
-    createActivity.isPending || updateActivity.isPending || archiveActivity.isPending
+    createActivity.isPending ||
+    updateActivity.isPending ||
+    archiveActivity.isPending ||
+    restoreActivity.isPending
 
   function openAdd() {
     setEditor(EMPTY_EDITOR)
@@ -157,6 +165,24 @@ export function CustomActivitiesSettings() {
     } catch (error) {
       toast({
         message: getErrorMessage(error, 'Could not save activity.'),
+        variant: 'danger',
+      })
+    }
+  }
+
+  async function handleRestore(activity: CustomActivity) {
+    try {
+      await restoreActivity.mutateAsync({ userId: user!.id, activityId: activity.id })
+      toast({
+        message: `${activity.name} restored — history and progress are back.`,
+        variant: 'success',
+        durationMs: 5000,
+      })
+    } catch (error) {
+      // Most likely cause: an active activity now uses the same name
+      // (unique per user), so surface the raw message as a hint.
+      toast({
+        message: getErrorMessage(error, 'Could not restore activity.'),
         variant: 'danger',
       })
     }
@@ -358,6 +384,51 @@ export function CustomActivitiesSettings() {
               Cancel
             </Button>
           </div>
+        </div>
+      ) : null}
+
+      {archivedActivities.length > 0 ? (
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setShowArchived((current) => !current)}
+            className="text-xs font-medium text-text-muted underline underline-offset-2 hover:text-text-primary"
+          >
+            {showArchived
+              ? 'Hide archived'
+              : `Archived (${archivedActivities.length})`}
+          </button>
+
+          {showArchived ? (
+            <ul className="space-y-2">
+              {archivedActivities.map((activity) => (
+                <li
+                  key={activity.id}
+                  className="flex items-center gap-3 rounded-[var(--radius-md)] border border-border/60 bg-bg px-3 py-2.5 opacity-80"
+                >
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-surface text-text-muted">
+                    <ActivityIcon icon={activity.emoji} className="h-5 w-5 text-lg" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-text-primary">
+                      {activity.name}
+                    </p>
+                    <p className="text-[0.6875rem] text-text-muted">
+                      History kept — restore to keep logging
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    className="min-h-8 shrink-0 px-2.5 text-xs text-accent"
+                    disabled={saving}
+                    onClick={() => void handleRestore(activity)}
+                  >
+                    Restore
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       ) : null}
     </Card>

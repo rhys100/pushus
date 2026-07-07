@@ -24,7 +24,9 @@ export function ActivityIcon({ icon, className }: ActivityIconProps) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.75}
+      // 2 (not 1.75) keeps the figure pictograms legible at the 14px sizes
+      // used in the switcher pill and progress chips.
+      strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"

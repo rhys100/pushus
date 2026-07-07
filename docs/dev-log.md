@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-07 (design polish pass 2 — restore archived)
+
+- **Added:** archived custom activities can be restored — collapsed "Archived (n)" section at the bottom of Settings → Custom activities with a Restore button; history and progress come back with it. Restore can fail if an active activity re-uses the name (unique per user) — raw error surfaced as the hint.
+- **Tweak:** `ActivityIcon` stroke 1.75 → 2 so figure pictograms stay legible at the 14px pill/chip sizes.
+
 ### 2026-07-07 (exercise pictogram icons)
 
 - **Changed:** icon picker now leads with 10 exercise figure pictograms (pull-up, squat, sit-up, dip, lunge, plank, calf raise, leg raise, jumping jack, dumbbell curl) — equipment/generic marks moved behind a "More icons" toggle (`PRIMARY_ACTIVITY_ICON_IDS` / `MORE_ACTIVITY_ICON_IDS`). Editing an activity whose icon is in the More set auto-expands it.
