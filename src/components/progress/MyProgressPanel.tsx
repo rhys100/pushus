@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { cn } from '@/lib/cn'
 import { tapHaptic } from '@/lib/haptics'
+import { getStoredLogActivityId } from '@/lib/storage'
 import { getGroupLocalDateString } from '@/hooks/useTodayData'
 import { useActivityProgressRows, type ProgressSelection } from '@/hooks/useActivityProgress'
 import { useCustomActivities } from '@/hooks/useCustomActivities'
@@ -47,6 +48,12 @@ export function MyProgressPanel({ group, userId, timezone, className }: MyProgre
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [range, setRange] = useState<ProgressRange>('daily')
   const [metric, setMetric] = useState<ProgressMetric>('total')
+
+  // Default to whatever the Log page is currently banking (read-only follow —
+  // picking a chip here doesn't change the Log page's selection).
+  useEffect(() => {
+    setSelectedId(getStoredLogActivityId(userId))
+  }, [userId])
   // Chip pop only rewards a tap — the default chip mounts still.
   const [chipInteracted, setChipInteracted] = useState(false)
 
