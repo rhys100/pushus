@@ -1,4 +1,5 @@
-﻿export { AppHeader, type AppHeaderProps } from './AppHeader'
+﻿export { ActivityIcon, type ActivityIconProps } from './ActivityIcon'
+export { AppHeader, type AppHeaderProps } from './AppHeader'
 export { AvatarChip, type AvatarChipProps } from './AvatarChip'
 export { Badge, type BadgeProps, type BadgeVariant } from './Badge'
 export { BottomNav, type BottomNavProps, type NavItem } from './BottomNav'

@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Button, Card, useToast } from '@/components/ui'
+import { ActivityIcon, Button, Card, useToast } from '@/components/ui'
+import { activityIconLabel, ACTIVITY_ICON_IDS } from '@/lib/activityIcons'
 import { cn } from '@/lib/cn'
-import { ACTIVITY_EMOJIS } from '@/lib/emojis'
 import { getErrorMessage } from '@/lib/errors'
 import {
   useArchiveCustomActivity,
@@ -20,7 +20,7 @@ type EditorState = {
 
 const EMPTY_EDITOR: EditorState = {
   name: '',
-  emoji: ACTIVITY_EMOJIS[0],
+  emoji: ACTIVITY_ICON_IDS[0],
   trackSides: false,
 }
 
@@ -170,8 +170,8 @@ export function CustomActivitiesSettings() {
               key={activity.id}
               className="flex items-center gap-3 rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2.5"
             >
-              <span className="text-xl leading-none" aria-hidden="true">
-                {activity.emoji}
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-surface text-accent">
+                <ActivityIcon icon={activity.emoji} className="h-5 w-5 text-lg" />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-text-primary">
@@ -229,24 +229,24 @@ export function CustomActivitiesSettings() {
           </div>
 
           <div className="space-y-2">
-            <span className="text-xs font-medium text-text-muted">Emoji</span>
+            <span className="text-xs font-medium text-text-muted">Icon</span>
             <div className="grid grid-cols-6 gap-2">
-              {ACTIVITY_EMOJIS.map((option) => (
+              {ACTIVITY_ICON_IDS.map((option) => (
                 <button
                   key={option}
                   type="button"
-                  aria-label={`Select ${option}`}
+                  aria-label={`Select ${activityIconLabel(option)} icon`}
                   aria-pressed={editor.emoji === option}
                   onClick={() => setEditor((current) => ({ ...current, emoji: option }))}
                   className={cn(
-                    'flex h-10 w-full items-center justify-center rounded-[var(--radius-md)] text-xl',
+                    'flex h-10 w-full items-center justify-center rounded-[var(--radius-md)]',
                     'border transition-colors',
                     editor.emoji === option
-                      ? 'border-accent bg-accent-muted'
-                      : 'border-border bg-surface hover:border-accent/30',
+                      ? 'border-accent bg-accent-muted text-accent'
+                      : 'border-border bg-surface text-text-muted hover:border-accent/30 hover:text-text-primary',
                   )}
                 >
-                  {option}
+                  <ActivityIcon icon={option} className="h-5 w-5" />
                 </button>
               ))}
             </div>

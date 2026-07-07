@@ -1,3 +1,4 @@
+import { ActivityIcon } from '@/components/ui/ActivityIcon'
 import { cn } from '@/lib/cn'
 import type { CustomActivity, CustomActivityEntry } from '@/types/customActivity'
 
@@ -29,8 +30,9 @@ export function CustomActivityDayCard({
         className,
       )}
     >
-      <p className="text-xs font-medium uppercase tracking-wide text-text-muted">
-        {activity.emoji} {activity.name} — today
+      <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-text-muted">
+        <ActivityIcon icon={activity.emoji} className="h-3.5 w-3.5 text-accent" />
+        {activity.name} — today
       </p>
       <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-text-primary">
         {total}
