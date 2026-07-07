@@ -26,6 +26,10 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (design polish pass 5 — activity continuity)
+
+- **UX:** Board → My progress and Feed → My log now default to the activity the Log page is currently banking (`pushus-log-activity:{userId}` read-only follow) instead of resetting to Push-ups each visit. Picking chips on those surfaces doesn't write the preference back — the Log page owns it. Unknown/archived stored ids fall back to Push-ups automatically.
+
 ### 2026-07-07 (motion & haptics system — design-review loop)
 
 - **Foundation:** `src/styles/motion.css` (rise/pop/fade/sheet/popup/celebrate/cascade vocabulary + global reduced-motion guard that exempts the functional hold-to-open ring), `--ease-spring` + `--duration-slower` tokens, `src/lib/haptics.ts` (tap/select/success tiers beside the logger's rep patterns), hooks: `useCountUp` (rAF count-up, locale-formatted in StatCard), `useFlipList` (WAAPI FLIP, offsetTop-based so scroll can't skew it), `usePresence` (stay mounted through exit animations).

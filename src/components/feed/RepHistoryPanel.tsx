@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { parseISO, startOfMonth } from 'date-fns'
 import { cn } from '@/lib/cn'
 import { PUSHUPS_ICON } from '@/lib/activityIcons'
+import { getStoredLogActivityId } from '@/lib/storage'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 import { useCustomActivities } from '@/hooks/useCustomActivities'
 import {
@@ -36,6 +37,16 @@ export function RepHistoryPanel() {
   const selectedActivity =
     customActivities.find((activity) => activity.id === selectedActivityId) ?? null
   const isCustom = selectedActivity != null
+
+  // Follow the Log page's current activity by default (read-only — chips here
+  // don't write the preference back).
+  useEffect(() => {
+    if (!user?.id) {
+      return
+    }
+
+    setSelectedActivityId(getStoredLogActivityId(user.id))
+  }, [user?.id])
 
   useEffect(() => {
     if (!todayDate) {
