@@ -1,4 +1,5 @@
 import { forwardRef, type AnchorHTMLAttributes, type ButtonHTMLAttributes, type PointerEvent } from 'react'
+import { Link, type LinkProps } from 'react-router-dom'
 import { cn } from '@/lib/cn'
 import { tapHaptic } from '@/lib/haptics'
 
@@ -82,6 +83,43 @@ export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>(
 )
 
 ButtonLink.displayName = 'ButtonLink'
+
+export type ButtonRouterLinkProps = LinkProps & {
+  variant?: ButtonVariant
+  fullWidth?: boolean
+}
+
+/**
+ * Router navigation styled as a button. Use instead of nesting <Button>
+ * inside <Link> — interactive-in-interactive is invalid HTML, double
+ * tab-stops, and reads wrong in screen readers.
+ */
+export const ButtonRouterLink = forwardRef<HTMLAnchorElement, ButtonRouterLinkProps>(
+  ({ variant = 'primary', fullWidth = false, className, children, onPointerDown, ...props }, ref) => {
+    const handlePointerDown = (event: PointerEvent<HTMLAnchorElement>) => {
+      tapHaptic()
+      onPointerDown?.(event)
+    }
+
+    return (
+      <Link
+        ref={ref}
+        onPointerDown={handlePointerDown}
+        className={cn(
+          buttonBaseClass,
+          fullWidth && 'w-full',
+          variantStyles[variant],
+          className,
+        )}
+        {...props}
+      >
+        {children}
+      </Link>
+    )
+  },
+)
+
+ButtonRouterLink.displayName = 'ButtonRouterLink'
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (

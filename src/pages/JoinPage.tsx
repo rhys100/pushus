@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Button, Card, Skeleton, useToast } from '@/components/ui'
+import { useNavigate, useParams } from 'react-router-dom'
+import { Button, ButtonRouterLink, Card, Skeleton, useToast } from '@/components/ui'
 import { pickMembershipState } from '@/lib/postAuthNavigation'
 import { normalizeInviteCode } from '@/lib/postAuthRouting'
 import { supabase } from '@/lib/supabase'
@@ -170,16 +170,12 @@ export function JoinPage() {
               This join link is missing or has an invalid invite code. Ask your group admin for a
               fresh link.
             </p>
-            <Link to="/join">
-              <Button variant="secondary" fullWidth type="button">
-                Enter invite code
-              </Button>
-            </Link>
-            <Link to="/login">
-              <Button variant="ghost" fullWidth type="button">
-                Back to sign in
-              </Button>
-            </Link>
+            <ButtonRouterLink to="/join" variant="secondary" fullWidth>
+              Enter invite code
+            </ButtonRouterLink>
+            <ButtonRouterLink to="/login" variant="ghost" fullWidth>
+              Back to sign in
+            </ButtonRouterLink>
           </Card>
         </div>
       </div>
@@ -213,16 +209,12 @@ export function JoinPage() {
                   Invite code:{' '}
                   <span className="font-mono text-text-primary">{inviteCode}</span>
                 </p>
-                <Link to={`/login?join=${encodeURIComponent(inviteCode)}`}>
-                  <Button fullWidth type="button">
-                    Sign in to join
-                  </Button>
-                </Link>
-                <Link to="/login">
-                  <Button variant="ghost" fullWidth type="button">
-                    Back to sign in
-                  </Button>
-                </Link>
+                <ButtonRouterLink to={`/login?join=${encodeURIComponent(inviteCode)}`} fullWidth>
+                  Sign in to join
+                </ButtonRouterLink>
+                <ButtonRouterLink to="/login" variant="ghost" fullWidth>
+                  Back to sign in
+                </ButtonRouterLink>
               </>
             )}
           </Card>
@@ -265,11 +257,9 @@ export function JoinPage() {
               >
                 Try again
               </Button>
-              <Link to="/private-beta">
-                <Button variant="ghost" fullWidth type="button">
-                  Back
-                </Button>
-              </Link>
+              <ButtonRouterLink to="/private-beta" variant="ghost" fullWidth>
+                Back
+              </ButtonRouterLink>
             </>
           ) : (
             <>

@@ -1,5 +1,4 @@
-import { Link } from 'react-router-dom'
-import { Button, Card } from '@/components/ui'
+import { ButtonRouterLink, Card } from '@/components/ui'
 import { InviteCodeEntry } from '@/components/group/InviteCodeEntry'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 
@@ -21,11 +20,9 @@ export function JoinLandingPage() {
 
           <InviteCodeEntry submitLabel="Join group" />
 
-          <Link to="/login">
-            <Button variant="ghost" fullWidth type="button">
-              Back to sign in
-            </Button>
-          </Link>
+          <ButtonRouterLink to="/login" variant="ghost" fullWidth>
+            Back to sign in
+          </ButtonRouterLink>
         </Card>
       </div>
     </div>

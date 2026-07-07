@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Button, Card } from '@/components/ui'
+import { ButtonRouterLink, Card } from '@/components/ui'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { appConfig } from '@/lib/config'
 import { APP_BUILD_ID } from '@/lib/buildId'
@@ -110,11 +110,9 @@ export function AboutPage() {
           ) : null}
         </Card>
 
-        <Link to="/login" className="mt-6 block">
-          <Button variant="secondary" fullWidth type="button">
-            Sign in
-          </Button>
-        </Link>
+        <ButtonRouterLink to="/login" variant="secondary" fullWidth className="mt-6">
+          Sign in
+        </ButtonRouterLink>
       </div>
     </div>
   )

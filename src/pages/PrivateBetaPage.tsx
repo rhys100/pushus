@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Button, Card } from '@/components/ui'
+import { Button, ButtonRouterLink, Card } from '@/components/ui'
 import { appConfig } from '@/lib/config'
 import { getPendingInviteCode } from '@/lib/storage'
 import { useAuth } from '@/providers/AuthProvider'
@@ -46,11 +46,9 @@ export function PrivateBetaPage() {
 
           <div className="flex flex-col gap-2">
             {pendingInvite ? (
-              <Link to={`/join/${pendingInvite}`}>
-                <Button fullWidth type="button">
-                  Retry invite link
-                </Button>
-              </Link>
+              <ButtonRouterLink to={`/join/${pendingInvite}`} fullWidth>
+                Retry invite link
+              </ButtonRouterLink>
             ) : null}
             <Button
               variant="secondary"

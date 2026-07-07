@@ -26,6 +26,12 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (design-review loop — auth funnel accessibility and dead ends)
+
+- **`ButtonRouterLink`** added to the ui kit and swapped in for all ten `<Link><Button>` nestings across the auth funnel (JoinPage ×5, CreateGroupPage ×2, JoinLandingPage, PrivateBetaPage, AboutPage) — interactive-in-interactive is invalid HTML, double tab stops, and reads wrong in screen readers. New rule: navigation styled as a button uses `ButtonRouterLink`, never nesting.
+- **Magic-link success screen** now echoes the destination email (typo catch) and offers **Resend** with a 60s cooldown matched to Supabase's OTP rate limit.
+- **PendingPage** polls membership every 15s so an approved member is routed into the app automatically instead of waiting on a manual "Check again" tap.
+
 ### 2026-07-08 (motion pass — social surfaces)
 
 - **Mates:** nudge send / mate accept / battle accept / challenge send fire `successHaptic`; 1v1 scores and the you-vs-them stat grid count up; 1d/3d/7d pills get tick + press + gated selection pop; mate detail rises on expand; page staggers; "You won 🏆" badge pops.

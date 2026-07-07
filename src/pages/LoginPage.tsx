@@ -12,6 +12,9 @@ import { cn } from '@/lib/cn'
 
 const authCallbackUrl = () => `${window.location.origin}/auth/callback`
 
+/** Matches Supabase's OTP rate limit so Resend never invites a rate-limit error. */
+const RESEND_COOLDOWN_SECONDS = 60
+
 function friendlyAuthError(message: string): string {
   const lower = message.toLowerCase()
   if (lower.includes('provider') && lower.includes('not enabled')) {
@@ -31,7 +34,14 @@ export function LoginPage() {
   const [sending, setSending] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [linkSent, setLinkSent] = useState(false)
+  const [resendCooldown, setResendCooldown] = useState(0)
   const authErrorShownRef = useRef(false)
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return
+    const timer = window.setTimeout(() => setResendCooldown((s) => s - 1), 1_000)
+    return () => window.clearTimeout(timer)
+  }, [resendCooldown])
 
   useEffect(() => {
     const joinCode = normalizeInviteCode(searchParams.get('join'))
@@ -57,10 +67,9 @@ export function LoginPage() {
     }
   }, [])
 
-  async function handleMagicLink(event: React.FormEvent) {
-    event.preventDefault()
+  async function sendMagicLink(): Promise<boolean> {
     const trimmed = email.trim()
-    if (!trimmed) return
+    if (!trimmed) return false
 
     setSending(true)
     const { error } = await supabase.auth.signInWithOtp({
@@ -71,11 +80,26 @@ export function LoginPage() {
 
     if (error) {
       toast({ message: friendlyAuthError(error.message), variant: 'danger' })
-      return
+      return false
     }
 
     successHaptic()
-    setLinkSent(true)
+    setResendCooldown(RESEND_COOLDOWN_SECONDS)
+    return true
+  }
+
+  async function handleMagicLink(event: React.FormEvent) {
+    event.preventDefault()
+    if (await sendMagicLink()) {
+      setLinkSent(true)
+    }
+  }
+
+  async function handleResend() {
+    if (resendCooldown > 0 || sending) return
+    if (await sendMagicLink()) {
+      toast({ message: 'Link re-sent. Check spam if it hides again.', variant: 'success' })
+    }
   }
 
   async function handleGoogleSignIn() {
@@ -129,8 +153,19 @@ export function LoginPage() {
               </p>
               <p className="text-sm font-medium text-text-primary">Magic link sent</p>
               <p className="text-sm text-text-muted">
-                Open the link in your email to sign in. You can close this tab.
+                We emailed a sign-in link to{' '}
+                <span className="font-semibold text-text-primary">{email.trim()}</span>. Open it to
+                sign in — check spam if it&apos;s hiding.
               </p>
+              <Button
+                variant="secondary"
+                fullWidth
+                loading={sending}
+                disabled={resendCooldown > 0 || sending}
+                onClick={() => void handleResend()}
+              >
+                {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend link'}
+              </Button>
               <Button variant="ghost" fullWidth onClick={() => setLinkSent(false)}>
                 Use a different email
               </Button>

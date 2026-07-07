@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Button, Card, Skeleton } from '@/components/ui'
 import { supabase } from '@/lib/supabase'
@@ -25,6 +26,15 @@ export function PendingPage() {
     enabled: Boolean(pendingGroupId),
     refetchInterval: 15_000,
   })
+
+  // Poll the membership too — once the admin approves, the route guard whisks
+  // the member in without them having to tap "Check again".
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      void refreshGroup()
+    }, 15_000)
+    return () => window.clearInterval(timer)
+  }, [refreshGroup])
 
   async function handleRefresh() {
     await refreshGroup()

@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
-import { Button, Card, Skeleton, useToast } from '@/components/ui'
+import { Navigate, useNavigate } from 'react-router-dom'
+import { Button, ButtonRouterLink, Card, Skeleton, useToast } from '@/components/ui'
 import { supabase } from '@/lib/supabase'
 import { detectTimezone, timezoneOptions } from '@/lib/timezones'
 import { cn } from '@/lib/cn'
@@ -82,17 +82,13 @@ export function CreateGroupPage() {
               existing crew with your invite link instead.
             </p>
             {pendingInvite ? (
-              <Link to={`/join/${pendingInvite}`}>
-                <Button fullWidth type="button">
-                  Use saved invite code
-                </Button>
-              </Link>
+              <ButtonRouterLink to={`/join/${pendingInvite}`} fullWidth>
+                Use saved invite code
+              </ButtonRouterLink>
             ) : (
-              <Link to="/private-beta">
-                <Button variant="secondary" fullWidth type="button">
-                  Back
-                </Button>
-              </Link>
+              <ButtonRouterLink to="/private-beta" variant="secondary" fullWidth>
+                Back
+              </ButtonRouterLink>
             )}
           </Card>
         </div>
