@@ -26,6 +26,15 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-07 (custom activities, progress chart, board privacy)
+
+- **Added:** custom activities — personal exercises with optional left/right side tracking. New tables `custom_activities` + `custom_activity_entries` (migration `0029`, owner-only RLS, no RPCs — direct table access). Log page gets a switcher pill + picker sheet, side toggle, custom day-tally card; bank/undo via toast. Ring resets on activity switch so reps can't cross activities. Last selection persisted per device (`pushus-log-activity:{userId}`).
+- **Added:** "My progress" on the Board — `ProgressChart` (SVG, no deps) + `progressStats.ts` pure aggregation (daily 14d / weekly 12w Monday buckets, Total/Best set, L/R series). Unit tests in `tests/unit/progressStats.test.ts`.
+- **Added:** `profiles.show_rep_totals` + `leaderboard_total` returns it; day board shows raw reps for opted-in members instead of %. Settings → Board privacy toggle.
+- **Added:** +10 quick-add button on Log page (`CircularLoggerHandle.addReps`).
+- **Fixed:** theme-color/manifest colours aligned to `#0a0a0d` (three sync'd spots: manifest.json, manifest.webmanifest, `functions/_shared/webAppManifest.ts`); `color-scheme: dark` added (tokens.css + meta) for light-mode phones.
+- **Note:** migration 0029 must be applied (`supabase db push`) before the new features light up; app degrades gracefully without it.
+
 ### 2026-07-06 (PWA dark-mode icons)
 
 - **Fixed:** PWA app icon, maskable icon, and push notification badge rasterised favicon masks as black silhouettes on dark Android. Generator now uses flat `PUSHUS_LOGO_PATH` (same as OG images); maskable icons use full-bleed square backgrounds.

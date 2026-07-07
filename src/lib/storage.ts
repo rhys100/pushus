@@ -7,6 +7,7 @@ const PWA_OPEN_APP_PROMPT_DISMISSED_PREFIX = 'pushus-pwa-open-app-never-remind-v
 const PWA_OPEN_APP_PROMPT_SNOOZED_SESSION_PREFIX = 'pushus-pwa-open-app-prompt-snoozed'
 const PWA_KNOWN_INSTALLED_KEY = 'pushus-pwa-known-installed'
 const PWA_STANDALONE_PROOF_KEY = 'pushus-pwa-standalone-proof'
+const LOG_ACTIVITY_PREFIX = 'pushus-log-activity'
 
 export function getPendingInviteCode(): string | null {
   try {
@@ -224,4 +225,25 @@ export function clearPwaOpenAppPromptSessionSnooze(userId: string): void {
 export function acknowledgePwaOpenAppPromptOpen(userId: string): void {
   clearPwaOpenAppPromptDismiss(userId)
   snoozePwaOpenAppPromptForSession(userId)
+}
+
+/** Last activity picked on the Log page; null means the group push-ups logger. */
+export function getStoredLogActivityId(userId: string): string | null {
+  try {
+    return localStorage.getItem(`${LOG_ACTIVITY_PREFIX}:${userId}`)
+  } catch {
+    return null
+  }
+}
+
+export function setStoredLogActivityId(userId: string, activityId: string | null): void {
+  try {
+    if (activityId === null) {
+      localStorage.removeItem(`${LOG_ACTIVITY_PREFIX}:${userId}`)
+    } else {
+      localStorage.setItem(`${LOG_ACTIVITY_PREFIX}:${userId}`, activityId)
+    }
+  } catch {
+    // ignore quota / private mode
+  }
 }

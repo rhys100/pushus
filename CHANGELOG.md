@@ -12,6 +12,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Custom activities:** track any exercise just for you (calf raises, pull-ups, leg raises) with optional separate left/right sides. Manage in Settings → Custom activities; a compact switcher pill appears above the Log page ring once you have one. Custom reps are private — never on the group feed, board, or training plan
+- **My progress chart** on the Board: dependency-free SVG trend chart for push-ups or any custom activity — daily (2 weeks) or weekly (12 weeks) buckets, Total or Best set metric, left/right lines for sided activities, and a this-week vs last-week delta
+- **Board privacy — public rep totals:** opt-in Settings toggle to show your raw rep totals to group mates on the day board instead of a % of goal (week/month boards already show totals)
+- **+10 quick add** button between the ring and Bank so sets of 10 don't need a full lap drag
 - **Nose-tap mode:** fullscreen tap-to-rep overlay for logging with your nose or chin mid-push-up, with a synth confirm sound and vibration per tap. Four selectable, saved skins: Bricks (2.5D brick floor that quakes outward from the tap point), Classic flash, Ripple, and Burst
 - **Bank lock-in ritual:** banking runs an S-curve unwind to zero with an ascending trill per rep (chord accents at 5 and 10), then a lock-in animation (expand, click-clack, settle beat, slam) with a glow flash and a BANKED stamp
 - **Synth sound cues:** all logger and bank audio is Web Audio synthesis (`src/lib/dinkSound.ts`) with no asset files; production spec for an audio engineer in [docs/audio-spec.md](docs/audio-spec.md)
@@ -26,6 +30,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **Theme colour + light-mode phones:** `theme-color` meta and manifest `background_color`/`theme_color` now match the app background (`#0a0a0d` instead of navy `#0b1220`), and `color-scheme: dark` keeps native controls (selects, checkboxes, scrollbars, pickers) dark on phones set to light mode
 - **PWA icons on dark Android:** app icon, home-screen shortcut, and push notification badge now use a flat purple lightning bolt (Resvg-safe) instead of rasterising favicon masks/filters that rendered as an invisible black silhouette on dark backgrounds
 
 ### Changed

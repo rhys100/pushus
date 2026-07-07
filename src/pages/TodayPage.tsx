@@ -1,16 +1,26 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLoggerDragHint } from '@/hooks/useLoggerDragHint'
 import { useNoseHoldHint } from '@/hooks/useNoseHoldHint'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 import {
+  getGroupLocalDateString,
   useBankPushups,
   useDayTotal,
   useRecordEntryEffort,
   useDayEntries,
   useUndoLastEntry,
 } from '@/hooks/useTodayData'
+import { useCustomActivities } from '@/hooks/useCustomActivities'
+import {
+  useBankCustomActivity,
+  useCustomActivityDayEntries,
+  useDeleteCustomActivityEntry,
+} from '@/hooks/useCustomActivityLog'
+import { getStoredLogActivityId, setStoredLogActivityId } from '@/lib/storage'
+import type { ActivitySide } from '@/types/customActivity'
 import { useGroupBillingStatus, useGroupSubscription } from '@/hooks/useBilling'
 import { BillingBanner } from '@/components/billing/BillingBanner'
+import { Button } from '@/components/ui/Button'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useToast } from '@/components/ui/Toast'
 import { cn } from '@/lib/cn'
@@ -20,8 +30,11 @@ import {
   CircularLogger,
   type CircularLoggerHandle,
 } from '@/components/logger/CircularLogger'
+import { ActivitySwitcher } from '@/components/logger/ActivitySwitcher'
 import { BankPushupsButton } from '@/components/logger/BankPushupsButton'
+import { CustomActivityDayCard } from '@/components/logger/CustomActivityDayCard'
 import { NoseHoldHint } from '@/components/logger/NoseHoldHint'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { NoseTapMode } from '@/components/logger/NoseTapMode'
 import { SetEffortSheet } from '@/components/logger/SetEffortSheet'
 import { SorenessCheckInSheet } from '@/components/logger/SorenessCheckInSheet'
@@ -60,8 +73,12 @@ export function TodayPage() {
   const bankPushups = useBankPushups()
   const recordEntryEffort = useRecordEntryEffort()
   const undoLastEntry = useUndoLastEntry()
+  const bankCustom = useBankCustomActivity()
+  const deleteCustomEntry = useDeleteCustomActivityEntry()
   const loggerRef = useRef<CircularLoggerHandle>(null)
   const [canBank, setCanBank] = useState(false)
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null)
+  const [activitySide, setActivitySide] = useState<ActivitySide>('left')
   const [effortEntryId, setEffortEntryId] = useState<string | null>(null)
   const [effortAskedToday, setEffortAskedToday] = useState(false)
   const [maxSetMode, setMaxSetMode] = useState(false)
@@ -74,6 +91,39 @@ export function TodayPage() {
     user?.id,
     activeGroup,
     planTimezone,
+  )
+
+  useEffect(() => {
+    if (!user?.id) {
+      return
+    }
+
+    setSelectedActivityId(getStoredLogActivityId(user.id))
+  }, [user?.id])
+
+  const { data: customActivities = [] } = useCustomActivities(user?.id)
+  const selectedActivity =
+    customActivities.find((activity) => activity.id === selectedActivityId) ?? null
+  const isCustomMode = selectedActivity != null
+  const customLoggedFor = getGroupLocalDateString(planTimezone)
+  const { data: customDayEntries = [] } = useCustomActivityDayEntries(
+    selectedActivity?.id,
+    customLoggedFor,
+  )
+  const bankPending = bankPushups.isPending || bankCustom.isPending
+
+  const handleSelectActivity = useCallback(
+    (activityId: string | null) => {
+      setSelectedActivityId(activityId)
+      setActivitySide('left')
+      // Reset the ring so reps dialled for one activity can't land in another.
+      loggerRef.current?.reset()
+
+      if (user?.id) {
+        setStoredLogActivityId(user.id, activityId)
+      }
+    },
+    [user?.id],
   )
 
   const isTrainingDay =
@@ -258,6 +308,82 @@ export function TodayPage() {
     wizardCompleted,
   ])
 
+  const handleBankCustom = useCallback(async () => {
+    if (!selectedActivity || !user || !canBank || bankCustom.isPending) {
+      return
+    }
+
+    const bankedCount = loggerRef.current?.getCount() ?? 0
+
+    if (bankedCount <= 0) {
+      return
+    }
+
+    const entrySide = selectedActivity.track_sides ? activitySide : null
+
+    try {
+      const entry = await bankCustom.mutateAsync({
+        activityId: selectedActivity.id,
+        userId: user.id,
+        count: bankedCount,
+        side: entrySide,
+        loggedFor: customLoggedFor,
+      })
+      loggerRef.current?.unwind()
+      dismissHint()
+
+      toast({
+        message: `${bankedCount} ${selectedActivity.name}${entrySide ? ` (${entrySide})` : ''} banked.`,
+        variant: 'success',
+        durationMs: 6000,
+        actionLabel: 'Undo',
+        onAction: () => {
+          deleteCustomEntry.mutate(
+            {
+              entryId: entry.id,
+              activityId: selectedActivity.id,
+              loggedFor: entry.logged_for,
+            },
+            {
+              onSuccess: () => {
+                toast({
+                  message: 'Last entry undone.',
+                  variant: 'default',
+                  durationMs: 4000,
+                })
+              },
+              onError: () => {
+                toast({
+                  message: 'Could not undo. Try again.',
+                  variant: 'danger',
+                  durationMs: 5000,
+                })
+              },
+            },
+          )
+        },
+      })
+    } catch {
+      toast({
+        message: `Could not bank ${selectedActivity.name}. Try again.`,
+        variant: 'danger',
+        durationMs: 5000,
+      })
+    }
+  }, [
+    activitySide,
+    bankCustom,
+    canBank,
+    customLoggedFor,
+    deleteCustomEntry,
+    dismissHint,
+    selectedActivity,
+    toast,
+    user,
+  ])
+
+  const handleBankActive = isCustomMode ? handleBankCustom : handleBank
+
   const handleNoseTapBank = useCallback(
     async (count: number) => {
       if (!activeGroup || !user || !profile || bankPushups.isPending || count <= 0) {
@@ -326,6 +452,7 @@ export function TodayPage() {
   }
 
   const showCheckIn =
+    !isCustomMode &&
     hasPlan &&
     showMaxCheckInCard &&
     todayPrescription?.suggestMaxCheckIn &&
@@ -344,7 +471,7 @@ export function TodayPage() {
           />
         ) : null}
 
-        {maxSetMode ? (
+        {maxSetMode && !isCustomMode ? (
           <p className={cn(noticeInlineClass('accent'), 'mb-2 font-medium')}>
             Max set mode — one clean set, stop when form breaks.
           </p>
@@ -358,39 +485,76 @@ export function TodayPage() {
           />
         ) : null}
 
-        <DayProgressCard
-          variant="compact"
-          className="w-full"
-          bankedToday={dayTotal}
-          banksLogged={entries.length}
-          loading={(totalLoading && dayTotal === 0) || planLoading}
-          hasPlan={hasPlan}
-          dailyTarget={dailyTarget}
-          todayPrescription={todayPrescription}
-        />
+        {isCustomMode && selectedActivity ? (
+          <CustomActivityDayCard activity={selectedActivity} entries={customDayEntries} />
+        ) : (
+          <DayProgressCard
+            variant="compact"
+            className="w-full"
+            bankedToday={dayTotal}
+            banksLogged={entries.length}
+            loading={(totalLoading && dayTotal === 0) || planLoading}
+            hasPlan={hasPlan}
+            dailyTarget={dailyTarget}
+            todayPrescription={todayPrescription}
+          />
+        )}
 
         <div className="flex flex-1 flex-col items-center justify-center py-4">
+          <ActivitySwitcher
+            activities={customActivities}
+            selectedActivityId={selectedActivity?.id ?? null}
+            onSelect={handleSelectActivity}
+            disabled={bankPending}
+            className="mb-4"
+          />
+
           <CircularLogger
             ref={loggerRef}
             onCanBankChange={setCanBank}
-            onBank={handleBank}
-            onLongPressCenter={() => setNoseTapOpen(true)}
-            disabled={bankPushups.isPending}
+            onBank={handleBankActive}
+            onLongPressCenter={isCustomMode ? undefined : () => setNoseTapOpen(true)}
+            disabled={bankPending}
             showDragHint={showHint}
             onHintDismiss={dismissHint}
             className="px-0 py-0"
           />
 
+          {isCustomMode && selectedActivity?.track_sides ? (
+            <SegmentedControl
+              className="mt-4 w-full max-w-[15rem]"
+              options={[
+                { value: 'left', label: 'Left' },
+                { value: 'right', label: 'Right' },
+              ]}
+              value={activitySide}
+              onChange={setActivitySide}
+              ariaLabel={`${selectedActivity.name} side`}
+            />
+          ) : null}
+
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={bankPending}
+            onClick={() => loggerRef.current?.addReps(10)}
+            aria-label="Add 10 reps"
+            className="mt-4 px-10"
+          >
+            +10
+          </Button>
+
           <BankPushupsButton
             placement="inline"
             disabled={!canBank}
-            loading={bankPushups.isPending}
-            onBank={handleBank}
-            className="mt-5 transition-opacity duration-[var(--duration-fast)]"
+            loading={bankPending}
+            onBank={handleBankActive}
+            label={isCustomMode && selectedActivity ? `Bank ${selectedActivity.name}` : undefined}
+            className="mt-4 transition-opacity duration-[var(--duration-fast)]"
           />
         </div>
 
-        <NoseHoldHint show={showNoseHint} onDismiss={dismissNoseHint} />
+        {isCustomMode ? null : <NoseHoldHint show={showNoseHint} onDismiss={dismissNoseHint} />}
       </div>
 
       <NoseTapMode

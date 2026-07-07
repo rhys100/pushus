@@ -13,6 +13,8 @@ export type LeaderboardEntry = {
   avatar_color: string
   total: number
   rank: number
+  /** Member opted in to showing raw rep totals (instead of %) on the day board. */
+  show_rep_totals: boolean
 }
 
 export const leaderboardKeys = {
@@ -47,6 +49,7 @@ async function fetchLeaderboardTotal(
     avatar_color: String(row.avatar_color),
     total: Number(row.total ?? 0),
     rank: Number(row.rank),
+    show_rep_totals: Boolean(row.show_rep_totals ?? false),
   }))
 }
 

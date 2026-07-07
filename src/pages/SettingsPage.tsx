@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Button, Card, useToast } from '@/components/ui'
+import { BoardPrivacySettings } from '@/components/settings/BoardPrivacySettings'
+import { CustomActivitiesSettings } from '@/components/settings/CustomActivitiesSettings'
 import { GroupAdminSettings } from '@/components/settings/GroupAdminSettings'
 import { SettingsLinkRow } from '@/components/settings/SettingsLinkRow'
 import { useTabPageMeta } from '@/components/layout/TabPageMeta'
@@ -412,6 +414,10 @@ export function SettingsPage() {
           </div>
         ) : null}
       </Card>
+
+      <CustomActivitiesSettings />
+
+      <BoardPrivacySettings />
 
       <Card padding="md" className="space-y-3">
         <p className="text-sm font-medium text-text-primary">Training plan</p>

@@ -56,6 +56,8 @@ const REP_TICK_ANGLES = Array.from(
 export type CircularLoggerHandle = {
   getCount: () => number
   reset: () => void
+  /** Jump the counter forward by several reps at once (e.g. the +10 quick-add). */
+  addReps: (reps: number) => void
   /** Animate the counter back to 0 with an S-curve spin-down and per-rep trill. */
   unwind: () => void
 }
@@ -310,16 +312,6 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
       }
     }, [])
 
-    useImperativeHandle(
-      ref,
-      () => ({
-        getCount: () => (unwindingRef.current ? 0 : countRef.current),
-        reset: resetLogger,
-        unwind,
-      }),
-      [resetLogger, unwind],
-    )
-
     useEffect(() => {
       if (isDragging) {
         return
@@ -459,30 +451,48 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
       [setAngle],
     )
 
+    const addReps = useCallback(
+      (reps: number) => {
+        if (disabledRef.current || unwindingRef.current || reps <= 0) {
+          return
+        }
+
+        onHintDismiss?.()
+
+        const currentCount = countRef.current
+        const nextCount = currentCount + reps
+        const nextAngle = countToAngle(nextCount)
+
+        if (angleToTotalCount(nextAngle) <= currentCount) {
+          return
+        }
+
+        primeRepFeedback()
+        pulseRepHapticDelta(currentCount, nextCount)
+        playRepTick(nextCount)
+        syncAngleState(nextAngle)
+        notifyCountChange(nextCount)
+        lastHapticCountRef.current = nextCount
+        setCountPulsing(true)
+        setHandleTickKey((current) => current + 1)
+      },
+      [notifyCountChange, onHintDismiss, syncAngleState],
+    )
+
     const incrementRep = useCallback(() => {
-      if (disabledRef.current || unwindingRef.current) {
-        return
-      }
+      addReps(1)
+    }, [addReps])
 
-      onHintDismiss?.()
-
-      const currentCount = countRef.current
-      const nextCount = currentCount + 1
-      const nextAngle = countToAngle(nextCount)
-
-      if (angleToTotalCount(nextAngle) <= currentCount) {
-        return
-      }
-
-      primeRepFeedback()
-      pulseRepHapticDelta(currentCount, nextCount)
-      playRepTick(nextCount)
-      syncAngleState(nextAngle)
-      notifyCountChange(nextCount)
-      lastHapticCountRef.current = nextCount
-      setCountPulsing(true)
-      setHandleTickKey((current) => current + 1)
-    }, [notifyCountChange, onHintDismiss, syncAngleState])
+    useImperativeHandle(
+      ref,
+      () => ({
+        getCount: () => (unwindingRef.current ? 0 : countRef.current),
+        reset: resetLogger,
+        addReps,
+        unwind,
+      }),
+      [addReps, resetLogger, unwind],
+    )
 
     const applyDragAt = useCallback(
       (clientX: number, clientY: number, haptic: boolean) => {

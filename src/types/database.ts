@@ -9,6 +9,7 @@ export type Profile = {
   avatar_emoji: string
   avatar_color: string
   timezone: string
+  show_rep_totals: boolean
   onboarding_completed_at: string | null
   created_at: string
   updated_at: string
