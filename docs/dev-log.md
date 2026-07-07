@@ -26,6 +26,12 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-07 (design polish pass 1)
+
+- **UX:** sided activities auto-flip the Left/Right toggle after each bank (left set → right is next); Bank button now names the side ("Bank Calf raises (left)") so mis-side logging is obvious before tapping.
+- **Safety:** Settings → Archive is now two-tap (arms to a red "Confirm?" for 4s) — no restore UI exists yet, so single-tap archive was too easy to hit next to Edit.
+- **Consistency:** What's new popup + history now use the activity line-icon set (barbell/mountain/target/bolt) instead of emojis, in bordered tiles matching the Settings list.
+
 ### 2026-07-07 (activity line icons)
 
 - **Changed:** custom activity emojis replaced with a 12-icon minimal stroke set (`src/lib/activityIcons.ts` data + `ActivityIcon` component). 24×24, stroke 1.75, `currentColor` so accent/muted colours flow in. Several shapes adapted from Lucide (ISC), plus hand-drawn barbell/kettlebell/pull-up figure/jump rope.
