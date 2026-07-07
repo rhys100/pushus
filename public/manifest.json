@@ -15,8 +15,8 @@
       "url": "/today?source=open-app&h=%s"
     }
   ],
-  "background_color": "#0b1220",
-  "theme_color": "#0b1220",
+  "background_color": "#0a0a0d",
+  "theme_color": "#0a0a0d",
   "orientation": "portrait-primary",
   "lang": "en-AU",
   "categories": ["fitness", "health", "social"],

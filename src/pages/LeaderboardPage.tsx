@@ -11,6 +11,8 @@ import { formatPeriodLabel, type LeaderboardRange } from '@/lib/leaderboardCalc'
 import type { MemberDayTarget } from '@/lib/training/resolveMemberTodayTarget'
 import { useAuth } from '@/providers/AuthProvider'
 import { useTabPageMeta } from '@/components/layout/TabPageMeta'
+import { MyProgressPanel } from '@/components/progress/MyProgressPanel'
+import { useProfile } from '@/hooks/useProfile'
 import {
   AvatarChip,
   Badge,
@@ -127,6 +129,21 @@ function LeaderboardRow({
             isRestDay={dayTarget.isRestDay}
             className="shrink-0"
           />
+        ) : entry.show_rep_totals ? (
+          // Member opted in to public rep totals — show the raw number, not %.
+          hasTrainingTarget && dayTarget?.target ? (
+            <GoalProgressFraction
+              current={entry.total}
+              target={dayTarget.target}
+              isRestDay={dayTarget.isRestDay}
+              className="shrink-0"
+            />
+          ) : (
+            <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-text-primary">
+              {entry.total}
+              <span className="ml-1 text-[0.6875rem] font-medium text-text-muted">reps</span>
+            </span>
+          )
         ) : progressPercent != null ? (
           <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-text-primary">
             {progressPercent}%
@@ -186,6 +203,7 @@ function LeaderboardSkeleton() {
 
 export function LeaderboardPage() {
   const { user } = useAuth()
+  const { profile } = useProfile()
   const { activeGroup, loading: groupLoading } = useActiveGroup()
   const [range, setRange] = useState<LeaderboardRange>('day')
   const period = useLeaderboardPeriod(activeGroup, range)
@@ -273,6 +291,15 @@ export function LeaderboardPage() {
             />
           ))}
         </ul>
+      ) : null}
+
+      {user ? (
+        <MyProgressPanel
+          className="mt-4"
+          group={activeGroup}
+          userId={user.id}
+          timezone={profile?.timezone || activeGroup.timezone || 'UTC'}
+        />
       ) : null}
     </>
   )

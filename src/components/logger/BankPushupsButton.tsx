@@ -7,6 +7,8 @@ export type BankPushupsButtonProps = {
   showDisabledHint?: boolean
   onBank: () => void
   placement?: 'inline' | 'dock'
+  /** Button text — e.g. "Bank Calf raises" when logging a custom activity. */
+  label?: string
   className?: string
 }
 
@@ -16,6 +18,7 @@ export function BankPushupsButton({
   showDisabledHint = false,
   onBank,
   placement = 'dock',
+  label = 'Bank Push-ups',
   className,
 }: BankPushupsButtonProps) {
   const isInactive = disabled && !loading
@@ -48,7 +51,7 @@ export function BankPushupsButton({
           loading={loading}
           disabled={disabled}
           onClick={onBank}
-          aria-label="Bank Push-ups"
+          aria-label={label}
           aria-busy={loading || undefined}
           className={cn(
             isInline ? '' : 'pointer-events-auto',
@@ -58,7 +61,7 @@ export function BankPushupsButton({
             isInactive && 'disabled:opacity-100',
           )}
         >
-          Bank Push-ups
+          {label}
         </Button>
       </div>
     </div>

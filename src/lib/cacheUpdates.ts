@@ -32,6 +32,7 @@ export function applyLeaderboardDelta(
         avatar_color: profile.avatar_color,
         total: delta,
         rank: entries.length + 1,
+        show_rep_totals: false,
       },
     ]
   } else if (index === -1) {
