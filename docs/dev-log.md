@@ -26,6 +26,14 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-07 (motion & haptics system — design-review loop)
+
+- **Foundation:** `src/styles/motion.css` (rise/pop/fade/sheet/popup/celebrate/cascade vocabulary + global reduced-motion guard that exempts the functional hold-to-open ring), `--ease-spring` + `--duration-slower` tokens, `src/lib/haptics.ts` (tap/select/success tiers beside the logger's rep patterns), hooks: `useCountUp` (rAF count-up, locale-formatted in StatCard), `useFlipList` (WAAPI FLIP, offsetTop-based so scroll can't skew it), `usePresence` (stay mounted through exit animations).
+- **Chart draw:** `ProgressChart` rebuilt around a frame-driven "yarn chasing the dot" — leader dot eases along the polyline by arc length, stroke dashoffset trails it with an exponential lag, data dots pop as the yarn passes their cumulative length, final dot pings; series stagger; replays only when the data signature changes; static render under reduced motion.
+- **Feedback moments:** daily-goal crossing pulses the Today card (success ring + `successHaptic`) with a hydration guard so query load can't false-fire it (same guard fixed a load-flash bug in `GoalProgressBar`); toasts spring in and now animate out; copy-invite buttons pop "✓ Copied" at the thumb; magic-link send pops the envelope; What's new popup springs with staggered items; effort/soreness sheets slide; calendar months cascade with haptic day-select; login/onboarding stagger in with a living emoji picker.
+- **Gotcha worth remembering:** entrance animations must use `fill-mode: backwards`, not `both` — a filling CSS animation permanently overrides later `transform` styles, silently killing `active:scale` press physics; and two animation classes on one element (`cal-pop` + `motion-pop`) cancel — the cascade winner takes the shorthand, so entrances live on wrapper elements where both are needed.
+- **Verification:** the preview harness window is occluded (rAF throttled, `visibilityState: hidden`), so animation checks run through headless Playwright against `/dev/preview`, which gained a motion showcase (replay chart draw, goal-hit demo, FLIP shuffle, sheet toggle, calendar, flame). `vite.config.ts` moved `cacheDir` out of the Dropbox tree — Dropbox was locking the dep-optimizer rename (EBUSY) and dev served 504s.
+
 ### 2026-07-07 (big feature push — mates, challenges, gamification, light mode, reminder fix)
 
 - **Reminder "one ding a day" root cause found and fixed:** `sw.js` used a fixed notification `tag` without `renotify`, so Android silently replaced the tray notification for every reminder after the first. Added `renotify: true`. Second cause: GitHub Actions cron jitter + strict 60-min elapsed check skipped alternate hours — eligibility now tolerates 10 min of scheduler slack (`REMINDER_INTERVAL_TOLERANCE_MINUTES`, mirrored in the edge function).
