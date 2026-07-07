@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/cn'
 
 export type GoalProgressBarProps = {
@@ -27,6 +28,24 @@ function ProgressTrack({
   const progress = Math.min(current / target, 1)
   const goalHit = current >= target
 
+  // Flash the bar once at the moment the goal is crossed (not on a page
+  // that loads with the goal already hit).
+  const prevGoalHit = useRef(goalHit)
+  const [flash, setFlash] = useState(false)
+
+  useEffect(() => {
+    const crossed = goalHit && !prevGoalHit.current
+    prevGoalHit.current = goalHit
+
+    if (!crossed) {
+      return
+    }
+
+    setFlash(true)
+    const timer = window.setTimeout(() => setFlash(false), 750)
+    return () => window.clearTimeout(timer)
+  }, [goalHit])
+
   return (
     <div
       className={cn(
@@ -42,11 +61,16 @@ function ProgressTrack({
     >
       <div
         className={cn(
-          'h-full rounded-[var(--radius-full)] transition-[width] duration-[var(--duration-normal)] ease-[var(--ease-out)]',
+          'relative h-full overflow-hidden rounded-[var(--radius-full)] transition-[width,background-color] duration-[var(--duration-slower)] ease-[var(--ease-out)]',
           goalHit ? 'bg-success' : 'bg-accent',
+          flash && 'goal-flash',
         )}
         style={{ width: `${Math.max(progress * 100, current > 0 ? 4 : 0)}%` }}
-      />
+      >
+        {current > 0 && !goalHit ? (
+          <span className="bar-sheen absolute inset-y-0 w-8" aria-hidden="true" />
+        ) : null}
+      </div>
     </div>
   )
 }
@@ -123,7 +147,10 @@ export function GoalProgressFraction({
 
   return (
     <span className={cn('font-mono text-sm font-semibold tabular-nums', className)}>
-      <span className="text-text-primary">{current}</span>
+      {/* Keyed by value so the tick replays whenever the number moves */}
+      <span key={current} className="value-tick text-text-primary">
+        {current}
+      </span>
       <span className="text-text-muted">/{target}</span>
     </span>
   )

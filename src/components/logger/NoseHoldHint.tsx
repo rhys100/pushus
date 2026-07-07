@@ -6,7 +6,7 @@ export type NoseHoldHintProps = {
   className?: string
 }
 
-/** Teaching hint for the centre-hold nose/chin reps gesture. Lives below Bank CTA. */
+/** Teaching hint for the centre-hold nose reps gesture. Lives below Bank CTA. */
 export function NoseHoldHint({ show = false, onDismiss, className }: NoseHoldHintProps) {
   return (
     <div
@@ -21,7 +21,7 @@ export function NoseHoldHint({ show = false, onDismiss, className }: NoseHoldHin
       {show ? (
         <div className="flex flex-col items-center gap-1">
           <p className="max-w-[16rem] text-[0.8125rem] leading-snug text-text-secondary">
-            <span className="font-semibold text-text-primary">Nose or chin reps:</span>{' '}
+            <span className="font-semibold text-text-primary">Nose reps:</span>{' '}
             hold the centre of the ring for 1.5 seconds
           </p>
           {onDismiss ? (

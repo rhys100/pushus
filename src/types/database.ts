@@ -15,6 +15,9 @@ export type Profile = {
   updated_at: string
 }
 
+export type FeedVisibility = 'full_entries' | 'daily_totals' | 'leaderboard_totals'
+export type OversizeEntryPolicy = 'warn' | 'block' | 'admin_review'
+
 export type Group = {
   id: string
   name: string
@@ -23,6 +26,8 @@ export type Group = {
   max_members: number
   default_invite_limit: number
   max_single_entry: number
+  oversize_entry_policy: OversizeEntryPolicy
+  feed_visibility: FeedVisibility
   invite_code: string
   invite_code_enabled: boolean
   billing_status: string

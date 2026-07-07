@@ -8,7 +8,12 @@ import {
   resolvePushSupportStatus,
   unregisterPushForUser,
 } from '@/lib/notifications/registerPush'
-import type { NotificationPreferencesInput } from '@/lib/notificationEligibility'
+import {
+  legacyReminderIntervalHours,
+  resolveReminderIntervalMinutes,
+  type NotificationPreferencesInput,
+  type ReminderIntervalMinutes,
+} from '@/lib/notificationEligibility'
 import { getPwaInstallHintForPush } from '@/lib/pwa'
 import {
   type PwaInstallStatus,
@@ -32,6 +37,7 @@ const DEFAULT_PREFERENCES: Omit<
   active_hours_start: 7,
   active_hours_end: 20,
   reminder_interval_hours: 1,
+  reminder_interval_minutes: 60,
   daily_target: 20,
   injury_paused: false,
   injury_paused_until: null,
@@ -49,12 +55,15 @@ function preferencesPayload(
     ...patch,
   }
 
+  const intervalMinutes = resolveReminderIntervalMinutes(next) as ReminderIntervalMinutes
+
   return {
     user_id: userId,
     push_enabled: next.push_enabled,
     active_hours_start: next.active_hours_start,
     active_hours_end: next.active_hours_end,
-    reminder_interval_hours: next.reminder_interval_hours,
+    reminder_interval_hours: legacyReminderIntervalHours(intervalMinutes),
+    reminder_interval_minutes: intervalMinutes,
     daily_target: next.daily_target,
     injury_paused: next.injury_paused,
     injury_paused_until: next.injury_paused_until,

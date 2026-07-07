@@ -12,11 +12,25 @@ type NotificationPreferencesRow = {
   push_enabled: boolean
   active_hours_start: number
   active_hours_end: number
+  /** Legacy bucket kept for older cached clients; minutes is source of truth. */
   reminder_interval_hours: 1 | 2 | 24
+  reminder_interval_minutes: number | null
   daily_target: number
   injury_paused: boolean
   injury_paused_until: string | null
   last_reminder_sent_at: string | null
+}
+
+// Mirrors REMINDER_INTERVAL_TOLERANCE_MINUTES in src/lib/notificationEligibility.ts:
+// scheduler jitter slack so a late tick doesn't push every send a full interval out.
+const REMINDER_INTERVAL_TOLERANCE_MINUTES = 10
+
+function resolveReminderIntervalMinutes(prefs: NotificationPreferencesRow): number {
+  if (typeof prefs.reminder_interval_minutes === 'number') {
+    return prefs.reminder_interval_minutes
+  }
+
+  return prefs.reminder_interval_hours * 60
 }
 
 type TrainingPlanRow = {
@@ -108,11 +122,11 @@ function wasReminderSentToday(
 
 function wasReminderSentWithinInterval(
   lastReminderSentAt: string | null,
-  intervalHours: 1 | 2 | 24,
+  intervalMinutes: number,
   timezone: string,
   now: Date,
 ): boolean {
-  if (intervalHours >= 24) {
+  if (intervalMinutes >= 1440) {
     return wasReminderSentToday(lastReminderSentAt, timezone, now)
   }
 
@@ -120,8 +134,12 @@ function wasReminderSentWithinInterval(
   const last = new Date(lastReminderSentAt)
   if (Number.isNaN(last.getTime())) return false
 
+  const toleranceMinutes = Math.min(
+    REMINDER_INTERVAL_TOLERANCE_MINUTES,
+    Math.floor(intervalMinutes / 3),
+  )
   const elapsedMs = now.getTime() - last.getTime()
-  return elapsedMs < intervalHours * 60 * 60 * 1000
+  return elapsedMs < (intervalMinutes - toleranceMinutes) * 60 * 1000
 }
 
 function isEligibleForReminder(
@@ -141,7 +159,7 @@ function isEligibleForReminder(
   if (
     wasReminderSentWithinInterval(
       prefs.last_reminder_sent_at,
-      prefs.reminder_interval_hours,
+      resolveReminderIntervalMinutes(prefs),
       timezone,
       now,
     )

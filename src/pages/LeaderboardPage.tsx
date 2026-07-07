@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { cn } from '@/lib/cn'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
+import { useFlipList } from '@/hooks/useFlipList'
 import { getMemberDayTarget, useGroupDailyTargets } from '@/hooks/useGroupDailyTargets'
 import {
   useLeaderboard,
@@ -88,6 +89,7 @@ function LeaderboardRow({
   if (showDayProgress) {
     return (
       <li
+        data-flip-key={entry.user_id}
         className={cn(
           'flex min-w-0 items-center gap-2 px-4 py-2.5',
           isCurrentUser && 'bg-accent-muted/30',
@@ -157,6 +159,7 @@ function LeaderboardRow({
 
   return (
     <li
+      data-flip-key={entry.user_id}
       className={cn(
         'flex items-center gap-3 px-4 py-3.5',
         isCurrentUser && 'bg-accent-muted/30',
@@ -221,6 +224,10 @@ export function LeaderboardPage() {
   const showInitialSkeleton = isLoading && entries.length === 0
   const allZero = entries.length > 0 && entries.every((entry) => entry.total === 0)
 
+  // Rows glide to their new rank when the order changes (range switch,
+  // someone banks) instead of teleporting.
+  const listRef = useFlipList<HTMLUListElement>(entries)
+
   useTabPageMeta({
     title: 'Leaderboard',
     subtitle,
@@ -271,7 +278,8 @@ export function LeaderboardPage() {
 
       {!showInitialSkeleton && !isError && entries.length > 0 ? (
         <ul
-          className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface"
+          ref={listRef}
+          className="motion-stagger overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface"
           aria-label={RANGE_ARIA_LABELS[range]}
         >
           {entries.map((entry, index) => (

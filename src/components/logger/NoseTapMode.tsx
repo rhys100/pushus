@@ -278,6 +278,9 @@ export function NoseTapMode({ open, banking = false, onBank, onExit }: NoseTapMo
 
   return (
     <div
+      // Immersive fullscreen surface stays dark in both themes; the nested
+      // data-theme resets the token cascade for this subtree.
+      data-theme="dark"
       className="fixed inset-0 z-50 flex flex-col bg-bg"
       role="dialog"
       aria-modal="true"

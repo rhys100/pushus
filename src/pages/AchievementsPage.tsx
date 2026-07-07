@@ -1,15 +1,17 @@
 import { AppLayout } from '@/components/layout/AppLayout'
-import { Badge, Card, EmptyState, Skeleton, StatCard } from '@/components/ui'
+import { Badge, Button, Card, EmptyState, Skeleton, StatCard, useToast } from '@/components/ui'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 import {
   useAchievementCatalog,
   useUserAchievements,
   useXpTotal,
 } from '@/hooks/useGamification'
+import { useStreakStatus, useUseStreakFreeze } from '@/hooks/useStreaks'
 import { useAuth } from '@/providers/AuthProvider'
 
 export function AchievementsPage() {
   const { user } = useAuth()
+  const { toast } = useToast()
   const { activeGroup, loading: groupLoading } = useActiveGroup()
   const { data: catalog = [], isLoading: catalogLoading } = useAchievementCatalog()
   const { data: unlocked = [], isLoading: unlockedLoading } = useUserAchievements(
@@ -17,18 +19,77 @@ export function AchievementsPage() {
     user?.id,
   )
   const { data: xpTotal = 0, isLoading: xpLoading } = useXpTotal(activeGroup, user?.id)
+  const { data: streak, isLoading: streakLoading } = useStreakStatus(activeGroup, user?.id)
+  const useFreeze = useUseStreakFreeze(activeGroup, user?.id)
 
   const unlockedIds = new Set(unlocked.map((item) => item.achievement_id))
   const loading = groupLoading || catalogLoading || unlockedLoading || xpLoading
 
+  async function handleUseFreeze() {
+    if (!streak?.freeze.protectableDate) {
+      return
+    }
+
+    try {
+      await useFreeze.mutateAsync(streak.freeze.protectableDate)
+      toast({ message: 'Streak freeze used — yesterday is protected.', variant: 'success' })
+    } catch {
+      toast({ message: 'Could not use the freeze. Try again.', variant: 'danger' })
+    }
+  }
+
   return (
     <AppLayout title="Achievements" subtitle={activeGroup?.name} showNav={false}>
       <div className="space-y-6 pb-8">
-        {loading ? (
-          <Skeleton className="h-28 w-full" />
-        ) : (
-          <StatCard label="Total XP" value={xpTotal.toLocaleString()} hint="1 XP per push-up banked" />
-        )}
+        <div className="grid grid-cols-2 gap-3">
+          {loading ? (
+            <Skeleton className="h-28 w-full" />
+          ) : (
+            <StatCard label="Total XP" value={xpTotal.toLocaleString()} hint="1 XP per push-up banked" />
+          )}
+          {streakLoading ? (
+            <Skeleton className="h-28 w-full" />
+          ) : (
+            <StatCard
+              label="Active streak"
+              value={`${streak?.activeStreak ?? 0}🔥`}
+              hint={
+                streak?.todayLogged
+                  ? 'Today is banked'
+                  : 'Bank today to keep it going'
+              }
+            />
+          )}
+        </div>
+
+        {streak && !streakLoading ? (
+          <Card padding="md" className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-text-primary">Streak freeze</p>
+                <p className="text-xs text-text-muted">
+                  {streak.freeze.usedThisWeek
+                    ? 'Used this week — resets Monday.'
+                    : 'One per week. Protects a missed day without faking reps.'}
+                </p>
+              </div>
+              {streak.freeze.protectableDate ? (
+                <Button
+                  variant="secondary"
+                  className="min-h-9 shrink-0 px-3 text-sm"
+                  loading={useFreeze.isPending}
+                  onClick={() => void handleUseFreeze()}
+                >
+                  Protect yesterday
+                </Button>
+              ) : (
+                <Badge variant={streak.freeze.usedThisWeek ? 'neutral' : 'success'}>
+                  {streak.freeze.usedThisWeek ? 'Used' : 'Available'}
+                </Badge>
+              )}
+            </div>
+          </Card>
+        ) : null}
 
         <section className="space-y-3">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-text-muted">

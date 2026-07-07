@@ -92,7 +92,10 @@ export function AppLayout({
           title !== null ? 'pt-4' : 'pt-[env(safe-area-inset-top)]',
         )}
       >
-        {children ?? <Outlet />}
+        {/* Keyed by pathname so each tab/page rises in on navigation */}
+        <div key={location.pathname} className="motion-page">
+          {children ?? <Outlet />}
+        </div>
       </main>
 
       {showNav && activeNav ? (

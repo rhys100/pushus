@@ -22,12 +22,15 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center px-6 py-10 text-center',
+        'motion-rise flex flex-col items-center justify-center px-6 py-10 text-center',
         className,
       )}
     >
       {icon ? (
-        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-[var(--radius-lg)] border border-border bg-surface text-accent">
+        <div
+          className="motion-pop mb-4 flex h-14 w-14 items-center justify-center rounded-[var(--radius-lg)] border border-border bg-surface text-accent"
+          style={{ animationDelay: '140ms' }}
+        >
           {icon}
         </div>
       ) : null}

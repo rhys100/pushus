@@ -1,0 +1,370 @@
+/* Shared motion vocabulary — entrances, pops, shimmer, chart draw.
+   Everything here respects the reduced-motion guard at the bottom. */
+
+/* --- Entrances ------------------------------------------------------- */
+
+@keyframes motion-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.625rem) scale(0.99);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.motion-rise {
+  animation: motion-rise var(--duration-slow) var(--ease-out) both;
+}
+
+/* Page-level entrance on route change (wrapper keyed by pathname). */
+.motion-page {
+  animation: motion-rise 280ms var(--ease-out) both;
+}
+
+/* Stagger direct children on mount: each row rises a beat after the last. */
+.motion-stagger > * {
+  animation: motion-rise var(--duration-slow) var(--ease-out) both;
+}
+
+.motion-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.motion-stagger > *:nth-child(2) { animation-delay: 40ms; }
+.motion-stagger > *:nth-child(3) { animation-delay: 80ms; }
+.motion-stagger > *:nth-child(4) { animation-delay: 120ms; }
+.motion-stagger > *:nth-child(5) { animation-delay: 160ms; }
+.motion-stagger > *:nth-child(6) { animation-delay: 200ms; }
+.motion-stagger > *:nth-child(7) { animation-delay: 240ms; }
+.motion-stagger > *:nth-child(8) { animation-delay: 280ms; }
+.motion-stagger > *:nth-child(n + 9) { animation-delay: 320ms; }
+
+/* --- Pops (selection, arrival, value change) -------------------------- */
+
+@keyframes motion-pop {
+  0% {
+    transform: scale(0.94);
+  }
+
+  60% {
+    transform: scale(1.04);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.motion-pop {
+  animation: motion-pop 260ms var(--ease-spring);
+}
+
+@keyframes value-tick {
+  0% {
+    transform: scale(1);
+  }
+
+  35% {
+    transform: scale(1.06);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.value-tick {
+  display: inline-block;
+  animation: value-tick 220ms var(--ease-out);
+}
+
+/* --- Progress bar: alive while filling, flash on goal ----------------- */
+
+@keyframes bar-sheen {
+  0% {
+    transform: translateX(-150%);
+  }
+
+  55%,
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+.bar-sheen {
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 80%
+  );
+  animation: bar-sheen 2.6s var(--ease-out) 900ms infinite;
+}
+
+@keyframes goal-flash {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.65);
+    filter: brightness(1.6);
+  }
+
+  100% {
+    box-shadow: 0 0 18px 6px rgba(34, 197, 94, 0);
+    filter: brightness(1);
+  }
+}
+
+.goal-flash {
+  animation: goal-flash 700ms var(--ease-out);
+}
+
+/* --- Daily goal hit: the card itself celebrates ------------------------ */
+
+@keyframes goal-celebrate {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgb(var(--color-success-rgb) / 0.55);
+  }
+
+  35% {
+    transform: scale(1.025);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 14px rgb(var(--color-success-rgb) / 0);
+  }
+}
+
+.goal-celebrate {
+  animation: goal-celebrate 650ms var(--ease-spring);
+}
+
+/* --- Skeleton shimmer -------------------------------------------------- */
+
+@keyframes skeleton-sweep {
+  from {
+    background-position: -200% 0;
+  }
+
+  to {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes skeleton-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.skeleton-sweep {
+  /* Sheen keys off the theme text colour so it reads on light and dark. */
+  background-image: linear-gradient(
+    100deg,
+    transparent 35%,
+    rgb(var(--color-text-rgb) / 0.07) 50%,
+    transparent 65%
+  );
+  background-size: 200% 100%;
+  animation:
+    skeleton-sweep 1.6s linear infinite,
+    skeleton-breathe 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* --- Toast: springy drop-in ------------------------------------------- */
+
+@keyframes toast-spring-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-0.875rem) scale(0.96);
+  }
+
+  70% {
+    opacity: 1;
+    transform: translateY(0.125rem) scale(1.005);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.toast-spring-in {
+  animation: toast-spring-in 320ms var(--ease-out) both;
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-0.5rem) scale(0.97);
+  }
+}
+
+.toast-out {
+  animation: toast-out 200ms var(--ease-out) both;
+}
+
+/* --- Chart draw: dots pop as the yarn passes, last dot pings ----------- */
+
+@keyframes chart-dot-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+
+  60% {
+    opacity: 1;
+    transform: scale(1.5);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.chart-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.chart-dot-hidden {
+  opacity: 0;
+}
+
+.chart-dot-pop {
+  animation: chart-dot-pop 300ms var(--ease-spring) both;
+}
+
+@keyframes chart-ping {
+  0% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(3.2);
+  }
+}
+
+.chart-ping {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: chart-ping 650ms var(--ease-out) both;
+}
+
+@keyframes chart-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.chart-fade-in {
+  animation: chart-fade-in 400ms var(--ease-out) both;
+}
+
+/* Generic quick fade for swapped-in content (header titles, etc.). */
+.motion-fade {
+  animation: chart-fade-in var(--duration-normal) var(--ease-out) both;
+}
+
+/* --- Bottom sheets: slide up on open, settle down on close -------------- */
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sheet-in {
+  animation: sheet-in 300ms var(--ease-out) both;
+}
+
+@keyframes sheet-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+}
+
+.sheet-out {
+  animation: sheet-out 200ms var(--ease-out) both;
+}
+
+/* --- Calendar: month grid cascades in like a page turn ------------------ */
+
+@keyframes cal-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.cal-pop {
+  animation: cal-pop 240ms var(--ease-out) both;
+}
+
+/* --- Nav: active tab lands with a spring ------------------------------- */
+
+@keyframes nav-pop {
+  0% {
+    transform: translateY(0.125rem) scale(0.9);
+  }
+
+  60% {
+    transform: translateY(-0.0625rem) scale(1.08);
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+.nav-pop {
+  animation: nav-pop 300ms var(--ease-spring);
+}
+
+/* --- Reduced motion: collapse animation, keep functional indicators ---- */
+
+@media (prefers-reduced-motion: reduce) {
+  *:not(.logger-center-hold),
+  *:not(.logger-center-hold)::before,
+  *:not(.logger-center-hold)::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

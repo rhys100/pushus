@@ -17,7 +17,7 @@ export function Skeleton({ className, rounded = 'md' }: SkeletonProps) {
     <div
       aria-hidden="true"
       className={cn(
-        'animate-pulse bg-border/70',
+        'skeleton-sweep bg-border/70',
         roundedStyles[rounded],
         className,
       )}

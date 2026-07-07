@@ -92,7 +92,7 @@ export function WhatsNewPopup() {
       <div
         className={
           'relative w-full max-w-sm rounded-[var(--radius-lg)] border-2 border-border bg-surface p-5 ' +
-          'shadow-[0_1px_0_rgba(255,255,255,0.06)_inset,0_18px_48px_rgba(0,0,0,0.6)]'
+          'shadow-[var(--shadow-popup)]'
         }
       >
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">

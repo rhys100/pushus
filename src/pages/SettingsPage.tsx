@@ -20,7 +20,12 @@ import { useTrainingPlan } from '@/hooks/useTrainingPlan'
 import { capPlanMaxUpdate } from '@/lib/training/maxCleanUpdate'
 import { formatDayTargetSetsDetail, dayOfWeekFromIso } from '@/lib/training/planEngine'
 import { getGroupLocalDateString } from '@/hooks/useTodayData'
-import type { ReminderIntervalHours } from '@/lib/notificationEligibility'
+import type { ReminderIntervalMinutes } from '@/lib/notificationEligibility'
+import {
+  getStoredThemePreference,
+  setThemePreference,
+  type ThemePreference,
+} from '@/lib/theme'
 import { useNotificationPreferences } from '@/providers/NotificationPreferencesProvider'
 import { getErrorMessage } from '@/lib/errors'
 import { getPwaInstallHintForPush, isStandalonePwa } from '@/lib/pwa'
@@ -38,10 +43,19 @@ function hourOptions() {
   }))
 }
 
-const REMINDER_INTERVAL_OPTIONS: { value: ReminderIntervalHours; label: string }[] = [
-  { value: 1, label: 'Every hour' },
-  { value: 2, label: 'Every 2 hours' },
-  { value: 24, label: 'Once per day' },
+const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+  { value: 'system', label: 'System' },
+]
+
+const REMINDER_INTERVAL_OPTIONS: { value: ReminderIntervalMinutes; label: string }[] = [
+  { value: 30, label: 'Every 30 minutes' },
+  { value: 60, label: 'Every hour' },
+  { value: 120, label: 'Every 2 hours' },
+  { value: 180, label: 'Every 3 hours' },
+  { value: 240, label: 'Every 4 hours' },
+  { value: 1440, label: 'Once per day' },
 ]
 
 type SettingsLocationState = {
@@ -86,6 +100,9 @@ export function SettingsPage() {
   const [localError, setLocalError] = useState<string | null>(null)
   const [planSavedMessage, setPlanSavedMessage] = useState<string | null>(null)
   const [editingProfile, setEditingProfile] = useState(false)
+  const [themePreference, setThemePreferenceState] = useState<ThemePreference>(() =>
+    getStoredThemePreference(),
+  )
   const [profileDisplayName, setProfileDisplayName] = useState('')
   const [profileInitial, setProfileInitial] = useState('')
   const [profileEmoji, setProfileEmoji] = useState<string>(AVATAR_EMOJIS[0])
@@ -216,9 +233,14 @@ export function SettingsPage() {
     await updatePreferences({ [field]: value })
   }
 
-  async function handleIntervalChange(value: ReminderIntervalHours) {
+  function handleThemeChange(value: ThemePreference) {
+    setThemePreferenceState(value)
+    setThemePreference(value)
+  }
+
+  async function handleIntervalChange(value: ReminderIntervalMinutes) {
     setLocalError(null)
-    await updatePreferences({ reminder_interval_hours: value })
+    await updatePreferences({ reminder_interval_minutes: value })
   }
 
   async function handleInjuryToggle(checked: boolean) {
@@ -413,6 +435,32 @@ export function SettingsPage() {
             </div>
           </div>
         ) : null}
+      </Card>
+
+      <Card padding="md" className="space-y-3">
+        <p className="text-sm font-medium text-text-primary">Appearance</p>
+        <p className="text-xs text-text-muted">
+          System follows your phone&apos;s light/dark setting.
+        </p>
+        <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Theme">
+          {THEME_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="radio"
+              aria-checked={themePreference === option.value}
+              onClick={() => handleThemeChange(option.value)}
+              className={cn(
+                'min-h-11 rounded-[var(--radius-md)] border px-3 py-2 text-sm font-medium transition-colors',
+                themePreference === option.value
+                  ? 'border-accent bg-accent-muted text-text-primary'
+                  : 'border-border bg-bg text-text-muted hover:border-accent/30',
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </Card>
 
       <CustomActivitiesSettings />
@@ -635,10 +683,12 @@ export function SettingsPage() {
                   <span className="text-xs font-medium text-text-muted">Frequency</span>
                   <select
                     className="w-full rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-sm text-text-primary"
-                    value={prefs?.reminder_interval_hours ?? 1}
+                    value={prefs?.reminder_interval_minutes ?? 60}
                     disabled={!prefs?.push_enabled || saving}
                     onChange={(event) =>
-                      void handleIntervalChange(Number(event.target.value) as ReminderIntervalHours)
+                      void handleIntervalChange(
+                        Number(event.target.value) as ReminderIntervalMinutes,
+                      )
                     }
                   >
                     {REMINDER_INTERVAL_OPTIONS.map((option) => (

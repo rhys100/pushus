@@ -74,6 +74,15 @@ const ChallengesPage = lazy(() =>
 const AchievementsPage = lazy(() =>
   import('@/pages/AchievementsPage').then((m) => ({ default: m.AchievementsPage })),
 )
+const ChallengeDetailPage = lazy(() =>
+  import('@/pages/ChallengeDetailPage').then((m) => ({ default: m.ChallengeDetailPage })),
+)
+const MatesPage = lazy(() =>
+  import('@/pages/MatesPage').then((m) => ({ default: m.MatesPage })),
+)
+const MateAddPage = lazy(() =>
+  import('@/pages/MateAddPage').then((m) => ({ default: m.MateAddPage })),
+)
 const DevPreviewPage = lazy(() =>
   import('@/pages/DevPreviewPage').then((m) => ({ default: m.DevPreviewPage })),
 )
@@ -271,11 +280,41 @@ export default function App() {
           }
         />
         <Route
+          path="/challenges/:competitionId"
+          element={
+            <LazyPage>
+              <RequireAuth mode="member">
+                <ChallengeDetailPage />
+              </RequireAuth>
+            </LazyPage>
+          }
+        />
+        <Route
           path="/achievements"
           element={
             <LazyPage>
               <RequireAuth mode="member">
                 <AchievementsPage />
+              </RequireAuth>
+            </LazyPage>
+          }
+        />
+        <Route
+          path="/mates"
+          element={
+            <LazyPage>
+              <RequireAuth mode="member">
+                <MatesPage />
+              </RequireAuth>
+            </LazyPage>
+          }
+        />
+        <Route
+          path="/mates/add/:code"
+          element={
+            <LazyPage>
+              <RequireAuth mode="member">
+                <MateAddPage />
               </RequireAuth>
             </LazyPage>
           }

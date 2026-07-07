@@ -27,7 +27,8 @@ export function AppHeader({
       <div className="mx-auto flex max-w-lg items-center gap-3 px-4 py-3">
         {leading ? <div className="shrink-0">{leading}</div> : null}
 
-        <div className="min-w-0 flex-1">
+        {/* Keyed by title so tab switches crossfade instead of snapping */}
+        <div key={title} className="motion-fade min-w-0 flex-1">
           <h1 className="truncate text-base font-semibold text-text-primary">{title}</h1>
           {subtitle ? (
             <p className="truncate text-xs text-text-muted">{subtitle}</p>

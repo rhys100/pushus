@@ -16,7 +16,8 @@ export type ActivityFeedItem = {
   reaction_count: number
 }
 
-export const REACTION_EMOJIS = ['🔥', '💪', '👏'] as const
+// Locked reaction set (docs/product-decisions.md → Activity feed decisions).
+export const REACTION_EMOJIS = ['💪', '🔥', '😂', '👏', '😤'] as const
 export type ReactionEmoji = (typeof REACTION_EMOJIS)[number]
 
 export function canReactToFeedItem(

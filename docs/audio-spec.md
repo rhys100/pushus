@@ -68,7 +68,7 @@ over 350ms + square punch 210→95Hz over 90ms.
 
 ## 5. DINK — nose-tap rep confirm
 
-**Trigger:** every nose/chin tap in nose-tap mode (~1/sec cadence).
+**Trigger:** every nose tap in nose-tap mode (~1/sec cadence).
 **Character:** the Quake 3 Arena hitsound vibe — a bright, metallic,
 instantly-readable "point scored" blip. Distinct from RATCHET (this is pitched
 and musical, not mechanical).

@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { cn } from '@/lib/cn'
+import { tapHaptic } from '@/lib/haptics'
 
 export type SegmentedControlOption<T extends string> = {
   value: T
@@ -20,6 +22,9 @@ export function SegmentedControl<T extends string>({
   ariaLabel,
   className,
 }: SegmentedControlProps<T>) {
+  // Pop only rewards a tap — the initially selected segment mounts still.
+  const [interacted, setInteracted] = useState(false)
+
   return (
     <div
       role="tablist"
@@ -36,11 +41,19 @@ export function SegmentedControl<T extends string>({
             type="button"
             role="tab"
             aria-selected={selected}
-            onClick={() => onChange(option.value)}
+            onClick={() => {
+              if (!selected) {
+                tapHaptic()
+                setInteracted(true)
+              }
+              onChange(option.value)
+            }}
             className={cn(
-              'min-h-11 rounded-[var(--radius-md)] border px-2 text-xs font-semibold capitalize transition-colors',
+              'min-h-11 rounded-[var(--radius-md)] border px-2 text-xs font-semibold capitalize',
+              'transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out)]',
+              'active:scale-[0.96]',
               selected
-                ? 'border-accent bg-accent-muted text-accent'
+                ? cn('border-accent bg-accent-muted text-accent', interacted && 'motion-pop')
                 : 'border-border bg-surface text-text-muted hover:border-accent/30',
             )}
           >

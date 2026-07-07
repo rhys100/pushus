@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { cn } from '@/lib/cn'
+import { tapHaptic } from '@/lib/haptics'
 import { getGroupLocalDateString } from '@/hooks/useTodayData'
 import { useActivityProgressRows, type ProgressSelection } from '@/hooks/useActivityProgress'
 import { useCustomActivities } from '@/hooks/useCustomActivities'
@@ -46,6 +47,8 @@ export function MyProgressPanel({ group, userId, timezone, className }: MyProgre
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [range, setRange] = useState<ProgressRange>('daily')
   const [metric, setMetric] = useState<ProgressMetric>('total')
+  // Chip pop only rewards a tap — the default chip mounts still.
+  const [chipInteracted, setChipInteracted] = useState(false)
 
   const selectedActivity = activities.find((activity) => activity.id === selectedId) ?? null
   const selection: ProgressSelection = selectedActivity
@@ -119,7 +122,11 @@ export function MyProgressPanel({ group, userId, timezone, className }: MyProgre
           icon={PUSHUPS_ICON}
           label="Push-ups"
           selected={selectedActivity == null}
-          onClick={() => setSelectedId(null)}
+          pop={chipInteracted}
+          onClick={() => {
+            setChipInteracted(true)
+            setSelectedId(null)
+          }}
         />
         {activities.map((activity) => (
           <ActivityChip
@@ -127,7 +134,11 @@ export function MyProgressPanel({ group, userId, timezone, className }: MyProgre
             icon={activity.emoji}
             label={activity.name}
             selected={selectedId === activity.id}
-            onClick={() => setSelectedId(activity.id)}
+            pop={chipInteracted}
+            onClick={() => {
+              setChipInteracted(true)
+              setSelectedId(activity.id)
+            }}
           />
         ))}
       </div>
@@ -199,11 +210,13 @@ function ActivityChip({
   icon,
   label,
   selected,
+  pop,
   onClick,
 }: {
   icon: string
   label: string
   selected: boolean
+  pop: boolean
   onClick: () => void
 }) {
   return (
@@ -211,11 +224,18 @@ function ActivityChip({
       type="button"
       role="tab"
       aria-selected={selected}
-      onClick={onClick}
+      onClick={() => {
+        if (!selected) {
+          tapHaptic()
+        }
+        onClick()
+      }}
       className={cn(
-        'inline-flex shrink-0 items-center gap-1.5 rounded-[var(--radius-full)] border px-3 py-1.5 text-xs font-semibold transition-colors',
+        'inline-flex shrink-0 items-center gap-1.5 rounded-[var(--radius-full)] border px-3 py-1.5 text-xs font-semibold',
+        'transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out)]',
+        'active:scale-[0.96]',
         selected
-          ? 'border-accent bg-accent-muted text-accent'
+          ? cn('border-accent bg-accent-muted text-accent', pop && 'motion-pop')
           : 'border-border bg-bg text-text-muted hover:border-accent/30',
       )}
     >

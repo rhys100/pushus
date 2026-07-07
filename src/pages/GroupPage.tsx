@@ -143,6 +143,60 @@ export function GroupPage() {
         />
       ) : null}
 
+      <div className="grid grid-cols-3 gap-3">
+        <Card
+          padding="sm"
+          role="button"
+          tabIndex={0}
+          className="cursor-pointer transition-colors hover:border-accent/30"
+          onClick={() => navigate('/mates')}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault()
+              navigate('/mates')
+            }
+          }}
+        >
+          <p className="text-lg">🤝</p>
+          <p className="mt-1 text-sm font-semibold text-text-primary">Mates</p>
+          <p className="text-xs text-text-muted">Nudges and 1v1s</p>
+        </Card>
+        <Card
+          padding="sm"
+          role="button"
+          tabIndex={0}
+          className="cursor-pointer transition-colors hover:border-accent/30"
+          onClick={() => navigate('/challenges')}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault()
+              navigate('/challenges')
+            }
+          }}
+        >
+          <p className="text-lg">🏆</p>
+          <p className="mt-1 text-sm font-semibold text-text-primary">Challenges</p>
+          <p className="text-xs text-text-muted">Group comps</p>
+        </Card>
+        <Card
+          padding="sm"
+          role="button"
+          tabIndex={0}
+          className="cursor-pointer transition-colors hover:border-accent/30"
+          onClick={() => navigate('/achievements')}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault()
+              navigate('/achievements')
+            }
+          }}
+        >
+          <p className="text-lg">🏅</p>
+          <p className="mt-1 text-sm font-semibold text-text-primary">Badges</p>
+          <p className="text-xs text-text-muted">XP and streaks</p>
+        </Card>
+      </div>
+
       <section className="space-y-2">
         <div className="flex items-baseline justify-between gap-2">
           <h2 className="text-sm font-semibold text-text-primary">Members</h2>
