@@ -9,6 +9,12 @@ import {
 import { useStreakStatus, useUseStreakFreeze } from '@/hooks/useStreaks'
 import { useAuth } from '@/providers/AuthProvider'
 
+/** Streak days that earn a celebration pulse when you visit on the day. */
+function isStreakMilestone(days: number): boolean {
+  if (days >= 100) return days % 50 === 0
+  return [7, 14, 21, 30, 50, 75].includes(days)
+}
+
 export function AchievementsPage() {
   const { user } = useAuth()
   const { toast } = useToast()
@@ -52,6 +58,11 @@ export function AchievementsPage() {
           ) : (
             <StatCard
               label="Active streak"
+              className={
+                streak && streak.todayLogged && isStreakMilestone(streak.activeStreak)
+                  ? 'goal-celebrate'
+                  : undefined
+              }
               value={
                 <>
                   {streak?.activeStreak ?? 0}

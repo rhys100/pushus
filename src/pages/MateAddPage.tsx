@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Button, Card, Skeleton } from '@/components/ui'
 import { getErrorMessage } from '@/lib/errors'
+import { successHaptic } from '@/lib/haptics'
 import { useRedeemMateCode } from '@/hooks/useMates'
 
 /** Landing page for shared mate links: /mates/add/:code */
@@ -23,9 +24,10 @@ export function MateAddPage() {
 
     redeem
       .mutateAsync(code)
-      .then((mate) =>
-        setResult({ state: 'done', name: mate.display_name, emoji: mate.avatar_emoji }),
-      )
+      .then((mate) => {
+        successHaptic()
+        setResult({ state: 'done', name: mate.display_name, emoji: mate.avatar_emoji })
+      })
       .catch((error) =>
         setResult({ state: 'error', message: getErrorMessage(error, 'Invalid mate link.') }),
       )
@@ -37,8 +39,10 @@ export function MateAddPage() {
         {result.state === 'working' ? (
           <Skeleton className="h-28 w-full" />
         ) : result.state === 'done' ? (
-          <Card padding="lg" className="space-y-3 text-center">
-            <p className="text-4xl">{result.emoji}</p>
+          <Card padding="lg" className="motion-rise space-y-3 text-center">
+            <p className="motion-pop text-4xl" style={{ animationDelay: '140ms' }}>
+              {result.emoji}
+            </p>
             <p className="text-lg font-bold text-text-primary">
               You and {result.name} are mates now
             </p>
@@ -50,7 +54,7 @@ export function MateAddPage() {
             </Button>
           </Card>
         ) : (
-          <Card padding="lg" className="space-y-3 text-center">
+          <Card padding="lg" className="motion-rise space-y-3 text-center">
             <p className="text-4xl">🤝</p>
             <p className="text-lg font-bold text-text-primary">That link didn&apos;t work</p>
             <p className="text-sm text-text-muted">{result.message}</p>

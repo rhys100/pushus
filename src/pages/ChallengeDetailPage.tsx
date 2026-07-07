@@ -19,9 +19,11 @@ import {
   scoreChallenge,
   scoreTeams,
 } from '@/lib/challenges'
+import { cn } from '@/lib/cn'
 import { formatMemberListName } from '@/lib/memberDisplayName'
 import { getErrorMessage } from '@/lib/errors'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
+import { useFlipList } from '@/hooks/useFlipList'
 import {
   useChallenge,
   useChallengeEntries,
@@ -89,6 +91,10 @@ export function ChallengeDetailPage() {
     if (!teamData || teamData.teams.length === 0) return []
     return scoreTeams(standings, teamData.teams, teamData.memberships)
   }, [standings, teamData])
+
+  // Competitors glide to their new rank as scores move (range switches,
+  // fresh banks) instead of teleporting.
+  const standingsListRef = useFlipList<HTMLUListElement>(standings)
 
   if (challengeLoading || !challenge) {
     return (
@@ -275,19 +281,24 @@ export function ChallengeDetailPage() {
               description="Be the first in and set the pace."
             />
           ) : (
-            <ul className="space-y-2">
+            <ul ref={standingsListRef} className="motion-stagger space-y-2">
               {standings.map((standing, index) => {
                 const member = nameByUser.get(standing.user_id)
                 const isSelf = standing.user_id === user?.id
                 const isWinner = status === 'ended' && index === 0 && standing.total > 0
 
                 return (
-                  <li key={standing.user_id}>
+                  <li key={standing.user_id} data-flip-key={standing.user_id}>
                     <Card
                       padding="sm"
                       className={`flex items-center gap-3 ${isSelf ? 'border-accent/50' : ''}`}
                     >
-                      <span className="w-6 shrink-0 text-center font-mono text-sm text-text-muted">
+                      <span
+                        className={cn(
+                          'w-6 shrink-0 text-center font-mono text-sm text-text-muted',
+                          isWinner && 'motion-pop text-base',
+                        )}
+                      >
                         {isWinner ? '🏆' : index + 1}
                       </span>
                       <AvatarChip

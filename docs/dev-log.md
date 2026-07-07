@@ -26,6 +26,13 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (motion pass — social surfaces)
+
+- **Mates:** nudge send / mate accept / battle accept / challenge send fire `successHaptic`; 1v1 scores and the you-vs-them stat grid count up; 1d/3d/7d pills get tick + press + gated selection pop; mate detail rises on expand; page staggers; "You won 🏆" badge pops.
+- **Challenges:** standings glide via `useFlipList` with winner-trophy pop; list page staggers; intensity pills get the pill treatment; create form rises in; create success kicks back a haptic.
+- **Achievements:** streak card pulses `goal-celebrate` when you visit on a milestone day (7/14/21/30/50/75, then every 50) with today banked.
+- **Group/MateAdd:** hub cards (Mates/Challenges/Badges) get press-scale + tick; mate-link landing celebrates the handshake (rise + delayed emoji pop + success haptic).
+
 ### 2026-07-08 (design polish pass 5 — activity continuity)
 
 - **UX:** Board → My progress and Feed → My log now default to the activity the Log page is currently banking (`pushus-log-activity:{userId}` read-only follow) instead of resetting to Push-ups each visit. Picking chips on those surfaces doesn't write the preference back — the Log page owns it. Unknown/archived stored ids fall back to Push-ups automatically.

@@ -14,6 +14,7 @@ import { MemberAliasSheet } from '@/components/group/MemberAliasSheet'
 import { useTabPageMeta } from '@/components/layout/TabPageMeta'
 import { supabase } from '@/lib/supabase'
 import { billingConfig } from '@/lib/billing'
+import { tapHaptic } from '@/lib/haptics'
 import { formatMemberListName } from '@/lib/memberDisplayName'
 import { getErrorMessage } from '@/lib/errors'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
@@ -148,8 +149,11 @@ export function GroupPage() {
           padding="sm"
           role="button"
           tabIndex={0}
-          className="cursor-pointer transition-colors hover:border-accent/30"
-          onClick={() => navigate('/mates')}
+          className="cursor-pointer transition-[border-color,transform] duration-[var(--duration-fast)] hover:border-accent/30 active:scale-[0.97]"
+          onClick={() => {
+            tapHaptic()
+            navigate('/mates')
+          }}
           onKeyDown={(event) => {
             if (event.key === 'Enter' || event.key === ' ') {
               event.preventDefault()
@@ -165,8 +169,11 @@ export function GroupPage() {
           padding="sm"
           role="button"
           tabIndex={0}
-          className="cursor-pointer transition-colors hover:border-accent/30"
-          onClick={() => navigate('/challenges')}
+          className="cursor-pointer transition-[border-color,transform] duration-[var(--duration-fast)] hover:border-accent/30 active:scale-[0.97]"
+          onClick={() => {
+            tapHaptic()
+            navigate('/challenges')
+          }}
           onKeyDown={(event) => {
             if (event.key === 'Enter' || event.key === ' ') {
               event.preventDefault()
@@ -182,8 +189,11 @@ export function GroupPage() {
           padding="sm"
           role="button"
           tabIndex={0}
-          className="cursor-pointer transition-colors hover:border-accent/30"
-          onClick={() => navigate('/achievements')}
+          className="cursor-pointer transition-[border-color,transform] duration-[var(--duration-fast)] hover:border-accent/30 active:scale-[0.97]"
+          onClick={() => {
+            tapHaptic()
+            navigate('/achievements')
+          }}
           onKeyDown={(event) => {
             if (event.key === 'Enter' || event.key === ' ') {
               event.preventDefault()

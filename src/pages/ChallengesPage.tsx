@@ -12,6 +12,7 @@ import {
   type ChallengeFormat,
 } from '@/lib/challenges'
 import { getErrorMessage } from '@/lib/errors'
+import { successHaptic, tapHaptic } from '@/lib/haptics'
 import { cn } from '@/lib/cn'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 import { useCompetitions } from '@/hooks/useGamification'
@@ -76,6 +77,8 @@ function CreateChallengeForm({ onDone }: { onDone: () => void }) {
     'leaderboard',
   )
   const [intensity, setIntensity] = useState<CompetitionIntensity>('moderate')
+  // Pop only rewards a tap — the default pill mounts still.
+  const [intensityInteracted, setIntensityInteracted] = useState(false)
   const [targetTotal, setTargetTotal] = useState('')
   const [teamA, setTeamA] = useState('Team A')
   const [teamB, setTeamB] = useState('Team B')
@@ -111,6 +114,7 @@ function CreateChallengeForm({ onDone }: { onDone: () => void }) {
         customEndIso: needsDates ? customEnd : undefined,
       })
 
+      successHaptic()
       toast({ message: 'Challenge created. Rally the troops.', variant: 'success' })
       onDone()
       navigate(`/challenges/${competition.id}`)
@@ -120,7 +124,7 @@ function CreateChallengeForm({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <Card padding="md" className="space-y-3">
+    <Card padding="md" className="motion-rise space-y-3">
       <p className="text-sm font-semibold text-text-primary">New challenge</p>
 
       <label className="block space-y-1">
@@ -237,11 +241,18 @@ function CreateChallengeForm({ onDone }: { onDone: () => void }) {
             <button
               key={option.value}
               type="button"
-              onClick={() => setIntensity(option.value)}
+              onClick={() => {
+                if (intensity !== option.value) {
+                  tapHaptic()
+                  setIntensityInteracted(true)
+                }
+                setIntensity(option.value)
+              }}
               className={cn(
-                'min-h-10 rounded-[var(--radius-md)] border px-2 py-1.5 text-sm font-medium transition-colors',
+                'min-h-10 rounded-[var(--radius-md)] border px-2 py-1.5 text-sm font-medium',
+                'transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] active:scale-95',
                 intensity === option.value
-                  ? 'border-accent bg-accent-muted text-text-primary'
+                  ? cn('border-accent bg-accent-muted text-text-primary', intensityInteracted && 'motion-pop')
                   : 'border-border bg-bg text-text-muted hover:border-accent/30',
               )}
             >
@@ -292,7 +303,7 @@ export function ChallengesPage() {
 
   return (
     <AppLayout title="Challenges" subtitle={activeGroup?.name} showNav={false}>
-      <div className="space-y-6 pb-8">
+      <div className="motion-stagger space-y-6 pb-8">
         {isAdmin && !creating ? (
           <Button fullWidth onClick={() => setCreating(true)}>
             New challenge

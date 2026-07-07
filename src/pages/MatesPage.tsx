@@ -12,7 +12,9 @@ import {
 } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { getErrorMessage } from '@/lib/errors'
+import { successHaptic, tapHaptic } from '@/lib/haptics'
 import { formatProfileName } from '@/lib/memberDisplayName'
+import { useCountUp } from '@/hooks/useCountUp'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 import { useGroupMembers } from '@/hooks/useGroupMembers'
 import {
@@ -49,12 +51,14 @@ const NUDGE_FEED_COPY: Record<NudgeKind, (name: string) => string> = {
 
 function StatCell({ label, mine, theirs }: { label: string; mine: number; theirs: number }) {
   const lead = mine > theirs ? 'text-success' : mine < theirs ? 'text-text-muted' : 'text-text-primary'
+  const mineDisplay = useCountUp(mine)
+  const theirsDisplay = useCountUp(theirs)
 
   return (
     <div className="rounded-[var(--radius-md)] border border-border bg-bg px-2 py-2 text-center">
       <p className="text-[0.65rem] uppercase tracking-wide text-text-muted">{label}</p>
-      <p className={cn('font-mono text-sm font-bold', lead)}>{mine.toLocaleString()}</p>
-      <p className="font-mono text-xs text-text-muted">vs {theirs.toLocaleString()}</p>
+      <p className={cn('font-mono text-sm font-bold', lead)}>{mineDisplay.toLocaleString()}</p>
+      <p className="font-mono text-xs text-text-muted">vs {theirsDisplay.toLocaleString()}</p>
     </div>
   )
 }
@@ -69,11 +73,14 @@ function MateDetail({ mate, onClose }: { mate: MateListItem; onClose: () => void
   const removeMate = useRemoveMate()
   const blockMate = useBlockMate()
   const [duration, setDuration] = useState<1 | 3 | 7>(3)
+  // Pop only rewards a tap — the default pill mounts still.
+  const [durationInteracted, setDurationInteracted] = useState(false)
   const [confirmingRemove, setConfirmingRemove] = useState(false)
 
   async function handleNudge(kind: NudgeKind) {
     try {
       const result = await sendNudge.mutateAsync({ recipientId: mate.user.id, kind })
+      successHaptic()
       toast({
         message:
           result.pushed > 0
@@ -89,6 +96,7 @@ function MateDetail({ mate, onClose }: { mate: MateListItem; onClose: () => void
   async function handleChallenge() {
     try {
       await createChallenge.mutateAsync({ opponentId: mate.user.id, durationDays: duration })
+      successHaptic()
       toast({ message: 'Challenge sent. Game on when they accept.', variant: 'success' })
     } catch (error) {
       toast({ message: getErrorMessage(error, 'Could not create the challenge.'), variant: 'danger' })
@@ -121,7 +129,7 @@ function MateDetail({ mate, onClose }: { mate: MateListItem; onClose: () => void
   }
 
   return (
-    <div className="space-y-3 border-t border-border pt-3">
+    <div className="motion-rise space-y-3 border-t border-border pt-3">
       {statsLoading || !theirStats || !myStats ? (
         <Skeleton className="h-16 w-full" />
       ) : (
@@ -158,11 +166,18 @@ function MateDetail({ mate, onClose }: { mate: MateListItem; onClose: () => void
             <button
               key={days}
               type="button"
-              onClick={() => setDuration(days as 1 | 3 | 7)}
+              onClick={() => {
+                if (duration !== days) {
+                  tapHaptic()
+                  setDurationInteracted(true)
+                }
+                setDuration(days as 1 | 3 | 7)
+              }}
               className={cn(
-                'min-h-9 flex-1 rounded-[var(--radius-md)] border px-2 text-sm font-medium transition-colors',
+                'min-h-9 flex-1 rounded-[var(--radius-md)] border px-2 text-sm font-medium',
+                'transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] active:scale-95',
                 duration === days
-                  ? 'border-accent bg-accent-muted text-text-primary'
+                  ? cn('border-accent bg-accent-muted text-text-primary', durationInteracted && 'motion-pop')
                   : 'border-border bg-bg text-text-muted',
               )}
             >
@@ -208,10 +223,15 @@ function MateChallengeCard({ challenge }: { challenge: MateChallengeItem }) {
   const ended = challenge.ends_at !== null && new Date(challenge.ends_at) <= new Date()
   const winning = challenge.my_total > challenge.their_total
   const tied = challenge.my_total === challenge.their_total
+  const myScore = useCountUp(challenge.my_total)
+  const theirScore = useCountUp(challenge.their_total)
 
   async function handleRespond(accept: boolean) {
     try {
       await respond.mutateAsync({ challengeId: challenge.id, accept })
+      if (accept) {
+        successHaptic()
+      }
       toast({
         message: accept ? 'Challenge on. Bank everything you have.' : 'Challenge declined.',
         variant: 'success',
@@ -230,7 +250,10 @@ function MateChallengeCard({ challenge }: { challenge: MateChallengeItem }) {
         {challenge.status === 'pending' ? (
           <Badge variant="accent">{challenge.is_challenger ? 'Waiting' : 'Your call'}</Badge>
         ) : ended ? (
-          <Badge variant={winning ? 'success' : 'neutral'}>
+          <Badge
+            variant={winning ? 'success' : 'neutral'}
+            className={winning ? 'motion-pop' : undefined}
+          >
             {tied ? 'Draw' : winning ? 'You won 🏆' : `${opponentName} won`}
           </Badge>
         ) : (
@@ -242,11 +265,11 @@ function MateChallengeCard({ challenge }: { challenge: MateChallengeItem }) {
         <>
           <div className="flex items-center justify-between font-mono text-2xl font-bold">
             <span className={winning ? 'text-success' : 'text-text-primary'}>
-              {challenge.my_total.toLocaleString()}
+              {myScore.toLocaleString()}
             </span>
             <span className="text-xs font-medium text-text-muted">vs</span>
             <span className={!winning && !tied ? 'text-success' : 'text-text-primary'}>
-              {challenge.their_total.toLocaleString()}
+              {theirScore.toLocaleString()}
             </span>
           </div>
           {!ended && challenge.ends_at ? (
@@ -348,6 +371,9 @@ export function MatesPage() {
   async function handleRespond(connectionId: string, accept: boolean) {
     try {
       await respondRequest.mutateAsync({ connectionId, accept })
+      if (accept) {
+        successHaptic()
+      }
       toast({ message: accept ? 'Mates locked in. 💪' : 'Request declined.', variant: 'success' })
     } catch (error) {
       toast({ message: getErrorMessage(error, 'Could not respond.'), variant: 'danger' })
@@ -365,7 +391,7 @@ export function MatesPage() {
 
   return (
     <AppLayout title="Mates" subtitle="Your crew across groups" showNav={false}>
-      <div className="space-y-6 pb-8">
+      <div className="motion-stagger space-y-6 pb-8">
         <Card padding="md" className="space-y-2">
           <p className="text-sm font-medium text-text-primary">Your mate link</p>
           <p className="text-xs text-text-muted">
