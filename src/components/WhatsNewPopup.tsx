@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ActivityIcon } from '@/components/ui/ActivityIcon'
 import { Button } from '@/components/ui/Button'
 import { getLastSeenNewsId, setLastSeenNewsId } from '@/lib/storage'
 import {
@@ -104,8 +105,8 @@ export function WhatsNewPopup() {
         <ul className="mt-4 max-h-[50vh] space-y-4 overflow-y-auto pr-1">
           {items.map((item) => (
             <li key={item.id} className="flex gap-3">
-              <span className="mt-0.5 text-xl leading-none" aria-hidden="true">
-                {item.emoji}
+              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-bg text-accent">
+                <ActivityIcon icon={item.emoji} className="h-4 w-4 text-base" />
               </span>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-text-primary">{item.title}</p>

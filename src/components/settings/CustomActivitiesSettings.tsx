@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ActivityIcon, Button, Card, useToast } from '@/components/ui'
 import { activityIconLabel, ACTIVITY_ICON_IDS } from '@/lib/activityIcons'
 import { cn } from '@/lib/cn'
@@ -40,6 +40,18 @@ export function CustomActivitiesSettings() {
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editor, setEditor] = useState<EditorState>(EMPTY_EDITOR)
+  const [confirmArchiveId, setConfirmArchiveId] = useState<string | null>(null)
+
+  // Archive is destructive-ish (no restore UI yet) — first tap arms the
+  // button, second tap within 4s confirms.
+  useEffect(() => {
+    if (!confirmArchiveId) {
+      return
+    }
+
+    const timer = window.setTimeout(() => setConfirmArchiveId(null), 4000)
+    return () => window.clearTimeout(timer)
+  }, [confirmArchiveId])
 
   if (!user) {
     return null
@@ -112,6 +124,13 @@ export function CustomActivitiesSettings() {
   }
 
   async function handleArchive(activity: CustomActivity) {
+    if (confirmArchiveId !== activity.id) {
+      setConfirmArchiveId(activity.id)
+      return
+    }
+
+    setConfirmArchiveId(null)
+
     try {
       await archiveActivity.mutateAsync({ userId: user!.id, activityId: activity.id })
       toast({
@@ -190,12 +209,12 @@ export function CustomActivitiesSettings() {
                 Edit
               </Button>
               <Button
-                variant="ghost"
+                variant={confirmArchiveId === activity.id ? 'danger' : 'ghost'}
                 className="min-h-8 shrink-0 px-2.5 text-xs text-danger"
                 disabled={saving}
                 onClick={() => void handleArchive(activity)}
               >
-                Archive
+                {confirmArchiveId === activity.id ? 'Confirm?' : 'Archive'}
               </Button>
             </li>
           ))}

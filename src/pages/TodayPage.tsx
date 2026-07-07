@@ -332,6 +332,12 @@ export function TodayPage() {
       loggerRef.current?.unwind()
       dismissHint()
 
+      // Sided work alternates naturally (left set, then right) — flip the
+      // toggle so the next bank lands on the other side by default.
+      if (entrySide) {
+        setActivitySide(entrySide === 'left' ? 'right' : 'left')
+      }
+
       toast({
         message: `${bankedCount} ${selectedActivity.name}${entrySide ? ` (${entrySide})` : ''} banked.`,
         variant: 'success',
@@ -549,7 +555,13 @@ export function TodayPage() {
             disabled={!canBank}
             loading={bankPending}
             onBank={handleBankActive}
-            label={isCustomMode && selectedActivity ? `Bank ${selectedActivity.name}` : undefined}
+            label={
+              isCustomMode && selectedActivity
+                ? selectedActivity.track_sides
+                  ? `Bank ${selectedActivity.name} (${activitySide})`
+                  : `Bank ${selectedActivity.name}`
+                : undefined
+            }
             className="mt-4 transition-opacity duration-[var(--duration-fast)]"
           />
         </div>
