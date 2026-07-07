@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ActivityIcon } from '@/components/ui/ActivityIcon'
 import { PUSHUPS_ICON } from '@/lib/activityIcons'
 import { cn } from '@/lib/cn'
@@ -24,6 +25,7 @@ export function ActivitySwitcher({
   disabled = false,
   className,
 }: ActivitySwitcherProps) {
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const selected = activities.find((activity) => activity.id === selectedActivityId)
 
@@ -119,6 +121,17 @@ export function ActivitySwitcher({
                   />
                 ))}
               </div>
+
+              <button
+                type="button"
+                className="mt-3 text-xs font-medium text-text-muted underline underline-offset-2 hover:text-text-primary"
+                onClick={() => {
+                  setOpen(false)
+                  navigate('/settings')
+                }}
+              >
+                Manage activities in Settings
+              </button>
             </div>
           </div>
         </div>

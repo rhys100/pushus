@@ -13,6 +13,7 @@ import {
 import { useCustomActivities } from '@/hooks/useCustomActivities'
 import {
   useBankCustomActivity,
+  useCustomActivityBestSet,
   useCustomActivityDayEntries,
   useDeleteCustomActivityEntry,
 } from '@/hooks/useCustomActivityLog'
@@ -110,6 +111,7 @@ export function TodayPage() {
     selectedActivity?.id,
     customLoggedFor,
   )
+  const { data: customBestSet = 0 } = useCustomActivityBestSet(selectedActivity?.id)
   const bankPending = bankPushups.isPending || bankCustom.isPending
 
   const handleSelectActivity = useCallback(
@@ -492,7 +494,11 @@ export function TodayPage() {
         ) : null}
 
         {isCustomMode && selectedActivity ? (
-          <CustomActivityDayCard activity={selectedActivity} entries={customDayEntries} />
+          <CustomActivityDayCard
+            activity={selectedActivity}
+            entries={customDayEntries}
+            allTimeBest={customBestSet}
+          />
         ) : (
           <DayProgressCard
             variant="compact"

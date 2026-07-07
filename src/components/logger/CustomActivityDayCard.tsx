@@ -5,6 +5,8 @@ import type { CustomActivity, CustomActivityEntry } from '@/types/customActivity
 export type CustomActivityDayCardProps = {
   activity: CustomActivity
   entries: CustomActivityEntry[]
+  /** All-time best single set (includes today); 0 = never logged. */
+  allTimeBest?: number
   className?: string
 }
 
@@ -12,10 +14,13 @@ export type CustomActivityDayCardProps = {
 export function CustomActivityDayCard({
   activity,
   entries,
+  allTimeBest = 0,
   className,
 }: CustomActivityDayCardProps) {
   const total = entries.reduce((sum, entry) => sum + entry.count, 0)
   const best = entries.reduce((max, entry) => Math.max(max, entry.count), 0)
+  // Today's top set matches (or set) the record — celebrate right on the card.
+  const recordIsToday = best > 0 && allTimeBest > 0 && best >= allTimeBest
   const leftTotal = entries
     .filter((entry) => entry.side === 'left')
     .reduce((sum, entry) => sum + entry.count, 0)
@@ -48,6 +53,16 @@ export function CustomActivityDayCard({
           Left <span className="font-mono font-semibold text-text-primary">{leftTotal}</span>
           {' · '}
           Right <span className="font-mono font-semibold text-text-primary">{rightTotal}</span>
+        </p>
+      ) : null}
+      {recordIsToday ? (
+        <p className="mt-1 text-xs font-semibold text-accent">
+          🏆 All-time best set — {best} today
+        </p>
+      ) : allTimeBest > 0 ? (
+        <p className="mt-1 text-xs text-text-muted">
+          All-time best{' '}
+          <span className="font-mono font-semibold text-text-primary">{allTimeBest}</span>
         </p>
       ) : null}
     </div>
