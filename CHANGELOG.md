@@ -12,6 +12,21 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Light mode:** full light theme with a Settings → Appearance toggle (Light / Dark / System). Defaults to following the phone; theme resolves pre-paint (no flash); nose-tap mode stays dark by design. Meta theme-color and native controls follow the active theme
+- **Mates:** consent-based mate connections separate from groups (migration `0032`). Request mates from shared groups or share a personal **mate link** (rotatable); accept/decline, remove, and block. Mates see aggregate stats only (today / 7-day / 30-day / best day) — never individual entries or group data
+- **Mate nudges:** 💪 push them / 👏 cheer / 😤 stir up — sends a push notification to your mate (via the `send-nudge` edge function), limited to one per mate per day, respecting their quiet hours and injury pause
+- **1v1 mate battles:** challenge a mate to a 1, 3, or 7-day rep battle; live you-vs-them score, countdown, and result on the Mates page
+- **Mate board:** 7-day totals leaderboard across you and your mates (cross-group aggregate)
+- **Group challenges:** admins can create challenges with one-day / weekend / 7 / 14 / 30-day / custom-date formats and leaderboard, group-target, or team-vs-team types (one-off teams). Fun/Moderate/Hard/Stupid intensity — Hard and Stupid warn before joining. Members join from the challenge page; **late joiners score from their join day** (no backfilled wins); winner banner on ended challenges
+- **XP goes live:** 1 push-up = 1 XP awarded automatically on bank (DB trigger, migration `0031`), with history backfilled. Edits, deletes, and rejected entries adjust XP down. Total shows on Achievements
+- **Achievements go live:** seeded badge catalog (First Bank, Big Banker, Monster Set, Fifty/Century/Double Century Day, 1k/10k/100k Clubs, Week Streak, Monthly Machine, Early Bird, Night Owl) with server-side unlocks on bank and historical backfill
+- **Streaks + freezes:** active streak (rest days protected) on the Achievements page and one streak freeze per week — "Protect yesterday" covers a missed day without faking reps
+- **Custom reminder frequency:** every 30 minutes, hourly, 2 / 3 / 4 hours, or once daily (migration `0030`; legacy column kept in sync for older cached clients)
+- **pg_cron scheduling:** run reminders from inside Supabase every 15 minutes via `supabase/snippets/schedule-push-reminders-pg-cron.sql` — replaces jittery GitHub Actions cron (kept as documented fallback)
+- **Locked reaction set:** feed reactions expanded to 💪 🔥 😂 👏 😤
+- **Admin entry review:** entries held by the oversize policy appear in Settings → Group admin for approve/reject (rejected entries stop counting everywhere, including XP); oversize policy (warn / block / review) and **feed visibility** (full entries / daily totals / leaderboard totals) are now configurable in-app (migration `0033`)
+- **Group hub cards:** Mates, Challenges, and Badges entry points on the Group tab
+- **Push reminder ding fix:** repeated reminders replaced the tray notification silently on Android — `renotify` now makes every reminder sound; eligibility also allows 10 minutes of scheduler slack so cron jitter can't skip whole hours
 - **What's new popup:** returning members see a one-time popup listing major features launched since their last visit (tracked per device); members who joined after a launch never see it. Signed "Love Rhys + MK 🧡" while in beta. Add entries to `src/lib/whatsNew.ts` when shipping a major feature
 - **What's new history (Settings):** every launch announcement lives at Settings → What's new, grouped by date with the app version it shipped in; the popup links to it via "See past updates"
 - **Custom activities:** track any exercise just for you (calf raises, pull-ups, leg raises) with optional separate left/right sides. Manage in Settings → Custom activities; a compact switcher pill appears above the Log page ring once you have one. Custom reps are private — never on the group feed, board, or training plan

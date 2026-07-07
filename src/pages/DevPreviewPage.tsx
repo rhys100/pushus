@@ -8,7 +8,10 @@ import { NoseHoldHint } from '@/components/logger/NoseHoldHint'
 import { NoseTapMode } from '@/components/logger/NoseTapMode'
 import { DayProgressCard } from '@/components/today/DayProgressCard'
 import { ProgressChart } from '@/components/progress/ProgressChart'
+import { RepCalendar } from '@/components/feed/RepCalendar'
+import { SetEffortSheet } from '@/components/logger/SetEffortSheet'
 import { useFlipList } from '@/hooks/useFlipList'
+import type { DayRepSummary } from '@/hooks/useRepHistory'
 import { Button, GoalProgressBar, SegmentedControl, Skeleton, StatCard } from '@/components/ui'
 import type { TodayPrescription } from '@/lib/training/planEngine'
 
@@ -154,6 +157,10 @@ export function DevPreviewPage() {
 
         <FlipListDemo />
 
+        <SheetDemo />
+
+        <CalendarDemo />
+
         <div className="grid grid-cols-2 gap-3">
           <StatCard label="This week" value={barValue * 7} hint="+12% vs last" trend="up" />
           <StatCard label="Best set" value={32} hint="steady" trend="neutral" />
@@ -170,6 +177,60 @@ export function DevPreviewPage() {
         onExit={() => setNoseTapOpen(false)}
       />
     </div>
+  )
+}
+
+/** Slide-up sheet demo — same component the post-bank effort check uses. */
+function SheetDemo() {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-medium text-text-muted">Bottom sheet</p>
+        <Button
+          variant="secondary"
+          className="min-h-9 px-4 py-1.5 text-xs"
+          onClick={() => setOpen((value) => !value)}
+        >
+          {open ? 'Close sheet' : 'Open sheet'}
+        </Button>
+      </div>
+      <SetEffortSheet
+        open={open}
+        onSelect={() => setOpen(false)}
+        onSkip={() => setOpen(false)}
+      />
+    </div>
+  )
+}
+
+/** Month-cascade calendar demo with fabricated history. */
+function CalendarDemo() {
+  const today = new Date()
+  const todayKey = today.toISOString().slice(0, 10)
+  const [monthStart, setMonthStart] = useState(
+    () => new Date(today.getFullYear(), today.getMonth(), 1),
+  )
+  const [selectedDate, setSelectedDate] = useState(todayKey)
+
+  const summaries = new Map<string, DayRepSummary>()
+  for (let dayOffset = 0; dayOffset < 40; dayOffset += 2) {
+    const day = new Date(today)
+    day.setDate(day.getDate() - dayOffset)
+    const key = day.toISOString().slice(0, 10)
+    summaries.set(key, { loggedFor: key, totalReps: 20 + ((dayOffset * 7) % 45), setCount: 2 })
+  }
+
+  return (
+    <RepCalendar
+      monthStart={monthStart}
+      onMonthChange={setMonthStart}
+      selectedDate={selectedDate}
+      onSelectDate={setSelectedDate}
+      todayDate={todayKey}
+      summariesByDate={summaries}
+    />
   )
 }
 

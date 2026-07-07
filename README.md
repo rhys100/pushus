@@ -77,7 +77,13 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 
 - [x] Leaderboard (day, week, month views; daily goal progress on Day view; percent progress for other members)
 - [x] Activity feed (Group stream + **My log** personal history with month calendar)
-- [x] Emoji reactions
+- [x] Emoji reactions (💪 🔥 😂 👏 😤)
+- [x] **Mates** — consent-based connections (shared-group requests or personal mate link), aggregate-stats profile cards, mate leaderboard, block/remove
+- [x] Mate nudges (push them / cheer / stir up) with push notifications, one per mate per day
+- [x] 1v1 mate battles (1/3/7-day rep battles with live scores)
+- [x] Group challenges — one-day, weekend, 7/14/30-day, custom dates; leaderboard, group target, and team-vs-team types; late joiners score from their join day
+- [x] XP (1 rep = 1 XP), achievements with server-side unlocks, active streaks with weekly streak freezes
+- [x] Admin entry review queue, oversize entry policy, and feed visibility modes
 - [x] Group invite tools
 - [x] Branded social share previews for invite links (Cloudflare Pages Functions + default OG image)
 - [x] Member list on Group tab; join requests and invites in Settings (admin)
@@ -90,8 +96,9 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 - [x] Easy / Good / Hard effort feedback after sets; post-challenge soreness check-in
 - [x] Week 1 plan tuning adjusts targets from logged pushups + RIR; wizard adapts when log history is stale
 - [x] Training wizard calibrates starting volume from recent PushUS log history (structured build, not challenge grind)
-- [x] Customisable push reminder frequency and active hours
+- [x] Customisable push reminder frequency (30 min to once daily) and active hours
 - [x] Injury pause for reminders
+- [x] Light and dark themes (follows system, manual override in Settings)
 
 ### Platform
 
@@ -110,11 +117,10 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 
 These are **directional ideas** — not all implemented yet. See [docs/product-roadmap.md](docs/product-roadmap.md) for detail.
 
-- Friend and mate connections (consent-based, not a public network)
-- 1v1 challenges and friend nudges
-- Richer challenge types (teams, weekends, custom dates)
-- Streaks, XP, and achievements
-- Banter notifications (opt-in)
+- Group-visible injury/sub-out status with plan pause and ramp-back
+- Streak and improvement challenge types; official weekly/monthly auto-competitions
+- More leaderboard types (biggest set, goal completion, most improved)
+- Admin banter badges and banter notifications (opt-in)
 - Hosted **PushUS Cloud** (group billing)
 - Better admin and moderation tools
 
@@ -141,7 +147,7 @@ PushUS Community runs on **your** Supabase project plus a static frontend host.
 1. Clone this repository
 2. Create a Supabase project (or run Supabase locally)
 3. Copy `.env.example` to `.env` and set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
-4. Apply migrations: `supabase db reset` (local) or `npx supabase login` then `npx supabase db push` (hosted). Hosted projects need migrations through `0028_profile_initial_and_aliases` (includes mate labels and profile initials).
+4. Apply migrations: `supabase db reset` (local) or `npx supabase login` then `npx supabase db push` (hosted). Hosted projects need migrations through `0033_entry_review_admin` (includes mates, gamification, custom reminder intervals, and admin entry review).
 5. Build: `npm run build` and deploy the `dist/` folder
 
 Keep `VITE_BILLING_ENABLED=false` for Community. Never put service role or Stripe secrets in the frontend.

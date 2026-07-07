@@ -60,7 +60,19 @@ describe('streakStatus', () => {
   })
 
   describe('resolveFreezeStatus', () => {
-    it('offers to protect an unlogged yesterday when a freeze is free', () => {
+    it('offers to protect an unlogged yesterday when it reconnects a streak', () => {
+      const status = resolveFreezeStatus({
+        todayIso: '2026-07-07',
+        freezes: [],
+        loggedDates: new Set(['2026-07-07', '2026-07-05']),
+        restDows: [],
+      })
+
+      expect(status.protectableDate).toBe('2026-07-06')
+      expect(status.usedThisWeek).toBe(false)
+    })
+
+    it('does not offer when there is no streak behind the gap to reconnect', () => {
       const status = resolveFreezeStatus({
         todayIso: '2026-07-07',
         freezes: [],
@@ -68,8 +80,19 @@ describe('streakStatus', () => {
         restDows: [],
       })
 
+      expect(status.protectableDate).toBeNull()
+    })
+
+    it('looks past protected days when checking for a streak to reconnect', () => {
+      // Two days ago is a rest day; three days ago was logged.
+      const status = resolveFreezeStatus({
+        todayIso: '2026-07-07',
+        freezes: [],
+        loggedDates: new Set(['2026-07-07', '2026-07-04']),
+        restDows: [0], // Sunday — 2026-07-05
+      })
+
       expect(status.protectableDate).toBe('2026-07-06')
-      expect(status.usedThisWeek).toBe(false)
     })
 
     it('does not offer when yesterday was logged', () => {

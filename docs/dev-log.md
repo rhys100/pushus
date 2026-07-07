@@ -26,6 +26,18 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-07 (big feature push — mates, challenges, gamification, light mode, reminder fix)
+
+- **Reminder "one ding a day" root cause found and fixed:** `sw.js` used a fixed notification `tag` without `renotify`, so Android silently replaced the tray notification for every reminder after the first. Added `renotify: true`. Second cause: GitHub Actions cron jitter + strict 60-min elapsed check skipped alternate hours — eligibility now tolerates 10 min of scheduler slack (`REMINDER_INTERVAL_TOLERANCE_MINUTES`, mirrored in the edge function).
+- **Reminder frequency in minutes** (30m/1h/2h/3h/4h/daily) via migration `0030` with a sync trigger keeping legacy `reminder_interval_hours` coherent for stale cached PWA clients. pg_cron snippet (15-min tick) added as the preferred scheduler; GH Actions demoted to documented fallback.
+- **Light mode** shipped: `[data-theme]` token blocks in `tokens.css` (dark stays default; nested `data-theme="dark"` pins nose-tap mode dark), pre-paint script in `index.html`, `src/lib/theme.ts` manager, Settings → Appearance (Light/Dark/System). New tokens for card/toast/popup/dock shadows and logger hub/track so no component carries theme-specific hexes.
+- **Gamification live** via migration `0031`: XP triggers on `pushup_entries` (insert/update/delete aware, review-status aware) + history backfill; achievements catalog seed + trigger-based unlocks (incl. SQL active-streak calc honouring rest days/freezes); streak freeze UX = explicit "Protect yesterday", 1/week.
+- **Challenges** built on the existing `competitions` schema: admin create form (formats map to timezone-correct windows in `src/lib/challenges.ts`), join flows with beginner warnings for hard/stupid, live standings, team-vs-team with one-off teams, group-target progress bar, late joiners scored from join day.
+- **Mates** via migration `0032`: consent graph (request from shared groups OR rotatable personal mate link; accept/decline/remove/block), all writes through SECURITY DEFINER RPCs, read RPCs return aggregate stats only. Nudges (1/mate/day, `send-nudge` edge function delivers push respecting quiet hours + injury pause) and 1v1 battles (1/3/7-day, live scores) ride the same graph.
+- **Quick wins:** locked reaction set 💪🔥😂👏😤; admin entry review queue + oversize policy + feed visibility selects in Group admin settings (migration `0033` adds `list_pending_entries`/`review_entry`; `activity_feed` already respected visibility modes server-side).
+- **Deploy checklist:** `supabase db push` (0030–0033), deploy `send-push-reminders` + `send-nudge` edge functions, run the pg_cron snippet with `CRON_SECRET` in Vault, then disable the GH Actions cron.
+- Not built yet from the todo list: group-visible injury/sub-out status (plan pause + ramp-back + weekly check-ins), daily-goal celebrate/overage caps UX, streak/improvement challenge types (locked as later anyway), denser feed layouts, weekly/monthly official auto-competitions.
+
 ### 2026-07-07 (design polish pass 2 — restore archived)
 
 - **Added:** archived custom activities can be restored — collapsed "Archived (n)" section at the bottom of Settings → Custom activities with a Restore button; history and progress come back with it. Restore can fail if an active activity re-uses the name (unique per user) — raw error surfaced as the hint.

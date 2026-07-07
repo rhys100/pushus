@@ -7,6 +7,7 @@ import { appConfig } from '@/lib/config'
 import { supabase } from '@/lib/supabase'
 import { setPendingInviteCode } from '@/lib/storage'
 import { normalizeInviteCode } from '@/lib/postAuthRouting'
+import { successHaptic } from '@/lib/haptics'
 import { cn } from '@/lib/cn'
 
 const authCallbackUrl = () => `${window.location.origin}/auth/callback`
@@ -73,6 +74,7 @@ export function LoginPage() {
       return
     }
 
+    successHaptic()
     setLinkSent(true)
   }
 
@@ -100,7 +102,8 @@ export function LoginPage() {
     <div
       className="flex min-h-screen flex-col bg-bg px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))]"
     >
-      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
+      {/* Welcome, card, footer rise in one after another */}
+      <div className="motion-stagger mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
         <div className="mb-8 text-center">
           <p className="text-sm uppercase tracking-[0.2em] text-text-muted">Welcome to</p>
           <h1 className="mt-2 text-3xl font-bold text-text-primary">{appConfig.name}</h1>
@@ -116,8 +119,12 @@ export function LoginPage() {
 
         <Card padding="lg" className="space-y-5">
           {linkSent ? (
-            <div className="space-y-3 text-center">
-              <p className="text-4xl" aria-hidden="true">
+            <div className="motion-rise space-y-3 text-center">
+              <p
+                className="motion-pop text-4xl"
+                style={{ animationDelay: '120ms' }}
+                aria-hidden="true"
+              >
                 ✉️
               </p>
               <p className="text-sm font-medium text-text-primary">Magic link sent</p>

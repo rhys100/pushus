@@ -2,7 +2,17 @@ import { useState } from 'react'
 import { Button, Card, useToast } from '@/components/ui'
 import { buildInviteMessage } from '@/lib/inviteMessage'
 import { buildInviteLink } from '@/lib/postAuthRouting'
+import { selectHaptic } from '@/lib/haptics'
 import { cn } from '@/lib/cn'
+
+/** Button label that pops a ✓ the moment a copy lands. */
+function CopyLabel({ copied, idle }: { copied: boolean; idle: string }) {
+  return (
+    <span key={String(copied)} className={copied ? 'motion-pop' : undefined}>
+      {copied ? '✓ Copied' : idle}
+    </span>
+  )
+}
 
 type InviteShareCardProps = {
   inviteCode: string
@@ -34,6 +44,7 @@ export function InviteShareCard({ inviteCode, className }: InviteShareCardProps)
   async function handleCopyLink() {
     const ok = await copyText(inviteLink)
     if (ok) {
+      selectHaptic()
       setCopiedLink(true)
       setLinkCopyFailed(false)
       toast({ message: 'Invite link copied.', variant: 'success' })
@@ -47,6 +58,7 @@ export function InviteShareCard({ inviteCode, className }: InviteShareCardProps)
   async function handleCopyCode() {
     const ok = await copyText(inviteCode)
     if (ok) {
+      selectHaptic()
       setCopiedCode(true)
       setCodeCopyFailed(false)
       toast({ message: 'Invite code copied.', variant: 'success' })
@@ -60,6 +72,7 @@ export function InviteShareCard({ inviteCode, className }: InviteShareCardProps)
   async function handleCopyMessage() {
     const ok = await copyText(inviteMessage)
     if (ok) {
+      selectHaptic()
       setCopiedMessage(true)
       setMessageCopyFailed(false)
       toast({ message: 'Invite message copied. Paste it into SMS or chat.', variant: 'success' })
@@ -106,7 +119,7 @@ export function InviteShareCard({ inviteCode, className }: InviteShareCardProps)
 
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button variant="primary" className="min-h-11 flex-1" onClick={() => void handleCopyMessage()}>
-          {copiedMessage ? 'Copied' : 'Copy invite message'}
+          <CopyLabel copied={copiedMessage} idle="Copy invite message" />
         </Button>
         {canShare ? (
           <Button variant="secondary" className="min-h-11 flex-1" onClick={() => void handleShare()}>
@@ -165,10 +178,10 @@ export function InviteShareCard({ inviteCode, className }: InviteShareCardProps)
 
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" className="min-h-10 flex-1" onClick={() => void handleCopyLink()}>
-              {copiedLink ? 'Copied' : 'Copy link'}
+              <CopyLabel copied={copiedLink} idle="Copy link" />
             </Button>
             <Button variant="secondary" className="min-h-10 flex-1" onClick={() => void handleCopyCode()}>
-              {copiedCode ? 'Copied' : 'Copy code'}
+              <CopyLabel copied={copiedCode} idle="Copy code" />
             </Button>
           </div>
         </div>

@@ -188,8 +188,16 @@ export function GroupFeedPanel() {
 
       {!showInitialSkeleton && !isError && feed.length === 0 ? (
         <EmptyState
-          title="No activity yet"
-          description="When mates bank push-ups, their entries will appear here."
+          title={
+            activeGroup?.feed_visibility === 'leaderboard_totals'
+              ? 'Feed is off for this group'
+              : 'No activity yet'
+          }
+          description={
+            activeGroup?.feed_visibility === 'leaderboard_totals'
+              ? 'This group shows leaderboard totals only — check the Board to see how everyone is going.'
+              : 'When mates bank push-ups, their entries will appear here.'
+          }
           icon={
             <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.75">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 12h3l2-7 4 14 2-7h5" />

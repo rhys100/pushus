@@ -17,7 +17,9 @@ export type ButtonLinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    '[background:var(--gradient-accent)] text-bg hover:brightness-110 active:brightness-95 shadow-[var(--shadow-glow-accent-strong),0_1px_0_rgba(255,255,255,0.25)_inset]',
+    // Dark ink on the accent gradient in BOTH themes — text-bg only worked in
+    // dark mode (bg≈black); in light mode it became white-on-orange (~3:1).
+    '[background:var(--gradient-accent)] text-[var(--color-on-accent)] hover:brightness-110 active:brightness-95 shadow-[var(--shadow-glow-accent-strong),0_1px_0_rgba(255,255,255,0.25)_inset]',
   secondary:
     'bg-surface text-text-primary border-2 border-border hover:border-accent/40 hover:bg-surface/90',
   ghost:

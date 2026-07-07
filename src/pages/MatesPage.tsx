@@ -24,6 +24,7 @@ import {
   useMates,
   useMateStats,
   useMyMateCode,
+  useReceivedNudges,
   useRemoveMate,
   useRequestMate,
   useRespondMateChallenge,
@@ -39,6 +40,12 @@ const NUDGES: { kind: NudgeKind; emoji: string; label: string }[] = [
   { kind: 'cheer', emoji: '👏', label: 'Cheer' },
   { kind: 'stir', emoji: '😤', label: 'Stir up' },
 ]
+
+const NUDGE_FEED_COPY: Record<NudgeKind, (name: string) => string> = {
+  push: (name) => `💪 ${name} is pushing you — bank some reps`,
+  cheer: (name) => `👏 ${name} cheered you on`,
+  stir: (name) => `😤 ${name} reckons you've gone quiet`,
+}
 
 function StatCell({ label, mine, theirs }: { label: string; mine: number; theirs: number }) {
   const lead = mine > theirs ? 'text-success' : mine < theirs ? 'text-text-muted' : 'text-text-primary'
@@ -118,11 +125,16 @@ function MateDetail({ mate, onClose }: { mate: MateListItem; onClose: () => void
       {statsLoading || !theirStats || !myStats ? (
         <Skeleton className="h-16 w-full" />
       ) : (
-        <div className="grid grid-cols-4 gap-2">
-          <StatCell label="Today" mine={myStats.today_total} theirs={theirStats.today_total} />
-          <StatCell label="7 days" mine={myStats.seven_day_total} theirs={theirStats.seven_day_total} />
-          <StatCell label="30 days" mine={myStats.thirty_day_total} theirs={theirStats.thirty_day_total} />
-          <StatCell label="Best day" mine={myStats.best_day_30} theirs={theirStats.best_day_30} />
+        <div className="space-y-1.5">
+          <p className="text-[0.65rem] uppercase tracking-wide text-text-muted">
+            You vs {formatProfileName(mate.user)} — your number on top
+          </p>
+          <div className="grid grid-cols-4 gap-2">
+            <StatCell label="Today" mine={myStats.today_total} theirs={theirStats.today_total} />
+            <StatCell label="7 days" mine={myStats.seven_day_total} theirs={theirStats.seven_day_total} />
+            <StatCell label="30 days" mine={myStats.thirty_day_total} theirs={theirStats.thirty_day_total} />
+            <StatCell label="Best day" mine={myStats.best_day_30} theirs={theirStats.best_day_30} />
+          </div>
         </div>
       )}
 
@@ -286,6 +298,7 @@ export function MatesPage() {
   const { data: leaderboard = [] } = useMateLeaderboard(7)
   const { data: challenges = [] } = useMateChallenges()
   const { data: mateCode } = useMyMateCode()
+  const { data: receivedNudges = [] } = useReceivedNudges(user?.id)
   const { data: members = [] } = useGroupMembers(activeGroup?.id)
   const respondRequest = useRespondMateRequest()
   const requestMate = useRequestMate()
@@ -306,8 +319,20 @@ export function MatesPage() {
   )
 
   const mateLink = mateCode ? `${window.location.origin}/mates/add/${mateCode}` : null
+  const now = Date.now()
+  const isEndedBattle = (challenge: MateChallengeItem) =>
+    challenge.status === 'active' &&
+    challenge.ends_at !== null &&
+    new Date(challenge.ends_at).getTime() <= now
   const liveChallenges = challenges.filter(
-    (challenge) => challenge.status === 'pending' || challenge.status === 'active',
+    (challenge) =>
+      (challenge.status === 'pending' || challenge.status === 'active') &&
+      !isEndedBattle(challenge),
+  )
+  const recentResults = challenges.filter(
+    (challenge) =>
+      isEndedBattle(challenge) &&
+      new Date(challenge.ends_at!).getTime() > now - 7 * 24 * 60 * 60 * 1000,
   )
 
   async function handleCopyLink() {
@@ -365,6 +390,24 @@ export function MatesPage() {
           </div>
         </Card>
 
+        {receivedNudges.length > 0 ? (
+          <Card padding="sm" className="space-y-1.5">
+            {receivedNudges.map((nudge) => {
+              const sender = mates.find((mate) => mate.user.id === nudge.sender_id)
+              const name = sender ? formatProfileName(sender.user) : 'A mate'
+
+              return (
+                <p key={nudge.id} className="text-sm text-text-primary">
+                  {NUDGE_FEED_COPY[nudge.kind](name)}
+                  <span className="ml-1.5 text-xs text-text-muted">
+                    {formatDistanceToNowStrict(new Date(nudge.created_at), { addSuffix: true })}
+                  </span>
+                </p>
+              )
+            })}
+          </Card>
+        ) : null}
+
         {incoming.length > 0 ? (
           <section className="space-y-2">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-text-muted">
@@ -403,6 +446,17 @@ export function MatesPage() {
               1v1 battles
             </h2>
             {liveChallenges.map((challenge) => (
+              <MateChallengeCard key={challenge.id} challenge={challenge} />
+            ))}
+          </section>
+        ) : null}
+
+        {recentResults.length > 0 ? (
+          <section className="space-y-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+              Recent results
+            </h2>
+            {recentResults.map((challenge) => (
               <MateChallengeCard key={challenge.id} challenge={challenge} />
             ))}
           </section>

@@ -1,4 +1,5 @@
 import { cn } from '@/lib/cn'
+import { usePresence } from '@/hooks/usePresence'
 import { Button } from '@/components/ui/Button'
 import type { SorenessStatus } from '@/lib/training/sorenessCheckin'
 
@@ -23,7 +24,9 @@ export function SorenessCheckInSheet({
   onSkip,
   className,
 }: SorenessCheckInSheetProps) {
-  if (!open) {
+  const { mounted, closing } = usePresence(open)
+
+  if (!mounted) {
     return null
   }
 
@@ -32,6 +35,7 @@ export function SorenessCheckInSheet({
       className={cn(
         'fixed inset-x-0 z-[45]',
         'bottom-[calc(var(--bottom-nav-height)+var(--log-bank-strip-height))]',
+        closing ? 'sheet-out' : 'sheet-in',
         className,
       )}
       role="dialog"

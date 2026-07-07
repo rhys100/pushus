@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useToast, type ToastInput } from '@/components/ui'
 import { repHistoryKeys } from '@/hooks/useRepHistory'
 import { formatInTimeZone } from 'date-fns-tz'
 import { activityFeedKeys, type ActivityFeedItem } from '@/hooks/useActivityFeed'
@@ -269,8 +270,61 @@ function invalidateTodayRelatedQueries(
   invalidateDayRelatedQueries(queryClient, group)
 }
 
+/** Badge ids already announced this session, so repeat banks stay quiet. */
+const announcedAchievements = new Set<string>()
+
+/**
+ * Server triggers unlock achievements inside the bank transaction, but the
+ * user would only ever find out by visiting the Badges page. Announce any
+ * unlock from the last few seconds as a toast.
+ */
+async function announceFreshAchievements(
+  queryClient: ReturnType<typeof useQueryClient>,
+  toast: (input: ToastInput) => void,
+  group: Group,
+  userId: string,
+): Promise<void> {
+  const since = new Date(Date.now() - 30_000).toISOString()
+  const { data, error } = await supabase
+    .from('user_achievements')
+    .select('achievement_id, unlocked_at, achievements(name, icon_emoji)')
+    .eq('user_id', userId)
+    .eq('group_id', group.id)
+    .gte('unlocked_at', since)
+
+  if (error || !data || data.length === 0) {
+    return
+  }
+
+  let announced = false
+
+  for (const row of data) {
+    if (announcedAchievements.has(row.achievement_id as string)) {
+      continue
+    }
+
+    announcedAchievements.add(row.achievement_id as string)
+    announced = true
+
+    const achievement = row.achievements as unknown as
+      | { name: string; icon_emoji: string }
+      | null
+    toast({
+      message: `${achievement?.icon_emoji ?? '🏅'} Badge unlocked: ${achievement?.name ?? 'Achievement'}!`,
+      variant: 'success',
+      durationMs: 6_000,
+    })
+  }
+
+  if (announced) {
+    void queryClient.invalidateQueries({ queryKey: ['achievements'] })
+    void queryClient.invalidateQueries({ queryKey: ['xp'] })
+  }
+}
+
 export function useBankPushups() {
   const queryClient = useQueryClient()
+  const { toast } = useToast()
 
   return useMutation({
     mutationFn: async ({ group, count, isMaxCheckin = false }: BankPushupsInput) => {
@@ -380,6 +434,10 @@ export function useBankPushups() {
         void queryClient.invalidateQueries({
           queryKey: maxCheckInContextQueryKey(userId, group.id, loggedFor),
         })
+      }
+
+      if (userId) {
+        void announceFreshAchievements(queryClient, toast, group, userId)
       }
     },
   })
