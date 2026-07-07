@@ -11,6 +11,7 @@ import {
   type ReactionEmoji,
 } from '@/hooks/useActivityFeed'
 import { useAuth } from '@/providers/AuthProvider'
+import { tapHaptic } from '@/lib/haptics'
 import { EmptyState, Skeleton } from '@/components/ui'
 
 function formatRelativeTime(iso: string): string {
@@ -92,13 +93,17 @@ function ActivityFeedRow({
                     disabled={reactionPending}
                     aria-pressed={active}
                     aria-label={`React with ${emoji}`}
-                    onClick={() => onToggleReaction(item.event_id, emoji)}
+                    onClick={() => {
+                      tapHaptic()
+                      onToggleReaction(item.event_id, emoji)
+                    }}
                     className={cn(
                       'inline-flex min-h-8 min-w-8 items-center justify-center rounded-[var(--radius-full)]',
-                      'border text-sm transition-colors duration-[var(--duration-fast)]',
+                      'border text-sm transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out)]',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                      'active:scale-90',
                       active
-                        ? 'border-accent/40 bg-accent-muted'
+                        ? 'motion-pop border-accent/40 bg-accent-muted'
                         : 'border-border bg-bg hover:border-accent/30',
                       reactionPending && 'opacity-60',
                     )}
@@ -195,7 +200,7 @@ export function GroupFeedPanel() {
 
       {!showInitialSkeleton && !isError && feed.length > 0 ? (
         <ul
-          className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface"
+          className="motion-stagger overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface"
           aria-label="Recent group activity"
         >
           {feed.map((item) => (

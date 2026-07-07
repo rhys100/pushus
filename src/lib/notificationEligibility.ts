@@ -5,14 +5,47 @@
 
 export type ReminderIntervalHours = 1 | 2 | 24
 
+export type ReminderIntervalMinutes = 30 | 60 | 120 | 180 | 240 | 1440
+
+/**
+ * Cron schedulers fire with jitter (GitHub Actions can run tens of minutes
+ * late). Without slack, a late tick followed by an on-time tick makes the
+ * strict elapsed check skip a whole interval. Treat "interval minus this
+ * tolerance" as satisfied. Must stay below the scheduler period (15 min)
+ * minus the shortest interval gap to avoid double sends.
+ */
+export const REMINDER_INTERVAL_TOLERANCE_MINUTES = 10
+
 export type NotificationPreferencesInput = {
   push_enabled: boolean
   active_hours_start: number
   active_hours_end: number
+  /** Legacy bucket kept for older cached clients; minutes is source of truth. */
   reminder_interval_hours: ReminderIntervalHours
+  reminder_interval_minutes: ReminderIntervalMinutes
   daily_target: number
   injury_paused: boolean
   injury_paused_until: string | null
+}
+
+/** Minutes interval, falling back to the legacy hours column for pre-migration rows. */
+export function resolveReminderIntervalMinutes(
+  prefs: Partial<
+    Pick<NotificationPreferencesInput, 'reminder_interval_minutes' | 'reminder_interval_hours'>
+  >,
+): number {
+  if (typeof prefs.reminder_interval_minutes === 'number') {
+    return prefs.reminder_interval_minutes
+  }
+
+  return (prefs.reminder_interval_hours ?? 1) * 60
+}
+
+/** Legacy 1|2|24 bucket for a minutes interval — mirrors reminder_interval_bucket_hours in SQL. */
+export function legacyReminderIntervalHours(minutes: number): ReminderIntervalHours {
+  if (minutes >= 1440) return 24
+  if (minutes >= 120) return 2
+  return 1
 }
 
 export type ReminderEligibilityContext = {
@@ -137,11 +170,11 @@ function parseLastReminderSentAt(
 /** True when a reminder was sent too recently for the chosen interval. */
 export function wasReminderSentWithinInterval(
   lastReminderSentAt: Date | string | null | undefined,
-  intervalHours: ReminderIntervalHours,
+  intervalMinutes: number,
   timezone: string,
   now: Date = new Date(),
 ): boolean {
-  if (intervalHours >= 24) {
+  if (intervalMinutes >= 1440) {
     return wasReminderSentToday(lastReminderSentAt, timezone, now)
   }
 
@@ -150,8 +183,12 @@ export function wasReminderSentWithinInterval(
     return false
   }
 
+  const toleranceMinutes = Math.min(
+    REMINDER_INTERVAL_TOLERANCE_MINUTES,
+    Math.floor(intervalMinutes / 3),
+  )
   const elapsedMs = now.getTime() - last.getTime()
-  return elapsedMs < intervalHours * 60 * 60 * 1000
+  return elapsedMs < (intervalMinutes - toleranceMinutes) * 60 * 1000
 }
 
 export function evaluateReminderEligibility(
@@ -181,7 +218,7 @@ export function evaluateReminderEligibility(
   if (
     wasReminderSentWithinInterval(
       context.lastReminderSentAt,
-      prefs.reminder_interval_hours,
+      resolveReminderIntervalMinutes(prefs),
       timezone,
       now,
     )

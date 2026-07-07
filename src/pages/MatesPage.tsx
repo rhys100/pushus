@@ -1,0 +1,519 @@
+import { useMemo, useState } from 'react'
+import { formatDistanceToNowStrict } from 'date-fns'
+import { AppLayout } from '@/components/layout/AppLayout'
+import {
+  AvatarChip,
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Skeleton,
+  useToast,
+} from '@/components/ui'
+import { cn } from '@/lib/cn'
+import { getErrorMessage } from '@/lib/errors'
+import { formatProfileName } from '@/lib/memberDisplayName'
+import { useActiveGroup } from '@/hooks/useActiveGroup'
+import { useGroupMembers } from '@/hooks/useGroupMembers'
+import {
+  useBlockMate,
+  useCancelMateChallenge,
+  useCreateMateChallenge,
+  useMateChallenges,
+  useMateLeaderboard,
+  useMates,
+  useMateStats,
+  useMyMateCode,
+  useRemoveMate,
+  useRequestMate,
+  useRespondMateChallenge,
+  useRespondMateRequest,
+  useRotateMateCode,
+  useSendNudge,
+} from '@/hooks/useMates'
+import { useAuth } from '@/providers/AuthProvider'
+import type { MateChallengeItem, MateListItem, NudgeKind } from '@/types/mates'
+
+const NUDGES: { kind: NudgeKind; emoji: string; label: string }[] = [
+  { kind: 'push', emoji: '💪', label: 'Push them' },
+  { kind: 'cheer', emoji: '👏', label: 'Cheer' },
+  { kind: 'stir', emoji: '😤', label: 'Stir up' },
+]
+
+function StatCell({ label, mine, theirs }: { label: string; mine: number; theirs: number }) {
+  const lead = mine > theirs ? 'text-success' : mine < theirs ? 'text-text-muted' : 'text-text-primary'
+
+  return (
+    <div className="rounded-[var(--radius-md)] border border-border bg-bg px-2 py-2 text-center">
+      <p className="text-[0.65rem] uppercase tracking-wide text-text-muted">{label}</p>
+      <p className={cn('font-mono text-sm font-bold', lead)}>{mine.toLocaleString()}</p>
+      <p className="font-mono text-xs text-text-muted">vs {theirs.toLocaleString()}</p>
+    </div>
+  )
+}
+
+function MateDetail({ mate, onClose }: { mate: MateListItem; onClose: () => void }) {
+  const { user } = useAuth()
+  const { toast } = useToast()
+  const { data: myStats } = useMateStats(user?.id)
+  const { data: theirStats, isLoading: statsLoading } = useMateStats(mate.user.id)
+  const sendNudge = useSendNudge()
+  const createChallenge = useCreateMateChallenge()
+  const removeMate = useRemoveMate()
+  const blockMate = useBlockMate()
+  const [duration, setDuration] = useState<1 | 3 | 7>(3)
+  const [confirmingRemove, setConfirmingRemove] = useState(false)
+
+  async function handleNudge(kind: NudgeKind) {
+    try {
+      const result = await sendNudge.mutateAsync({ recipientId: mate.user.id, kind })
+      toast({
+        message:
+          result.pushed > 0
+            ? `Nudge sent — their phone just went off.`
+            : 'Nudge recorded. They will see it in the app.',
+        variant: 'success',
+      })
+    } catch (error) {
+      toast({ message: getErrorMessage(error, 'Could not nudge.'), variant: 'danger' })
+    }
+  }
+
+  async function handleChallenge() {
+    try {
+      await createChallenge.mutateAsync({ opponentId: mate.user.id, durationDays: duration })
+      toast({ message: 'Challenge sent. Game on when they accept.', variant: 'success' })
+    } catch (error) {
+      toast({ message: getErrorMessage(error, 'Could not create the challenge.'), variant: 'danger' })
+    }
+  }
+
+  async function handleRemove() {
+    if (!confirmingRemove) {
+      setConfirmingRemove(true)
+      return
+    }
+
+    try {
+      await removeMate.mutateAsync(mate.connection_id)
+      toast({ message: 'Mate removed.', variant: 'success' })
+      onClose()
+    } catch (error) {
+      toast({ message: getErrorMessage(error, 'Could not remove mate.'), variant: 'danger' })
+    }
+  }
+
+  async function handleBlock() {
+    try {
+      await blockMate.mutateAsync(mate.user.id)
+      toast({ message: 'Blocked. They cannot reconnect.', variant: 'success' })
+      onClose()
+    } catch (error) {
+      toast({ message: getErrorMessage(error, 'Could not block.'), variant: 'danger' })
+    }
+  }
+
+  return (
+    <div className="space-y-3 border-t border-border pt-3">
+      {statsLoading || !theirStats || !myStats ? (
+        <Skeleton className="h-16 w-full" />
+      ) : (
+        <div className="grid grid-cols-4 gap-2">
+          <StatCell label="Today" mine={myStats.today_total} theirs={theirStats.today_total} />
+          <StatCell label="7 days" mine={myStats.seven_day_total} theirs={theirStats.seven_day_total} />
+          <StatCell label="30 days" mine={myStats.thirty_day_total} theirs={theirStats.thirty_day_total} />
+          <StatCell label="Best day" mine={myStats.best_day_30} theirs={theirStats.best_day_30} />
+        </div>
+      )}
+
+      <div className="grid grid-cols-3 gap-2">
+        {NUDGES.map((nudge) => (
+          <Button
+            key={nudge.kind}
+            variant="secondary"
+            className="min-h-10 text-sm"
+            loading={sendNudge.isPending}
+            onClick={() => void handleNudge(nudge.kind)}
+          >
+            {nudge.emoji} {nudge.label}
+          </Button>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <div className="flex flex-1 gap-1">
+          {[1, 3, 7].map((days) => (
+            <button
+              key={days}
+              type="button"
+              onClick={() => setDuration(days as 1 | 3 | 7)}
+              className={cn(
+                'min-h-9 flex-1 rounded-[var(--radius-md)] border px-2 text-sm font-medium transition-colors',
+                duration === days
+                  ? 'border-accent bg-accent-muted text-text-primary'
+                  : 'border-border bg-bg text-text-muted',
+              )}
+            >
+              {days}d
+            </button>
+          ))}
+        </div>
+        <Button
+          className="min-h-9 shrink-0 px-3 text-sm"
+          loading={createChallenge.isPending}
+          onClick={() => void handleChallenge()}
+        >
+          ⚔️ Challenge
+        </Button>
+      </div>
+
+      <div className="flex justify-end gap-3 text-xs">
+        <button
+          type="button"
+          className="text-text-muted transition-colors hover:text-danger"
+          onClick={() => void handleRemove()}
+        >
+          {confirmingRemove ? 'Tap again to remove' : 'Remove mate'}
+        </button>
+        <button
+          type="button"
+          className="text-text-muted transition-colors hover:text-danger"
+          onClick={() => void handleBlock()}
+        >
+          Block
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function MateChallengeCard({ challenge }: { challenge: MateChallengeItem }) {
+  const { toast } = useToast()
+  const respond = useRespondMateChallenge()
+  const cancel = useCancelMateChallenge()
+
+  const opponentName = formatProfileName(challenge.opponent)
+  const ended = challenge.ends_at !== null && new Date(challenge.ends_at) <= new Date()
+  const winning = challenge.my_total > challenge.their_total
+  const tied = challenge.my_total === challenge.their_total
+
+  async function handleRespond(accept: boolean) {
+    try {
+      await respond.mutateAsync({ challengeId: challenge.id, accept })
+      toast({
+        message: accept ? 'Challenge on. Bank everything you have.' : 'Challenge declined.',
+        variant: 'success',
+      })
+    } catch (error) {
+      toast({ message: getErrorMessage(error, 'Could not respond.'), variant: 'danger' })
+    }
+  }
+
+  return (
+    <Card padding="md" className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-text-primary">
+          You vs {opponentName} · {challenge.duration_days}d
+        </p>
+        {challenge.status === 'pending' ? (
+          <Badge variant="accent">{challenge.is_challenger ? 'Waiting' : 'Your call'}</Badge>
+        ) : ended ? (
+          <Badge variant={winning ? 'success' : 'neutral'}>
+            {tied ? 'Draw' : winning ? 'You won 🏆' : `${opponentName} won`}
+          </Badge>
+        ) : (
+          <Badge variant="success">Live</Badge>
+        )}
+      </div>
+
+      {challenge.status === 'active' ? (
+        <>
+          <div className="flex items-center justify-between font-mono text-2xl font-bold">
+            <span className={winning ? 'text-success' : 'text-text-primary'}>
+              {challenge.my_total.toLocaleString()}
+            </span>
+            <span className="text-xs font-medium text-text-muted">vs</span>
+            <span className={!winning && !tied ? 'text-success' : 'text-text-primary'}>
+              {challenge.their_total.toLocaleString()}
+            </span>
+          </div>
+          {!ended && challenge.ends_at ? (
+            <p className="text-xs text-text-muted">
+              Ends {formatDistanceToNowStrict(new Date(challenge.ends_at), { addSuffix: true })}
+            </p>
+          ) : null}
+        </>
+      ) : null}
+
+      {challenge.status === 'pending' && !challenge.is_challenger ? (
+        <div className="flex gap-2">
+          <Button
+            className="min-h-9 flex-1 text-sm"
+            loading={respond.isPending}
+            onClick={() => void handleRespond(true)}
+          >
+            Accept
+          </Button>
+          <Button
+            variant="secondary"
+            className="min-h-9 flex-1 text-sm"
+            loading={respond.isPending}
+            onClick={() => void handleRespond(false)}
+          >
+            Decline
+          </Button>
+        </div>
+      ) : null}
+
+      {challenge.status === 'pending' && challenge.is_challenger ? (
+        <button
+          type="button"
+          className="text-xs text-text-muted transition-colors hover:text-danger"
+          onClick={() => void cancel.mutateAsync(challenge.id)}
+        >
+          Cancel challenge
+        </button>
+      ) : null}
+    </Card>
+  )
+}
+
+export function MatesPage() {
+  const { user } = useAuth()
+  const { toast } = useToast()
+  const { activeGroup } = useActiveGroup()
+  const { data: mates = [], isLoading: matesLoading } = useMates()
+  const { data: leaderboard = [] } = useMateLeaderboard(7)
+  const { data: challenges = [] } = useMateChallenges()
+  const { data: mateCode } = useMyMateCode()
+  const { data: members = [] } = useGroupMembers(activeGroup?.id)
+  const respondRequest = useRespondMateRequest()
+  const requestMate = useRequestMate()
+  const rotateCode = useRotateMateCode()
+  const [expandedMateId, setExpandedMateId] = useState<string | null>(null)
+
+  const accepted = mates.filter((mate) => mate.status === 'accepted')
+  const incoming = mates.filter((mate) => mate.status === 'pending' && mate.direction === 'incoming')
+  const outgoing = mates.filter((mate) => mate.status === 'pending' && mate.direction === 'outgoing')
+
+  const connectedIds = useMemo(
+    () => new Set(mates.map((mate) => mate.user.id)),
+    [mates],
+  )
+  const addableMembers = members.filter(
+    (member) =>
+      member.user_id !== user?.id && member.profiles && !connectedIds.has(member.user_id),
+  )
+
+  const mateLink = mateCode ? `${window.location.origin}/mates/add/${mateCode}` : null
+  const liveChallenges = challenges.filter(
+    (challenge) => challenge.status === 'pending' || challenge.status === 'active',
+  )
+
+  async function handleCopyLink() {
+    if (!mateLink) return
+    try {
+      await navigator.clipboard.writeText(mateLink)
+      toast({ message: 'Mate link copied. Send it to anyone.', variant: 'success' })
+    } catch {
+      toast({ message: mateLink, variant: 'default', durationMs: 10_000 })
+    }
+  }
+
+  async function handleRespond(connectionId: string, accept: boolean) {
+    try {
+      await respondRequest.mutateAsync({ connectionId, accept })
+      toast({ message: accept ? 'Mates locked in. 💪' : 'Request declined.', variant: 'success' })
+    } catch (error) {
+      toast({ message: getErrorMessage(error, 'Could not respond.'), variant: 'danger' })
+    }
+  }
+
+  async function handleRequest(userId: string) {
+    try {
+      await requestMate.mutateAsync(userId)
+      toast({ message: 'Mate request sent.', variant: 'success' })
+    } catch (error) {
+      toast({ message: getErrorMessage(error, 'Could not send request.'), variant: 'danger' })
+    }
+  }
+
+  return (
+    <AppLayout title="Mates" subtitle="Your crew across groups" showNav={false}>
+      <div className="space-y-6 pb-8">
+        <Card padding="md" className="space-y-2">
+          <p className="text-sm font-medium text-text-primary">Your mate link</p>
+          <p className="text-xs text-text-muted">
+            Anyone with this link becomes your mate when they open it — share it like a handshake.
+          </p>
+          <div className="flex gap-2">
+            <Button
+              className="min-h-10 flex-1 text-sm"
+              disabled={!mateLink}
+              onClick={() => void handleCopyLink()}
+            >
+              Copy mate link
+            </Button>
+            <Button
+              variant="secondary"
+              className="min-h-10 shrink-0 px-3 text-sm"
+              loading={rotateCode.isPending}
+              onClick={() => void rotateCode.mutateAsync()}
+            >
+              Rotate
+            </Button>
+          </div>
+        </Card>
+
+        {incoming.length > 0 ? (
+          <section className="space-y-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+              Mate requests
+            </h2>
+            {incoming.map((mate) => (
+              <Card key={mate.connection_id} padding="sm" className="flex items-center gap-3">
+                <AvatarChip
+                  emoji={mate.user.avatar_emoji}
+                  name={formatProfileName(mate.user)}
+                  className="flex-1 border-0 bg-transparent p-0"
+                />
+                <Button
+                  className="min-h-9 px-3 text-sm"
+                  loading={respondRequest.isPending}
+                  onClick={() => void handleRespond(mate.connection_id, true)}
+                >
+                  Accept
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="min-h-9 px-3 text-sm"
+                  loading={respondRequest.isPending}
+                  onClick={() => void handleRespond(mate.connection_id, false)}
+                >
+                  Decline
+                </Button>
+              </Card>
+            ))}
+          </section>
+        ) : null}
+
+        {liveChallenges.length > 0 ? (
+          <section className="space-y-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+              1v1 battles
+            </h2>
+            {liveChallenges.map((challenge) => (
+              <MateChallengeCard key={challenge.id} challenge={challenge} />
+            ))}
+          </section>
+        ) : null}
+
+        <section className="space-y-2">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Your mates
+          </h2>
+          {matesLoading ? (
+            <Skeleton className="h-14 w-full" />
+          ) : accepted.length === 0 ? (
+            <EmptyState
+              title="No mates yet"
+              description="Add someone from your group below, or send your mate link."
+              icon={<span className="text-2xl">🤝</span>}
+            />
+          ) : (
+            <div className="space-y-2">
+              {accepted.map((mate) => {
+                const expanded = expandedMateId === mate.connection_id
+
+                return (
+                  <Card key={mate.connection_id} padding="sm" className="space-y-0">
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-3 text-left"
+                      onClick={() => setExpandedMateId(expanded ? null : mate.connection_id)}
+                      aria-expanded={expanded}
+                    >
+                      <AvatarChip
+                        emoji={mate.user.avatar_emoji}
+                        name={formatProfileName(mate.user)}
+                        className="flex-1 border-0 bg-transparent p-0"
+                      />
+                      <span className="text-text-muted" aria-hidden="true">
+                        {expanded ? '▾' : '▸'}
+                      </span>
+                    </button>
+                    {expanded ? (
+                      <MateDetail mate={mate} onClose={() => setExpandedMateId(null)} />
+                    ) : null}
+                  </Card>
+                )
+              })}
+            </div>
+          )}
+
+          {outgoing.length > 0 ? (
+            <p className="text-xs text-text-muted">
+              Waiting on: {outgoing.map((mate) => formatProfileName(mate.user)).join(', ')}
+            </p>
+          ) : null}
+        </section>
+
+        {addableMembers.length > 0 ? (
+          <section className="space-y-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+              Add from {activeGroup?.name ?? 'your group'}
+            </h2>
+            {addableMembers.map((member) => (
+              <Card key={member.user_id} padding="sm" className="flex items-center gap-3">
+                <AvatarChip
+                  emoji={member.profiles?.avatar_emoji ?? '💪'}
+                  name={member.profiles?.display_name ?? 'Member'}
+                  className="flex-1 border-0 bg-transparent p-0"
+                />
+                <Button
+                  variant="secondary"
+                  className="min-h-9 px-3 text-sm"
+                  loading={requestMate.isPending}
+                  onClick={() => void handleRequest(member.user_id)}
+                >
+                  Add mate
+                </Button>
+              </Card>
+            ))}
+          </section>
+        ) : null}
+
+        {leaderboard.length > 1 ? (
+          <section className="space-y-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+              Mate board — last 7 days
+            </h2>
+            <Card padding="sm">
+              <ul className="divide-y divide-border">
+                {leaderboard.map((row, index) => (
+                  <li key={row.user_id} className="flex items-center gap-3 py-2">
+                    <span className="w-5 text-center font-mono text-sm text-text-muted">
+                      {index + 1}
+                    </span>
+                    <AvatarChip
+                      emoji={row.avatar_emoji}
+                      name={row.user_id === user?.id ? 'You' : formatProfileName(row)}
+                      className="flex-1 border-0 bg-transparent p-0"
+                    />
+                    <span className="font-mono text-sm font-bold text-text-primary">
+                      {row.total.toLocaleString()}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          </section>
+        ) : null}
+
+        <p className="text-center text-xs text-text-muted">
+          Mates see aggregate stats only — never your individual entries or groups.
+        </p>
+      </div>
+    </AppLayout>
+  )
+}

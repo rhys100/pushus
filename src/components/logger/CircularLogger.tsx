@@ -903,7 +903,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
               cy={RING_CENTER}
               r={RING_RADIUS + RING_STROKE / 2}
               fill="none"
-              stroke="rgba(255,255,255,0.07)"
+              stroke="var(--logger-track-stroke)"
               strokeWidth={1.5}
               pointerEvents="none"
             />
@@ -912,7 +912,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
               cy={RING_CENTER}
               r={RING_RADIUS - RING_STROKE / 2}
               fill="none"
-              stroke="rgba(0,0,0,0.55)"
+              stroke="var(--logger-track-shade)"
               strokeWidth={1.5}
               pointerEvents="none"
             />
@@ -1103,7 +1103,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
                     cx={handlePoint.x}
                     cy={handlePoint.y}
                     r={HANDLE_RADIUS}
-                    fill="#17171d"
+                    fill="var(--logger-hub-fill)"
                     stroke={currentLapColor}
                     strokeWidth={3}
                   />
@@ -1112,7 +1112,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
                     cy={handlePoint.y}
                     r={HANDLE_RADIUS - 8}
                     fill="none"
-                    stroke="rgba(255,255,255,0.12)"
+                    stroke="var(--logger-hub-ring)"
                     strokeWidth={1.5}
                   />
                   <circle
@@ -1163,7 +1163,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
                 )}
                 style={{
                   fontSize: 'var(--text-hero-logger)',
-                  textShadow: '0 0 24px rgba(241, 245, 249, 0.35)',
+                  textShadow: 'var(--logger-count-glow)',
                 }}
               >
                 {displayCount}

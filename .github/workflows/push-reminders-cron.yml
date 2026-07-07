@@ -1,5 +1,10 @@
 name: Push reminders cron
 
+# FALLBACK scheduler only. Production should use Supabase pg_cron
+# (supabase/snippets/schedule-push-reminders-pg-cron.sql) — GitHub cron fires
+# with heavy jitter and pauses after 60 days of repo inactivity. Disable this
+# workflow once pg_cron is confirmed working to avoid double ticks.
+
 on:
   schedule:
     # Hourly at :05 past the hour (UTC)

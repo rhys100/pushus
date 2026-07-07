@@ -43,6 +43,9 @@ const variantStyles: Record<ToastVariant, string> = {
   danger: noticeSurfaceClass.danger,
 }
 
+/** How long the toast-out animation runs before the node is removed. */
+const TOAST_EXIT_MS = 200
+
 function ToastItem({
   toast,
   onDismiss,
@@ -51,23 +54,40 @@ function ToastItem({
   onDismiss: (id: string) => void
 }) {
   const variant = toast.variant ?? 'default'
+  const [leaving, setLeaving] = useState(false)
+  const leavingRef = useRef(false)
+
+  // Leave in two beats: play the exit animation, then remove the node.
+  const startDismiss = useCallback(() => {
+    if (leavingRef.current) {
+      return
+    }
+    leavingRef.current = true
+    toast.onDismiss?.()
+    setLeaving(true)
+  }, [toast])
+
+  useEffect(() => {
+    if (!leaving) {
+      return
+    }
+    const timer = window.setTimeout(() => onDismiss(toast.id), TOAST_EXIT_MS)
+    return () => window.clearTimeout(timer)
+  }, [leaving, onDismiss, toast.id])
 
   useEffect(() => {
     const duration = toast.durationMs ?? DEFAULT_DURATION_MS
-    const timer = window.setTimeout(() => {
-      toast.onDismiss?.()
-      onDismiss(toast.id)
-    }, duration)
+    const timer = window.setTimeout(startDismiss, duration)
     return () => window.clearTimeout(timer)
-  }, [onDismiss, toast.durationMs, toast.id, toast.onDismiss])
+  }, [toast.durationMs, startDismiss])
 
   return (
     <div
       role="status"
       aria-live="polite"
       className={cn(
-        'pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-[var(--radius-md)] border px-4 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.55)]',
-        'animate-[toast-in_200ms_var(--ease-out)]',
+        'pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-[var(--radius-md)] border px-4 py-3 shadow-[var(--shadow-toast)]',
+        leaving ? 'toast-out' : 'toast-spring-in',
         variantStyles[variant],
       )}
     >
@@ -78,8 +98,7 @@ function ToastItem({
           type="button"
           onClick={() => {
             toast.onAction?.()
-            toast.onDismiss?.()
-            onDismiss(toast.id)
+            startDismiss()
           }}
           className="shrink-0 text-sm font-semibold text-accent hover:brightness-110"
         >
@@ -90,10 +109,7 @@ function ToastItem({
       <button
         type="button"
         aria-label="Dismiss"
-        onClick={() => {
-          toast.onDismiss?.()
-          onDismiss(toast.id)
-        }}
+        onClick={startDismiss}
         className="shrink-0 text-text-muted transition-colors hover:text-text-primary"
       >
         ×

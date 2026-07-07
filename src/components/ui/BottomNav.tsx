@@ -1,4 +1,5 @@
 import { cn } from '@/lib/cn'
+import { tapHaptic } from '@/lib/haptics'
 
 export type NavItem = 'log' | 'leaderboard' | 'activity' | 'group' | 'settings'
 
@@ -153,7 +154,12 @@ export function BottomNav({ active, onNavigate, className }: BottomNavProps) {
               <button
                 key={item.id}
                 type="button"
-                onClick={() => onNavigate(item.id)}
+                onClick={() => {
+                  if (!isActive) {
+                    tapHaptic()
+                  }
+                  onNavigate(item.id)
+                }}
                 aria-current={isActive ? 'page' : undefined}
                 aria-label={item.id === 'log' ? 'Log push-ups' : item.label}
                 className={cn(
@@ -164,7 +170,9 @@ export function BottomNav({ active, onNavigate, className }: BottomNavProps) {
                   isActive ? 'text-accent' : 'text-text-muted hover:text-text-primary',
                 )}
               >
-                {item.icon(isActive)}
+                <span className={cn('flex items-center justify-center', isActive && 'nav-pop')}>
+                  {item.icon(isActive)}
+                </span>
                 <span
                   className={cn(
                     'dock-label text-[0.625rem] font-medium leading-none',

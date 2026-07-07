@@ -61,7 +61,7 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 - [x] Centre tap inside ring to add one rep (hands-free logging)
 - [x] Hold the ring centre for 1.5 seconds to open nose-tap mode (dismissible hint teaches the gesture)
 - [x] **Bank Push-ups** CTA on the Log page (always visible; disabled at 0 reps)
-- [x] Nose-tap mode: fullscreen tap-to-rep logging with your nose or chin, with confirm sound, vibration, and four saved skins (Bricks, Classic, Ripple, Burst)
+- [x] Nose-tap mode: fullscreen tap-to-rep logging with your nose, with confirm sound, vibration, and four saved skins (Bricks, Classic, Ripple, Burst)
 - [x] Undo after banking
 - [x] Edit and delete your entries
 - [x] Daily total and progress on the Log screen (progress card below ring)

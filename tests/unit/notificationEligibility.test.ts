@@ -5,6 +5,8 @@ import {
   isBehindDailyGoal,
   isInjuryPaused,
   isWithinActiveHours,
+  legacyReminderIntervalHours,
+  resolveReminderIntervalMinutes,
   wasReminderSentToday,
   wasReminderSentWithinInterval,
   type NotificationPreferencesInput,
@@ -15,6 +17,7 @@ const basePrefs: NotificationPreferencesInput = {
   active_hours_start: 7,
   active_hours_end: 20,
   reminder_interval_hours: 1,
+  reminder_interval_minutes: 60,
   daily_target: 20,
   injury_paused: false,
   injury_paused_until: null,
@@ -104,25 +107,76 @@ describe('notificationEligibility', () => {
     it('blocks hourly reminders within one hour', () => {
       const now = new Date('2024-06-01T10:30:00Z')
       const last = new Date('2024-06-01T10:00:00Z')
-      expect(wasReminderSentWithinInterval(last, 1, 'UTC', now)).toBe(true)
+      expect(wasReminderSentWithinInterval(last, 60, 'UTC', now)).toBe(true)
     })
 
     it('allows hourly reminders after one hour', () => {
       const now = new Date('2024-06-01T11:05:00Z')
       const last = new Date('2024-06-01T10:05:00Z')
-      expect(wasReminderSentWithinInterval(last, 1, 'UTC', now)).toBe(false)
+      expect(wasReminderSentWithinInterval(last, 60, 'UTC', now)).toBe(false)
+    })
+
+    it('allows hourly reminders slightly early to absorb cron jitter', () => {
+      // A late tick at 10:12 followed by an on-time tick at 11:05 must not
+      // skip the 11:05 send — the 10-minute tolerance covers it.
+      const now = new Date('2024-06-01T11:05:00Z')
+      const last = new Date('2024-06-01T10:12:00Z')
+      expect(wasReminderSentWithinInterval(last, 60, 'UTC', now)).toBe(false)
+    })
+
+    it('still blocks hourly reminders well before the tolerance window', () => {
+      const now = new Date('2024-06-01T10:45:00Z')
+      const last = new Date('2024-06-01T10:00:00Z')
+      expect(wasReminderSentWithinInterval(last, 60, 'UTC', now)).toBe(true)
+    })
+
+    it('blocks 30-minute reminders on the next 15-minute tick', () => {
+      const now = new Date('2024-06-01T10:15:00Z')
+      const last = new Date('2024-06-01T10:00:00Z')
+      expect(wasReminderSentWithinInterval(last, 30, 'UTC', now)).toBe(true)
+    })
+
+    it('allows 30-minute reminders two ticks later', () => {
+      const now = new Date('2024-06-01T10:30:00Z')
+      const last = new Date('2024-06-01T10:00:00Z')
+      expect(wasReminderSentWithinInterval(last, 30, 'UTC', now)).toBe(false)
     })
 
     it('blocks every-2-hours reminders within two hours', () => {
       const now = new Date('2024-06-01T11:30:00Z')
       const last = new Date('2024-06-01T10:00:00Z')
-      expect(wasReminderSentWithinInterval(last, 2, 'UTC', now)).toBe(true)
+      expect(wasReminderSentWithinInterval(last, 120, 'UTC', now)).toBe(true)
     })
 
-    it('uses once-daily rules for 24-hour interval', () => {
+    it('uses once-daily rules for the daily interval', () => {
       const now = new Date('2024-06-01T18:00:00Z')
       const last = new Date('2024-06-01T09:00:00Z')
-      expect(wasReminderSentWithinInterval(last, 24, 'UTC', now)).toBe(true)
+      expect(wasReminderSentWithinInterval(last, 1440, 'UTC', now)).toBe(true)
+    })
+  })
+
+  describe('interval helpers', () => {
+    it('prefers the minutes column when present', () => {
+      expect(
+        resolveReminderIntervalMinutes({
+          reminder_interval_minutes: 180,
+          reminder_interval_hours: 1,
+        }),
+      ).toBe(180)
+    })
+
+    it('falls back to legacy hours for pre-migration rows', () => {
+      expect(resolveReminderIntervalMinutes({ reminder_interval_hours: 24 })).toBe(1440)
+      expect(resolveReminderIntervalMinutes({})).toBe(60)
+    })
+
+    it('maps minutes to the legacy hours buckets', () => {
+      expect(legacyReminderIntervalHours(30)).toBe(1)
+      expect(legacyReminderIntervalHours(60)).toBe(1)
+      expect(legacyReminderIntervalHours(120)).toBe(2)
+      expect(legacyReminderIntervalHours(180)).toBe(2)
+      expect(legacyReminderIntervalHours(240)).toBe(2)
+      expect(legacyReminderIntervalHours(1440)).toBe(24)
     })
   })
 
@@ -180,7 +234,7 @@ describe('notificationEligibility', () => {
     it('blocks when already reminded today on once-daily frequency', () => {
       const now = new Date('2024-06-01T18:00:00Z')
       const result = evaluateReminderEligibility({
-        prefs: { ...basePrefs, reminder_interval_hours: 24 },
+        prefs: { ...basePrefs, reminder_interval_hours: 24, reminder_interval_minutes: 1440 },
         timezone: 'UTC',
         bankedToday: 5,
         now,

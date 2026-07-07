@@ -9,10 +9,12 @@ import { NotificationPreferencesProvider } from '@/providers/NotificationPrefere
 import App from './App'
 import { APP_BUILD_ID } from '@/lib/buildId'
 import { confirmAppBuildAfterReload } from '@/lib/reloadApp'
+import { initTheme } from '@/lib/theme'
 import './index.css'
 import 'ios-vibrator-pro-max'
 
 confirmAppBuildAfterReload(APP_BUILD_ID)
+initTheme()
 
 const queryClient = new QueryClient({
   defaultOptions: {

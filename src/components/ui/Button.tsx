@@ -1,5 +1,6 @@
-import { forwardRef, type AnchorHTMLAttributes, type ButtonHTMLAttributes } from 'react'
+import { forwardRef, type AnchorHTMLAttributes, type ButtonHTMLAttributes, type PointerEvent } from 'react'
 import { cn } from '@/lib/cn'
+import { tapHaptic } from '@/lib/haptics'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 
@@ -51,13 +52,19 @@ function Spinner() {
 }
 
 const buttonBaseClass =
-  'inline-flex min-h-12 min-w-12 items-center justify-center gap-2 rounded-[var(--radius-full)] px-6 py-3 text-sm font-bold tracking-tight transition-[background-color,border-color,opacity,transform,box-shadow,filter] duration-[var(--duration-fast)] ease-[var(--ease-out)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg'
+  'inline-flex min-h-12 min-w-12 items-center justify-center gap-2 rounded-[var(--radius-full)] px-6 py-3 text-sm font-bold tracking-tight transition-[background-color,border-color,opacity,transform,box-shadow,filter] duration-[var(--duration-normal)] ease-[var(--ease-spring)] active:scale-[0.96] active:duration-[var(--duration-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg'
 
 export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>(
-  ({ variant = 'primary', fullWidth = false, className, children, ...props }, ref) => {
+  ({ variant = 'primary', fullWidth = false, className, children, onPointerDown, ...props }, ref) => {
+    const handlePointerDown = (event: PointerEvent<HTMLAnchorElement>) => {
+      tapHaptic()
+      onPointerDown?.(event)
+    }
+
     return (
       <a
         ref={ref}
+        onPointerDown={handlePointerDown}
         className={cn(
           buttonBaseClass,
           fullWidth && 'w-full',
@@ -84,17 +91,26 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       className,
       children,
       type = 'button',
+      onPointerDown,
       ...props
     },
     ref,
   ) => {
     const isDisabled = disabled || loading
 
+    const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
+      if (!isDisabled) {
+        tapHaptic()
+      }
+      onPointerDown?.(event)
+    }
+
     return (
       <button
         ref={ref}
         type={type}
         disabled={isDisabled}
+        onPointerDown={handlePointerDown}
         aria-busy={loading || undefined}
         className={cn(
           buttonBaseClass,
@@ -105,7 +121,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         )}
         {...props}
       >
-        {loading ? <Spinner /> : null}
+        {loading ? (
+          <span className="motion-pop inline-flex" aria-hidden="true">
+            <Spinner />
+          </span>
+        ) : null}
         <span className={cn(loading && 'opacity-80')}>{children}</span>
       </button>
     )

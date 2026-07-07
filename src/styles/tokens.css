@@ -1,9 +1,14 @@
-﻿/* PushUS design tokens — dark-first */
+﻿/* PushUS design tokens — dark-first, with a light theme override.
+   The html element carries data-theme="dark" | "light" (set pre-paint in
+   index.html and managed by src/lib/theme.ts). Dark is also declared on
+   [data-theme='dark'] so immersive surfaces (e.g. nose-tap mode) can pin
+   themselves dark inside a light page. */
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@500;700&display=swap');
 
-:root {
-  /* Dark-only app: keep native controls (selects, checkboxes, scrollbars,
-     pickers) dark even when the phone is in light mode. */
+:root,
+[data-theme='dark'] {
+  /* Keep native controls (selects, checkboxes, scrollbars, pickers) matched
+     to the active theme. */
   color-scheme: dark;
 
   --color-bg: #0a0a0d;
@@ -63,7 +68,10 @@
   --duration-fast: 120ms;
   --duration-normal: 200ms;
   --duration-slow: 350ms;
+  --duration-slower: 600ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Overshoots ~5% then settles — for pops, selections, arrivals. */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* Icon row + label row + padding inside the nav bar (flat — no overflow FAB) */
   --bottom-nav-content: 3.25rem;
@@ -85,6 +93,69 @@
   --bottom-dock-prompt-reserve: 0px;
   --dock-shadow: 0 -10px 36px rgba(0, 0, 0, 0.55);
   --wizard-dock-height: calc(var(--dock-scrim-height) + var(--bank-cta-height) + 1.5rem);
+
+  /* Elevation + logger internals (theme-dependent; light overrides below) */
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-toast: 0 8px 32px rgba(0, 0, 0, 0.55);
+  --shadow-popup: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 18px 48px rgba(0, 0, 0, 0.6);
+  --logger-hub-fill: #17171d;
+  --logger-hub-ring: rgba(255, 255, 255, 0.12);
+  --logger-track-stroke: rgba(255, 255, 255, 0.07);
+  --logger-track-shade: rgba(0, 0, 0, 0.55);
+  --logger-count-glow: 0 0 24px rgba(241, 245, 249, 0.35);
+  --shadow-dock-card:
+    0 -12px 40px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(255, 107, 53, 0.08);
+  --dock-label-shadow: 0 1px 3px rgba(10, 10, 13, 0.95);
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+
+  --color-bg: #f4f4f7;
+  --color-surface: #ffffff;
+  --color-accent: #f25d24;
+  --color-accent-hot: #ff7a36;
+  --color-accent-deep: #e04a00;
+  --color-accent-muted: #f25d2430;
+  --color-text: #16161c;
+  --color-text-muted: #5b6170;
+  --color-success: #15803d;
+  --color-warning: #b45309;
+  --color-danger: #dc2626;
+  --color-border: #e2e3ea;
+
+  --color-bg-rgb: 244 244 247;
+  --color-surface-rgb: 255 255 255;
+  --color-accent-rgb: 242 93 36;
+  --color-text-rgb: 22 22 28;
+  --color-text-muted-rgb: 91 97 112;
+  --color-success-rgb: 21 128 61;
+  --color-warning-rgb: 180 83 9;
+  --color-danger-rgb: 220 38 38;
+  --color-border-rgb: 226 227 234;
+
+  --shadow-glow-accent: 0 0 24px var(--color-accent-muted);
+  --shadow-glow-accent-strong:
+    0 0 10px rgba(242, 93, 36, 0.35),
+    0 0 28px rgba(242, 93, 36, 0.22),
+    0 0 56px rgba(224, 74, 0, 0.12);
+
+  --dock-bg: #f4f4f7;
+  --dock-shadow: 0 -10px 36px rgba(22, 26, 44, 0.12);
+
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.85) inset, 0 8px 24px rgba(22, 26, 44, 0.08);
+  --shadow-toast: 0 8px 32px rgba(22, 26, 44, 0.18);
+  --shadow-popup: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 18px 48px rgba(22, 26, 44, 0.2);
+  --logger-hub-fill: #ffffff;
+  --logger-hub-ring: rgba(22, 26, 44, 0.1);
+  --logger-track-stroke: rgba(22, 26, 44, 0.08);
+  --logger-track-shade: rgba(22, 26, 44, 0.12);
+  --logger-count-glow: 0 0 24px rgba(22, 22, 28, 0.12);
+  --shadow-dock-card:
+    0 -12px 40px rgba(22, 26, 44, 0.16),
+    0 0 0 1px rgba(242, 93, 36, 0.08);
+  --dock-label-shadow: 0 1px 3px rgba(255, 255, 255, 0.9);
 }
 
 * {

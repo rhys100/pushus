@@ -23,7 +23,7 @@ export function Card({
     <div
       className={cn(
         'rounded-[var(--radius-lg)] border-2 border-border bg-surface',
-        'shadow-[0_1px_0_rgba(255,255,255,0.06)_inset,0_8px_24px_rgba(0,0,0,0.35)]',
+        'shadow-[var(--shadow-card)]',
         paddingStyles[padding],
         className,
       )}

@@ -33,6 +33,11 @@ self.addEventListener('push', (event) => {
       icon: '/pwa/icon-192.png',
       badge: '/pwa/notification-badge-96.png',
       tag: 'pushus-reminder',
+      // Same-tag notifications replace the one already in the tray; without
+      // renotify Android does that silently, so only the first reminder of the
+      // day ever made a sound if the user never dismissed it.
+      renotify: true,
+      timestamp: Date.now(),
       data: { url: payload.url },
     }),
   )

@@ -2,7 +2,7 @@
 
 **Status:** Phase 3 — web push reminders shipped.
 
-PushUS sends optional reminders when you are behind your goal during your chosen active hours and frequency. Reminders respect injury pause. Frequency can be hourly, every 2 hours, or once per local day.
+PushUS sends optional reminders when you are behind your goal during your chosen active hours and frequency. Reminders respect injury pause. Frequency can be every 30 minutes, hourly, every 2/3/4 hours, or once per local day.
 
 ## Architecture
 
@@ -20,10 +20,11 @@ A user receives a reminder when all of the following are true:
 2. Current local hour is within `[active_hours_start, active_hours_end)`.
 3. Injury pause is off, or `injury_paused_until` is in the past.
 4. Banked push-ups for today (across all groups) are below `daily_target`.
-5. Enough time has passed since the last reminder for the chosen `reminder_interval_hours`:
-   - **1** — at least one hour since `last_reminder_sent_at`
-   - **2** — at least two hours
-   - **24** — no reminder yet today (local timezone)
+5. Enough time has passed since the last reminder for the chosen `reminder_interval_minutes`
+   (30, 60, 120, 180, 240, or 1440). Sub-daily intervals allow up to 10 minutes of slack
+   (`REMINDER_INTERVAL_TOLERANCE_MINUTES`) so scheduler jitter cannot skip a whole interval;
+   **1440** means no reminder yet today (local timezone). The legacy
+   `reminder_interval_hours` column stays in sync via a DB trigger for older cached clients.
 
 Default for new users: hourly reminders between **7:00** and **20:00** (7pm inclusive). Existing users keep once-daily until they change frequency in Settings.
 
@@ -82,7 +83,16 @@ Use `--no-verify-jwt` because this function is invoked by cron with a service se
 
 ### 6. Schedule the cron job
 
-Run hourly (adjust to taste). Production uses GitHub Actions (`.github/workflows/push-reminders-cron.yml`) — see [push-reminders-go-live.md](./push-reminders-go-live.md).
+**Preferred: Supabase pg_cron every 15 minutes** — run
+[`supabase/snippets/schedule-push-reminders-pg-cron.sql`](../supabase/snippets/schedule-push-reminders-pg-cron.sql)
+once in the SQL editor (store `CRON_SECRET` in Vault first; instructions are in the snippet).
+The 15-minute tick is what enables the 30-minute frequency; the per-user interval check keeps
+everyone else at their chosen cadence.
+
+GitHub Actions (`.github/workflows/push-reminders-cron.yml`) remains as a fallback, but its
+schedule jitters by tens of minutes and GitHub pauses it after 60 days of repo inactivity —
+this is what caused hourly reminders to skip hours. Disable it once pg_cron is confirmed.
+See [push-reminders-go-live.md](./push-reminders-go-live.md).
 
 Manual or external scheduler example:
 
@@ -109,6 +119,7 @@ curl -X POST "http://127.0.0.1:54321/functions/v1/send-push-reminders" \
 
 ## Operations
 
+- **Repeat reminders must ding:** `sw.js` shows reminders with a fixed `tag` plus `renotify: true`. Without `renotify`, Android silently replaces the notification already in the tray, so users who never dismissed the first reminder only ever heard one sound per day.
 - **410/404 from push service:** The edge function disables the subscription and logs `subscription_disabled`.
 - **Audit trail:** `notification_events` records sends, failures, and disabled subscriptions (users can read their own rows via RLS).
 - **Bad subscriptions:** Re-enable push from Settings to register a fresh subscription.

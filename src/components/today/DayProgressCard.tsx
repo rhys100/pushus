@@ -1,10 +1,12 @@
-import { memo, useMemo } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
 import { GoalProgressBar } from '@/components/ui/GoalProgressBar'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { useCountUp } from '@/hooks/useCountUp'
 import { cn } from '@/lib/cn'
+import { successHaptic } from '@/lib/haptics'
 import { computeDailySetPlan } from '@/lib/training/dailySetPlan'
 import { type TodayPrescription } from '@/lib/training/planEngine'
 
@@ -60,6 +62,35 @@ export const DayProgressCard = memo(function DayProgressCard({
     )
   }, [prescription, hasPlan, target, isRestDay, bankedToday, banksLogged])
 
+  const bankedDisplay = useCountUp(bankedToday)
+
+  // Celebrate the moment the daily goal is crossed — but only a live crossing
+  // between two settled states, never the jump when query data hydrates in.
+  const [celebrate, setCelebrate] = useState(false)
+  const prevGoalState = useRef({ banked: bankedToday, loading })
+
+  useEffect(() => {
+    const prev = prevGoalState.current
+    prevGoalState.current = { banked: bankedToday, loading }
+
+    const crossed =
+      !loading &&
+      !prev.loading &&
+      !isRestDay &&
+      target > 0 &&
+      prev.banked < target &&
+      bankedToday >= target
+
+    if (!crossed) {
+      return
+    }
+
+    successHaptic()
+    setCelebrate(true)
+    const timer = window.setTimeout(() => setCelebrate(false), 700)
+    return () => window.clearTimeout(timer)
+  }, [bankedToday, loading, isRestDay, target])
+
   if (!hasPlan && !loading) {
     return (
       <Card
@@ -96,7 +127,10 @@ export const DayProgressCard = memo(function DayProgressCard({
         : '—'
 
     return (
-      <Card data-testid="day-progress-card" className={cn('mt-3', className)}>
+      <Card
+        data-testid="day-progress-card"
+        className={cn('mt-3', celebrate && 'goal-celebrate', className)}
+      >
         {loading ? (
           <div className="grid grid-cols-3 gap-3">
             <Skeleton className="mx-auto h-9 w-16" />
@@ -146,7 +180,7 @@ export const DayProgressCard = memo(function DayProgressCard({
   }
 
   return (
-    <Card padding="md" className={className}>
+    <Card padding="md" className={cn(celebrate && 'goal-celebrate', className)}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium uppercase tracking-wide text-text-muted">Today</p>
@@ -154,7 +188,7 @@ export const DayProgressCard = memo(function DayProgressCard({
             <Skeleton className="mt-2 h-8 w-28" />
           ) : (
             <p className="mt-1 font-mono text-2xl font-bold leading-none text-text-primary">
-              {bankedToday}
+              {bankedDisplay}
               <span className="ml-1.5 text-sm font-medium text-text-muted">banked</span>
             </p>
           )}
@@ -195,11 +229,17 @@ export const DayProgressCard = memo(function DayProgressCard({
 
           {!isRestDay ? (
             <>
-              <GoalProgressBar
-                current={bankedToday}
-                target={target}
-                ariaLabel="Daily push-up progress"
-              />
+              {loading ? (
+                // Skeleton instead of a live bar: mounting at 0 and then
+                // hydrating to a full bar would false-fire the goal flash.
+                <Skeleton className="h-2.5 w-full" rounded="full" />
+              ) : (
+                <GoalProgressBar
+                  current={bankedToday}
+                  target={target}
+                  ariaLabel="Daily push-up progress"
+                />
+              )}
               <p className="text-xs text-text-muted">
                 {loading ? (
                   'Loading today…'

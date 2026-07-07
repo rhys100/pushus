@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/cn'
+import { useCountUp } from '@/hooks/useCountUp'
 import { Card } from './Card'
 
 export type StatCardProps = {
@@ -17,6 +18,12 @@ const trendStyles = {
   neutral: 'text-text-muted',
 } as const
 
+/** Numeric stat values count up into place so fresh data lands with weight. */
+function CountUpValue({ value }: { value: number }) {
+  const display = useCountUp(value)
+  return <>{display}</>
+}
+
 export function StatCard({
   label,
   value,
@@ -33,7 +40,7 @@ export function StatCard({
       </div>
 
       <p className="font-mono text-3xl font-bold leading-none tracking-tight text-text-primary">
-        {value}
+        {typeof value === 'number' ? <CountUpValue value={value} /> : value}
       </p>
 
       {hint ? (
