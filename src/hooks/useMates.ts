@@ -71,6 +71,35 @@ export function useMateChallenges() {
   })
 }
 
+export type ReceivedNudge = {
+  id: string
+  sender_id: string
+  kind: NudgeKind
+  created_at: string
+}
+
+/** Nudges received in the last 24h — so a nudge still lands when push missed. */
+export function useReceivedNudges(userId: string | undefined) {
+  return useQuery({
+    queryKey: ['mates', 'nudges', userId ?? ''],
+    queryFn: async (): Promise<ReceivedNudge[]> => {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+      const { data, error } = await supabase
+        .from('mate_nudges')
+        .select('id, sender_id, kind, created_at')
+        .eq('recipient_id', userId!)
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+        .limit(10)
+
+      if (error) throw error
+      return (data ?? []) as ReceivedNudge[]
+    },
+    enabled: Boolean(userId),
+    staleTime: 30_000,
+  })
+}
+
 export function useMyMateCode() {
   return useQuery({
     queryKey: mateKeys.code(),

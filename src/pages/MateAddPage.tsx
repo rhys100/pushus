@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Button, Card, Skeleton } from '@/components/ui'
 import { getErrorMessage } from '@/lib/errors'
@@ -8,6 +8,7 @@ import { useRedeemMateCode } from '@/hooks/useMates'
 /** Landing page for shared mate links: /mates/add/:code */
 export function MateAddPage() {
   const { code } = useParams<{ code: string }>()
+  const navigate = useNavigate()
   const redeem = useRedeemMateCode()
   const attempted = useRef(false)
   const [result, setResult] = useState<
@@ -44,10 +45,8 @@ export function MateAddPage() {
             <p className="text-sm text-text-muted">
               Compare stats, nudge each other, and go head to head.
             </p>
-            <Button fullWidth>
-              <Link to="/mates" className="block w-full">
-                Open Mates
-              </Link>
+            <Button fullWidth onClick={() => navigate('/mates')}>
+              Open Mates
             </Button>
           </Card>
         ) : (
@@ -55,10 +54,8 @@ export function MateAddPage() {
             <p className="text-4xl">🤝</p>
             <p className="text-lg font-bold text-text-primary">That link didn&apos;t work</p>
             <p className="text-sm text-text-muted">{result.message}</p>
-            <Button variant="secondary" fullWidth>
-              <Link to="/mates" className="block w-full">
-                Back to Mates
-              </Link>
+            <Button variant="secondary" fullWidth onClick={() => navigate('/mates')}>
+              Back to Mates
             </Button>
           </Card>
         )}

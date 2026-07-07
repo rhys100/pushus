@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { format } from 'date-fns'
+import { useNavigate, useParams } from 'react-router-dom'
+import { format, formatDistanceToNowStrict } from 'date-fns'
 import { AppLayout } from '@/components/layout/AppLayout'
 import {
   AvatarChip,
@@ -27,6 +27,7 @@ import {
   useChallengeEntries,
   useChallengeParticipants,
   useChallengeTeams,
+  useDeleteChallenge,
   useJoinChallenge,
 } from '@/hooks/useChallenges'
 import { useGroupMembers } from '@/hooks/useGroupMembers'
@@ -44,10 +45,12 @@ function intensityLabel(intensity: string): string {
 
 export function ChallengeDetailPage() {
   const { competitionId } = useParams<{ competitionId: string }>()
+  const navigate = useNavigate()
   const { user } = useAuth()
   const { toast } = useToast()
-  const { activeGroup } = useActiveGroup()
+  const { activeGroup, role } = useActiveGroup()
   const timezone = activeGroup?.timezone || 'UTC'
+  const isAdmin = role === 'owner' || role === 'admin'
 
   const { data: challenge, isLoading: challengeLoading } = useChallenge(competitionId)
   const { data: participants = [], isLoading: participantsLoading } =
@@ -59,7 +62,9 @@ export function ChallengeDetailPage() {
   )
   const { data: members = [] } = useGroupMembers(activeGroup?.id)
   const joinMutation = useJoinChallenge(competitionId, user?.id)
+  const deleteMutation = useDeleteChallenge(activeGroup)
   const [confirmingWarning, setConfirmingWarning] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   const nameByUser = useMemo(() => {
     const map = new Map<string, { name: string; emoji: string }>()
@@ -108,6 +113,21 @@ export function ChallengeDetailPage() {
   const groupTotal = standings.reduce((sum, standing) => sum + standing.total, 0)
   const loadingStandings = participantsLoading || entriesLoading
 
+  async function handleDelete() {
+    if (!confirmingDelete) {
+      setConfirmingDelete(true)
+      return
+    }
+
+    try {
+      await deleteMutation.mutateAsync(challenge!.id)
+      toast({ message: 'Challenge deleted.', variant: 'success' })
+      navigate('/challenges')
+    } catch (error) {
+      toast({ message: getErrorMessage(error, 'Could not delete challenge.'), variant: 'danger' })
+    }
+  }
+
   async function handleJoin(teamId?: string) {
     if (needsWarning && !confirmingWarning && !isParticipant) {
       setConfirmingWarning(true)
@@ -134,10 +154,21 @@ export function ChallengeDetailPage() {
                 {intensityLabel(challenge.intensity)}
               </Badge>
             </div>
-            <p className="text-xs text-text-muted">
-              {format(new Date(challenge.starts_at), 'd MMM')} –{' '}
-              {format(new Date(challenge.ends_at), 'd MMM yyyy')}
-            </p>
+            <div className="text-right">
+              <p className="text-xs text-text-muted">
+                {format(new Date(challenge.starts_at), 'd MMM')} –{' '}
+                {format(new Date(challenge.ends_at), 'd MMM yyyy')}
+              </p>
+              {status === 'active' ? (
+                <p className="text-xs font-medium text-accent">
+                  ends {formatDistanceToNowStrict(new Date(challenge.ends_at), { addSuffix: true })}
+                </p>
+              ) : status === 'upcoming' ? (
+                <p className="text-xs font-medium text-text-muted">
+                  starts {formatDistanceToNowStrict(new Date(challenge.starts_at), { addSuffix: true })}
+                </p>
+              ) : null}
+            </div>
           </div>
 
           {challenge.target_total ? (
@@ -281,6 +312,19 @@ export function ChallengeDetailPage() {
             </ul>
           )}
         </section>
+
+        {isAdmin ? (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              className="text-xs text-text-muted transition-colors hover:text-danger"
+              disabled={deleteMutation.isPending}
+              onClick={() => void handleDelete()}
+            >
+              {confirmingDelete ? 'Tap again to delete this challenge' : 'Delete challenge'}
+            </button>
+          </div>
+        ) : null}
       </div>
     </AppLayout>
   )

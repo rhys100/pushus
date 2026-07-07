@@ -23,6 +23,8 @@
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
   --color-border: #26262f;
+  /* Ink on top of the accent gradient (primary buttons) — dark in both themes. */
+  --color-on-accent: #0a0a0d;
 
   /* RGB triplets so Tailwind opacity modifiers (e.g. border-accent/50) work */
   --color-bg-rgb: 10 10 13;
@@ -124,6 +126,7 @@
   --color-warning: #b45309;
   --color-danger: #dc2626;
   --color-border: #e2e3ea;
+  --color-on-accent: #160902;
 
   --color-bg-rgb: 244 244 247;
   --color-surface-rgb: 255 255 255;

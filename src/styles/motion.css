@@ -16,17 +16,17 @@
 }
 
 .motion-rise {
-  animation: motion-rise var(--duration-slow) var(--ease-out) both;
+  animation: motion-rise var(--duration-slow) var(--ease-out) backwards;
 }
 
 /* Page-level entrance on route change (wrapper keyed by pathname). */
 .motion-page {
-  animation: motion-rise 280ms var(--ease-out) both;
+  animation: motion-rise 280ms var(--ease-out) backwards;
 }
 
 /* Stagger direct children on mount: each row rises a beat after the last. */
 .motion-stagger > * {
-  animation: motion-rise var(--duration-slow) var(--ease-out) both;
+  animation: motion-rise var(--duration-slow) var(--ease-out) backwards;
 }
 
 .motion-stagger > *:nth-child(1) { animation-delay: 0ms; }
@@ -196,7 +196,7 @@
 }
 
 .toast-spring-in {
-  animation: toast-spring-in 320ms var(--ease-out) both;
+  animation: toast-spring-in 320ms var(--ease-out) backwards;
 }
 
 @keyframes toast-out {
@@ -244,7 +244,7 @@
 }
 
 .chart-dot-pop {
-  animation: chart-dot-pop 300ms var(--ease-spring) both;
+  animation: chart-dot-pop 300ms var(--ease-spring) backwards;
 }
 
 @keyframes chart-ping {
@@ -276,12 +276,12 @@
 }
 
 .chart-fade-in {
-  animation: chart-fade-in 400ms var(--ease-out) both;
+  animation: chart-fade-in 400ms var(--ease-out) backwards;
 }
 
 /* Generic quick fade for swapped-in content (header titles, etc.). */
 .motion-fade {
-  animation: chart-fade-in var(--duration-normal) var(--ease-out) both;
+  animation: chart-fade-in var(--duration-normal) var(--ease-out) backwards;
 }
 
 /* --- Bottom sheets: slide up on open, settle down on close -------------- */
@@ -299,7 +299,7 @@
 }
 
 .sheet-in {
-  animation: sheet-in 300ms var(--ease-out) both;
+  animation: sheet-in 300ms var(--ease-out) backwards;
 }
 
 @keyframes sheet-out {
@@ -318,6 +318,54 @@
   animation: sheet-out 200ms var(--ease-out) both;
 }
 
+/* --- Centre popups: backdrop fades, panel springs up -------------------- */
+
+@keyframes popup-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.popup-in {
+  animation: popup-in 320ms var(--ease-spring) backwards;
+}
+
+@keyframes popup-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(0.375rem) scale(0.97);
+  }
+}
+
+.popup-out {
+  animation: popup-out 180ms var(--ease-out) both;
+}
+
+@keyframes motion-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+.motion-fade-out {
+  animation: motion-fade-out 180ms var(--ease-out) both;
+}
+
 /* --- Calendar: month grid cascades in like a page turn ------------------ */
 
 @keyframes cal-pop {
@@ -333,7 +381,7 @@
 }
 
 .cal-pop {
-  animation: cal-pop 240ms var(--ease-out) both;
+  animation: cal-pop 240ms var(--ease-out) backwards;
 }
 
 /* --- Nav: active tab lands with a spring ------------------------------- */

@@ -8,6 +8,7 @@ import {
 } from '@/lib/postAuthNavigation'
 import { supabase } from '@/lib/supabase'
 import { detectTimezone, timezoneOptions } from '@/lib/timezones'
+import { tapHaptic } from '@/lib/haptics'
 import { cn } from '@/lib/cn'
 import { getPendingInviteCode, markProfileCompleted } from '@/lib/storage'
 import { useAuth } from '@/providers/AuthProvider'
@@ -28,6 +29,8 @@ export function OnboardingProfilePage() {
   const [timezone, setTimezone] = useState(detectTimezone)
   const [saving, setSaving] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  // Selection pop only rewards a tap, not the default choice on mount.
+  const [emojiInteracted, setEmojiInteracted] = useState(false)
 
   useEffect(() => {
     if (!profile) return
@@ -107,7 +110,7 @@ export function OnboardingProfilePage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-bg px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
-      <div className="mx-auto w-full max-w-sm flex-1 py-6">
+      <div className="motion-stagger mx-auto w-full max-w-sm flex-1 py-6">
         <div className="mb-6">
           <p className="text-sm font-medium text-accent">Step 1 of 2</p>
           <h1 className="mt-1 text-2xl font-bold text-text-primary">Set up your profile</h1>
@@ -171,23 +174,37 @@ export function OnboardingProfilePage() {
             <div className="space-y-2">
               <span className="text-sm font-medium text-text-primary">Avatar emoji</span>
               <div className="grid grid-cols-8 gap-2">
-                {AVATAR_EMOJIS.map((option) => (
-                  <button
+                {AVATAR_EMOJIS.map((option, index) => (
+                  // Entrance cascade lives on the wrapper so it can't clash
+                  // with the button's own selection-pop animation.
+                  <span
                     key={option}
-                    type="button"
-                    aria-label={`Select ${option}`}
-                    aria-pressed={emoji === option}
-                    onClick={() => setEmoji(option)}
-                    className={cn(
-                      'flex h-10 w-full items-center justify-center rounded-[var(--radius-md)] text-xl',
-                      'border transition-colors',
-                      emoji === option
-                        ? 'border-accent bg-accent-muted'
-                        : 'border-border bg-bg hover:border-accent/30',
-                    )}
+                    className="cal-pop"
+                    style={{ animationDelay: `${index * 12}ms` }}
                   >
-                    {option}
-                  </button>
+                    <button
+                      type="button"
+                      aria-label={`Select ${option}`}
+                      aria-pressed={emoji === option}
+                      onClick={() => {
+                        if (emoji !== option) {
+                          tapHaptic()
+                          setEmojiInteracted(true)
+                        }
+                        setEmoji(option)
+                      }}
+                      className={cn(
+                        'flex h-10 w-full items-center justify-center rounded-[var(--radius-md)] text-xl',
+                        'border transition-[border-color,background-color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out)]',
+                        'active:scale-90',
+                        emoji === option
+                          ? cn('border-accent bg-accent-muted', emojiInteracted && 'motion-pop')
+                          : 'border-border bg-bg hover:border-accent/30',
+                      )}
+                    >
+                      {option}
+                    </button>
+                  </span>
                 ))}
               </div>
             </div>

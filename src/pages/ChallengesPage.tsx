@@ -87,10 +87,16 @@ function CreateChallengeForm({ onDone }: { onDone: () => void }) {
   const needsDates = formatValue === 'custom'
   const showWarning = isBeginnerWarningIntensity(intensity)
 
-  const valid =
-    name.trim().length > 0 &&
-    (!needsTarget || Number(targetTotal) > 0) &&
-    (!needsDates || (customStart && customEnd && customStart <= customEnd))
+  const missing = !name.trim()
+    ? 'Give it a name to fire it off.'
+    : needsTarget && !(Number(targetTotal) > 0)
+      ? 'Set the group rep target.'
+      : needsDates && (!customStart || !customEnd)
+        ? 'Pick start and end dates.'
+        : needsDates && customStart > customEnd
+          ? 'The end date is before the start.'
+          : null
+  const valid = missing === null
 
   async function handleCreate() {
     try {
@@ -249,6 +255,8 @@ function CreateChallengeForm({ onDone }: { onDone: () => void }) {
           </p>
         ) : null}
       </div>
+
+      {missing ? <p className="text-xs text-text-muted">{missing}</p> : null}
 
       <div className="flex gap-2">
         <Button

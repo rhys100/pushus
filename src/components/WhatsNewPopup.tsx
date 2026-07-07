@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ActivityIcon } from '@/components/ui/ActivityIcon'
 import { Button } from '@/components/ui/Button'
+import { usePresence } from '@/hooks/usePresence'
+import { cn } from '@/lib/cn'
 import { getLastSeenNewsId, setLastSeenNewsId } from '@/lib/storage'
 import {
   latestNewsId,
@@ -22,6 +24,7 @@ export function WhatsNewPopup() {
   const navigate = useNavigate()
   const [items, setItems] = useState<NewsItem[]>([])
   const [open, setOpen] = useState(false)
+  const { mounted, closing } = usePresence(open, 180)
 
   useEffect(() => {
     if (!user?.id || !profile) {
@@ -71,7 +74,7 @@ export function WhatsNewPopup() {
     setOpen(false)
   }
 
-  if (!open || items.length === 0) {
+  if (!mounted || items.length === 0) {
     return null
   }
 
@@ -86,14 +89,18 @@ export function WhatsNewPopup() {
       <button
         type="button"
         aria-label="Dismiss what's new"
-        className="absolute inset-0 bg-black/60"
+        className={cn(
+          'absolute inset-0 bg-black/60',
+          closing ? 'motion-fade-out' : 'motion-fade',
+        )}
         onClick={dismiss}
       />
       <div
-        className={
-          'relative w-full max-w-sm rounded-[var(--radius-lg)] border-2 border-border bg-surface p-5 ' +
-          'shadow-[var(--shadow-popup)]'
-        }
+        className={cn(
+          'relative w-full max-w-sm rounded-[var(--radius-lg)] border-2 border-border bg-surface p-5',
+          'shadow-[var(--shadow-popup)]',
+          closing ? 'popup-out' : 'popup-in',
+        )}
       >
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">
           What&apos;s new
@@ -102,7 +109,7 @@ export function WhatsNewPopup() {
           Fresh out of the gym 🎉
         </h2>
 
-        <ul className="mt-4 max-h-[50vh] space-y-4 overflow-y-auto pr-1">
+        <ul className="motion-stagger mt-4 max-h-[50vh] space-y-4 overflow-y-auto pr-1">
           {items.map((item) => (
             <li key={item.id} className="flex gap-3">
               <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-bg text-accent">

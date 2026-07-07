@@ -9,6 +9,7 @@ import {
   useToast,
 } from '@/components/ui'
 import { InviteShareCard } from '@/components/group/InviteShareCard'
+import { EntryModerationSettings } from '@/components/settings/EntryModerationSettings'
 import { SettingsLinkRow } from '@/components/settings/SettingsLinkRow'
 import { supabase } from '@/lib/supabase'
 import { billingConfig } from '@/lib/billing'
@@ -166,6 +167,8 @@ export function GroupAdminSettings() {
           <p className="text-sm text-text-muted">No pending join requests.</p>
         )}
       </div>
+
+      <EntryModerationSettings group={activeGroup} />
 
       <SettingsLinkRow
         to="/group"

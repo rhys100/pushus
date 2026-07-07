@@ -46,7 +46,9 @@ export type FreezeStatus = {
 /**
  * One freeze per Monday-based week (unique user+group+week_start). The only
  * offered action is protecting yesterday — freezes never fake reps, they just
- * stop a gap from breaking the streak display.
+ * stop a gap from breaking the streak display. The offer only appears when it
+ * would actually reconnect a streak: protecting a gap with nothing behind it
+ * would waste the week's freeze.
  */
 export function resolveFreezeStatus(params: {
   todayIso: string
@@ -65,13 +67,26 @@ export function resolveFreezeStatus(params: {
     (freeze) => freeze.week_start === yesterdayWeek && freeze.used_on !== null,
   )
 
-  const yesterdayDow = new Date(`${yesterday}T12:00:00Z`).getUTCDay()
-  const yesterdayProtected =
-    restDows.includes(yesterdayDow) ||
-    freezes.some((freeze) => freeze.used_on === yesterday)
+  const isProtected = (iso: string): boolean =>
+    restDows.includes(new Date(`${iso}T12:00:00Z`).getUTCDay()) ||
+    freezes.some((freeze) => freeze.used_on === iso)
+
+  // Walk back from two days ago past protected days — a freeze on yesterday
+  // is only worth it when there is a logged day back there to reconnect to.
+  let reconnects = false
+  for (let i = 2; i <= 60; i += 1) {
+    const day = isoDateAddDays(todayIso, -i)
+    if (loggedDates.has(day)) {
+      reconnects = true
+      break
+    }
+    if (!isProtected(day)) {
+      break
+    }
+  }
 
   const protectable =
-    !usedYesterdayWeek && !yesterdayProtected && !loggedDates.has(yesterday)
+    !usedYesterdayWeek && !isProtected(yesterday) && !loggedDates.has(yesterday) && reconnects
 
   return {
     usedThisWeek,

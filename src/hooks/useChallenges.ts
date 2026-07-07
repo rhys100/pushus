@@ -177,9 +177,35 @@ export function useCreateChallenge(group: Group | null | undefined, userId: stri
         ])
 
         if (teamsError) throw teamsError
+      } else {
+        // The creator is obviously in — don't make them tap Join on their own
+        // challenge. Team challenges still need an explicit team pick.
+        const { error: joinError } = await supabase.from('competition_participants').insert({
+          competition_id: competition.id,
+          user_id: userId,
+        })
+
+        if (joinError && joinError.code !== '23505') throw joinError
       }
 
       return competition
+    },
+    onSuccess: () => {
+      if (group?.id) {
+        void queryClient.invalidateQueries({ queryKey: gamificationKeys.competitions(group.id) })
+      }
+    },
+  })
+}
+
+/** Admin-only (enforced by RLS): remove a challenge and its participants/teams. */
+export function useDeleteChallenge(group: Group | null | undefined) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (competitionId: string) => {
+      const { error } = await supabase.from('competitions').delete().eq('id', competitionId)
+      if (error) throw error
     },
     onSuccess: () => {
       if (group?.id) {

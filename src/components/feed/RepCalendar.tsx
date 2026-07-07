@@ -12,6 +12,7 @@ import {
   subMonths,
 } from 'date-fns'
 import { cn } from '@/lib/cn'
+import { tapHaptic } from '@/lib/haptics'
 import type { DayRepSummary } from '@/hooks/useRepHistory'
 
 const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -54,19 +55,27 @@ export function RepCalendar({
         <button
           type="button"
           aria-label="Previous month"
-          onClick={() => onMonthChange(subMonths(monthStart, 1))}
-          className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-[var(--radius-md)] border border-border text-text-muted hover:border-accent/30"
+          onClick={() => {
+            tapHaptic()
+            onMonthChange(subMonths(monthStart, 1))
+          }}
+          className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-[var(--radius-md)] border border-border text-text-muted transition-transform duration-[var(--duration-fast)] hover:border-accent/30 active:scale-90"
         >
           ‹
         </button>
-        <h3 className="text-sm font-semibold text-text-primary">{monthLabel}</h3>
+        <h3 key={monthLabel} className="motion-fade text-sm font-semibold text-text-primary">
+          {monthLabel}
+        </h3>
         <button
           type="button"
           aria-label="Next month"
           disabled={isSameMonth(monthStart, todayParsed)}
-          onClick={() => onMonthChange(addMonths(monthStart, 1))}
+          onClick={() => {
+            tapHaptic()
+            onMonthChange(addMonths(monthStart, 1))
+          }}
           className={cn(
-            'inline-flex min-h-9 min-w-9 items-center justify-center rounded-[var(--radius-md)] border border-border text-text-muted hover:border-accent/30',
+            'inline-flex min-h-9 min-w-9 items-center justify-center rounded-[var(--radius-md)] border border-border text-text-muted transition-transform duration-[var(--duration-fast)] hover:border-accent/30 active:scale-90',
             isSameMonth(monthStart, todayParsed) && 'cursor-not-allowed opacity-40',
           )}
         >
@@ -74,7 +83,8 @@ export function RepCalendar({
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-1">
+      {/* Keyed by month so the cell cascade replays on every month turn */}
+      <div key={monthLabel} className="grid grid-cols-7 gap-1">
         {WEEKDAY_LABELS.map((label) => (
           <div
             key={label}
@@ -84,7 +94,7 @@ export function RepCalendar({
           </div>
         ))}
 
-        {days.map((day) => {
+        {days.map((day, dayIndex) => {
           const loggedFor = toLoggedFor(day)
           const inMonth = isSameMonth(day, monthStart)
           const isSelected = loggedFor === selectedDate
@@ -100,9 +110,16 @@ export function RepCalendar({
               disabled={!inMonth || isFuture}
               aria-label={`${format(day, 'd MMMM')}${totalReps > 0 ? `, ${totalReps} reps` : ''}`}
               aria-pressed={isSelected}
-              onClick={() => onSelectDate(loggedFor)}
+              onClick={() => {
+                if (!isSelected) {
+                  tapHaptic()
+                }
+                onSelectDate(loggedFor)
+              }}
+              style={{ animationDelay: `${dayIndex * 6}ms` }}
               className={cn(
-                'flex min-h-11 flex-col items-center justify-center rounded-[var(--radius-md)] border text-center transition-colors',
+                'cal-pop flex min-h-11 flex-col items-center justify-center rounded-[var(--radius-md)] border text-center',
+                'transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] active:scale-90',
                 !inMonth && 'invisible pointer-events-none',
                 inMonth && !isFuture && 'hover:border-accent/30',
                 isSelected
