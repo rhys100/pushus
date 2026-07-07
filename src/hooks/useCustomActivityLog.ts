@@ -10,6 +10,7 @@ export const customActivityLogKeys = {
     ['customActivityLog', 'dayEntries', activityId, date] as const,
   monthSummary: (activityId: string, monthKey: string) =>
     ['customActivityLog', 'monthSummary', activityId, monthKey] as const,
+  bestSet: (activityId: string) => ['customActivityLog', 'bestSet', activityId] as const,
 }
 
 function monthSummaryPrefix(activityId: string) {
@@ -105,6 +106,31 @@ export function useCustomActivityMonthSummary(
   })
 }
 
+async function fetchBestSet(activityId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from('custom_activity_entries')
+    .select('count')
+    .eq('activity_id', activityId)
+    .order('count', { ascending: false })
+    .limit(1)
+
+  if (error) {
+    throw error
+  }
+
+  return (data?.[0]?.count as number | undefined) ?? 0
+}
+
+/** All-time best single set for a custom activity (includes today). */
+export function useCustomActivityBestSet(activityId: string | undefined) {
+  return useQuery({
+    queryKey: customActivityLogKeys.bestSet(activityId ?? ''),
+    queryFn: () => fetchBestSet(activityId!),
+    enabled: Boolean(activityId),
+    staleTime: 60_000,
+  })
+}
+
 type BankCustomActivityInput = {
   activityId: string
   userId: string
@@ -158,6 +184,9 @@ export function useBankCustomActivity() {
       void queryClient.invalidateQueries({
         queryKey: monthSummaryPrefix(entry.activity_id),
       })
+      void queryClient.invalidateQueries({
+        queryKey: customActivityLogKeys.bestSet(entry.activity_id),
+      })
     },
   })
 }
@@ -193,6 +222,9 @@ export function useDeleteCustomActivityEntry() {
       })
       void queryClient.invalidateQueries({
         queryKey: monthSummaryPrefix(activityId),
+      })
+      void queryClient.invalidateQueries({
+        queryKey: customActivityLogKeys.bestSet(activityId),
       })
     },
   })

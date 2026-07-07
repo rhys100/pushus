@@ -24,7 +24,7 @@ Public-friendly view of where PushUS is today and where it may go.
 - Per-rep haptic tick while dragging (where the browser supports vibration)
 - Handle drag with larger grab target; smoother ring interaction on mobile
 - Log page layout: progress card above ring; personal entry history on Feed → My log
-- Custom activities (personal, private): optional left/right sides, +10 quick add, Log-page activity switcher, Board progress chart (total/best-set, daily/weekly), Feed → My log history with calendar and per-set delete, archive/restore in Settings
+- Custom activities (personal, private): optional left/right sides, +10 quick add, Log-page activity switcher, Board progress chart (total/best-set, daily/weekly), Feed → My log history with calendar and per-set delete, archive/restore in Settings, all-time best on the Log day card with a record-day callout
 
 ### Training and settings
 
