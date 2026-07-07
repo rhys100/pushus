@@ -8,6 +8,7 @@ const PWA_OPEN_APP_PROMPT_SNOOZED_SESSION_PREFIX = 'pushus-pwa-open-app-prompt-s
 const PWA_KNOWN_INSTALLED_KEY = 'pushus-pwa-known-installed'
 const PWA_STANDALONE_PROOF_KEY = 'pushus-pwa-standalone-proof'
 const LOG_ACTIVITY_PREFIX = 'pushus-log-activity'
+const NEWS_LAST_SEEN_PREFIX = 'pushus-news-last-seen'
 
 export function getPendingInviteCode(): string | null {
   try {
@@ -225,6 +226,23 @@ export function clearPwaOpenAppPromptSessionSnooze(userId: string): void {
 export function acknowledgePwaOpenAppPromptOpen(userId: string): void {
   clearPwaOpenAppPromptDismiss(userId)
   snoozePwaOpenAppPromptForSession(userId)
+}
+
+/** Newest "What's new" item id this member has seen (per device). */
+export function getLastSeenNewsId(userId: string): string | null {
+  try {
+    return localStorage.getItem(`${NEWS_LAST_SEEN_PREFIX}:${userId}`)
+  } catch {
+    return null
+  }
+}
+
+export function setLastSeenNewsId(userId: string, newsId: string): void {
+  try {
+    localStorage.setItem(`${NEWS_LAST_SEEN_PREFIX}:${userId}`, newsId)
+  } catch {
+    // ignore quota / private mode
+  }
 }
 
 /** Last activity picked on the Log page; null means the group push-ups logger. */

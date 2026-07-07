@@ -12,6 +12,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **What's new popup:** returning members see a one-time popup listing major features launched since their last visit (tracked per device); members who joined after a launch never see it. Add entries to `src/lib/whatsNew.ts` when shipping a major feature
 - **Custom activities:** track any exercise just for you (calf raises, pull-ups, leg raises) with optional separate left/right sides. Manage in Settings → Custom activities; a compact switcher pill appears above the Log page ring once you have one. Custom reps are private — never on the group feed, board, or training plan
 - **My progress chart** on the Board: dependency-free SVG trend chart for push-ups or any custom activity — daily (2 weeks) or weekly (12 weeks) buckets, Total or Best set metric, left/right lines for sided activities, and a this-week vs last-week delta
 - **Board privacy — public rep totals:** opt-in Settings toggle to show your raw rep totals to group mates on the day board instead of a % of goal (week/month boards already show totals)

@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-07 (what's new popup)
+
+- **Added:** "What's new" modal for feature launches. Static catalog in `src/lib/whatsNew.ts` (newest first, stable ids); per-device seen marker `pushus-news-last-seen:{userId}`; join-date filter so new members never see pre-join launches. Mounted in `TabLayout` (member tabs only, so it can't fire mid-onboarding). Pure logic unit-tested in `tests/unit/whatsNew.test.ts`.
+- **Process:** when shipping a major feature, add a `NewsItem` at the top of `NEWS_ITEMS` in the same PR.
+
 ### 2026-07-07 (custom activities, progress chart, board privacy)
 
 - **Added:** custom activities — personal exercises with optional left/right side tracking. New tables `custom_activities` + `custom_activity_entries` (migration `0029`, owner-only RLS, no RPCs — direct table access). Log page gets a switcher pill + picker sheet, side toggle, custom day-tally card; bank/undo via toast. Ring resets on activity switch so reps can't cross activities. Last selection persisted per device (`pushus-log-activity:{userId}`).

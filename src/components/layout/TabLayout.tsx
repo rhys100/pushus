@@ -2,6 +2,7 @@ import { Suspense, useCallback, useEffect } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { TabPageMetaProvider, useTabPageMetaContext } from '@/components/layout/TabPageMeta'
+import { WhatsNewPopup } from '@/components/WhatsNewPopup'
 import { Skeleton } from '@/components/ui/Skeleton'
 import type { NavItem } from '@/components/ui/BottomNav'
 
@@ -63,6 +64,7 @@ function TabLayoutShell() {
       <Suspense fallback={<TabPageLoader />}>
         <Outlet />
       </Suspense>
+      <WhatsNewPopup />
     </AppLayout>
   )
 }
