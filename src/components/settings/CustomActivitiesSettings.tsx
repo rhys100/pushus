@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
 import { ActivityIcon, Button, Card, useToast } from '@/components/ui'
-import { activityIconLabel, ACTIVITY_ICON_IDS } from '@/lib/activityIcons'
+import {
+  activityIconLabel,
+  MORE_ACTIVITY_ICON_IDS,
+  PRIMARY_ACTIVITY_ICON_IDS,
+  type ActivityIconId,
+} from '@/lib/activityIcons'
 import { cn } from '@/lib/cn'
 import { getErrorMessage } from '@/lib/errors'
 import {
@@ -20,8 +25,37 @@ type EditorState = {
 
 const EMPTY_EDITOR: EditorState = {
   name: '',
-  emoji: ACTIVITY_ICON_IDS[0],
+  emoji: PRIMARY_ACTIVITY_ICON_IDS[0],
   trackSides: false,
+}
+
+function IconPickerButton({
+  option,
+  selected,
+  onSelect,
+}: {
+  option: ActivityIconId
+  selected: boolean
+  onSelect: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={`Select ${activityIconLabel(option)} icon`}
+      aria-pressed={selected}
+      title={activityIconLabel(option)}
+      onClick={onSelect}
+      className={cn(
+        'flex h-10 w-full items-center justify-center rounded-[var(--radius-md)]',
+        'border transition-colors',
+        selected
+          ? 'border-accent bg-accent-muted text-accent'
+          : 'border-border bg-surface text-text-muted hover:border-accent/30 hover:text-text-primary',
+      )}
+    >
+      <ActivityIcon icon={option} className="h-5 w-5" />
+    </button>
+  )
 }
 
 /**
@@ -40,6 +74,7 @@ export function CustomActivitiesSettings() {
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editor, setEditor] = useState<EditorState>(EMPTY_EDITOR)
+  const [showMoreIcons, setShowMoreIcons] = useState(false)
   const [confirmArchiveId, setConfirmArchiveId] = useState<string | null>(null)
 
   // Archive is destructive-ish (no restore UI yet) — first tap arms the
@@ -63,6 +98,7 @@ export function CustomActivitiesSettings() {
   function openAdd() {
     setEditor(EMPTY_EDITOR)
     setEditingId(null)
+    setShowMoreIcons(false)
     setAdding(true)
   }
 
@@ -73,12 +109,15 @@ export function CustomActivitiesSettings() {
       trackSides: activity.track_sides,
     })
     setEditingId(activity.id)
+    // Keep the current icon visible if it lives behind the More toggle.
+    setShowMoreIcons(MORE_ACTIVITY_ICON_IDS.includes(activity.emoji as ActivityIconId))
     setAdding(false)
   }
 
   function closeEditor() {
     setAdding(false)
     setEditingId(null)
+    setShowMoreIcons(false)
     setEditor(EMPTY_EDITOR)
   }
 
@@ -249,26 +288,37 @@ export function CustomActivitiesSettings() {
 
           <div className="space-y-2">
             <span className="text-xs font-medium text-text-muted">Icon</span>
-            <div className="grid grid-cols-6 gap-2">
-              {ACTIVITY_ICON_IDS.map((option) => (
-                <button
+            <div className="grid grid-cols-5 gap-2">
+              {PRIMARY_ACTIVITY_ICON_IDS.map((option) => (
+                <IconPickerButton
                   key={option}
-                  type="button"
-                  aria-label={`Select ${activityIconLabel(option)} icon`}
-                  aria-pressed={editor.emoji === option}
-                  onClick={() => setEditor((current) => ({ ...current, emoji: option }))}
-                  className={cn(
-                    'flex h-10 w-full items-center justify-center rounded-[var(--radius-md)]',
-                    'border transition-colors',
-                    editor.emoji === option
-                      ? 'border-accent bg-accent-muted text-accent'
-                      : 'border-border bg-surface text-text-muted hover:border-accent/30 hover:text-text-primary',
-                  )}
-                >
-                  <ActivityIcon icon={option} className="h-5 w-5" />
-                </button>
+                  option={option}
+                  selected={editor.emoji === option}
+                  onSelect={() => setEditor((current) => ({ ...current, emoji: option }))}
+                />
               ))}
             </div>
+
+            {showMoreIcons ? (
+              <div className="grid grid-cols-5 gap-2">
+                {MORE_ACTIVITY_ICON_IDS.map((option) => (
+                  <IconPickerButton
+                    key={option}
+                    option={option}
+                    selected={editor.emoji === option}
+                    onSelect={() => setEditor((current) => ({ ...current, emoji: option }))}
+                  />
+                ))}
+              </div>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={() => setShowMoreIcons((current) => !current)}
+              className="text-xs font-medium text-accent underline underline-offset-2"
+            >
+              {showMoreIcons ? 'Fewer icons' : 'More icons'}
+            </button>
           </div>
 
           <label className="flex items-start gap-3">
