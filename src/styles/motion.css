@@ -384,6 +384,36 @@
   animation: cal-pop 240ms var(--ease-out) backwards;
 }
 
+/* --- Streak flame: flickers only while today's bank is still owed ------- */
+
+@keyframes flame-flicker {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+
+  30% {
+    transform: scale(1.12) rotate(-3deg);
+    opacity: 0.85;
+  }
+
+  55% {
+    transform: scale(0.95) rotate(2deg);
+    opacity: 1;
+  }
+
+  75% {
+    transform: scale(1.08) rotate(-1deg);
+    opacity: 0.9;
+  }
+}
+
+.flame-flicker {
+  display: inline-block;
+  animation: flame-flicker 1.8s var(--ease-out) infinite;
+}
+
 /* --- Nav: active tab lands with a spring ------------------------------- */
 
 @keyframes nav-pop {

@@ -45,14 +45,25 @@ export function AchievementsPage() {
           {loading ? (
             <Skeleton className="h-28 w-full" />
           ) : (
-            <StatCard label="Total XP" value={xpTotal.toLocaleString()} hint="1 XP per push-up banked" />
+            <StatCard label="Total XP" value={xpTotal} hint="1 XP per push-up banked" />
           )}
           {streakLoading ? (
             <Skeleton className="h-28 w-full" />
           ) : (
             <StatCard
               label="Active streak"
-              value={`${streak?.activeStreak ?? 0}🔥`}
+              value={
+                <>
+                  {streak?.activeStreak ?? 0}
+                  {/* Flame flickers only while today's bank is still owed */}
+                  <span
+                    className={streak && !streak.todayLogged ? 'flame-flicker' : undefined}
+                    aria-hidden="true"
+                  >
+                    🔥
+                  </span>
+                </>
+              }
               hint={
                 streak?.todayLogged
                   ? 'Today is banked'
@@ -107,9 +118,19 @@ export function AchievementsPage() {
               description="Achievement catalog loads from the database after migration."
             />
           ) : (
-            <ul className="space-y-2">
+            <ul className="motion-stagger space-y-2">
               {catalog.map((achievement) => {
                 const isUnlocked = unlockedIds.has(achievement.id)
+                // Lifetime clubs can show live progress: total XP is exactly
+                // lifetime effective reps (1 rep = 1 XP, no bonuses yet).
+                const lifetimeTarget =
+                  !isUnlocked && achievement.criteria?.type === 'lifetime_total'
+                    ? Number(achievement.criteria.value)
+                    : null
+                const progress =
+                  lifetimeTarget && lifetimeTarget > 0
+                    ? Math.min(xpTotal / lifetimeTarget, 1)
+                    : null
 
                 return (
                   <li key={achievement.id}>
@@ -126,6 +147,19 @@ export function AchievementsPage() {
                           {isUnlocked ? <Badge variant="success">Unlocked</Badge> : null}
                         </div>
                         <p className="mt-0.5 text-xs text-text-muted">{achievement.description}</p>
+                        {progress !== null && lifetimeTarget ? (
+                          <div className="mt-2 space-y-1">
+                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-text-muted/20">
+                              <div
+                                className="h-full rounded-full bg-accent/70"
+                                style={{ width: `${Math.round(progress * 100)}%` }}
+                              />
+                            </div>
+                            <p className="font-mono text-[0.65rem] tabular-nums text-text-muted">
+                              {xpTotal.toLocaleString()} / {lifetimeTarget.toLocaleString()}
+                            </p>
+                          </div>
+                        ) : null}
                       </div>
                     </Card>
                   </li>
@@ -140,7 +174,7 @@ export function AchievementsPage() {
             <h2 className="text-xs font-semibold uppercase tracking-wide text-text-muted">
               Your unlocks
             </h2>
-            <ul className="space-y-2">
+            <ul className="motion-stagger space-y-2">
               {unlocked.map((item) => (
                 <li key={item.id}>
                   <Card padding="sm" className="flex items-center gap-3">

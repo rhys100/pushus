@@ -163,7 +163,18 @@ export function DevPreviewPage() {
 
         <div className="grid grid-cols-2 gap-3">
           <StatCard label="This week" value={barValue * 7} hint="+12% vs last" trend="up" />
-          <StatCard label="Best set" value={32} hint="steady" trend="neutral" />
+          <StatCard
+            label="Streak"
+            value={
+              <>
+                5
+                <span className="flame-flicker" aria-hidden="true">
+                  🔥
+                </span>
+              </>
+            }
+            hint="flame flickers when unbanked"
+          />
         </div>
 
         <Skeleton className="h-10 w-full" />

@@ -3,6 +3,7 @@ import { cn } from '@/lib/cn'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 import { useFlipList } from '@/hooks/useFlipList'
 import { getMemberDayTarget, useGroupDailyTargets } from '@/hooks/useGroupDailyTargets'
+import { useGroupStreaks } from '@/hooks/useGroupStreaks'
 import {
   useLeaderboard,
   useLeaderboardPeriod,
@@ -68,6 +69,24 @@ type LeaderboardRowProps = {
   dayTarget?: MemberDayTarget
   showDayProgress?: boolean
   targetsLoading?: boolean
+  streak?: number
+}
+
+/** Streaks under 2 days aren't worth a flame yet. */
+function StreakFlame({ streak }: { streak?: number }) {
+  if (!streak || streak < 2) {
+    return null
+  }
+
+  return (
+    <span
+      className="shrink-0 font-mono text-xs font-semibold tabular-nums text-warning"
+      title={`${streak}-day streak`}
+      aria-label={`${streak}-day streak`}
+    >
+      🔥{streak}
+    </span>
+  )
 }
 
 function LeaderboardRow({
@@ -78,6 +97,7 @@ function LeaderboardRow({
   dayTarget,
   showDayProgress = false,
   targetsLoading = false,
+  streak,
 }: LeaderboardRowProps) {
   const hasTrainingTarget =
     dayTarget?.hasPlan && !dayTarget.isRestDay && dayTarget.target != null && dayTarget.target > 0
@@ -107,6 +127,8 @@ function LeaderboardRow({
         <p className="w-[4.5rem] shrink-0 truncate text-sm font-medium text-text-primary">
           {entry.display_name}
         </p>
+
+        <StreakFlame streak={streak} />
 
         {targetsLoading ? (
           <Skeleton className="h-2.5 min-w-12 flex-1 rounded-full" />
@@ -177,6 +199,8 @@ function LeaderboardRow({
         />
       </div>
 
+      <StreakFlame streak={streak} />
+
       <div className="shrink-0 text-right">
         <p className="font-mono text-xl font-bold tabular-nums text-text-primary">{entry.total}</p>
         <p className="text-[0.6875rem] font-medium uppercase tracking-wide text-text-muted">
@@ -218,6 +242,7 @@ export function LeaderboardPage() {
   const { data: dailyTargets, isLoading: targetsLoading } = useGroupDailyTargets(activeGroup, {
     enabled: showDayProgress,
   })
+  const { data: streaks } = useGroupStreaks(activeGroup?.id)
   const subtitle = period
     ? formatPeriodLabel(range, period.periodStart, period.periodEnd)
     : 'Today'
@@ -291,6 +316,7 @@ export function LeaderboardPage() {
               isCurrentUser={entry.user_id === user?.id}
               showDayProgress={showDayProgress}
               targetsLoading={targetsLoading}
+              streak={streaks?.get(entry.user_id)}
               dayTarget={
                 showDayProgress
                   ? getMemberDayTarget(dailyTargets, entry.user_id)

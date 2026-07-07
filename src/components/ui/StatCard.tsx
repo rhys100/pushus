@@ -5,7 +5,7 @@ import { Card } from './Card'
 
 export type StatCardProps = {
   label: string
-  value: string | number
+  value: string | number | ReactNode
   hint?: string
   icon?: ReactNode
   trend?: 'up' | 'down' | 'neutral'
@@ -21,7 +21,7 @@ const trendStyles = {
 /** Numeric stat values count up into place so fresh data lands with weight. */
 function CountUpValue({ value }: { value: number }) {
   const display = useCountUp(value)
-  return <>{display}</>
+  return <>{display.toLocaleString()}</>
 }
 
 export function StatCard({
