@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-07 (activity line icons)
+
+- **Changed:** custom activity emojis replaced with a 12-icon minimal stroke set (`src/lib/activityIcons.ts` data + `ActivityIcon` component). 24×24, stroke 1.75, `currentColor` so accent/muted colours flow in. Several shapes adapted from Lucide (ISC), plus hand-drawn barbell/kettlebell/pull-up figure/jump rope.
+- The `custom_activities.emoji` column now stores icon ids ('barbell', 'bolt', …); unknown values (legacy emojis) render as text so old rows keep working. Push-ups uses the brand bolt (`PUSHUPS_ICON`) in the switcher, picker sheet, progress chips, and day card.
+
 ### 2026-07-07 (what's new history + beta sign-off)
 
 - **Added:** Settings → What's new (`/settings/whats-new`) — full launch history grouped by date with `version` badges (new optional field on `NewsItem`); popup gained a "See past updates" link.

@@ -14,7 +14,8 @@ import {
   type ProgressRange,
 } from '@/lib/progressStats'
 import type { Group } from '@/types/database'
-import { SegmentedControl, Skeleton } from '@/components/ui'
+import { PUSHUPS_ICON } from '@/lib/activityIcons'
+import { ActivityIcon, SegmentedControl, Skeleton } from '@/components/ui'
 import { ProgressChart, type ProgressChartSeries } from '@/components/progress/ProgressChart'
 
 const RANGE_OPTIONS: { value: ProgressRange; label: string }[] = [
@@ -115,14 +116,16 @@ export function MyProgressPanel({ group, userId, timezone, className }: MyProgre
 
       <div className="mt-3 flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Progress activity">
         <ActivityChip
-          label="💪 Push-ups"
+          icon={PUSHUPS_ICON}
+          label="Push-ups"
           selected={selectedActivity == null}
           onClick={() => setSelectedId(null)}
         />
         {activities.map((activity) => (
           <ActivityChip
             key={activity.id}
-            label={`${activity.emoji} ${activity.name}`}
+            icon={activity.emoji}
+            label={activity.name}
             selected={selectedId === activity.id}
             onClick={() => setSelectedId(activity.id)}
           />
@@ -193,10 +196,12 @@ export function MyProgressPanel({ group, userId, timezone, className }: MyProgre
 }
 
 function ActivityChip({
+  icon,
   label,
   selected,
   onClick,
 }: {
+  icon: string
   label: string
   selected: boolean
   onClick: () => void
@@ -208,12 +213,13 @@ function ActivityChip({
       aria-selected={selected}
       onClick={onClick}
       className={cn(
-        'shrink-0 rounded-[var(--radius-full)] border px-3 py-1.5 text-xs font-semibold transition-colors',
+        'inline-flex shrink-0 items-center gap-1.5 rounded-[var(--radius-full)] border px-3 py-1.5 text-xs font-semibold transition-colors',
         selected
           ? 'border-accent bg-accent-muted text-accent'
           : 'border-border bg-bg text-text-muted hover:border-accent/30',
       )}
     >
+      <ActivityIcon icon={icon} className="h-3.5 w-3.5" />
       {label}
     </button>
   )

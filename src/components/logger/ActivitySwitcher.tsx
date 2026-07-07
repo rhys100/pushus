@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { ActivityIcon } from '@/components/ui/ActivityIcon'
+import { PUSHUPS_ICON } from '@/lib/activityIcons'
 import { cn } from '@/lib/cn'
 import type { CustomActivity } from '@/types/customActivity'
 
@@ -44,8 +46,6 @@ export function ActivitySwitcher({
     return null
   }
 
-  const pillLabel = selected ? `${selected.emoji} ${selected.name}` : '💪 Push-ups'
-
   const choose = (activityId: string | null) => {
     onSelect(activityId)
     setOpen(false)
@@ -67,7 +67,11 @@ export function ActivitySwitcher({
           className,
         )}
       >
-        <span className="truncate max-w-[12rem]">{pillLabel}</span>
+        <ActivityIcon
+          icon={selected ? selected.emoji : PUSHUPS_ICON}
+          className="h-3.5 w-3.5 text-accent"
+        />
+        <span className="truncate max-w-[12rem]">{selected ? selected.name : 'Push-ups'}</span>
         <svg
           viewBox="0 0 12 12"
           className="h-3 w-3 shrink-0 text-text-muted"
@@ -98,7 +102,8 @@ export function ActivitySwitcher({
 
               <div className="mt-3 max-h-[40vh] space-y-2 overflow-y-auto">
                 <ActivityOption
-                  label="💪 Push-ups"
+                  icon={PUSHUPS_ICON}
+                  label="Push-ups"
                   hint="Group goal + leaderboard"
                   selected={selectedActivityId === null}
                   onClick={() => choose(null)}
@@ -106,7 +111,8 @@ export function ActivitySwitcher({
                 {activities.map((activity) => (
                   <ActivityOption
                     key={activity.id}
-                    label={`${activity.emoji} ${activity.name}`}
+                    icon={activity.emoji}
+                    label={activity.name}
                     hint={activity.track_sides ? 'Left / right tracked' : 'Personal tracking'}
                     selected={selectedActivityId === activity.id}
                     onClick={() => choose(activity.id)}
@@ -122,11 +128,13 @@ export function ActivitySwitcher({
 }
 
 function ActivityOption({
+  icon,
   label,
   hint,
   selected,
   onClick,
 }: {
+  icon: string
   label: string
   hint: string
   selected: boolean
@@ -144,9 +152,15 @@ function ActivityOption({
           : 'border-border bg-bg hover:border-accent/30',
       )}
     >
-      <span className="min-w-0">
-        <span className="block truncate text-sm font-semibold text-text-primary">{label}</span>
-        <span className="block text-xs text-text-muted">{hint}</span>
+      <span className="flex min-w-0 items-center gap-2.5">
+        <ActivityIcon
+          icon={icon}
+          className={cn('h-5 w-5 shrink-0', selected ? 'text-accent' : 'text-text-muted')}
+        />
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-semibold text-text-primary">{label}</span>
+          <span className="block text-xs text-text-muted">{hint}</span>
+        </span>
       </span>
       {selected ? (
         <svg
