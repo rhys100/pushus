@@ -26,6 +26,10 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (design-audit loop — silence React Router v7 future-flag console spam)
+
+- **The console was emitting ~192 React Router "future flag" warnings per session** (`v7_relativeSplatPath` + `v7_startTransition`), repeated on every route render. Not errors, but the noise buries real console output — it literally slowed a console-log audit this pass. Opted into both flags on `<BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>` (`src/main.tsx`). Safe here: the app uses **only absolute `to="/…"` links** (grep found zero relative ones), so `v7_relativeSplatPath` is a no-op; `v7_startTransition` is the recommended opt-in and pairs well with the lazy/Suspense routes. Bonus: readies the eventual v7 upgrade. Verified live: after a fresh `/guest` boot with the flags, a marker-bracketed console capture showed **zero** new router warnings (the leftover ones in the buffer are all pre-fix history), and routing/navigation still works. tsc + lint clean.
+
 ### 2026-07-08 (perf: kill the Day-board N+1 with a batched RPC — deployed to prod)
 
 - **The Day board fired one `user_volume_stats` RPC per member** (~N round-trips; for a non-admin viewer N-1 of them *failed* since that RPC restricts non-admins to their own stats). Replaced with **migration `0040_group_volume_stats`** — a single batched RPC returning per-member stats in one call, with the **identical permission model** (caller always; every active member only if the caller is a group admin) and byte-for-byte the same per-user output as `user_volume_stats` (same 30-day window, same filters, all-time last-log, RIR-filtered estimated max, zeros/NULL parity). `useGroupDailyTargets` now makes **1 call instead of N**; members not returned resolve with null stats exactly as before, and the call is wrapped in try/catch so a batch failure degrades gracefully to no-stats (board never breaks).
