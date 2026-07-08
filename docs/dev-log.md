@@ -26,6 +26,10 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (feature: overage caps)
+
+- **Calm overage confirmation** on the Log page (migration `0038` adds `is_override` + `mark_entry_override`). Banking that would cross a health-guard cap opens a non-medical "that's a big day 💪" sheet; confirming logs it and records the override on the entry, cancelling keeps the ring. Never hard-blocks (locked rule). Cap derived from the plan's daily volume (`overageCap.ts`, floored at 150 so it never nags in normal training); skipped for deliberate max-set check-ins. Pure caps logic unit-tested.
+
 ### 2026-07-08 (feature: goal streak)
 
 - **Goal streak** surfaced on Achievements (migration `0037`): `compute_goal_streak_days` + `my_streaks` RPCs. "Goal" = `notification_preferences.daily_target` (same daily goal the reminders use, so streak and reminders agree). Rest days / freezes / injury windows protected; today under goal doesn't break it. Shows as a line in the streak-freeze card when ≥ 1 day.

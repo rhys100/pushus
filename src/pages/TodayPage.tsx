@@ -3,6 +3,9 @@ import { useLoggerDragHint } from '@/hooks/useLoggerDragHint'
 import { useNoseHoldHint } from '@/hooks/useNoseHoldHint'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 import { useMyAvailability } from '@/hooks/useAvailability'
+import { shouldConfirmOverage } from '@/lib/overageCap'
+import { OverageConfirmSheet } from '@/components/logger/OverageConfirmSheet'
+import { supabase } from '@/lib/supabase'
 import {
   getGroupLocalDateString,
   useBankPushups,
@@ -80,6 +83,11 @@ export function TodayPage() {
   const deleteCustomEntry = useDeleteCustomActivityEntry()
   const loggerRef = useRef<CircularLoggerHandle>(null)
   const [canBank, setCanBank] = useState(false)
+  // Calm overage confirmation: set when a bank would cross the health-guard cap.
+  const [overageConfirm, setOverageConfirm] = useState<{ count: number; projected: number } | null>(
+    null,
+  )
+  const overrideConfirmedRef = useRef(false)
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null)
   const [activitySide, setActivitySide] = useState<ActivitySide>('left')
   const [effortEntryId, setEffortEntryId] = useState<string | null>(null)
@@ -192,6 +200,22 @@ export function TodayPage() {
 
     const isMaxCheckin = maxSetMode
 
+    // Calm health-guard confirmation on a very big day (skipped for a deliberate
+    // max-set check-in). Confirming records the override on the entry.
+    const wasOverride = overrideConfirmedRef.current
+    overrideConfirmedRef.current = false
+    if (
+      !isMaxCheckin &&
+      !wasOverride &&
+      shouldConfirmOverage(dayTotal, bankedCount, {
+        dailyTarget,
+        maxCleanSet: plan?.max_clean_set,
+      })
+    ) {
+      setOverageConfirm({ count: bankedCount, projected: dayTotal + bankedCount })
+      return
+    }
+
     try {
       const entry = await bankPushups.mutateAsync({
         group: activeGroup,
@@ -207,6 +231,10 @@ export function TodayPage() {
       })
       loggerRef.current?.unwind()
       dismissHint()
+
+      if (wasOverride && entry?.id && !entry.id.startsWith('optimistic-')) {
+        void supabase.rpc('mark_entry_override', { p_entry_id: entry.id })
+      }
 
       if (isMaxCheckin) {
         setMaxSetMode(false)
@@ -296,6 +324,8 @@ export function TodayPage() {
     bankPushups,
     canBank,
     closeEffortSheet,
+    dailyTarget,
+    dayTotal,
     dismissHint,
     effortAskedToday,
     entries.length,
@@ -311,6 +341,12 @@ export function TodayPage() {
     sorenessStatus,
     wizardCompleted,
   ])
+
+  const confirmOverage = useCallback(() => {
+    overrideConfirmedRef.current = true
+    setOverageConfirm(null)
+    void handleBank()
+  }, [handleBank])
 
   const handleBankCustom = useCallback(async () => {
     if (!selectedActivity || !user || !canBank || bankCustom.isPending) {
@@ -615,6 +651,14 @@ export function TodayPage() {
           setSorenessPromptedToday(true)
           setShowSorenessSheet(false)
         }}
+      />
+
+      <OverageConfirmSheet
+        open={overageConfirm !== null}
+        projectedTotal={overageConfirm?.projected ?? 0}
+        saving={bankPushups.isPending}
+        onConfirm={confirmOverage}
+        onCancel={() => setOverageConfirm(null)}
       />
     </>
   )
