@@ -45,6 +45,7 @@ import { SetEffortSheet } from '@/components/logger/SetEffortSheet'
 import { SorenessCheckInSheet } from '@/components/logger/SorenessCheckInSheet'
 import { ChallengeMaxCheckInCard } from '@/components/today/ChallengeMaxCheckInCard'
 import { DayProgressCard } from '@/components/today/DayProgressCard'
+import { GuestImportPrompt } from '@/components/today/GuestImportPrompt'
 import { useAuth } from '@/providers/AuthProvider'
 import { useTrainingPlan } from '@/hooks/useTrainingPlan'
 import { useSorenessCheckin } from '@/hooks/useSorenessCheckin'
@@ -524,6 +525,8 @@ export function TodayPage() {
             isOwner={role === 'owner'}
           />
         ) : null}
+
+        <GuestImportPrompt />
 
         {availability && availability.status !== 'active' ? (
           <p className={cn(noticeInlineClass('accent'), 'mb-2 text-text-muted')}>

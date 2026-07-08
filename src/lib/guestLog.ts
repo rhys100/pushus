@@ -75,9 +75,34 @@ export function removeGuestEntry(id: string): GuestEntry[] {
 export function clearGuestLog(): void {
   try {
     localStorage.removeItem(GUEST_LOG_KEY)
+    localStorage.removeItem(GUEST_MILESTONES_SHOWN_KEY)
   } catch {
     // ignore
   }
+}
+
+const GUEST_IMPORT_DISMISSED_KEY = 'pushus-guest-import-dismissed'
+
+/** True once the user has declined importing their guest reps (don't nag). */
+export function isGuestImportDismissed(): boolean {
+  try {
+    return localStorage.getItem(GUEST_IMPORT_DISMISSED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function dismissGuestImport(): void {
+  try {
+    localStorage.setItem(GUEST_IMPORT_DISMISSED_KEY, '1')
+  } catch {
+    // ignore
+  }
+}
+
+/** Compact { count, day } payload for the import RPC. */
+export function guestImportPayload(entries: GuestEntry[]): { count: number; day: string }[] {
+  return entries.map((entry) => ({ count: entry.count, day: entry.day }))
 }
 
 /** Total reps banked on a given local day. */

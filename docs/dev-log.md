@@ -26,6 +26,10 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (feature: guest rep import on signup)
+
+- **Guests can carry their reps into a real account.** Migration `0039` `import_guest_reps(group_id, entries jsonb)` — inserts the device's guest reps into the member's group on their original local days (honest timeline; counts toward history/streak/XP). One-time self-import, so it bypasses the group backdate policy + oversize check (own honest reps); clamped to the last 60 days, ≤1000/entry; respects `can_group_write`. `GuestImportPrompt` card on Today offers "Add my reps to <Group>?" when this device has guest data and the user just joined; declines are remembered (`isGuestImportDismissed`). Guest banner reworded from "they'll disappear" to "bring these reps with you". Late-joiner leaderboard fairness already covered by since-you-joined + official-period rules.
+
 ### 2026-07-08 (feature: guest mode)
 
 - **No-account guest playground** at public route `/guest` (linked from the login screen: "Just want a play? Try it as a guest →"). Self-contained page (not the auth-gated `TodayPage`) reusing `CircularLogger` + `BankPushupsButton`; reps stored in `localStorage` via `src/lib/guestLog.ts` (no Supabase). Persistent accent banner explains data is device-only and can be lost, with "Create free account" / "Sign in" CTAs; today total + set list with delete. Pure day-grouping logic unit-tested; verified live end-to-end in the preview (bank → localStorage → total, survives reload) since the route needs no auth.

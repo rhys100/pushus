@@ -95,8 +95,9 @@ export function GuestPage() {
         <p className="text-sm font-semibold text-text-primary">You&apos;re just trying it out 👋</p>
         <p className="text-xs leading-relaxed text-text-muted">
           Reps you log here are saved on <span className="font-medium text-text-primary">this
-          device only</span>. They&apos;ll disappear if you clear your browser, use a different
-          phone, or reinstall. Make a free account to keep your progress and push with your mates.
+          device only</span> — they could vanish if you clear your browser or switch phones. Make a
+          free account and you can <span className="font-medium text-text-primary">bring these reps
+          with you</span> and push with your mates.
         </p>
         <div className="flex gap-2 pt-1">
           <Button className="min-h-10 flex-1 text-sm" onClick={() => navigate('/login')}>
