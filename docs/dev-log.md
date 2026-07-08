@@ -26,6 +26,10 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (design-audit loop — join failure recovery destination)
+
+- **Join-by-link error screen sent users to the wrong page.** On `JoinPage`, if `request_join_group` failed for any non-"already a member" reason (bad/expired code, group full, network), the error state's secondary button was labelled **"Back"** but linked to `/private-beta` — the beta-access gate, which greets a logged-in, onboarded user with "you need an invite link or approved access to continue." Both the label and the destination were wrong for the situation. Changed it to **"Enter a different code" → `/join`**, mirroring the `!inviteCode` invalid-link state directly above (which already offered `/join`). One-line recovery that actually maps to the user's goal. `/join` verified live (renders the invite-code entry); tsc + lint clean. The error state itself needs a real failed-join RPC + session to reach, so not live-previewable — routing + destination confirmed instead.
+
 ### 2026-07-08 (perf-audit loop — calendar + day-log memoization)
 
 - **RepCalendar month grid `useMemo`'d** on `[monthStart, todayDate]`. Tapping a day changes `selectedDate`, which re-rendered the calendar and re-ran `startOfWeek/endOfWeek/eachDayOfInterval/parseISO` for the whole ~42-cell grid every tap. Now that derivation only recomputes on an actual month/today change.

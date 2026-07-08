@@ -257,8 +257,8 @@ export function JoinPage() {
               >
                 Try again
               </Button>
-              <ButtonRouterLink to="/private-beta" variant="ghost" fullWidth>
-                Back
+              <ButtonRouterLink to="/join" variant="ghost" fullWidth>
+                Enter a different code
               </ButtonRouterLink>
             </>
           ) : (
