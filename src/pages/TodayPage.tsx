@@ -22,7 +22,7 @@ import {
   useDeleteCustomActivityEntry,
 } from '@/hooks/useCustomActivityLog'
 import { getStoredLogActivityId, setStoredLogActivityId } from '@/lib/storage'
-import type { ActivitySide } from '@/types/customActivity'
+import type { SideChoice } from '@/types/customActivity'
 import { useGroupBillingStatus, useGroupSubscription } from '@/hooks/useBilling'
 import { BillingBanner } from '@/components/billing/BillingBanner'
 import { Button } from '@/components/ui/Button'
@@ -89,7 +89,7 @@ export function TodayPage() {
   )
   const overrideConfirmedRef = useRef(false)
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null)
-  const [activitySide, setActivitySide] = useState<ActivitySide>('left')
+  const [activitySide, setActivitySide] = useState<SideChoice>('left')
   const [effortEntryId, setEffortEntryId] = useState<string | null>(null)
   const [effortAskedToday, setEffortAskedToday] = useState(false)
   const [maxSetMode, setMaxSetMode] = useState(false)
@@ -362,7 +362,7 @@ export function TodayPage() {
     const entrySide = selectedActivity.track_sides ? activitySide : null
 
     try {
-      const entry = await bankCustom.mutateAsync({
+      const inserted = await bankCustom.mutateAsync({
         activityId: selectedActivity.id,
         userId: user.id,
         count: bankedCount,
@@ -372,41 +372,49 @@ export function TodayPage() {
       loggerRef.current?.unwind()
       dismissHint()
 
-      // Sided work alternates naturally (left set, then right) — flip the
-      // toggle so the next bank lands on the other side by default.
-      if (entrySide) {
+      // Single-side work alternates naturally (left set, then right) — flip the
+      // toggle so the next bank lands on the other side by default. 'Both' stays.
+      if (entrySide === 'left' || entrySide === 'right') {
         setActivitySide(entrySide === 'left' ? 'right' : 'left')
       }
 
       toast({
-        message: `${bankedCount} ${selectedActivity.name}${entrySide ? ` (${entrySide})` : ''} banked.`,
+        message:
+          entrySide === 'both'
+            ? `${bankedCount} ${selectedActivity.name} banked — both sides.`
+            : `${bankedCount} ${selectedActivity.name}${entrySide ? ` (${entrySide})` : ''} banked.`,
         variant: 'success',
         durationMs: 6000,
         actionLabel: 'Undo',
         onAction: () => {
-          deleteCustomEntry.mutate(
-            {
-              entryId: entry.id,
-              activityId: selectedActivity.id,
-              loggedFor: entry.logged_for,
-            },
-            {
-              onSuccess: () => {
-                toast({
-                  message: 'Last entry undone.',
-                  variant: 'default',
-                  durationMs: 4000,
-                })
+          // 'Both' writes two entries — undo removes them all.
+          inserted.forEach((row, index) => {
+            deleteCustomEntry.mutate(
+              {
+                entryId: row.id,
+                activityId: selectedActivity.id,
+                loggedFor: row.logged_for,
               },
-              onError: () => {
-                toast({
-                  message: 'Could not undo. Try again.',
-                  variant: 'danger',
-                  durationMs: 5000,
-                })
-              },
-            },
-          )
+              index === 0
+                ? {
+                    onSuccess: () => {
+                      toast({
+                        message: 'Last entry undone.',
+                        variant: 'default',
+                        durationMs: 4000,
+                      })
+                    },
+                    onError: () => {
+                      toast({
+                        message: 'Could not undo. Try again.',
+                        variant: 'danger',
+                        durationMs: 5000,
+                      })
+                    },
+                  }
+                : undefined,
+            )
+          })
         },
       })
     } catch {
@@ -507,7 +515,7 @@ export function TodayPage() {
 
   return (
     <>
-      <div className="flex min-h-[calc(100dvh-var(--bottom-nav-height)-1.5rem)] flex-col pb-2 pt-5">
+      <div className="flex min-h-[calc(100dvh-var(--bottom-nav-height)-1.5rem)] flex-col pb-2 pt-4">
         {billingConfig.enabled ? (
           <BillingBanner
             className="mb-3"
@@ -558,13 +566,13 @@ export function TodayPage() {
           />
         )}
 
-        <div className="flex flex-1 flex-col items-center justify-center py-2">
+        <div className="flex flex-1 flex-col items-center justify-center py-1">
           <ActivitySwitcher
             activities={customActivities}
             selectedActivityId={selectedActivity?.id ?? null}
             onSelect={handleSelectActivity}
             disabled={bankPending}
-            className="mb-3"
+            className="mb-2"
           />
 
           <CircularLogger
@@ -580,9 +588,10 @@ export function TodayPage() {
 
           {isCustomMode && selectedActivity?.track_sides ? (
             <SegmentedControl
-              className="mt-3 w-full max-w-[15rem]"
+              className="mt-2 w-full max-w-[17rem]"
               options={[
                 { value: 'left', label: 'Left' },
+                { value: 'both', label: 'Both' },
                 { value: 'right', label: 'Right' },
               ]}
               value={activitySide}
@@ -597,7 +606,7 @@ export function TodayPage() {
             disabled={bankPending}
             onClick={() => loggerRef.current?.addReps(10)}
             aria-label="Add 10 reps"
-            className="mt-3 px-10"
+            className="mt-2 min-h-10 px-8"
           >
             +10
           </Button>
@@ -614,7 +623,7 @@ export function TodayPage() {
                   : `Bank ${selectedActivity.name}`
                 : undefined
             }
-            className="mt-3 transition-opacity duration-[var(--duration-fast)]"
+            className="mt-2 transition-opacity duration-[var(--duration-fast)]"
           />
         </div>
 

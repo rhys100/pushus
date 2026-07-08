@@ -1,5 +1,12 @@
 export type ActivitySide = 'left' | 'right'
 
+/**
+ * What the Log-page side toggle can select. 'both' is a logging convenience —
+ * it writes one 'left' and one 'right' entry so per-side totals stay exact;
+ * entries themselves are only ever 'left' or 'right'.
+ */
+export type SideChoice = ActivitySide | 'both'
+
 export type CustomActivity = {
   id: string
   user_id: string

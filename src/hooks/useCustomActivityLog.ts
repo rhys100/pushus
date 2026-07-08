@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { endOfMonth, format, startOfMonth } from 'date-fns'
 import { supabase } from '@/lib/supabase'
 import type { DayRepSummary } from '@/hooks/useRepHistory'
-import type { ActivitySide, CustomActivityEntry } from '@/types/customActivity'
+import type { CustomActivityEntry, SideChoice } from '@/types/customActivity'
 
 export const customActivityLogKeys = {
   all: ['customActivityLog'] as const,
@@ -135,10 +135,12 @@ type BankCustomActivityInput = {
   activityId: string
   userId: string
   count: number
-  side: ActivitySide | null
+  /** null = not sided; 'both' writes a left AND a right entry at once. */
+  side: SideChoice | null
   loggedFor: string
 }
 
+/** Banking returns the row(s) written — two when the side choice is 'both'. */
 export function useBankCustomActivity() {
   const queryClient = useQueryClient()
 
@@ -149,43 +151,50 @@ export function useBankCustomActivity() {
       count,
       side,
       loggedFor,
-    }: BankCustomActivityInput) => {
+    }: BankCustomActivityInput): Promise<CustomActivityEntry[]> => {
+      const sides = side === 'both' ? (['left', 'right'] as const) : [side]
+      const rows = sides.map((entrySide) => ({
+        activity_id: activityId,
+        user_id: userId,
+        count,
+        side: entrySide,
+        logged_for: loggedFor,
+      }))
+
       const { data, error } = await supabase
         .from('custom_activity_entries')
-        .insert({
-          activity_id: activityId,
-          user_id: userId,
-          count,
-          side,
-          logged_for: loggedFor,
-        })
+        .insert(rows)
         .select(ENTRY_COLUMNS)
-        .single()
 
       if (error) {
         throw error
       }
 
-      return data as CustomActivityEntry
+      return (data ?? []) as CustomActivityEntry[]
     },
-    onSuccess: (entry) => {
+    onSuccess: (inserted) => {
+      const first = inserted[0]
+      if (!first) {
+        return
+      }
+
       const entriesKey = customActivityLogKeys.dayEntries(
-        entry.activity_id,
-        entry.logged_for,
+        first.activity_id,
+        first.logged_for,
       )
 
       queryClient.setQueryData<CustomActivityEntry[]>(entriesKey, (current = []) => [
-        entry,
+        ...inserted,
         ...current,
       ])
       void queryClient.invalidateQueries({
-        queryKey: progressKeyPrefix(entry.activity_id),
+        queryKey: progressKeyPrefix(first.activity_id),
       })
       void queryClient.invalidateQueries({
-        queryKey: monthSummaryPrefix(entry.activity_id),
+        queryKey: monthSummaryPrefix(first.activity_id),
       })
       void queryClient.invalidateQueries({
-        queryKey: customActivityLogKeys.bestSet(entry.activity_id),
+        queryKey: customActivityLogKeys.bestSet(first.activity_id),
       })
     },
   })
