@@ -295,6 +295,7 @@ export function ChallengesPage() {
   const { activeGroup, role, loading: groupLoading } = useActiveGroup()
   const { data: competitions = [], isLoading, error, refetch } = useCompetitions(activeGroup)
   const [creating, setCreating] = useState(false)
+  const [showAllEnded, setShowAllEnded] = useState(false)
 
   const isAdmin = role === 'owner' || role === 'admin'
   const active = competitions.filter((item) => challengeStatus(item) === 'active')
@@ -368,9 +369,18 @@ export function ChallengesPage() {
                 <h2 className="text-xs font-semibold uppercase tracking-wide text-text-muted">
                   Past
                 </h2>
-                {ended.slice(0, 5).map((competition) => (
+                {(showAllEnded ? ended : ended.slice(0, 5)).map((competition) => (
                   <CompetitionCard key={competition.id} competition={competition} />
                 ))}
+                {ended.length > 5 && !showAllEnded ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllEnded(true)}
+                    className="min-h-11 w-full rounded-[var(--radius-md)] text-sm font-medium text-text-muted transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+                  >
+                    Show all {ended.length} past challenges
+                  </button>
+                ) : null}
               </section>
             ) : null}
           </>
