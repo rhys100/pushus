@@ -9,6 +9,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import { detectTimezone, timezoneOptions } from '@/lib/timezones'
 import { tapHaptic } from '@/lib/haptics'
+import { formatProfileName } from '@/lib/memberDisplayName'
 import { cn } from '@/lib/cn'
 import { getPendingInviteCode, markProfileCompleted } from '@/lib/storage'
 import { useAuth } from '@/providers/AuthProvider'
@@ -127,6 +128,26 @@ export function OnboardingProfilePage() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <Card padding="lg" className="space-y-5">
+            {/* Live preview so the emoji + initial choices feel concrete. */}
+            <div className="flex items-center gap-3 rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2.5">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface text-2xl">
+                {emoji}
+              </span>
+              <div className="min-w-0">
+                <p className="text-[0.65rem] font-medium uppercase tracking-wide text-text-muted">
+                  On the leaderboard
+                </p>
+                <p className="truncate font-semibold text-text-primary">
+                  {displayName.trim()
+                    ? formatProfileName({
+                        display_name: displayName.trim(),
+                        name_initial: nameInitial.trim() || null,
+                      })
+                    : 'Your name'}
+                </p>
+              </div>
+            </div>
+
             <div className="space-y-1.5">
               <label htmlFor="displayName" className="text-sm font-medium text-text-primary">
                 Display name

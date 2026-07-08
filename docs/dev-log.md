@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (design-audit loop — onboarding preview)
+
+- **Live "on the leaderboard" preview on the onboarding profile page.** The page's stated purpose is "how your mates will see you," but it collected an emoji + an *optional* "initial" with no visible result — so the initial field read as pointless. Added a compact preview chip (emoji + `formatProfileName(name, initial)`, "Your name" placeholder while empty) at the top of the form so the choices are concrete as you type. Reuses the existing formatter; no logic change. Auth-gated so verified via tsc + tests, not a live preview.
+- **Flagged, not changed:** the "Step 1 of 2" header over-promises for the auto-joining-invite path (that lands straight on /today with no visible step 2). Left as-is since the downstream path depends on group settings we can't predict at onboarding time — a conditional label could be wrong more often than right.
+
 ### 2026-07-08 (feature: guest rep import on signup)
 
 - **Guests can carry their reps into a real account.** Migration `0039` `import_guest_reps(group_id, entries jsonb)` — inserts the device's guest reps into the member's group on their original local days (honest timeline; counts toward history/streak/XP). One-time self-import, so it bypasses the group backdate policy + oversize check (own honest reps); clamped to the last 60 days, ≤1000/entry; respects `can_group_write`. `GuestImportPrompt` card on Today offers "Add my reps to <Group>?" when this device has guest data and the user just joined; declines are remembered (`isGuestImportDismissed`). Guest banner reworded from "they'll disappear" to "bring these reps with you". Late-joiner leaderboard fairness already covered by since-you-joined + official-period rules.
