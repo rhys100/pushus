@@ -26,6 +26,13 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (Settings page IA redesign)
+
+- **Sectioned the Settings page** into six titled groups (Account / Preferences / Training / Notifications / Group tools / About) via a new `SettingsSection` component — was a flat stack of ten equal-weight cards with no hierarchy.
+- **Push reminders de-cluttered:** dropped the dev-facing "Permission: granted / Status: on" readout for one plain line ("On · every hour, 07:00–20:00"); removed a duplicated "only works in the installed app" notice (it showed even when already installed); the From/Until/Frequency/Injury controls now appear only when reminders are on, behind a divider, instead of sitting greyed-out.
+- **Training card slimmed:** replaced the giant mono "45 push-ups" hero (a dupe of the Today screen) with a compact summary row (today's target + Week/Max/Peak) above the weekly dots.
+- Profile card lost its orphan "PERSONAL" eyebrow (the section header carries the grouping now); About section gains an app-version line. No behaviour changed — pure IA + presentation.
+
 ### 2026-07-08 (UX-audit loop — error-state dead ends)
 
 - **"Try again" on every load-error state.** Four error `EmptyState`s (Board leaderboard, group Feed, Challenges list, Feed → My log) and the Group → Members error told the user to "check your connection and try again" but gave no button to do it. Each now wires the query's `refetch` (RepHistoryPanel fans out to the 3 push-up / 2 custom queries behind its combined error; Members error swapped its unreliable "pull to refresh" copy for a `Try again` button showing `isFetching`). Reuses the existing `EmptyState` `actionLabel`/`onAction` support — no new components.

@@ -5,6 +5,8 @@ import { BoardPrivacySettings } from '@/components/settings/BoardPrivacySettings
 import { CustomActivitiesSettings } from '@/components/settings/CustomActivitiesSettings'
 import { GroupAdminSettings } from '@/components/settings/GroupAdminSettings'
 import { SettingsLinkRow } from '@/components/settings/SettingsLinkRow'
+import { SettingsSection } from '@/components/settings/SettingsSection'
+import { APP_VERSION } from '@/lib/appVersionLabel'
 import { useTabPageMeta } from '@/components/layout/TabPageMeta'
 import { appConfig } from '@/lib/config'
 import { AVATAR_EMOJIS } from '@/lib/emojis'
@@ -68,8 +70,9 @@ export function SettingsPage() {
   const navigate = useNavigate()
   const { signOut, user, refreshProfile } = useAuth()
   const { profile } = useProfile()
-  const { activeGroup } = useActiveGroup()
+  const { activeGroup, role } = useActiveGroup()
   const { toast } = useToast()
+  const isAdmin = role === 'owner' || role === 'admin'
   const planTimezone = profile?.timezone || activeGroup?.timezone || 'UTC'
   const {
     dailyTarget,
@@ -112,7 +115,6 @@ export function SettingsPage() {
   const hours = hourOptions()
   const pushPlatform = readPwaInstallPlatform()
   const inBrowserTab = !isStandalonePwa()
-  const pushReady = pushSupport === 'supported'
   const needsPwaInstall = pushSupport === 'needs_pwa_install'
   const canOpenInstalledApp = installStatus?.isOpenAppEligible ?? false
   const pushUnavailable =
@@ -125,6 +127,28 @@ export function SettingsPage() {
       ? capPlanMaxUpdate(plan.max_clean_set, pendingMax)
       : null
   const todayDayIndex = dayOfWeekFromIso(getGroupLocalDateString(planTimezone), planTimezone)
+
+  const reminderIntervalMinutes = prefs?.reminder_interval_minutes ?? 60
+  const reminderFreqLabel =
+    REMINDER_INTERVAL_OPTIONS.find((option) => option.value === reminderIntervalMinutes)?.label ??
+    'Every hour'
+  const activeHoursLabel = `${String(prefs?.active_hours_start ?? 7).padStart(2, '0')}:00–${String(
+    prefs?.active_hours_end ?? 20,
+  ).padStart(2, '0')}:00`
+
+  // One plain-language line under the reminders toggle — no dev-speak.
+  function reminderStatusLine(): string {
+    if (prefs?.push_enabled) {
+      return `On · ${reminderFreqLabel.toLowerCase()}, ${activeHoursLabel}`
+    }
+    if (pushPermission === 'denied') {
+      return 'Blocked — allow notifications in your browser settings'
+    }
+    if (needsPwaInstall) {
+      return 'Add PushUS to your home screen to turn these on'
+    }
+    return 'Off'
+  }
 
   async function handleConfirmMaxClean() {
     try {
@@ -278,7 +302,7 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="space-y-4 pb-4">
+    <div className="space-y-6 pb-4">
       {planSavedMessage ? (
         <div
           role="status"
@@ -296,8 +320,8 @@ export function SettingsPage() {
         </div>
       ) : null}
 
+      <SettingsSection title="Account">
       <Card padding="md" className="space-y-3">
-        <p className="text-xs font-medium uppercase tracking-wide text-text-muted">Personal</p>
         <div className="flex items-start justify-between gap-3">
           <p className="text-sm font-medium text-text-primary">Profile</p>
           {profile && !editingProfile ? (
@@ -436,12 +460,11 @@ export function SettingsPage() {
           </div>
         ) : null}
       </Card>
+      </SettingsSection>
 
+      <SettingsSection title="Preferences">
       <Card padding="md" className="space-y-3">
         <p className="text-sm font-medium text-text-primary">Appearance</p>
-        <p className="text-xs text-text-muted">
-          System follows your phone&apos;s light/dark setting.
-        </p>
         <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Theme">
           {THEME_OPTIONS.map((option) => (
             <button
@@ -461,49 +484,57 @@ export function SettingsPage() {
             </button>
           ))}
         </div>
+        <p className="text-xs text-text-muted">
+          System follows your phone&apos;s light/dark setting.
+        </p>
       </Card>
 
       <CustomActivitiesSettings />
 
       <BoardPrivacySettings />
+      </SettingsSection>
 
+      <SettingsSection title="Training">
       <Card padding="md" className="space-y-3">
         <p className="text-sm font-medium text-text-primary">Training plan</p>
-        <p className="text-xs text-text-muted">
-          Science-based weekly plan with rest, easy, moderate, and challenge days.
-        </p>
-        <div className="rounded-[var(--radius-md)] border border-border bg-bg px-3 py-3">
+        {hasPlan ? (
+          <div className="flex items-center justify-between gap-3 rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2.5">
+            <div>
+              <p className="text-xs text-text-muted">
+                {isRestDay ? 'Today' : "Today's target"}
+              </p>
+              <p className="text-sm font-semibold text-text-primary">
+                {isRestDay ? (
+                  'Rest day'
+                ) : dailyTarget != null ? (
+                  <>
+                    {dailyTarget}
+                    <span className="ml-1 text-xs font-medium text-text-muted">push-ups</span>
+                  </>
+                ) : (
+                  '—'
+                )}
+              </p>
+              {hasPlan && !isRestDay && todayPrescription && todayPrescription.sets > 0 ? (
+                <p className="mt-0.5 text-xs text-text-muted">
+                  {formatDayTargetSetsDetail(todayPrescription)}
+                </p>
+              ) : null}
+            </div>
+            {wizardCompleted ? (
+              <div className="shrink-0 text-right text-xs text-text-muted">
+                <p>Week {todayPrescription?.mesocycleWeek ?? 1} of 4</p>
+                <p>Max clean {plan?.max_clean_set}</p>
+                <p>Peak {peakDayTarget}</p>
+              </div>
+            ) : null}
+          </div>
+        ) : (
           <p className="text-xs text-text-muted">
-            {isRestDay ? 'Today — rest day' : hasPlan ? "Today's target" : 'No plan yet'}
+            A science-based 4-week build with rest, easy, moderate, and challenge days — set your
+            max clean and training days to get personalised targets.
           </p>
-          <p className="mt-1 font-mono text-2xl font-bold text-text-primary">
-            {isRestDay ? (
-              'Recovery'
-            ) : hasPlan && dailyTarget != null ? (
-              <>
-                {dailyTarget}
-                <span className="ml-1.5 text-sm font-medium text-text-muted">push-ups</span>
-              </>
-            ) : (
-              'Set up your plan'
-            )}
-          </p>
-          {hasPlan && !isRestDay && todayPrescription && todayPrescription.sets > 0 ? (
-            <p className="mt-1 text-xs text-text-muted">
-              {formatDayTargetSetsDetail(todayPrescription)}
-            </p>
-          ) : null}
-          {wizardCompleted && hasPlan ? (
-            <p className="mt-2 text-xs text-text-muted">
-              Max clean {plan?.max_clean_set} · Peak day this week: {peakDayTarget} · Week{' '}
-              {todayPrescription?.mesocycleWeek ?? 1} of 4
-            </p>
-          ) : (
-            <p className="mt-1 text-xs text-text-muted">
-              Complete the wizard to set a personalised plan.
-            </p>
-          )}
-        </div>
+        )}
         {pendingMax && plan?.max_clean_set && cappedMax ? (
           <div className={cn(noticeInlineClass('accent'), 'px-3 py-3 text-sm')}>
             <p className="text-sm font-medium text-text-primary">Max clean check-in</p>
@@ -564,12 +595,14 @@ export function SettingsPage() {
           description="Max set, training days, and your 4-week build"
         />
       </Card>
+      </SettingsSection>
 
+      <SettingsSection title="Notifications">
       <Card padding="md" className="space-y-4">
         <div>
           <p className="text-sm font-medium text-text-primary">Push reminders</p>
           <p className="mt-1 text-xs text-text-muted">
-            Reminders when you are behind your daily goal during your chosen hours and frequency.
+            A nudge when you&apos;re behind your daily goal, during your chosen hours.
           </p>
         </div>
 
@@ -605,115 +638,100 @@ export function SettingsPage() {
                     </button>
                   </p>
                 ) : null}
+
                 <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm text-text-primary">Reminders</p>
-                    <p className="text-xs text-text-muted">
-                      Permission:{' '}
-                      {pushPermission === 'unsupported'
-                        ? 'n/a'
-                        : pushPermission === 'granted'
-                          ? 'granted'
-                          : pushPermission === 'denied'
-                            ? 'blocked — allow in browser settings'
-                            : pushPermission}
-                    </p>
-                    <p className="text-xs text-text-muted">
-                      Status: {prefs?.push_enabled ? 'on' : 'off'}
-                    </p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-text-primary">Reminders</p>
+                    <p className="text-xs text-text-muted">{reminderStatusLine()}</p>
                   </div>
                   <Button
                     variant={prefs?.push_enabled ? 'secondary' : 'primary'}
+                    className="shrink-0"
                     loading={registering || saving}
-                    disabled={
-                      pushPermission === 'denied' && !prefs?.push_enabled
-                    }
+                    disabled={pushPermission === 'denied' && !prefs?.push_enabled}
                     onClick={() => void handleTogglePush()}
                   >
                     {pushButtonLabel()}
                   </Button>
                 </div>
 
-                {pushReady ? (
-                  <p className={cn(noticeInlineClass('accent'), 'text-text-muted')}>
-                    Reminders only work in the installed home-screen app. If you removed PushUS,
-                    turn reminders off and on again after reinstalling.
-                  </p>
+                {prefs?.push_enabled ? (
+                  <div className="space-y-3 border-t border-border pt-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="space-y-1">
+                        <span className="text-xs font-medium text-text-muted">From</span>
+                        <select
+                          className="w-full rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-sm text-text-primary"
+                          value={prefs?.active_hours_start ?? 7}
+                          disabled={saving}
+                          onChange={(event) =>
+                            void handleHoursChange('active_hours_start', Number(event.target.value))
+                          }
+                        >
+                          {hours.map((hour) => (
+                            <option key={`start-${hour.value}`} value={hour.value}>
+                              {hour.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="space-y-1">
+                        <span className="text-xs font-medium text-text-muted">Until</span>
+                        <select
+                          className="w-full rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-sm text-text-primary"
+                          value={prefs?.active_hours_end ?? 20}
+                          disabled={saving}
+                          onChange={(event) =>
+                            void handleHoursChange('active_hours_end', Number(event.target.value))
+                          }
+                        >
+                          {hours.map((hour) => (
+                            <option key={`end-${hour.value}`} value={hour.value}>
+                              {hour.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+
+                    <label className="space-y-1">
+                      <span className="text-xs font-medium text-text-muted">Frequency</span>
+                      <select
+                        className="w-full rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-sm text-text-primary"
+                        value={prefs?.reminder_interval_minutes ?? 60}
+                        disabled={saving}
+                        onChange={(event) =>
+                          void handleIntervalChange(
+                            Number(event.target.value) as ReminderIntervalMinutes,
+                          )
+                        }
+                      >
+                        {REMINDER_INTERVAL_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="flex items-start gap-3 rounded-[var(--radius-md)] border border-border bg-bg px-3 py-3">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 h-4 w-4 accent-[var(--color-accent)]"
+                        checked={prefs?.injury_paused ?? false}
+                        disabled={saving}
+                        onChange={(event) => void handleInjuryToggle(event.target.checked)}
+                      />
+                      <span>
+                        <span className="block text-sm text-text-primary">Injury pause</span>
+                        <span className="block text-xs text-text-muted">
+                          Pause reminders while you recover. Logging still works.
+                        </span>
+                      </span>
+                    </label>
+                  </div>
                 ) : null}
-
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="space-y-1">
-                    <span className="text-xs font-medium text-text-muted">From</span>
-                    <select
-                      className="w-full rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-sm text-text-primary"
-                      value={prefs?.active_hours_start ?? 7}
-                      disabled={!prefs?.push_enabled || saving}
-                      onChange={(event) =>
-                        void handleHoursChange('active_hours_start', Number(event.target.value))
-                      }
-                    >
-                      {hours.map((hour) => (
-                        <option key={`start-${hour.value}`} value={hour.value}>
-                          {hour.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="space-y-1">
-                    <span className="text-xs font-medium text-text-muted">Until</span>
-                    <select
-                      className="w-full rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-sm text-text-primary"
-                      value={prefs?.active_hours_end ?? 20}
-                      disabled={!prefs?.push_enabled || saving}
-                      onChange={(event) =>
-                        void handleHoursChange('active_hours_end', Number(event.target.value))
-                      }
-                    >
-                      {hours.map((hour) => (
-                        <option key={`end-${hour.value}`} value={hour.value}>
-                          {hour.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-
-                <label className="space-y-1">
-                  <span className="text-xs font-medium text-text-muted">Frequency</span>
-                  <select
-                    className="w-full rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-sm text-text-primary"
-                    value={prefs?.reminder_interval_minutes ?? 60}
-                    disabled={!prefs?.push_enabled || saving}
-                    onChange={(event) =>
-                      void handleIntervalChange(
-                        Number(event.target.value) as ReminderIntervalMinutes,
-                      )
-                    }
-                  >
-                    {REMINDER_INTERVAL_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="flex items-start gap-3 rounded-[var(--radius-md)] border border-border bg-bg px-3 py-3">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5 h-4 w-4 accent-[var(--color-accent)]"
-                    checked={prefs?.injury_paused ?? false}
-                    disabled={saving}
-                    onChange={(event) => void handleInjuryToggle(event.target.checked)}
-                  />
-                  <span>
-                    <span className="block text-sm text-text-primary">Injury pause</span>
-                    <span className="block text-xs text-text-muted">
-                      Pause reminders while you recover. Logging still works.
-                    </span>
-                  </span>
-                </label>
               </div>
             )}
 
@@ -725,21 +743,32 @@ export function SettingsPage() {
           </>
         )}
       </Card>
+      </SettingsSection>
 
-      <GroupAdminSettings />
+      {isAdmin ? (
+        <SettingsSection title="Group tools">
+          <GroupAdminSettings />
+        </SettingsSection>
+      ) : null}
 
-      <Card padding="md" className="space-y-2">
-        <SettingsLinkRow
-          to="/settings/whats-new"
-          title="What's new"
-          description="Feature launches and release notes"
-        />
-        <SettingsLinkRow to="/about" title={`About ${appConfig.name}`} />
-      </Card>
+      <SettingsSection title="About">
+        <Card padding="md" className="space-y-1">
+          <SettingsLinkRow
+            to="/settings/whats-new"
+            title="What's new"
+            description="Feature launches and release notes"
+          />
+          <SettingsLinkRow to="/about" title={`About ${appConfig.name}`} />
+        </Card>
 
-      <Button variant="danger" fullWidth onClick={() => void signOut()}>
-        Sign out
-      </Button>
+        <Button variant="danger" fullWidth onClick={() => void signOut()}>
+          Sign out
+        </Button>
+
+        <p className="text-center text-xs text-text-muted">
+          {appConfig.name} v{APP_VERSION}
+        </p>
+      </SettingsSection>
     </div>
   )
 }
