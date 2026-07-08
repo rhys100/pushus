@@ -26,6 +26,10 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (design-audit loop — challenge standings "You" label)
+
+- **Challenge standings flagged your own row with only an accent border** — a colour-only signal (fails "don't rely on colour alone") that's easy to miss while scanning for yourself. Added a "You" subtitle + `active` to the self row's `AvatarChip`, matching the Board leaderboard's existing pattern. Border kept, so it's now colour + text. Reuses existing props; auth-gated so verified via tsc + 431 tests.
+
 ### 2026-07-08 (design-audit loop — create-group escape hatch)
 
 - **Create-group was a forced path with no escape.** A user routed to `/group/create` post-onboarding (no group yet) who actually wants to join a mate's group by code had no way out — the create form offered only "Create group" (only the invite-locked state had a Back link). Added a secondary "Got an invite code? Join a mate's group instead →" link to `/join`, mirroring how the login screen offers both paths. Isolated, auth-gated (verified via tsc + 431 tests). Flagged for later (not touched — hot file): the post-create success toast promises "send this link to your mates" but lands on `/group`, where the invite link lives in Settings → Group admin rather than front-and-centre; surfacing it on the Group tab would close that loop.

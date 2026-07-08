@@ -304,6 +304,8 @@ export function ChallengeDetailPage() {
                       <AvatarChip
                         emoji={member?.emoji ?? '💪'}
                         name={member?.name ?? 'Member'}
+                        subtitle={isSelf ? 'You' : undefined}
+                        active={isSelf}
                         className="flex-1 border-0 bg-transparent p-0"
                       />
                       <div className="text-right">
