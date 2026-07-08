@@ -234,7 +234,7 @@ export function LeaderboardPage() {
   const { activeGroup, loading: groupLoading } = useActiveGroup()
   const [range, setRange] = useState<LeaderboardRange>('day')
   const period = useLeaderboardPeriod(activeGroup, range)
-  const { data: entries = [], isLoading, isError, isFetching } = useLeaderboard(
+  const { data: entries = [], isLoading, isError, isFetching, refetch } = useLeaderboard(
     activeGroup,
     range,
   )
@@ -285,6 +285,8 @@ export function LeaderboardPage() {
           className="rounded-[var(--radius-lg)] border border-border bg-surface"
           title="Could not load leaderboard"
           description="Check your connection and try again."
+          actionLabel="Try again"
+          onAction={() => void refetch()}
         />
       ) : null}
 

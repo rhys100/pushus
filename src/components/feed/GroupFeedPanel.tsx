@@ -146,7 +146,7 @@ export function ActivityFeedSkeleton() {
 export function GroupFeedPanel() {
   const { user } = useAuth()
   const { activeGroup } = useActiveGroup()
-  const { data: feed = [], isLoading, isError, isFetching } = useActivityFeed(activeGroup)
+  const { data: feed = [], isLoading, isError, isFetching, refetch } = useActivityFeed(activeGroup)
   const { data: userReactionRows = [] } = useUserEntryReactions(activeGroup, feed, user?.id)
   const toggleReaction = useToggleReaction(activeGroup, user?.id)
 
@@ -183,6 +183,8 @@ export function GroupFeedPanel() {
           className="rounded-[var(--radius-lg)] border border-border bg-surface"
           title="Could not load activity"
           description="Check your connection and try again."
+          actionLabel="Try again"
+          onAction={() => void refetch()}
         />
       ) : null}
 

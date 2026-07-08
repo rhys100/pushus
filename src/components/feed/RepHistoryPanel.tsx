@@ -65,16 +65,19 @@ export function RepHistoryPanel() {
     data: monthSummary = [],
     isLoading: summaryLoading,
     isError: summaryError,
+    refetch: refetchSummary,
   } = useRepHistorySummary(pushupsGroup, user?.id, monthStart)
   const {
     data: dayTotal = 0,
     isLoading: totalLoading,
     isError: totalError,
+    refetch: refetchTotal,
   } = useDayTotal(pushupsGroup, ready ? selectedDate : undefined)
   const {
     data: entries = [],
     isLoading: entriesLoading,
     isError: entriesError,
+    refetch: refetchEntries,
   } = useDayEntries(pushupsGroup, user?.id, ready ? selectedDate : undefined)
 
   // Custom activity history.
@@ -82,11 +85,13 @@ export function RepHistoryPanel() {
     data: customMonthSummary = [],
     isLoading: customSummaryLoading,
     isError: customSummaryError,
+    refetch: refetchCustomSummary,
   } = useCustomActivityMonthSummary(selectedActivity?.id, monthStart)
   const {
     data: customEntries = [],
     isLoading: customEntriesLoading,
     isError: customEntriesError,
+    refetch: refetchCustomEntries,
   } = useCustomActivityDayEntries(selectedActivity?.id, ready ? selectedDate : '')
 
   const summariesByDate = useMemo(
@@ -118,6 +123,17 @@ export function RepHistoryPanel() {
         className="rounded-[var(--radius-lg)] border border-border bg-surface"
         title="Could not load your log"
         description="Check your connection and try again."
+        actionLabel="Try again"
+        onAction={() => {
+          if (isCustom) {
+            void refetchCustomSummary()
+            void refetchCustomEntries()
+          } else {
+            void refetchSummary()
+            void refetchTotal()
+            void refetchEntries()
+          }
+        }}
       />
     )
   }

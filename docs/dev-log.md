@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (UX-audit loop — error-state dead ends)
+
+- **"Try again" on every load-error state.** Four error `EmptyState`s (Board leaderboard, group Feed, Challenges list, Feed → My log) and the Group → Members error told the user to "check your connection and try again" but gave no button to do it. Each now wires the query's `refetch` (RepHistoryPanel fans out to the 3 push-up / 2 custom queries behind its combined error; Members error swapped its unreliable "pull to refresh" copy for a `Try again` button showing `isFetching`). Reuses the existing `EmptyState` `actionLabel`/`onAction` support — no new components.
+- Backlog from this pass's settings audit (for later iterations): destructive moderation actions (Reject/Decline) styled as neutral `ghost` with no confirm; sub-44px touch targets on Edit/Archive/Approve/Reject; section titles are `<p>` not headings; missing error branch in Custom activities; duplicated reminder notice + "Personal" orphan eyebrow on Settings.
+
 ### 2026-07-08 (design-review loop — auth funnel accessibility and dead ends)
 
 - **`ButtonRouterLink`** added to the ui kit and swapped in for all ten `<Link><Button>` nestings across the auth funnel (JoinPage ×5, CreateGroupPage ×2, JoinLandingPage, PrivateBetaPage, AboutPage) — interactive-in-interactive is invalid HTML, double tab stops, and reads wrong in screen readers. New rule: navigation styled as a button uses `ButtonRouterLink`, never nesting.

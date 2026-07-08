@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   AvatarChip,
   Badge,
+  Button,
   Card,
   EmptyState,
   Skeleton,
@@ -217,9 +218,17 @@ export function GroupPage() {
             <Skeleton className="h-14 w-full rounded-[var(--radius-lg)]" />
           </div>
         ) : membersQuery.error ? (
-          <p className="text-sm text-danger">
-            Could not load members. Pull to refresh or reopen this page.
-          </p>
+          <div className="flex flex-col items-start gap-2 rounded-[var(--radius-lg)] border border-border bg-surface px-4 py-3">
+            <p className="text-sm text-danger">Could not load members.</p>
+            <Button
+              variant="secondary"
+              className="min-h-9 px-4 text-sm"
+              loading={membersQuery.isFetching}
+              onClick={() => void membersQuery.refetch()}
+            >
+              Try again
+            </Button>
+          </div>
         ) : members.length > 0 ? (
           <div className="space-y-2">
             {members.map((member) => {

@@ -293,7 +293,7 @@ function CreateChallengeForm({ onDone }: { onDone: () => void }) {
 
 export function ChallengesPage() {
   const { activeGroup, role, loading: groupLoading } = useActiveGroup()
-  const { data: competitions = [], isLoading, error } = useCompetitions(activeGroup)
+  const { data: competitions = [], isLoading, error, refetch } = useCompetitions(activeGroup)
   const [creating, setCreating] = useState(false)
 
   const isAdmin = role === 'owner' || role === 'admin'
@@ -321,6 +321,8 @@ export function ChallengesPage() {
           <EmptyState
             title="Could not load challenges"
             description="Check your connection and try again."
+            actionLabel="Try again"
+            onAction={() => void refetch()}
           />
         ) : competitions.length === 0 ? (
           <EmptyState
