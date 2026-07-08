@@ -4,6 +4,7 @@ import {
   fetchPostAuthSnapshot,
   navigateAfterAuth,
 } from '@/lib/postAuthNavigation'
+import { ButtonRouterLink } from '@/components/ui'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { supabase } from '@/lib/supabase'
@@ -84,15 +85,19 @@ export function AuthCallbackPage() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-4 text-center">
-        <p className="text-lg font-semibold text-text-primary">Sign-in failed</p>
-        <p className="mt-2 max-w-sm text-sm text-text-muted">{error}</p>
-        <a
-          href="/login"
-          className="mt-6 text-sm font-semibold text-accent hover:brightness-110"
-        >
-          Back to login
-        </a>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-4">
+        <div className="w-full max-w-xs space-y-4 text-center" role="alert">
+          <p className="text-4xl" aria-hidden="true">
+            ⚠️
+          </p>
+          <div className="space-y-1.5">
+            <p className="text-lg font-semibold text-text-primary">Sign-in failed</p>
+            <p className="text-sm text-text-muted">{error}</p>
+          </div>
+          <ButtonRouterLink to="/login" variant="secondary" fullWidth>
+            Back to login
+          </ButtonRouterLink>
+        </div>
       </div>
     )
   }

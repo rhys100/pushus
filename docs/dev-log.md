@@ -26,6 +26,10 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (design-audit loop — sign-in-failed screen consistency + a11y)
+
+- **The magic-link callback error screen was the app's weakest recovery point.** On `AuthCallbackPage`, a failed sign-in showed "Sign-in failed" + the error, then a tiny raw `<a href="/login">` text link — a full-page reload, a ~16px tap target, and inconsistent with every other screen (which uses buttons). It also had no `role="alert"`, so screen readers never announced the failure. Reworked to match the app's error pattern (⚠️ + heading + muted detail) with a full-width `ButtonRouterLink` "Back to login" (48px target, client-side nav) and wrapped it in `role="alert"`. Verified live at `/auth/callback` (the error state renders when there are no valid auth params): `role="alert"` present, button 48px, href `/login`. tsc + lint clean.
+
 ### 2026-07-08 (dark PWA icon on Android — root-caused to CDN immutable cache, user-reported)
 
 - **User: "reinstalled and the same dark icon appeared — thought it got fixed."** It *was* fixed in code (commit `87562e4`, purple bolt `#863bff` on navy `#0b1220`, committed + on `origin/main`, and the deployed build `5643a50` regenerates it). Root cause is caching, not code: `public/_headers` marked `/pwa/*` as `Cache-Control: public, max-age=31536000, immutable`. Those icons have **stable filenames** (`maskable-512.png` etc.) whose bytes change on regen — but `immutable` tells Cloudflare's edge to never revalidate, so it kept serving the pre-fix **black-silhouette** icon. Proven live: plain URL → 8577 bytes, `Cf-Cache-Status: HIT`, `Age: 441342` (~5 days); same URL with a `?cb=` cache-buster → 5219 bytes (the purple icon), `MISS` from origin. WebAPK icons compound it — Chrome bakes the icon in at mint time and doesn't re-mint just because bytes changed at the same URL, so uninstall/reinstall pulled the CDN's stale copy.
