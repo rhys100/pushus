@@ -309,7 +309,10 @@ export function useTrainingPlan(
       !groupId ||
       !query.data?.wizard_completed ||
       query.isLoading ||
-      historyStatsQuery.isLoading
+      historyStatsQuery.isLoading ||
+      // Injury pauses progression; ramp-back holds the block until full plan resumes.
+      query.data?.plan_status === 'paused_injury' ||
+      query.data?.plan_status === 'ramp_back'
     ) {
       return
     }
@@ -325,6 +328,7 @@ export function useTrainingPlan(
     groupId,
     historyStatsQuery.isLoading,
     query.data?.wizard_completed,
+    query.data?.plan_status,
     query.isLoading,
     todayIso,
     userId,
@@ -448,7 +452,17 @@ export function useTrainingPlan(
     return wizardAnswersFromPlanRow(query.data)
   }, [query.data])
 
-  const dailyTarget = todayPrescription?.target ?? null
+  // Ramp-back mode (returning from injury) eases targets ~30% until the member
+  // resumes the full plan. Progression is separately paused server-side while
+  // plan_status is 'paused_injury' or 'ramp_back'.
+  const planStatus = query.data?.plan_status ?? 'active'
+  const isRampBack = planStatus === 'ramp_back'
+  const isPausedInjury = planStatus === 'paused_injury'
+  const rawDailyTarget = todayPrescription?.target ?? null
+  const dailyTarget =
+    rawDailyTarget != null && isRampBack
+      ? Math.max(1, Math.round(rawDailyTarget * 0.7))
+      : rawDailyTarget
 
   return {
     plan: query.data,
@@ -457,6 +471,9 @@ export function useTrainingPlan(
     todayPrescription,
     weeklySchedule: trainingPlan?.weeklySchedule ?? null,
     dailyTarget,
+    planStatus,
+    isRampBack,
+    isPausedInjury,
     peakDayTarget: trainingPlan?.peakDayTarget ?? null,
     wizardCompleted: query.data?.wizard_completed ?? false,
     savedWizardAnswers,

@@ -19,6 +19,7 @@ import { tapHaptic } from '@/lib/haptics'
 import { formatMemberListName } from '@/lib/memberDisplayName'
 import { getErrorMessage } from '@/lib/errors'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
+import { useGroupAvailability } from '@/hooks/useAvailability'
 import { useGroupBillingStatus, useGroupSubscription } from '@/hooks/useBilling'
 import { useMemberAlias } from '@/hooks/useMemberAlias'
 import { useAuth } from '@/providers/AuthProvider'
@@ -65,6 +66,7 @@ export function GroupPage() {
   })
 
   const members = membersQuery.data ?? []
+  const { data: availability } = useGroupAvailability(groupId)
 
   const memberCount = useMemo(() => {
     if (membersQuery.isLoading && !membersQuery.data) return null
@@ -265,6 +267,13 @@ export function GroupPage() {
                       name={displayName}
                       className="flex-1 border-0 bg-transparent p-0"
                     />
+                    {availability?.get(member.user_id) ? (
+                      <Badge variant="warning">
+                        {availability.get(member.user_id)!.status === 'injured'
+                          ? '🤕 Injured'
+                          : '⏸️ Out'}
+                      </Badge>
+                    ) : null}
                     <Badge
                       variant={
                         member.role === 'owner'

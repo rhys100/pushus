@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (feature: injury / sub-out)
+
+- **Full injury/sub-out feature** (migration `0035`). `injury_episodes` (modeled as episodes with since/ended so a streak stays protected even after return); RPCs `set_availability` / `end_injury` / `resume_full_plan` / `group_availability_statuses` / `my_injury_status`, all SECURITY DEFINER. Going injured/sub-out pauses reminders (reuses `injury_paused`), sets `plan_status='paused_injury'`, and is group-visible; returning drops into `ramp_back` (targets eased ~30% in `useTrainingPlan`, user taps "Resume full" to exit — no cron). `compute_active_streak_days` extended to skip injury-window days.
+- **UI:** `AvailabilitySettings` card in Settings → Training (owns injury now — removed the redundant reminder-card "Injury pause" checkbox that could desync); 🤕/⏸️ chips on the Group member list via `group_availability_statuses`; gentle recurring banner on Today. Plan progression sync gated off while `paused_injury`/`ramp_back`.
+
 ### 2026-07-08 (Settings page IA redesign)
 
 - **Sectioned the Settings page** into six titled groups (Account / Preferences / Training / Notifications / Group tools / About) via a new `SettingsSection` component — was a flat stack of ten equal-weight cards with no hierarchy.

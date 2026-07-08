@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLoggerDragHint } from '@/hooks/useLoggerDragHint'
 import { useNoseHoldHint } from '@/hooks/useNoseHoldHint'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
+import { useMyAvailability } from '@/hooks/useAvailability'
 import {
   getGroupLocalDateString,
   useBankPushups,
@@ -55,6 +56,7 @@ export function TodayPage() {
   const { toast } = useToast()
   const { user, profile } = useAuth()
   const { activeGroup, loading: groupLoading, role } = useActiveGroup()
+  const { data: availability } = useMyAvailability()
   const planTimezone = profile?.timezone || activeGroup?.timezone || 'UTC'
   const {
     dailyTarget,
@@ -477,6 +479,14 @@ export function TodayPage() {
             subscription={subscriptionQuery.data}
             isOwner={role === 'owner'}
           />
+        ) : null}
+
+        {availability && availability.status !== 'active' ? (
+          <p className={cn(noticeInlineClass('accent'), 'mb-2 text-text-muted')}>
+            You&apos;re marked {availability.status === 'injured' ? 'injured' : 'out'} — reminders
+            and your plan are paused, streak protected. Logging still works; set yourself back in
+            Settings when you&apos;re ready.
+          </p>
         ) : null}
 
         {maxSetMode && !isCustomMode ? (

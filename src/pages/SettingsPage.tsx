@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Button, Card, useToast } from '@/components/ui'
+import { AvailabilitySettings } from '@/components/settings/AvailabilitySettings'
 import { BoardPrivacySettings } from '@/components/settings/BoardPrivacySettings'
 import { CustomActivitiesSettings } from '@/components/settings/CustomActivitiesSettings'
 import { GroupAdminSettings } from '@/components/settings/GroupAdminSettings'
@@ -98,6 +99,7 @@ export function SettingsPage() {
     pushSupport,
     pushPermission,
     installStatus,
+    refresh: refreshPrefs,
   } = useNotificationPreferences()
 
   const [localError, setLocalError] = useState<string | null>(null)
@@ -265,14 +267,6 @@ export function SettingsPage() {
   async function handleIntervalChange(value: ReminderIntervalMinutes) {
     setLocalError(null)
     await updatePreferences({ reminder_interval_minutes: value })
-  }
-
-  async function handleInjuryToggle(checked: boolean) {
-    setLocalError(null)
-    await updatePreferences({
-      injury_paused: checked,
-      injury_paused_until: checked ? prefs?.injury_paused_until : null,
-    })
   }
 
   async function handleSaveProfile() {
@@ -595,6 +589,8 @@ export function SettingsPage() {
           description="Max set, training days, and your 4-week build"
         />
       </Card>
+
+      <AvailabilitySettings onChanged={() => void refreshPrefs()} />
       </SettingsSection>
 
       <SettingsSection title="Notifications">
@@ -715,21 +711,11 @@ export function SettingsPage() {
                       </select>
                     </label>
 
-                    <label className="flex items-start gap-3 rounded-[var(--radius-md)] border border-border bg-bg px-3 py-3">
-                      <input
-                        type="checkbox"
-                        className="mt-0.5 h-4 w-4 accent-[var(--color-accent)]"
-                        checked={prefs?.injury_paused ?? false}
-                        disabled={saving}
-                        onChange={(event) => void handleInjuryToggle(event.target.checked)}
-                      />
-                      <span>
-                        <span className="block text-sm text-text-primary">Injury pause</span>
-                        <span className="block text-xs text-text-muted">
-                          Pause reminders while you recover. Logging still works.
-                        </span>
-                      </span>
-                    </label>
+                    <p className="text-xs text-text-muted">
+                      Injured or taking a break? Set your status under{' '}
+                      <span className="font-medium text-text-primary">Availability</span> above — it
+                      pauses reminders and your plan and protects your streak.
+                    </p>
                   </div>
                 ) : null}
               </div>
