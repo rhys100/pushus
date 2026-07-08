@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (perf-audit loop — leaderboard row memoization)
+
+- **`LeaderboardRow` now `React.memo`'d** (renders `AvatarChip` + `GoalProgressBar` + `Badge` per row). Every `range`/`metric`/`sinceJoin` toggle or `isFetching` flip previously re-rendered every row. Paired fix: `getMemberDayTarget` (`useGroupDailyTargets.ts`) now returns a shared frozen `NO_PLAN_DAY_TARGET` constant for members without a plan instead of a fresh object literal each call — a new literal per render would have defeated the memo. All row props are now primitives or structurally-shared refs, so a no-op refetch/toggle re-renders zero rows. Verified: tsc + lint clean, 431 tests pass, all six routes boot with no page errors.
+- **Deferred (deliberately):** the queued bank-invalidation narrowing (`useTodayData` → narrow the broad `['leaderboard']` invalidate to the active range/metric) touches core banking data flow; after a stale-cache "black screen" scare this session, held it back rather than risk correctness for a marginal win. Revisit with focused before/after testing.
+
 ### 2026-07-08 (guest mode layout rework — user-reported)
 
 - **The big guest banner pushed the ring out of the thumb zone and made the page awkward to scroll** (user-reported). Reworked: the account CTAs (Create account / Sign in) moved to a pinned bottom section; the banner became a **slim, dismissible ⚠️ warning bar** (persists dismissed via `dismissGuestWarning`), with the today total folded into the header and the "Guest" chip staying as the persistent reminder. Result (verified live at 375×812): the whole page now **fits with no scroll**, ring centre at **41% viewport** (37% once the warning is dismissed) — back in the natural thumb-swirl zone, matching the real Log screen's spacing. Banking/persistence/milestone toast unchanged.

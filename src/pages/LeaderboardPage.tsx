@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import { cn } from '@/lib/cn'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 import { useFlipList } from '@/hooks/useFlipList'
@@ -114,7 +114,7 @@ function StreakFlame({ streak }: { streak?: number }) {
   )
 }
 
-function LeaderboardRow({
+const LeaderboardRow = memo(function LeaderboardRow({
   entry,
   isCurrentUser,
   rank,
@@ -237,7 +237,7 @@ function LeaderboardRow({
       </div>
     </li>
   )
-}
+})
 
 function LeaderboardSkeleton() {
   return (

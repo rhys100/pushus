@@ -72,6 +72,15 @@ export function useGroupDailyTargets(
   })
 }
 
+// Shared frozen fallback so members without a plan get a stable reference —
+// a fresh literal each call would defeat React.memo on the leaderboard rows.
+const NO_PLAN_DAY_TARGET: MemberDayTarget = Object.freeze({
+  target: null,
+  isRestDay: false,
+  hasPlan: false,
+  progressPercent: null,
+})
+
 export function getMemberDayTarget(
   targets: Map<string, MemberDayTarget> | undefined,
   userId: string,
@@ -80,12 +89,5 @@ export function getMemberDayTarget(
     return undefined
   }
 
-  return (
-    targets.get(userId) ?? {
-      target: null,
-      isRestDay: false,
-      hasPlan: false,
-      progressPercent: null,
-    }
-  )
+  return targets.get(userId) ?? NO_PLAN_DAY_TARGET
 }
