@@ -71,6 +71,26 @@ export function useStreakStatus(group: Group | null | undefined, userId: string 
   })
 }
 
+/**
+ * Goal streak = consecutive days the member hit their daily goal
+ * (notification_preferences.daily_target). Computed server-side so it agrees
+ * with the reminders' notion of "behind goal". Active streak is client-side
+ * (useStreakStatus); this is a small server read for the goal variant.
+ */
+export function useGoalStreak(group: Group | null | undefined) {
+  return useQuery({
+    queryKey: ['streaks', 'goal', group?.id ?? ''],
+    queryFn: async (): Promise<number> => {
+      const { data, error } = await supabase.rpc('my_streaks', { p_group_id: group!.id })
+      if (error) throw error
+      const parsed = typeof data === 'string' ? JSON.parse(data) : data
+      return Number(parsed?.goal ?? 0)
+    },
+    enabled: Boolean(group?.id),
+    staleTime: 30_000,
+  })
+}
+
 /** Consume this week's streak freeze to protect a specific (unlogged) date. */
 export function useUseStreakFreeze(group: Group | null | undefined, userId: string | undefined) {
   const queryClient = useQueryClient()

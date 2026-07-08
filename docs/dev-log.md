@@ -26,6 +26,10 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (feature: goal streak)
+
+- **Goal streak** surfaced on Achievements (migration `0037`): `compute_goal_streak_days` + `my_streaks` RPCs. "Goal" = `notification_preferences.daily_target` (same daily goal the reminders use, so streak and reminders agree). Rest days / freezes / injury windows protected; today under goal doesn't break it. Shows as a line in the streak-freeze card when ≥ 1 day.
+
 ### 2026-07-08 (feature: leaderboard metrics)
 
 - **Biggest set** and **most improved** leaderboard metrics (migration `0036`, `leaderboard_metric` RPC — same row shape as `leaderboard_total`, `total` column carries the metric value; most-improved = this period minus the previous equal-length window, can be negative). Board shows a metric SegmentedControl on week/month (hidden on Day, which keeps its own goal progress). Row shows signed `+N vs last` for most-improved, `N in a set` for biggest set. Bank invalidation broadened to the `['leaderboard']` prefix so all metric variants refetch; optimistic delta still only touches the total board.

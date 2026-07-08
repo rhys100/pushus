@@ -6,7 +6,7 @@ import {
   useUserAchievements,
   useXpTotal,
 } from '@/hooks/useGamification'
-import { useStreakStatus, useUseStreakFreeze } from '@/hooks/useStreaks'
+import { useGoalStreak, useStreakStatus, useUseStreakFreeze } from '@/hooks/useStreaks'
 import { useAuth } from '@/providers/AuthProvider'
 
 /** Streak days that earn a celebration pulse when you visit on the day. */
@@ -26,6 +26,7 @@ export function AchievementsPage() {
   )
   const { data: xpTotal = 0, isLoading: xpLoading } = useXpTotal(activeGroup, user?.id)
   const { data: streak, isLoading: streakLoading } = useStreakStatus(activeGroup, user?.id)
+  const { data: goalStreak = 0 } = useGoalStreak(activeGroup)
   const useFreeze = useUseStreakFreeze(activeGroup, user?.id)
 
   const unlockedIds = new Set(unlocked.map((item) => item.achievement_id))
@@ -86,6 +87,19 @@ export function AchievementsPage() {
 
         {streak && !streakLoading ? (
           <Card padding="md" className="space-y-2">
+            {goalStreak >= 1 ? (
+              <div className="flex items-center justify-between gap-3 border-b border-border pb-2">
+                <div>
+                  <p className="text-sm font-medium text-text-primary">🎯 Goal streak</p>
+                  <p className="text-xs text-text-muted">
+                    Days in a row you hit your daily goal.
+                  </p>
+                </div>
+                <span className="shrink-0 font-mono text-lg font-bold tabular-nums text-text-primary">
+                  {goalStreak} day{goalStreak === 1 ? '' : 's'}
+                </span>
+              </div>
+            ) : null}
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium text-text-primary">Streak freeze</p>
