@@ -1,5 +1,6 @@
-import { Link } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { ButtonRouterLink, Card } from '@/components/ui'
+import { useAuth } from '@/providers/AuthProvider'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { appConfig } from '@/lib/config'
 import { APP_BUILD_ID } from '@/lib/buildId'
@@ -16,7 +17,21 @@ function licenseUrl(): string {
 
 export function AboutPage() {
   useDocumentTitle('About')
+  const { session } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
   const deploymentLabel = appConfig.deploymentName || appConfig.name
+
+  // Return to wherever they came from (login footer, Settings, private-beta).
+  // location.key === 'default' means a direct load with no in-app history, so
+  // fall back to a sensible home for their auth state.
+  function handleBack() {
+    if (location.key !== 'default') {
+      navigate(-1)
+    } else {
+      navigate(session ? '/settings' : '/login')
+    }
+  }
 
   return (
     <div
@@ -24,12 +39,13 @@ export function AboutPage() {
       style={{ paddingBottom: PAGE_BOTTOM_PADDING }}
     >
       <div className="mx-auto w-full max-w-sm flex-1 py-6">
-        <Link
-          to="/settings"
-          className="mb-6 inline-flex min-h-11 items-center text-sm text-text-muted hover:text-text-primary"
+        <button
+          type="button"
+          onClick={handleBack}
+          className="mb-6 inline-flex min-h-11 items-center rounded-[var(--radius-sm)] text-sm text-text-muted transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
         >
           ← Back
-        </Link>
+        </button>
 
         <h1 className="text-2xl font-bold text-text-primary">About {appConfig.name}</h1>
         <p className="mt-2 text-sm leading-relaxed text-text-muted">
@@ -110,9 +126,11 @@ export function AboutPage() {
           ) : null}
         </Card>
 
-        <ButtonRouterLink to="/login" variant="secondary" fullWidth className="mt-6">
-          Sign in
-        </ButtonRouterLink>
+        {!session ? (
+          <ButtonRouterLink to="/login" variant="secondary" fullWidth className="mt-6">
+            Sign in
+          </ButtonRouterLink>
+        ) : null}
       </div>
     </div>
   )
