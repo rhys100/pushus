@@ -307,7 +307,9 @@ export function LeaderboardPage() {
   const listRef = useFlipList<HTMLUListElement>(entries)
 
   useTabPageMeta({
-    title: 'Leaderboard',
+    // "Board" matches the bottom-nav label so the tab you tapped and the header
+    // you land on share one name.
+    title: 'Board',
     subtitle,
   })
 

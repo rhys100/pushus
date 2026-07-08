@@ -12,6 +12,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **Tab names now match their headers:** the bottom nav says "Board" and "Feed", but those pages' headers read "Leaderboard" and "Activity" — two names for the same tab. The headers now say "Board" and "Feed" too, so what you tap is what you land on
 - **Rotating your mate link / cancelling a battle now confirm:** both actions could fail silently — no error message, and (for rotate, a security action) no confirmation the old link was actually killed. They now show a success toast and surface any error instead of failing quietly
 - **Deleting an entry now asks first:** on your logged sets, the Delete button removed the entry on a single tap — permanently, adjusting your total/streak/XP, and sitting right next to Edit. It now arms to "Confirm?" on the first tap and only deletes on the second (auto-cancels after a few seconds), matching the custom-activity list
 - **Deleting a group badge now asks first:** the admin badge list deleted on a single tap and gave no feedback if it failed. It now arms to "Confirm?" and shows a success/error toast, matching the create and award actions beside it

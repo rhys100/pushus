@@ -17,7 +17,9 @@ export function ActivityPage() {
   const [segment, setSegment] = useState<FeedSegment>('group')
 
   useTabPageMeta({
-    title: 'Activity',
+    // "Feed" matches the bottom-nav label; the segment subtitle disambiguates
+    // the group stream vs your own log.
+    title: 'Feed',
     subtitle: segment === 'group' ? 'Recent entries' : 'Your rep history',
   })
 
