@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (feature: leaderboard metrics)
+
+- **Biggest set** and **most improved** leaderboard metrics (migration `0036`, `leaderboard_metric` RPC — same row shape as `leaderboard_total`, `total` column carries the metric value; most-improved = this period minus the previous equal-length window, can be negative). Board shows a metric SegmentedControl on week/month (hidden on Day, which keeps its own goal progress). Row shows signed `+N vs last` for most-improved, `N in a set` for biggest set. Bank invalidation broadened to the `['leaderboard']` prefix so all metric variants refetch; optimistic delta still only touches the total board.
+- **Goal-completion as a period metric deferred** — needs each member's historical daily target resolved per day (plan-engine, ambiguous server-side). The Day board already shows each member's % of their daily target.
+
 ### 2026-07-08 (feature: injury / sub-out)
 
 - **Full injury/sub-out feature** (migration `0035`). `injury_episodes` (modeled as episodes with since/ended so a streak stays protected even after return); RPCs `set_availability` / `end_injury` / `resume_full_plan` / `group_availability_statuses` / `my_injury_status`, all SECURITY DEFINER. Going injured/sub-out pauses reminders (reuses `injury_paused`), sets `plan_status='paused_injury'`, and is group-visible; returning drops into `ramp_back` (targets eased ~30% in `useTrainingPlan`, user taps "Resume full" to exit — no cron). `compute_active_streak_days` extended to skip injury-window days.

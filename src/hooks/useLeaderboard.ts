@@ -17,32 +17,21 @@ export type LeaderboardEntry = {
   show_rep_totals: boolean
 }
 
+export type LeaderboardMetric = 'total' | 'biggest_set' | 'most_improved'
+
 export const leaderboardKeys = {
   all: ['leaderboard'] as const,
   period: (
     groupId: string,
     range: LeaderboardRange,
+    metric: LeaderboardMetric,
     periodStart: string,
     periodEnd: string,
-  ) => ['leaderboard', range, groupId, periodStart, periodEnd] as const,
+  ) => ['leaderboard', range, metric, groupId, periodStart, periodEnd] as const,
 }
 
-async function fetchLeaderboardTotal(
-  groupId: string,
-  periodStart: string,
-  periodEnd: string,
-): Promise<LeaderboardEntry[]> {
-  const { data, error } = await supabase.rpc('leaderboard_total', {
-    p_group_id: groupId,
-    p_period_start: periodStart,
-    p_period_end: periodEnd,
-  })
-
-  if (error) {
-    throw error
-  }
-
-  return (data ?? []).map((row: Record<string, unknown>) => ({
+function mapRows(data: unknown): LeaderboardEntry[] {
+  return ((data ?? []) as Record<string, unknown>[]).map((row) => ({
     user_id: String(row.user_id),
     display_name: String(row.display_name),
     avatar_emoji: String(row.avatar_emoji),
@@ -53,9 +42,38 @@ async function fetchLeaderboardTotal(
   }))
 }
 
+async function fetchLeaderboard(
+  groupId: string,
+  metric: LeaderboardMetric,
+  periodStart: string,
+  periodEnd: string,
+): Promise<LeaderboardEntry[]> {
+  // 'total' keeps the original RPC (also drives the day view); the extra
+  // metrics route through leaderboard_metric.
+  if (metric === 'total') {
+    const { data, error } = await supabase.rpc('leaderboard_total', {
+      p_group_id: groupId,
+      p_period_start: periodStart,
+      p_period_end: periodEnd,
+    })
+    if (error) throw error
+    return mapRows(data)
+  }
+
+  const { data, error } = await supabase.rpc('leaderboard_metric', {
+    p_group_id: groupId,
+    p_metric: metric,
+    p_period_start: periodStart,
+    p_period_end: periodEnd,
+  })
+  if (error) throw error
+  return mapRows(data)
+}
+
 export function useLeaderboard(
   group: Group | null | undefined,
   range: LeaderboardRange = 'day',
+  metric: LeaderboardMetric = 'total',
 ) {
   const period = group ? getLeaderboardPeriod(group, range) : null
 
@@ -63,10 +81,11 @@ export function useLeaderboard(
     queryKey: leaderboardKeys.period(
       group?.id ?? '',
       range,
+      metric,
       period?.periodStart ?? '',
       period?.periodEnd ?? '',
     ),
-    queryFn: () => fetchLeaderboardTotal(group!.id, period!.periodStart, period!.periodEnd),
+    queryFn: () => fetchLeaderboard(group!.id, metric, period!.periodStart, period!.periodEnd),
     enabled: Boolean(group?.id && period),
     staleTime: 30_000,
   })

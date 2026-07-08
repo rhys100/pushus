@@ -178,19 +178,17 @@ function createOptimisticEntry(group: Group, count: number): PushupEntry {
   }
 }
 
+// Optimistic updates only touch the 'total' board (a bank adds reps to total);
+// biggest-set / most-improved boards are refreshed by invalidation instead.
 function getLeaderboardQueryKey(group: Group, range: LeaderboardRange) {
   const period = getLeaderboardPeriod(group, range)
-  return leaderboardKeys.period(group.id, range, period.periodStart, period.periodEnd)
+  return leaderboardKeys.period(group.id, range, 'total', period.periodStart, period.periodEnd)
 }
 
-function invalidateLeaderboardQueries(
-  queryClient: ReturnType<typeof useQueryClient>,
-  group: Group,
-) {
-  for (const range of LEADERBOARD_RANGES) {
-    const key = getLeaderboardQueryKey(group, range)
-    queryClient.invalidateQueries({ queryKey: key })
-  }
+function invalidateLeaderboardQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  // Broad prefix so every metric variant (total / biggest set / most improved)
+  // refetches after a bank.
+  queryClient.invalidateQueries({ queryKey: leaderboardKeys.all })
 }
 
 function applyLeaderboardDeltaForToday(
@@ -210,7 +208,7 @@ function applyLeaderboardDeltaForToday(
       continue
     }
 
-    const key = leaderboardKeys.period(group.id, range, period.periodStart, period.periodEnd)
+    const key = leaderboardKeys.period(group.id, range, 'total', period.periodStart, period.periodEnd)
     const previous = queryClient.getQueryData<LeaderboardEntry[]>(key)
 
     snapshots.push({ key, previous })
@@ -259,7 +257,7 @@ function invalidateDayRelatedQueries(
   queryClient.invalidateQueries({ queryKey: totalKey })
   queryClient.invalidateQueries({ queryKey: entriesKey })
   queryClient.invalidateQueries({ queryKey: repHistoryKeys.all })
-  invalidateLeaderboardQueries(queryClient, group)
+  invalidateLeaderboardQueries(queryClient)
   queryClient.invalidateQueries({ queryKey: activityFeedKeys.feed(group.id) })
 }
 

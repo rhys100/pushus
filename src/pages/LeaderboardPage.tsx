@@ -8,6 +8,7 @@ import {
   useLeaderboard,
   useLeaderboardPeriod,
   type LeaderboardEntry,
+  type LeaderboardMetric,
 } from '@/hooks/useLeaderboard'
 import { formatPeriodLabel, type LeaderboardRange } from '@/lib/leaderboardCalc'
 import type { MemberDayTarget } from '@/lib/training/resolveMemberTodayTarget'
@@ -35,6 +36,26 @@ const RANGE_ARIA_LABELS: Record<LeaderboardRange, string> = {
   day: 'Daily leaderboard rankings',
   week: 'Weekly leaderboard rankings',
   month: 'Monthly leaderboard rankings',
+}
+
+const METRIC_OPTIONS: { value: LeaderboardMetric; label: string }[] = [
+  { value: 'total', label: 'Total' },
+  { value: 'biggest_set', label: 'Biggest set' },
+  { value: 'most_improved', label: 'Most improved' },
+]
+
+const METRIC_UNIT: Record<LeaderboardMetric, string> = {
+  total: 'reps',
+  biggest_set: 'in a set',
+  most_improved: 'vs last',
+}
+
+/** Signed delta for most-improved; plain number otherwise. */
+function formatMetricValue(metric: LeaderboardMetric, value: number): string {
+  if (metric === 'most_improved' && value > 0) {
+    return `+${value.toLocaleString()}`
+  }
+  return value.toLocaleString()
 }
 
 function rankBadgeVariant(rank: number): 'accent' | 'warning' | 'neutral' {
@@ -70,6 +91,7 @@ type LeaderboardRowProps = {
   showDayProgress?: boolean
   targetsLoading?: boolean
   streak?: number
+  metric?: LeaderboardMetric
 }
 
 /** Streaks under 2 days aren't worth a flame yet. */
@@ -98,6 +120,7 @@ function LeaderboardRow({
   showDayProgress = false,
   targetsLoading = false,
   streak,
+  metric = 'total',
 }: LeaderboardRowProps) {
   const hasTrainingTarget =
     dayTarget?.hasPlan && !dayTarget.isRestDay && dayTarget.target != null && dayTarget.target > 0
@@ -202,9 +225,11 @@ function LeaderboardRow({
       <StreakFlame streak={streak} />
 
       <div className="shrink-0 text-right">
-        <p className="font-mono text-xl font-bold tabular-nums text-text-primary">{entry.total}</p>
+        <p className="font-mono text-xl font-bold tabular-nums text-text-primary">
+          {formatMetricValue(metric, entry.total)}
+        </p>
         <p className="text-[0.6875rem] font-medium uppercase tracking-wide text-text-muted">
-          reps
+          {METRIC_UNIT[metric]}
         </p>
       </div>
     </li>
@@ -233,10 +258,15 @@ export function LeaderboardPage() {
   const { profile } = useProfile()
   const { activeGroup, loading: groupLoading } = useActiveGroup()
   const [range, setRange] = useState<LeaderboardRange>('day')
+  // Metrics only apply to week/month periods; the day view has its own goal
+  // progress. 'total' on the day view keeps the original behaviour.
+  const [metric, setMetric] = useState<LeaderboardMetric>('total')
+  const effectiveMetric: LeaderboardMetric = range === 'day' ? 'total' : metric
   const period = useLeaderboardPeriod(activeGroup, range)
   const { data: entries = [], isLoading, isError, isFetching, refetch } = useLeaderboard(
     activeGroup,
     range,
+    effectiveMetric,
   )
   const showDayProgress = range === 'day'
   const { data: dailyTargets, isLoading: targetsLoading } = useGroupDailyTargets(activeGroup, {
@@ -265,12 +295,22 @@ export function LeaderboardPage() {
   return (
     <>
       <SegmentedControl
-        className="mb-4"
+        className="mb-3"
         options={RANGE_OPTIONS}
         value={range}
         onChange={setRange}
         ariaLabel="Leaderboard time range"
       />
+
+      {range !== 'day' ? (
+        <SegmentedControl
+          className="mb-4"
+          options={METRIC_OPTIONS}
+          value={metric}
+          onChange={setMetric}
+          ariaLabel="Leaderboard metric"
+        />
+      ) : null}
 
       {isFetching && entries.length > 0 ? (
         <p className="mb-3 text-xs text-text-muted" aria-live="polite">
@@ -319,6 +359,7 @@ export function LeaderboardPage() {
               showDayProgress={showDayProgress}
               targetsLoading={targetsLoading}
               streak={streaks?.get(entry.user_id)}
+              metric={effectiveMetric}
               dayTarget={
                 showDayProgress
                   ? getMemberDayTarget(dailyTargets, entry.user_id)
