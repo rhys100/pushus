@@ -26,6 +26,10 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (design-audit loop — create-group escape hatch)
+
+- **Create-group was a forced path with no escape.** A user routed to `/group/create` post-onboarding (no group yet) who actually wants to join a mate's group by code had no way out — the create form offered only "Create group" (only the invite-locked state had a Back link). Added a secondary "Got an invite code? Join a mate's group instead →" link to `/join`, mirroring how the login screen offers both paths. Isolated, auth-gated (verified via tsc + 431 tests). Flagged for later (not touched — hot file): the post-create success toast promises "send this link to your mates" but lands on `/group`, where the invite link lives in Settings → Group admin rather than front-and-centre; surfacing it on the Group tab would close that loop.
+
 ### 2026-07-08 (perf-audit loop — feed re-render storm + focus refetch)
 
 - **Added `AGENTS.md`** — repo-specific working guide for AI/dev agents (flows, stack, commands, architecture, perf rules, design tokens, the enforced SemVer + doc-gate workflow, careful areas).

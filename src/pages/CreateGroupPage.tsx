@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { Button, ButtonRouterLink, Card, Skeleton, useToast } from '@/components/ui'
 import { supabase } from '@/lib/supabase'
 import { detectTimezone, timezoneOptions } from '@/lib/timezones'
@@ -159,6 +159,14 @@ export function CreateGroupPage() {
             Create group
           </Button>
         </form>
+
+        {/* Escape hatch: landing here doesn't mean you must create a group. */}
+        <Link
+          to="/join"
+          className="mt-4 block text-center text-sm font-medium text-text-muted transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 rounded-[var(--radius-sm)]"
+        >
+          Got an invite code? Join a mate&apos;s group instead →
+        </Link>
       </div>
     </div>
   )
