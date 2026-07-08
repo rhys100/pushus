@@ -606,7 +606,7 @@ export function TodayPage() {
             disabled={bankPending}
             onClick={() => loggerRef.current?.addReps(10)}
             aria-label="Add 10 reps"
-            className="mt-2 min-h-10 px-8"
+            className="mt-2 min-h-11 px-8"
           >
             +10
           </Button>
