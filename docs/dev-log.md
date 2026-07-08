@@ -26,6 +26,13 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (perf-audit loop — calendar + day-log memoization)
+
+- **RepCalendar month grid `useMemo`'d** on `[monthStart, todayDate]`. Tapping a day changes `selectedDate`, which re-rendered the calendar and re-ran `startOfWeek/endOfWeek/eachDayOfInterval/parseISO` for the whole ~42-cell grid every tap. Now that derivation only recomputes on an actual month/today change.
+- **`EntryRow` (day-log) is `React.memo`'d** and its timestamp is `useMemo`'d on `[created_at]`. Editing/deleting one entry, or an optimistic bank/undo, no longer re-parses every other row's time; with structural sharing, unchanged rows don't re-render at all.
+- **CircularLogger `setCountPulsing` guard — evaluated and skipped.** The audit flagged `setCountPulsing(true)` firing when already `true`, but React bails out of re-render on identical primitive state (`Object.is`), so it's already a no-op; adding a `countPulsing` read into the hot pointer-drag handler would risk a stale-closure bug in a flagged high-risk file for zero real gain. Left untouched.
+- Verified: tsc + lint clean, 436 tests pass, all six routes boot with no page errors. (v1.3.0 was cut separately by the release commit, so this perf work now accrues to the next Unreleased cycle.)
+
 ### 2026-07-08 (release: cut v1.3.0 + guard against under-versioning, user-reported)
 
 - **Cut v1.3.0 (user-reported: "we've done ~50 commits and it still says v1.2").** The whole Unreleased backlog — mates + nudges + 1v1 battles, group challenges, XP/badges/streaks, light mode, guest mode, custom activities, reminder reliability, app-wide motion & haptics — had been piling up under 1.2.0 with no release cut. Rolled it into `## [1.3.0] - 2026-07-08` (all additive/non-breaking → **minor**, matching the user's own "1.3, 1.4" expectation). Bumped `package.json` + `package-lock.json` (Settings shows it automatically via `__APP_VERSION__` from Vite), added the README status row, and tagged the 5 unversioned headline What's New items (mates, challenges, xp-badges-streaks, light-mode, reminder-fix) with `version: '1.3.0'`.

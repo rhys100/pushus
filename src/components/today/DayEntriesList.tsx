@@ -1,4 +1,4 @@
-import { memo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { cn } from '@/lib/cn'
 import { Button } from '@/components/ui/Button'
@@ -43,12 +43,13 @@ type EntryRowProps = {
   entry: PushupEntry
 }
 
-function EntryRow({ group, entry }: EntryRowProps) {
+const EntryRow = memo(function EntryRow({ group, entry }: EntryRowProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [draftCount, setDraftCount] = useState(String(entry.count))
   const updateEntry = useUpdateEntry()
   const deleteEntry = useDeleteEntry()
   const isBusy = updateEntry.isPending || deleteEntry.isPending
+  const entryTime = useMemo(() => formatEntryTime(entry.created_at), [entry.created_at])
 
   const handleSave = async () => {
     const nextCount = Number.parseInt(draftCount, 10)
@@ -92,7 +93,7 @@ function EntryRow({ group, entry }: EntryRowProps) {
   return (
     <li className="flex items-center gap-3 border-b border-border/70 px-4 py-3 last:border-b-0">
       <div className="min-w-0 flex-1">
-        <p className="text-xs text-text-muted">{formatEntryTime(entry.created_at)}</p>
+        <p className="text-xs text-text-muted">{entryTime}</p>
 
         {isEditing ? (
           <div className="mt-1 flex items-center gap-2">
@@ -164,7 +165,7 @@ function EntryRow({ group, entry }: EntryRowProps) {
       ) : null}
     </li>
   )
-}
+})
 
 export const DayEntriesList = memo(function DayEntriesList({
   group,

@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import {
   addMonths,
   eachDayOfInterval,
@@ -40,11 +41,17 @@ export function RepCalendar({
   summariesByDate,
   className,
 }: RepCalendarProps) {
-  const monthLabel = format(monthStart, 'MMMM yyyy')
-  const gridStart = startOfWeek(startOfMonth(monthStart), { weekStartsOn: 1 })
-  const gridEnd = endOfWeek(endOfMonth(monthStart), { weekStartsOn: 1 })
-  const days = eachDayOfInterval({ start: gridStart, end: gridEnd })
-  const todayParsed = parseISO(`${todayDate}T12:00:00`)
+  // Only depends on the visible month + today — recompute when those change,
+  // not on every day-tap (which changes selectedDate and re-renders this).
+  const { monthLabel, days, todayParsed } = useMemo(() => {
+    const gridStart = startOfWeek(startOfMonth(monthStart), { weekStartsOn: 1 })
+    const gridEnd = endOfWeek(endOfMonth(monthStart), { weekStartsOn: 1 })
+    return {
+      monthLabel: format(monthStart, 'MMMM yyyy'),
+      days: eachDayOfInterval({ start: gridStart, end: gridEnd }),
+      todayParsed: parseISO(`${todayDate}T12:00:00`),
+    }
+  }, [monthStart, todayDate])
 
   return (
     <section
