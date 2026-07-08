@@ -26,8 +26,11 @@ export function SegmentedControl<T extends string>({
   const [interacted, setInteracted] = useState(false)
 
   return (
+    // A single-select toggle group, not a tablist: there are no tabpanels and no
+    // roving-tabindex/arrow-key model, so `role="group"` + `aria-pressed` buttons
+    // is the honest, keyboard-correct semantics (each button is Tab-focusable).
     <div
-      role="tablist"
+      role="group"
       aria-label={ariaLabel}
       className={cn('grid gap-2', className)}
       style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
@@ -39,8 +42,7 @@ export function SegmentedControl<T extends string>({
           <button
             key={option.value}
             type="button"
-            role="tab"
-            aria-selected={selected}
+            aria-pressed={selected}
             onClick={() => {
               if (!selected) {
                 tapHaptic()

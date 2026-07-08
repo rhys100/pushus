@@ -12,6 +12,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **Screen-reader labelling of segmented toggles:** the range/metric/chart toggles (Board, Leaderboard, progress chart) announced themselves as "tabs" but had no tab panels or arrow-key model. They're now correctly exposed as a group of pressable buttons, so assistive tech describes them accurately
 - **See all past challenges:** the Challenges page silently showed only the 5 most recent finished challenges. It now says how many there are and offers "Show all N past challenges" so older ones aren't lost
 - **"Invite required" screen had no way to enter a code:** when group creation is locked (private beta) and you had no saved invite, the screen told you to "join with your invite link" but only offered a "Back" button. It now always offers "Enter an invite code" so you can actually paste one
 - **About page back button:** the "← Back" on the About page always went to Settings, which bounced logged-out visitors (who reach it from the sign-in footer) to a page they can't open; it now returns to wherever you came from. The bottom "Sign in" button is also hidden when you're already signed in
