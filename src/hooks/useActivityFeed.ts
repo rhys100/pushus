@@ -36,6 +36,9 @@ export const activityFeedKeys = {
   feed: (groupId: string) => ['activityFeed', groupId] as const,
   userReactions: (groupId: string, entryIds: string[]) =>
     ['activityFeed', 'reactions', groupId, ...entryIds.sort()] as const,
+  // Stable prefix that matches every userReactions query for a group,
+  // regardless of the entry-id list suffix — use this to invalidate.
+  reactionsPrefix: (groupId: string) => ['activityFeed', 'reactions', groupId] as const,
 }
 
 const DEFAULT_FEED_LIMIT = 50
@@ -181,16 +184,34 @@ export function useToggleReaction(group: Group | null | undefined, userId: strin
 
       return { action: 'added' as const, entryId, emoji }
     },
-    onSettled: (_data, _error, variables) => {
+    // Optimistically flip the reaction so the button highlights instantly, then
+    // reconcile on settle. Uses the stable prefix so it matches the actual
+    // userReactions query (which is keyed on the full feed entry-id list).
+    onMutate: async ({ group: activeGroup, entryId, emoji }) => {
+      const prefix = activityFeedKeys.reactionsPrefix(activeGroup.id)
+      await queryClient.cancelQueries({ queryKey: prefix })
+      const snapshots = queryClient.getQueriesData<UserReaction[]>({ queryKey: prefix })
+
+      queryClient.setQueriesData<UserReaction[]>({ queryKey: prefix }, (rows) => {
+        if (!rows) return rows
+        const has = rows.some((row) => row.target_id === entryId && row.emoji === emoji)
+        return has
+          ? rows.filter((row) => !(row.target_id === entryId && row.emoji === emoji))
+          : [...rows, { target_id: entryId, emoji }]
+      })
+
+      return { snapshots }
+    },
+    onError: (_error, _variables, context) => {
+      context?.snapshots?.forEach(([key, data]) =>
+        queryClient.setQueryData<UserReaction[]>(key, data),
+      )
+    },
+    onSettled: () => {
       if (group?.id) {
         queryClient.invalidateQueries({ queryKey: activityFeedKeys.feed(group.id) })
-
-        const entryIds = variables ? [variables.entryId] : []
-        if (entryIds.length > 0) {
-          queryClient.invalidateQueries({
-            queryKey: activityFeedKeys.userReactions(group.id, entryIds),
-          })
-        }
+        // Prefix match — refreshes the reaction highlight regardless of entry-id suffix.
+        queryClient.invalidateQueries({ queryKey: activityFeedKeys.reactionsPrefix(group.id) })
       }
     },
   })

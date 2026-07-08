@@ -80,13 +80,31 @@ const ActivityFeedRow = memo(function ActivityFeedRow({
   // Parse/format the timestamp once per item, not on every panel re-render.
   const relativeTime = useMemo(() => formatRelativeTime(item.created_at), [item.created_at])
 
+  // Reactions collapse to a single pill by default so a 50-item feed isn't a
+  // wall of 250 emoji buttons; tapping reveals the palette inline.
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const activeEmojis = useMemo(
+    () =>
+      showReactionButtons
+        ? REACTION_EMOJIS.filter((emoji) => userReactions.has(reactionKey(item.event_id, emoji)))
+        : [],
+    [showReactionButtons, userReactions, item.event_id],
+  )
+
+  const reactBtn = dense ? 'h-6 min-w-6 text-xs' : 'h-8 min-w-8 text-sm'
+
   return (
-    <li className={cn('border-b border-border/25 last:border-b-0', dense ? 'px-4 py-2' : 'px-4 py-3.5')}>
-      <div className="flex items-start gap-3">
+    <li
+      className={cn(
+        'border-b border-border/25 last:border-b-0',
+        dense ? 'px-3 py-1.5' : 'px-4 py-3.5',
+      )}
+    >
+      <div className={cn('flex items-start', dense ? 'gap-2.5' : 'gap-3')}>
         <div
           className={cn(
             'flex shrink-0 items-center justify-center rounded-full border border-border bg-bg',
-            dense ? 'h-8 w-8 text-base' : 'h-10 w-10 text-lg',
+            dense ? 'h-7 w-7 text-sm' : 'h-10 w-10 text-lg',
           )}
           aria-hidden="true"
         >
@@ -94,7 +112,14 @@ const ActivityFeedRow = memo(function ActivityFeedRow({
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="text-sm leading-snug text-text-primary">{summary}</p>
+          <p
+            className={cn(
+              'leading-snug text-text-primary',
+              dense ? 'text-[0.8125rem]' : 'text-sm',
+            )}
+          >
+            {summary}
+          </p>
           {dense ? null : (
             <p className="mt-0.5 text-xs text-text-muted">{relativeTime}</p>
           )}
@@ -104,13 +129,13 @@ const ActivityFeedRow = memo(function ActivityFeedRow({
           <p
             className={cn(
               'font-mono font-bold tabular-nums text-text-primary',
-              dense ? 'text-base' : 'text-lg',
+              dense ? 'text-sm leading-tight' : 'text-lg',
             )}
           >
             {item.count}
           </p>
           {dense ? (
-            <p className="text-[0.625rem] text-text-muted">{relativeTime}</p>
+            <p className="text-[0.625rem] leading-tight text-text-muted">{relativeTime}</p>
           ) : (
             <p className="text-[0.6875rem] font-medium uppercase tracking-wide text-text-muted">
               reps
@@ -120,41 +145,89 @@ const ActivityFeedRow = memo(function ActivityFeedRow({
       </div>
 
       {showReactionButtons || showReactionCount ? (
-        <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-[3.25rem]">
-          {showReactionButtons
-            ? REACTION_EMOJIS.map((emoji) => {
-                const active = userReactions.has(reactionKey(item.event_id, emoji))
+        <div
+          className={cn(
+            'flex flex-wrap items-center gap-1',
+            dense ? 'mt-1 pl-[2.375rem]' : 'mt-2 pl-[3.25rem]',
+          )}
+        >
+          {showReactionButtons ? (
+            pickerOpen ? (
+              <>
+                {REACTION_EMOJIS.map((emoji) => {
+                  const active = userReactions.has(reactionKey(item.event_id, emoji))
 
-                return (
-                  <button
-                    key={emoji}
-                    type="button"
-                    disabled={reactionPending}
-                    aria-pressed={active}
-                    aria-label={`React with ${emoji}`}
-                    onClick={() => {
-                      tapHaptic()
-                      onToggleReaction(item.event_id, emoji)
-                    }}
-                    className={cn(
-                      'inline-flex min-h-8 min-w-8 items-center justify-center rounded-[var(--radius-full)]',
-                      'border text-sm transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out)]',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
-                      'active:scale-90',
-                      active
-                        ? 'motion-pop border-accent/40 bg-accent-muted'
-                        : 'border-border bg-bg hover:border-accent/30',
-                      reactionPending && 'opacity-60',
-                    )}
-                  >
-                    {emoji}
-                  </button>
-                )
-              })
-            : null}
+                  return (
+                    <button
+                      key={emoji}
+                      type="button"
+                      disabled={reactionPending}
+                      aria-pressed={active}
+                      aria-label={`React with ${emoji}`}
+                      onClick={() => {
+                        tapHaptic()
+                        onToggleReaction(item.event_id, emoji)
+                      }}
+                      className={cn(
+                        'inline-flex items-center justify-center rounded-[var(--radius-full)] border',
+                        'transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out)]',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 active:scale-90',
+                        reactBtn,
+                        active
+                          ? 'motion-pop border-accent/40 bg-accent-muted'
+                          : 'border-border bg-bg hover:border-accent/30',
+                        reactionPending && 'opacity-60',
+                      )}
+                    >
+                      {emoji}
+                    </button>
+                  )
+                })}
+                <button
+                  type="button"
+                  aria-label="Close reactions"
+                  onClick={() => setPickerOpen(false)}
+                  className={cn(
+                    'inline-flex items-center justify-center rounded-[var(--radius-full)] text-text-muted',
+                    'transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                    dense ? 'h-6 min-w-6 text-sm' : 'h-8 min-w-8',
+                  )}
+                >
+                  ×
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                aria-label={activeEmojis.length > 0 ? 'Edit your reactions' : 'Add a reaction'}
+                onClick={() => setPickerOpen(true)}
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-[var(--radius-full)] border px-2.5',
+                  'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 active:scale-95',
+                  dense ? 'h-6 text-xs' : 'h-8 text-sm',
+                  activeEmojis.length > 0
+                    ? 'border-accent/40 bg-accent-muted'
+                    : 'border-border bg-bg text-text-muted hover:border-accent/30 hover:text-text-primary',
+                )}
+              >
+                {activeEmojis.length > 0 ? (
+                  <span className="flex items-center gap-0.5" aria-hidden="true">
+                    {activeEmojis.map((emoji) => (
+                      <span key={emoji}>{emoji}</span>
+                    ))}
+                  </span>
+                ) : (
+                  <>
+                    <span aria-hidden="true">🙂</span>
+                    <span className="font-medium">React</span>
+                  </>
+                )}
+              </button>
+            )
+          ) : null}
 
           {showReactionCount ? (
-            <span className="text-[0.6875rem] text-text-muted">
+            <span className={cn('text-text-muted', dense ? 'text-[0.625rem]' : 'text-[0.6875rem]')}>
               {item.reaction_count} reaction{item.reaction_count === 1 ? '' : 's'}
             </span>
           ) : null}
@@ -171,11 +244,7 @@ export function ActivityFeedSkeleton() {
         <div key={index} className="space-y-3 border-b border-border/25 px-4 py-3.5 last:border-b-0">
           <Skeleton className="h-10 w-full rounded-[var(--radius-full)]" />
           <Skeleton className="h-4 w-3/4" />
-          <div className="flex gap-2">
-            <Skeleton className="h-9 w-9 rounded-full" />
-            <Skeleton className="h-9 w-9 rounded-full" />
-            <Skeleton className="h-9 w-9 rounded-full" />
-          </div>
+          <Skeleton className="ml-[3.25rem] h-8 w-24 rounded-[var(--radius-full)]" />
         </div>
       ))}
     </div>

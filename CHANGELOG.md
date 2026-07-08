@@ -49,6 +49,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **Feed reactions on mates' entries:** tapping an emoji on a mate's feed entry now highlights instantly and sticks. The reaction was saving to the database, but the button never lit up — the mutation refreshed the wrong React Query key, so the "your reactions" state never updated. Now optimistic (the button flips immediately) and reconciled with a prefix-matched invalidation
 - **Theme colour + light-mode phones:** `theme-color` meta and manifest `background_color`/`theme_color` now match the app background (`#0a0a0d` instead of navy `#0b1220`), and `color-scheme: dark` keeps native controls (selects, checkboxes, scrollbars, pickers) dark on phones set to light mode
 - **PWA icons on dark Android:** app icon, home-screen shortcut, and push notification badge now use a flat purple lightning bolt (Resvg-safe) instead of rasterising favicon masks/filters that rendered as an invisible black silhouette on dark backgrounds
 
@@ -59,6 +60,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Lap-based ring fill:** the ring fills one full lap every 10 reps and starts a fresh lap in a new colour on the next rep, ramping from cool to hot across 10 laps (up to 100 reps). Completed laps sit under the current lap as a solid ring
 - **Logger feel:** the current lap draws as a tapering comet "snake" — a bright glowing head at the handle that thins and fades back to the lap start; per-rep ratchet tick sound and haptic while dragging, accented at 5 and 10
 - **Nose reps gesture:** hold the centre of the ring for 1.5 seconds to open nose-tap mode (replaces the separate button). A dismissible hint under the ring teaches the gesture, with a "Don't remind me again" option
+- **Feed reactions take less room:** the five-emoji bar on each feed entry now collapses to a single compact **React** pill (which shows your active reactions when you've reacted); tapping it reveals the palette inline. Long feeds are no longer a wall of buttons. The **Compact** density now packs noticeably tighter than **Comfortable** — smaller avatars, tighter rows, and smaller reaction controls
 - OG social share images regenerated to match the new palette
 - **Ring handle grab zone:** larger thumb-sized hit target around the orange dot; easier to start a drag when you're near the handle, not only on the dot
 - Circular logger ring **20% larger** (rep count scaled to match); drag is incremental only (no jump to rep 10 on grab)
