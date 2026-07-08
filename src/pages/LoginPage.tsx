@@ -35,6 +35,9 @@ export function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false)
   const [linkSent, setLinkSent] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
+  // Invite entry is collapsed by default so the field + Continue don't bloat the
+  // page — most people sign in with email/Google; only invitees need it.
+  const [showInvite, setShowInvite] = useState(false)
   const authErrorShownRef = useRef(false)
 
   useEffect(() => {
@@ -124,13 +127,13 @@ export function LoginPage() {
 
   return (
     <div
-      className="flex min-h-screen flex-col bg-bg px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))]"
+      className="flex min-h-screen flex-col bg-bg px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))]"
     >
       {/* Welcome, card, footer rise in one after another */}
       <div className="motion-stagger mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
-        <div className="mb-8 text-center">
+        <div className="mb-6 text-center">
           <p className="text-sm uppercase tracking-[0.2em] text-text-muted">Welcome to</p>
-          <h1 className="mt-2 text-3xl font-bold text-text-primary">{appConfig.name}</h1>
+          <h1 className="mt-1.5 text-3xl font-bold text-text-primary">{appConfig.name}</h1>
           <p className="mt-2 text-sm leading-relaxed text-text-muted">
             Bank push-ups with your mates. Sign in to get started.
           </p>
@@ -141,7 +144,7 @@ export function LoginPage() {
           ) : null}
         </div>
 
-        <Card padding="lg" className="space-y-5">
+        <Card padding="lg" className="space-y-4">
           {linkSent ? (
             <div className="motion-rise space-y-3 text-center">
               <p
@@ -219,14 +222,28 @@ export function LoginPage() {
           ) : null}
 
           {!linkSent ? (
-            <>
-              <div className="flex items-center gap-3">
-                <div className="h-px flex-1 bg-border" />
-                <span className="text-xs text-text-muted">invite</span>
-                <div className="h-px flex-1 bg-border" />
+            showInvite ? (
+              <div className="motion-rise space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-px flex-1 bg-border" />
+                  <span className="text-xs text-text-muted">invite</span>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+                <InviteCodeEntry />
               </div>
-              <InviteCodeEntry />
-            </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowInvite(true)}
+                aria-expanded={false}
+                className={cn(
+                  'w-full rounded-[var(--radius-sm)] py-1 text-center text-sm font-medium text-text-muted',
+                  'transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                )}
+              >
+                Got an invite code? Enter it →
+              </button>
+            )
           ) : null}
         </Card>
 
@@ -239,7 +256,7 @@ export function LoginPage() {
           </Link>
         ) : null}
 
-        <p className="mt-6 text-center text-xs text-text-muted">
+        <p className="mt-5 text-center text-xs text-text-muted">
           By signing in you agree to train hard and log honestly.{' '}
           <Link to="/about" className="text-accent hover:brightness-110">
             About PushUS

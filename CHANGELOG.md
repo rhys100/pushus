@@ -61,6 +61,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Logger feel:** the current lap draws as a tapering comet "snake" — a bright glowing head at the handle that thins and fades back to the lap start; per-rep ratchet tick sound and haptic while dragging, accented at 5 and 10
 - **Nose reps gesture:** hold the centre of the ring for 1.5 seconds to open nose-tap mode (replaces the separate button). A dismissible hint under the ring teaches the gesture, with a "Don't remind me again" option
 - **Feed reactions take less room:** the five-emoji bar on each feed entry now collapses to a single compact **React** pill (which shows your active reactions when you've reacted); tapping it reveals the palette inline. Long feeds are no longer a wall of buttons. The **Compact** density now packs noticeably tighter than **Comfortable** — smaller avatars, tighter rows, and smaller reaction controls
+- **Sign-in page fits one screen:** the login page now fits a standard large phone (e.g. S24/S25 Ultra) without scrolling — the invite-code field + Continue are collapsed behind a "Got an invite code?" toggle by default (most people sign in with email/Google), and vertical spacing was tightened
 - OG social share images regenerated to match the new palette
 - **Ring handle grab zone:** larger thumb-sized hit target around the orange dot; easier to start a drag when you're near the handle, not only on the dot
 - Circular logger ring **20% larger** (rep count scaled to match); drag is incremental only (no jump to rep 10 on grab)
