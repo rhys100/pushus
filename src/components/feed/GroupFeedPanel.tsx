@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { memo, useCallback, useMemo, useState } from 'react'
 import { formatDistanceToNow, parseISO } from 'date-fns'
 import { cn } from '@/lib/cn'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
@@ -66,7 +66,7 @@ function writeFeedDense(dense: boolean): void {
   }
 }
 
-function ActivityFeedRow({
+const ActivityFeedRow = memo(function ActivityFeedRow({
   item,
   currentUserId,
   userReactions,
@@ -77,6 +77,8 @@ function ActivityFeedRow({
   const showReactionButtons = canReactToFeedItem(item, currentUserId)
   const showReactionCount = item.event_type === 'entry' && item.reaction_count > 0
   const summary = `${item.display_name} ${feedItemSummary(item)}`
+  // Parse/format the timestamp once per item, not on every panel re-render.
+  const relativeTime = useMemo(() => formatRelativeTime(item.created_at), [item.created_at])
 
   return (
     <li className={cn('border-b border-border/25 last:border-b-0', dense ? 'px-4 py-2' : 'px-4 py-3.5')}>
@@ -94,7 +96,7 @@ function ActivityFeedRow({
         <div className="min-w-0 flex-1">
           <p className="text-sm leading-snug text-text-primary">{summary}</p>
           {dense ? null : (
-            <p className="mt-0.5 text-xs text-text-muted">{formatRelativeTime(item.created_at)}</p>
+            <p className="mt-0.5 text-xs text-text-muted">{relativeTime}</p>
           )}
         </div>
 
@@ -108,7 +110,7 @@ function ActivityFeedRow({
             {item.count}
           </p>
           {dense ? (
-            <p className="text-[0.625rem] text-text-muted">{formatRelativeTime(item.created_at)}</p>
+            <p className="text-[0.625rem] text-text-muted">{relativeTime}</p>
           ) : (
             <p className="text-[0.6875rem] font-medium uppercase tracking-wide text-text-muted">
               reps
@@ -160,7 +162,7 @@ function ActivityFeedRow({
       ) : null}
     </li>
   )
-}
+})
 
 export function ActivityFeedSkeleton() {
   return (
@@ -187,31 +189,41 @@ export function GroupFeedPanel() {
   const { data: userReactionRows = [] } = useUserEntryReactions(activeGroup, feed, user?.id)
   const toggleReaction = useToggleReaction(activeGroup, user?.id)
 
-  const userReactions = new Set(
-    userReactionRows.map((row) => reactionKey(row.target_id, row.emoji)),
+  // Memoized so a background refetch or isFetching flip doesn't rebuild the
+  // Set (and, with React.memo rows, doesn't re-render every feed row).
+  const userReactions = useMemo(
+    () => new Set(userReactionRows.map((row) => reactionKey(row.target_id, row.emoji))),
+    [userReactionRows],
   )
   const showInitialSkeleton = isLoading && feed.length === 0
   const [dense, setDense] = useState(readFeedDense)
 
-  const toggleDense = () => {
+  const toggleDense = useCallback(() => {
     setDense((on) => {
       writeFeedDense(!on)
       return !on
     })
-  }
+  }, [])
 
-  const handleToggleReaction = (entryId: string, emoji: ReactionEmoji) => {
-    if (!activeGroup || toggleReaction.isPending) {
-      return
-    }
+  const toggleReactionMutate = toggleReaction.mutate
+  const reactionPending = toggleReaction.isPending
+  const handleToggleReaction = useCallback(
+    (entryId: string, emoji: ReactionEmoji) => {
+      if (!activeGroup || reactionPending) {
+        return
+      }
 
-    const targetItem = feed.find((item) => item.event_type === 'entry' && item.event_id === entryId)
-    if (targetItem && !canReactToFeedItem(targetItem, user?.id)) {
-      return
-    }
+      const targetItem = feed.find(
+        (item) => item.event_type === 'entry' && item.event_id === entryId,
+      )
+      if (targetItem && !canReactToFeedItem(targetItem, user?.id)) {
+        return
+      }
 
-    toggleReaction.mutate({ group: activeGroup, entryId, emoji })
-  }
+      toggleReactionMutate({ group: activeGroup, entryId, emoji })
+    },
+    [activeGroup, feed, user?.id, reactionPending, toggleReactionMutate],
+  )
 
   return (
     <>
@@ -277,7 +289,7 @@ export function GroupFeedPanel() {
                 currentUserId={user?.id}
                 userReactions={userReactions}
                 onToggleReaction={handleToggleReaction}
-                reactionPending={toggleReaction.isPending}
+                reactionPending={reactionPending}
                 dense={dense}
               />
             ))}

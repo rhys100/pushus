@@ -21,6 +21,10 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 30_000,
       retry: 1,
+      // Mobile PWAs get foregrounded constantly (app switching); every focus
+      // would refetch any query older than staleTime. Mutations already
+      // invalidate precisely, so skip the focus-refetch churn on phones.
+      refetchOnWindowFocus: false,
     },
   },
 })

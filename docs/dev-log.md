@@ -26,6 +26,13 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (perf-audit loop — feed re-render storm + focus refetch)
+
+- **Added `AGENTS.md`** — repo-specific working guide for AI/dev agents (flows, stack, commands, architecture, perf rules, design tokens, the enforced SemVer + doc-gate workflow, careful areas).
+- **GroupFeedPanel was the app's hottest list.** A perf audit found: a fresh reaction `Set` rebuilt every render, `ActivityFeedRow` not memoized, `parseISO`+`formatDistanceToNow` run per row per render, and non-`useCallback` handlers — so every `isFetching` flip (30s focus refetch) or reaction-pending toggle re-rendered the whole panel and re-parsed ~50 timestamps. Fixed: `React.memo` on the row, `useMemo` the reaction Set (dep `userReactionRows`), `useMemo` the per-item relative time (dep `created_at`), `useCallback` both handlers (stable `mutate` ref). With React Query's default structural sharing, a background refetch that returns equal data now causes **zero** row re-renders.
+- **`refetchOnWindowFocus: false` globally** (`src/main.tsx`). A mobile PWA gets foregrounded constantly; every focus refetched any query older than 30s. Mutations already invalidate precisely, so this removes the app-switch refetch churn with no staleness risk. Verified: tsc + lint clean, 431 tests pass, feed module compiles with no page errors.
+- **Deferred (needs coordination):** the top audit finding is an N+1 in `useGroupDailyTargets` — one `user_volume_stats` RPC per plan-enabled member on the Day board (~20 round-trips for a 20-person group). The real fix is a batched `group_volume_stats` RPC, i.e. a new migration + backend deploy; left for a coordinated change since the migration chain is being actively extended by feature work.
+
 ### 2026-07-08 (design-audit loop — onboarding preview)
 
 - **Live "on the leaderboard" preview on the onboarding profile page.** The page's stated purpose is "how your mates will see you," but it collected an emoji + an *optional* "initial" with no visible result — so the initial field read as pointless. Added a compact preview chip (emoji + `formatProfileName(name, initial)`, "Your name" placeholder while empty) at the top of the form so the choices are concrete as you type. Reuses the existing formatter; no logic change. Auth-gated so verified via tsc + tests, not a live preview.
