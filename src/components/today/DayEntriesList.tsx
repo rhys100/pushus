@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { cn } from '@/lib/cn'
 import { Button } from '@/components/ui/Button'
@@ -50,6 +50,15 @@ const EntryRow = memo(function EntryRow({ group, entry }: EntryRowProps) {
   const deleteEntry = useDeleteEntry()
   const isBusy = updateEntry.isPending || deleteEntry.isPending
   const entryTime = useMemo(() => formatEntryTime(entry.created_at), [entry.created_at])
+  // Deleting an entry is permanent (adjusts totals/streak/XP), so arm-to-confirm
+  // first — matching the custom-activity list. Auto-disarms after 4s.
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+
+  useEffect(() => {
+    if (!confirmingDelete) return
+    const timer = window.setTimeout(() => setConfirmingDelete(false), 4000)
+    return () => window.clearTimeout(timer)
+  }, [confirmingDelete])
 
   const handleSave = async () => {
     const nextCount = Number.parseInt(draftCount, 10)
@@ -79,6 +88,12 @@ const EntryRow = memo(function EntryRow({ group, entry }: EntryRowProps) {
   }
 
   const handleDelete = async () => {
+    if (!confirmingDelete) {
+      setConfirmingDelete(true)
+      return
+    }
+
+    setConfirmingDelete(false)
     try {
       await deleteEntry.mutateAsync({
         group,
@@ -146,6 +161,7 @@ const EntryRow = memo(function EntryRow({ group, entry }: EntryRowProps) {
             className="min-h-9 min-w-9 px-2 text-xs"
             disabled={isBusy || entry.id.startsWith('optimistic-')}
             onClick={() => {
+              setConfirmingDelete(false)
               setDraftCount(String(entry.count))
               setIsEditing(true)
             }}
@@ -153,13 +169,14 @@ const EntryRow = memo(function EntryRow({ group, entry }: EntryRowProps) {
             Edit
           </Button>
           <Button
-            variant="danger"
+            variant={confirmingDelete ? 'danger' : 'ghost'}
             className="min-h-9 min-w-9 px-2 text-xs"
             loading={deleteEntry.isPending}
             disabled={isBusy || entry.id.startsWith('optimistic-')}
+            aria-label={confirmingDelete ? 'Confirm delete entry' : 'Delete entry'}
             onClick={handleDelete}
           >
-            Delete
+            {confirmingDelete ? 'Confirm?' : 'Delete'}
           </Button>
         </div>
       ) : null}
