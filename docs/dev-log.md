@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (feature: late-joiner fairness — since-you-joined)
+
+- **"Since you joined" Board view.** A recent joiner (joined after the current month started) gets a toggle that re-scores the whole group over the window they've actually been present, via a period-override on `useLeaderboard` + `useMyJoinDate`. On week/month views they also get a note: "you joined mid-week, official weekly scoring counts from `<next Monday>`" (`officialScoringStartsAt`).
+- **Note on scope:** the Board's existing week/month leaderboards already *are* the official weekly/monthly scoring, so no duplicate "competition" rows were created; late-joiner fairness is delivered as the since-you-joined view + the official-start note rather than a parallel auto-competition system.
+
 ### 2026-07-08 (UX-audit loop — destructive-action safety)
 
 - **"Block" on a mate was a one-tap, permanent footgun.** Blocking severs the connection forever ("they can never reconnect") but was a plain muted-grey text button — identical weight to "Remove mate", no confirm, danger colour only on hover (invisible on touch). Reworked both destructive footer actions into a single mutually-exclusive arm-to-confirm state (`pendingDestructive`) with a 4s auto-disarm; the armed button turns solid `text-danger` with "Tap again to block/remove", a `role="status"` line spells out that blocking is permanent, and both got focus rings. Matches the app's existing archive arm-to-confirm pattern.

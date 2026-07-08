@@ -7,9 +7,12 @@ import { useGroupStreaks } from '@/hooks/useGroupStreaks'
 import {
   useLeaderboard,
   useLeaderboardPeriod,
+  useMyJoinDate,
   type LeaderboardEntry,
   type LeaderboardMetric,
 } from '@/hooks/useLeaderboard'
+import { getGroupLocalDateString } from '@/hooks/useTodayData'
+import { officialScoringStartsAt } from '@/lib/gamification/lateJoiner'
 import { formatPeriodLabel, type LeaderboardRange } from '@/lib/leaderboardCalc'
 import type { MemberDayTarget } from '@/lib/training/resolveMemberTodayTarget'
 import { useAuth } from '@/providers/AuthProvider'
@@ -258,24 +261,44 @@ export function LeaderboardPage() {
   const { profile } = useProfile()
   const { activeGroup, loading: groupLoading } = useActiveGroup()
   const [range, setRange] = useState<LeaderboardRange>('day')
+  // "Since you joined" scores everyone over the window the late joiner has
+  // actually been present — official late-joiner fairness (locked rule).
+  const [sinceJoin, setSinceJoin] = useState(false)
   // Metrics only apply to week/month periods; the day view has its own goal
   // progress. 'total' on the day view keeps the original behaviour.
   const [metric, setMetric] = useState<LeaderboardMetric>('total')
-  const effectiveMetric: LeaderboardMetric = range === 'day' ? 'total' : metric
-  const period = useLeaderboardPeriod(activeGroup, range)
+  const effectiveMetric: LeaderboardMetric =
+    sinceJoin || range === 'day' ? 'total' : metric
+
+  const timezone = activeGroup?.timezone || 'UTC'
+  const todayIso = getGroupLocalDateString(timezone)
+  const { data: joinDate } = useMyJoinDate(activeGroup?.id, user?.id)
+  const joinIso = joinDate ? getGroupLocalDateString(timezone, new Date(joinDate)) : null
+
+  const monthPeriod = useLeaderboardPeriod(activeGroup, 'month')
+  // A late joiner for the current month gets the extra view + fairness note.
+  const isRecentJoiner = Boolean(joinIso && monthPeriod && joinIso > monthPeriod.periodStart)
+
+  const sinceJoinPeriod =
+    sinceJoin && joinIso ? { periodStart: joinIso, periodEnd: todayIso } : null
+  const rangePeriod = useLeaderboardPeriod(activeGroup, range)
+  const period = sinceJoinPeriod ?? rangePeriod
   const { data: entries = [], isLoading, isError, isFetching, refetch } = useLeaderboard(
     activeGroup,
     range,
     effectiveMetric,
+    sinceJoinPeriod,
   )
-  const showDayProgress = range === 'day'
+  const showDayProgress = range === 'day' && !sinceJoin
   const { data: dailyTargets, isLoading: targetsLoading } = useGroupDailyTargets(activeGroup, {
     enabled: showDayProgress,
   })
   const { data: streaks } = useGroupStreaks(activeGroup?.id)
-  const subtitle = period
-    ? formatPeriodLabel(range, period.periodStart, period.periodEnd)
-    : 'Today'
+  const subtitle = sinceJoin
+    ? 'Since you joined'
+    : period
+      ? formatPeriodLabel(range, period.periodStart, period.periodEnd)
+      : 'Today'
   const showInitialSkeleton = isLoading && entries.length === 0
   const allZero = entries.length > 0 && entries.every((entry) => entry.total === 0)
 
@@ -292,17 +315,41 @@ export function LeaderboardPage() {
     return <LeaderboardSkeleton />
   }
 
+  const officialStart =
+    isRecentJoiner && joinDate && (range === 'week' || range === 'month')
+      ? officialScoringStartsAt(new Date(joinDate), range === 'week' ? 'weekly' : 'monthly', timezone)
+      : null
+
   return (
     <>
       <SegmentedControl
         className="mb-3"
         options={RANGE_OPTIONS}
         value={range}
-        onChange={setRange}
+        onChange={(next) => {
+          setRange(next)
+          setSinceJoin(false)
+        }}
         ariaLabel="Leaderboard time range"
       />
 
-      {range !== 'day' ? (
+      {isRecentJoiner ? (
+        <button
+          type="button"
+          onClick={() => setSinceJoin((on) => !on)}
+          aria-pressed={sinceJoin}
+          className={cn(
+            'mb-3 inline-flex min-h-9 items-center gap-1.5 rounded-[var(--radius-full)] border px-3 text-sm font-medium transition-colors',
+            sinceJoin
+              ? 'border-accent bg-accent-muted text-text-primary'
+              : 'border-border bg-bg text-text-muted hover:border-accent/30',
+          )}
+        >
+          🗓️ Since you joined
+        </button>
+      ) : null}
+
+      {!sinceJoin && range !== 'day' ? (
         <SegmentedControl
           className="mb-4"
           options={METRIC_OPTIONS}
@@ -310,6 +357,15 @@ export function LeaderboardPage() {
           onChange={setMetric}
           ariaLabel="Leaderboard metric"
         />
+      ) : null}
+
+      {officialStart && !sinceJoin ? (
+        <p className="mb-3 rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-xs text-text-muted">
+          You joined mid-{range}. Official {range}ly scoring counts from{' '}
+          {officialStart.toLocaleDateString()} — tap{' '}
+          <span className="font-medium text-text-primary">Since you joined</span> for a fair
+          comparison meanwhile.
+        </p>
       ) : null}
 
       {isFetching && entries.length > 0 ? (

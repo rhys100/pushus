@@ -23,7 +23,7 @@ export const leaderboardKeys = {
   all: ['leaderboard'] as const,
   period: (
     groupId: string,
-    range: LeaderboardRange,
+    range: LeaderboardRange | 'custom',
     metric: LeaderboardMetric,
     periodStart: string,
     periodEnd: string,
@@ -74,13 +74,17 @@ export function useLeaderboard(
   group: Group | null | undefined,
   range: LeaderboardRange = 'day',
   metric: LeaderboardMetric = 'total',
+  // Explicit window (used by the "since you joined" view); overrides `range`.
+  periodOverride?: { periodStart: string; periodEnd: string } | null,
 ) {
-  const period = group ? getLeaderboardPeriod(group, range) : null
+  const period = periodOverride ?? (group ? getLeaderboardPeriod(group, range) : null)
+  // Keep the query key distinct when a custom window is in play.
+  const rangeKey: LeaderboardRange | 'custom' = periodOverride ? 'custom' : range
 
   return useQuery({
     queryKey: leaderboardKeys.period(
       group?.id ?? '',
-      range,
+      rangeKey,
       metric,
       period?.periodStart ?? '',
       period?.periodEnd ?? '',
@@ -96,4 +100,23 @@ export function useLeaderboardPeriod(
   range: LeaderboardRange = 'day',
 ) {
   return group ? getLeaderboardPeriod(group, range) : null
+}
+
+/** The current user's join date (ISO) for this group — drives the since-you-joined view. */
+export function useMyJoinDate(groupId: string | undefined, userId: string | undefined) {
+  return useQuery({
+    queryKey: ['my-join-date', groupId ?? '', userId ?? ''],
+    queryFn: async (): Promise<string | null> => {
+      const { data, error } = await supabase
+        .from('group_members')
+        .select('joined_at')
+        .eq('group_id', groupId!)
+        .eq('user_id', userId!)
+        .maybeSingle()
+      if (error) throw error
+      return (data?.joined_at as string | null) ?? null
+    },
+    enabled: Boolean(groupId && userId),
+    staleTime: 300_000,
+  })
 }
