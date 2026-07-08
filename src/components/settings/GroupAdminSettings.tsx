@@ -9,6 +9,7 @@ import {
   useToast,
 } from '@/components/ui'
 import { InviteShareCard } from '@/components/group/InviteShareCard'
+import { CustomBadgeAdmin } from '@/components/settings/CustomBadgeAdmin'
 import { EntryModerationSettings } from '@/components/settings/EntryModerationSettings'
 import { SettingsLinkRow } from '@/components/settings/SettingsLinkRow'
 import { supabase } from '@/lib/supabase'
@@ -92,6 +93,7 @@ export function GroupAdminSettings() {
   }
 
   return (
+    <>
     <Card padding="md" className="space-y-4">
       <div>
         <p className="text-sm font-medium text-text-primary">Group admin</p>
@@ -151,7 +153,7 @@ export function GroupAdminSettings() {
                     Approve
                   </Button>
                   <Button
-                    variant="ghost"
+                    variant="danger"
                     className="min-h-9 px-3 py-1.5 text-xs"
                     loading={processingRequestId === request.id && rejectMutation.isPending}
                     disabled={processingRequestId !== null}
@@ -176,5 +178,8 @@ export function GroupAdminSettings() {
         description="See who is in your group"
       />
     </Card>
+
+    <CustomBadgeAdmin />
+    </>
   )
 }

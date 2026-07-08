@@ -7,6 +7,7 @@ import {
   useXpTotal,
 } from '@/hooks/useGamification'
 import { useGoalStreak, useStreakStatus, useUseStreakFreeze } from '@/hooks/useStreaks'
+import { useMyCustomBadges } from '@/hooks/useCustomBadges'
 import { useAuth } from '@/providers/AuthProvider'
 
 /** Streak days that earn a celebration pulse when you visit on the day. */
@@ -27,6 +28,7 @@ export function AchievementsPage() {
   const { data: xpTotal = 0, isLoading: xpLoading } = useXpTotal(activeGroup, user?.id)
   const { data: streak, isLoading: streakLoading } = useStreakStatus(activeGroup, user?.id)
   const { data: goalStreak = 0 } = useGoalStreak(activeGroup)
+  const { data: banterBadges = [] } = useMyCustomBadges(activeGroup?.id, user?.id)
   const useFreeze = useUseStreakFreeze(activeGroup, user?.id)
 
   const unlockedIds = new Set(unlocked.map((item) => item.achievement_id))
@@ -210,6 +212,31 @@ export function AchievementsPage() {
                       </p>
                       <p className="text-xs text-text-muted">
                         {new Date(item.unlocked_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </Card>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {banterBadges.length > 0 ? (
+          <section className="space-y-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+              Group badges
+            </h2>
+            <ul className="motion-stagger space-y-2">
+              {banterBadges.map((item) => (
+                <li key={item.id}>
+                  <Card padding="sm" className="flex items-center gap-3">
+                    <span className="text-xl">{item.custom_badges?.icon_emoji ?? '🎖️'}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-text-primary">
+                        {item.custom_badges?.name ?? 'Badge'}
+                      </p>
+                      <p className="text-xs text-text-muted">
+                        {item.note ? item.note : 'Awarded by your group admin'}
                       </p>
                     </div>
                   </Card>

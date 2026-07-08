@@ -26,6 +26,10 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (feature: admin banter badges)
+
+- **Banter badges** live (no migration — `custom_badges` / `user_custom_badges` tables + admin-write RLS already existed in 0004). `useCustomBadges` hook (create / delete / award / revoke / read); `CustomBadgeAdmin` card in Group admin lets owners/admins make named+emoji badges and award them to members; awarded badges show in a "Group badges" section on Achievements.
+
 ### 2026-07-08 (feature: overage caps)
 
 - **Calm overage confirmation** on the Log page (migration `0038` adds `is_override` + `mark_entry_override`). Banking that would cross a health-guard cap opens a non-medical "that's a big day 💪" sheet; confirming logs it and records the override on the entry, cancelling keeps the ring. Never hard-blocks (locked rule). Cap derived from the plan's daily volume (`overageCap.ts`, floored at 150 so it never nags in normal training); skipped for deliberate max-set check-ins. Pure caps logic unit-tested.
