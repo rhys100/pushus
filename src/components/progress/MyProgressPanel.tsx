@@ -241,6 +241,7 @@ function ActivityChip({
         'inline-flex shrink-0 items-center gap-1.5 rounded-[var(--radius-full)] border px-3 py-1.5 text-xs font-semibold',
         'transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out)]',
         'active:scale-[0.96]',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/60',
         selected
           ? cn('border-accent bg-accent-muted text-accent', pop && 'motion-pop')
           : 'border-border bg-bg text-text-muted hover:border-accent/30',

@@ -59,7 +59,7 @@ export function RepCalendar({
             tapHaptic()
             onMonthChange(subMonths(monthStart, 1))
           }}
-          className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-[var(--radius-md)] border border-border text-text-muted transition-transform duration-[var(--duration-fast)] hover:border-accent/30 active:scale-90"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-md)] border border-border text-text-muted transition-transform duration-[var(--duration-fast)] hover:border-accent/30 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
         >
           ‹
         </button>
@@ -75,7 +75,7 @@ export function RepCalendar({
             onMonthChange(addMonths(monthStart, 1))
           }}
           className={cn(
-            'inline-flex min-h-9 min-w-9 items-center justify-center rounded-[var(--radius-md)] border border-border text-text-muted transition-transform duration-[var(--duration-fast)] hover:border-accent/30 active:scale-90',
+            'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-md)] border border-border text-text-muted transition-transform duration-[var(--duration-fast)] hover:border-accent/30 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60',
             isSameMonth(monthStart, todayParsed) && 'cursor-not-allowed opacity-40',
           )}
         >
@@ -120,6 +120,7 @@ export function RepCalendar({
               className={cn(
                 'cal-pop flex min-h-11 flex-col items-center justify-center rounded-[var(--radius-md)] border text-center',
                 'transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] active:scale-90',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/60',
                 !inMonth && 'invisible pointer-events-none',
                 inMonth && !isFuture && 'hover:border-accent/30',
                 isSelected

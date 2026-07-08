@@ -260,7 +260,8 @@ export function GroupFeedPanel() {
               type="button"
               onClick={toggleDense}
               aria-pressed={dense}
-              className="inline-flex min-h-8 items-center gap-1 rounded-[var(--radius-full)] px-2 text-xs font-medium text-text-muted transition-colors hover:text-accent"
+              aria-label={dense ? 'Switch to comfortable feed density' : 'Switch to compact feed density'}
+              className="inline-flex min-h-9 items-center gap-1 rounded-[var(--radius-full)] px-2.5 text-xs font-medium text-text-muted transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
             >
               {dense ? '☰ Comfortable' : '≡ Compact'}
             </button>

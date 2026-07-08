@@ -52,6 +52,7 @@ export function SegmentedControl<T extends string>({
               'min-h-11 rounded-[var(--radius-md)] border px-2 text-xs font-semibold capitalize',
               'transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out)]',
               'active:scale-[0.96]',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/60',
               selected
                 ? cn('border-accent bg-accent-muted text-accent', interacted && 'motion-pop')
                 : 'border-border bg-surface text-text-muted hover:border-accent/30',

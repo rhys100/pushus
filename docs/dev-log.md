@@ -26,6 +26,12 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (UX-audit loop — keyboard focus + touch targets)
+
+- **Focus-visible rings on the app's most-used interactive elements**, which were relying on inconsistent browser-default outlines (or nothing). Swept: `SegmentedControl` (the biggest win — Board range/metric, Log side toggle, progress selectors all run through it), `SettingsLinkRow` (every Settings nav row), `Toast` action + dismiss buttons, the Group hub cards (`role="button"` Mates/Challenges/Badges), Board `MyProgressPanel` activity chips, `RepCalendar` day cells + month nav, and the feed density toggle. Standard is `focus-visible:ring-2 ring-accent/60` — `ring-inset` for dense grids/tabs (so the ring can't be clipped by neighbours) and `ring-offset-2` for the standalone cards. Verified on `/dev/preview`: keyboard focus on a segment yields a computed `rgba(242,93,36,0.6) 0 0 0 2px inset` box-shadow.
+- **Touch targets bumped to 44px** where they were under: RepCalendar month-nav chevrons (`min-h-9`→`min-h-11`) and the feed density toggle (`min-h-8`→`min-h-9` + hit-area padding). Also gave the toast dismiss "×" a real 32px hit box and an `aria-label` to the density toggle.
+- Follow-up worth doing later: extract the repeated focus-ring string into a shared constant (the gaps existed because there's no single source) and finish the remaining sub-44px buttons in Settings sub-cards.
+
 ### 2026-07-08 (feature: "Both" for sided custom activities)
 
 - **Sided custom activities can now log both sides at once** (user-reported gap — you could only do Left *or* Right per set). The Log toggle is now **Left / Both / Right**; picking **Both** and banking writes one `left` and one `right` entry (`useBankCustomActivity` now returns the row(s)), so per-side totals and the day card's "Left N / Right N" stay exact — no schema change (`side` stays the `left`/`right` enum; 'both' is a UI-level `SideChoice` convenience). Undo removes both entries; single-side banks still auto-flip to the other side, Both stays put.

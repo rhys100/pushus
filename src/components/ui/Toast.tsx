@@ -100,7 +100,7 @@ function ToastItem({
             toast.onAction?.()
             startDismiss()
           }}
-          className="shrink-0 text-sm font-semibold text-accent hover:brightness-110"
+          className="shrink-0 rounded-[var(--radius-sm)] px-1 text-sm font-semibold text-accent hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
         >
           {toast.actionLabel}
         </button>
@@ -110,7 +110,7 @@ function ToastItem({
         type="button"
         aria-label="Dismiss"
         onClick={startDismiss}
-        className="shrink-0 text-text-muted transition-colors hover:text-text-primary"
+        className="-my-1 -mr-1.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-lg leading-none text-text-muted transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
       >
         ×
       </button>

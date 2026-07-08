@@ -15,6 +15,7 @@ export function SettingsLinkRow({ to, title, description, className }: SettingsL
       className={cn(
         'flex min-h-11 items-center justify-between gap-3 rounded-[var(--radius-md)] px-1 py-2',
         'text-sm text-text-primary hover:text-accent',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/60',
         className,
       )}
     >
