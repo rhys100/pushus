@@ -12,6 +12,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **"Invite required" screen had no way to enter a code:** when group creation is locked (private beta) and you had no saved invite, the screen told you to "join with your invite link" but only offered a "Back" button. It now always offers "Enter an invite code" so you can actually paste one
 - **About page back button:** the "← Back" on the About page always went to Settings, which bounced logged-out visitors (who reach it from the sign-in footer) to a page they can't open; it now returns to wherever you came from. The bottom "Sign in" button is also hidden when you're already signed in
 - **No way back from full-screen pages:** Challenges, a challenge's detail, Mates, and Achievements hide the bottom nav but had no back button — so on a home-screen app (no browser bar) you could get stuck with no way back to your group. Each now shows a back link in the header (← Group / ← Challenges), matching Billing
 - **Join failure recovery:** when joining a group by invite link failed, the error screen's "Back" button dropped you on the private-beta gate ("you need an invite to continue") — a mislabeled button and the wrong destination. It now offers "Enter a different code" back to the join screen, matching the invalid-link screen's recovery

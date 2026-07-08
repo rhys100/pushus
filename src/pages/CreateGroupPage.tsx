@@ -81,15 +81,22 @@ export function CreateGroupPage() {
               During private beta, new groups can only be created by approved organisers. Join an
               existing crew with your invite link instead.
             </p>
-            {pendingInvite ? (
-              <ButtonRouterLink to={`/join/${pendingInvite}`} fullWidth>
-                Use saved invite code
+            <div className="flex flex-col gap-2">
+              {pendingInvite ? (
+                <ButtonRouterLink to={`/join/${pendingInvite}`} fullWidth>
+                  Use saved invite code
+                </ButtonRouterLink>
+              ) : null}
+              {/* Always give a way to enter a code by hand — this screen tells
+                  them to join with an invite, so the action must be here. */}
+              <ButtonRouterLink
+                to="/join"
+                variant={pendingInvite ? 'secondary' : undefined}
+                fullWidth
+              >
+                Enter an invite code
               </ButtonRouterLink>
-            ) : (
-              <ButtonRouterLink to="/private-beta" variant="secondary" fullWidth>
-                Back
-              </ButtonRouterLink>
-            )}
+            </div>
           </Card>
         </div>
       </div>
