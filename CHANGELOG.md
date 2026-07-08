@@ -14,6 +14,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 - **Join failure recovery:** when joining a group by invite link failed, the error screen's "Back" button dropped you on the private-beta gate ("you need an invite to continue") — a mislabeled button and the wrong destination. It now offers "Enter a different code" back to the join screen, matching the invalid-link screen's recovery
 
+### Performance
+
+- **Smoother Feed, Board, and calendar.** The group feed no longer rebuilds its reaction state or re-parses every timestamp on each background refresh; leaderboard rows and day-log entries only re-render when their own data changes; the rep calendar stops rebuilding its month grid every time you tap a day. Less work per interaction, most noticeable on older phones with long lists
+- **Fewer background refetches.** Queries no longer refetch every time you switch back to the app — data still updates immediately after you bank, react, or edit — saving battery and data on app-switching
+
+### Docs
+
+- Added `AGENTS.md` — a contributor/agent guide (architecture, commands, performance rules, design tokens, versioning workflow, and areas to touch carefully)
+
 ---
 
 ## [1.3.0] - 2026-07-08

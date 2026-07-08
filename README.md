@@ -201,6 +201,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Contributions are AGPL-3.0-only. No CLA.
 
 | Doc | Description |
 |-----|-------------|
+| [AGENTS.md](AGENTS.md) | Working guide for AI/dev agents — architecture, commands, performance & styling rules, versioning workflow, careful areas |
 | [CHANGELOG.md](CHANGELOG.md) | Meaningful release-level changes |
 | [docs/dev-log.md](docs/dev-log.md) | Day-to-day progress (rolled up weekly/monthly) |
 | [docs/product-roadmap.md](docs/product-roadmap.md) | Product direction |
