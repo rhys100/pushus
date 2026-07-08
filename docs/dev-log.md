@@ -29,6 +29,7 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 ### 2026-07-08 (feature: guest mode)
 
 - **No-account guest playground** at public route `/guest` (linked from the login screen: "Just want a play? Try it as a guest →"). Self-contained page (not the auth-gated `TodayPage`) reusing `CircularLogger` + `BankPushupsButton`; reps stored in `localStorage` via `src/lib/guestLog.ts` (no Supabase). Persistent accent banner explains data is device-only and can be lost, with "Create free account" / "Sign in" CTAs; today total + set list with delete. Pure day-grouping logic unit-tested; verified live end-to-end in the preview (bank → localStorage → total, survives reload) since the route needs no auth.
+- **Conversion nudge (design-loop):** crossing 25/50/100/250/500/1000 guest reps fires a one-time celebratory toast ("💪 N reps as a guest — save them before you lose them") with a **Sign up** action — catches the sunk-cost moment when a guest is most likely to convert. `milestoneToCelebrate` is pure + unit-tested (handles big jumps and already-shown milestones); shown-state persisted so it never repeats. Verified live.
 
 ### 2026-07-08 (UX-audit loop — keyboard focus + touch targets)
 

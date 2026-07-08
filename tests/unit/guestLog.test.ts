@@ -4,6 +4,7 @@ import {
   guestDayTotal,
   guestEntriesForDay,
   localDateKey,
+  milestoneToCelebrate,
   type GuestEntry,
 } from '../../src/lib/guestLog'
 
@@ -40,6 +41,26 @@ describe('guestLog', () => {
     it('sums everything', () => {
       expect(guestAllTimeTotal(entries)).toBe(65)
       expect(guestAllTimeTotal([])).toBe(0)
+    })
+  })
+
+  describe('milestoneToCelebrate', () => {
+    it('returns the milestone just crossed', () => {
+      expect(milestoneToCelebrate(20, 30, [])).toBe(25)
+    })
+
+    it('returns the highest crossed in one big jump', () => {
+      expect(milestoneToCelebrate(40, 120, [])).toBe(100)
+    })
+
+    it('skips already-celebrated milestones', () => {
+      expect(milestoneToCelebrate(20, 30, [25])).toBeNull()
+      expect(milestoneToCelebrate(40, 120, [100])).toBe(50)
+    })
+
+    it('returns null when no milestone is crossed', () => {
+      expect(milestoneToCelebrate(26, 40, [])).toBeNull()
+      expect(milestoneToCelebrate(0, 10, [])).toBeNull()
     })
   })
 })

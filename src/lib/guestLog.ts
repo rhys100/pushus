@@ -95,3 +95,47 @@ export function guestEntriesForDay(entries: GuestEntry[], day: string): GuestEnt
 export function guestAllTimeTotal(entries: GuestEntry[]): number {
   return entries.reduce((sum, entry) => sum + entry.count, 0)
 }
+
+/**
+ * Conversion nudges: once a guest has invested some reps they're both most
+ * likely to sign up and most at risk of losing the data. Celebrate each
+ * milestone once with a save-your-progress prompt.
+ */
+export const GUEST_MILESTONES = [25, 50, 100, 250, 500, 1000] as const
+
+const GUEST_MILESTONES_SHOWN_KEY = 'pushus-guest-milestones-shown'
+
+export function readShownMilestones(): number[] {
+  try {
+    const raw = localStorage.getItem(GUEST_MILESTONES_SHOWN_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as number[]) : []
+  } catch {
+    return []
+  }
+}
+
+export function markMilestoneShown(milestone: number): void {
+  try {
+    const next = Array.from(new Set([...readShownMilestones(), milestone]))
+    localStorage.setItem(GUEST_MILESTONES_SHOWN_KEY, JSON.stringify(next))
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
+/**
+ * The highest milestone crossed by going prevTotal → newTotal that hasn't been
+ * celebrated yet, or null. Pure — pass the shown list in.
+ */
+export function milestoneToCelebrate(
+  prevTotal: number,
+  newTotal: number,
+  shown: number[],
+): number | null {
+  const crossed = GUEST_MILESTONES.filter(
+    (milestone) => milestone > prevTotal && milestone <= newTotal && !shown.includes(milestone),
+  )
+  return crossed.length > 0 ? Math.max(...crossed) : null
+}

@@ -11,10 +11,14 @@ import { successHaptic, tapHaptic } from '@/lib/haptics'
 import { appConfig } from '@/lib/config'
 import {
   addGuestEntry,
+  guestAllTimeTotal,
   guestDayTotal,
   guestEntriesForDay,
   localDateKey,
+  markMilestoneShown,
+  milestoneToCelebrate,
   readGuestLog,
+  readShownMilestones,
   removeGuestEntry,
   type GuestEntry,
 } from '@/lib/guestLog'
@@ -43,10 +47,27 @@ export function GuestPage() {
     const count = loggerRef.current?.getCount() ?? 0
     if (count <= 0) return
 
+    const prevTotal = guestAllTimeTotal(entries)
     addGuestEntry(count)
-    setEntries(readGuestLog())
+    const next = readGuestLog()
+    setEntries(next)
     loggerRef.current?.unwind()
     successHaptic()
+
+    // Celebrate the reps they've sunk in — the best moment to nudge sign-up.
+    const milestone = milestoneToCelebrate(prevTotal, guestAllTimeTotal(next), readShownMilestones())
+    if (milestone) {
+      markMilestoneShown(milestone)
+      toast({
+        message: `💪 ${milestone} reps as a guest — nice! Save them before you lose them.`,
+        variant: 'success',
+        durationMs: 9000,
+        actionLabel: 'Sign up',
+        onAction: () => navigate('/login'),
+      })
+      return
+    }
+
     toast({
       message: `${count} banked — saved on this device.`,
       variant: 'success',
