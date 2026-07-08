@@ -26,6 +26,10 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (design-audit loop — pending-approval screen clarity)
+
+- **`PendingPage` felt like a dead end even though it auto-advances.** Two fixes on the screen every new member sees while waiting for admin approval: (1) removed the redundant second sentence — it had "Waiting for the group admin to approve you." *and* "An admin needs to approve your request before you can log push-ups." saying the same thing twice; now one line. (2) The page already polls membership + group name every 15s and whisks the member in on approval, but nothing said so, so "Check again" read as the only way forward and invited anxious tapping. Added an `aria-live` "Checking automatically — you'll go straight in once approved." line (with a small accent dot, matching the feed's text-based "Refreshing…" pattern rather than adding new animation), relabelled the button "Check now", and gave it a proper loading/disabled state via a new `isChecking` flag so a manual tap shows progress. Auth-gated (only pending members see it) so verified via tsc + lint, not live preview.
+
 ### 2026-07-08 (design-audit loop — join failure recovery destination)
 
 - **Join-by-link error screen sent users to the wrong page.** On `JoinPage`, if `request_join_group` failed for any non-"already a member" reason (bad/expired code, group full, network), the error state's secondary button was labelled **"Back"** but linked to `/private-beta` — the beta-access gate, which greets a logged-in, onboarded user with "you need an invite link or approved access to continue." Both the label and the destination were wrong for the situation. Changed it to **"Enter a different code" → `/join`**, mirroring the `!inviteCode` invalid-link state directly above (which already offered `/join`). One-line recovery that actually maps to the user's goal. `/join` verified live (renders the invite-code entry); tsc + lint clean. The error state itself needs a real failed-join RPC + session to reach, so not live-previewable — routing + destination confirmed instead.

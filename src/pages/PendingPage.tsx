@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Button, Card, Skeleton } from '@/components/ui'
 import { supabase } from '@/lib/supabase'
@@ -19,6 +19,7 @@ export function PendingPage() {
   useDocumentTitle('Pending approval')
   const { signOut } = useAuth()
   const { pendingGroupId, refreshGroup } = useActiveGroup()
+  const [isChecking, setIsChecking] = useState(false)
 
   const groupNameQuery = useQuery({
     queryKey: ['pending-group-name', pendingGroupId],
@@ -37,8 +38,13 @@ export function PendingPage() {
   }, [refreshGroup])
 
   async function handleRefresh() {
-    await refreshGroup()
-    await groupNameQuery.refetch()
+    setIsChecking(true)
+    try {
+      await refreshGroup()
+      await groupNameQuery.refetch()
+    } finally {
+      setIsChecking(false)
+    }
   }
 
   return (
@@ -50,10 +56,7 @@ export function PendingPage() {
           </p>
           <h1 className="mt-4 text-2xl font-bold text-text-primary">Awaiting approval</h1>
           <p className="mt-2 text-sm leading-relaxed text-text-muted">
-            Waiting for the group admin to approve you.
-          </p>
-          <p className="mt-1 text-sm leading-relaxed text-text-muted">
-            An admin needs to approve your request before you can log push-ups.
+            An admin needs to approve your request before you can start logging push-ups.
           </p>
         </div>
 
@@ -76,9 +79,24 @@ export function PendingPage() {
             </>
           )}
 
-          <Button variant="secondary" fullWidth onClick={handleRefresh}>
-            Check again
-          </Button>
+          <div className="space-y-2.5">
+            <p
+              className="flex items-center justify-center gap-2 text-xs text-text-muted"
+              aria-live="polite"
+            >
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+              Checking automatically — you&apos;ll go straight in once approved.
+            </p>
+            <Button
+              variant="secondary"
+              fullWidth
+              loading={isChecking}
+              disabled={isChecking}
+              onClick={handleRefresh}
+            >
+              Check now
+            </Button>
+          </div>
         </Card>
 
         <Button variant="ghost" fullWidth className="mt-4" onClick={() => void signOut()}>
