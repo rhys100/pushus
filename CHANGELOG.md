@@ -12,6 +12,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **Rotating your mate link / cancelling a battle now confirm:** both actions could fail silently — no error message, and (for rotate, a security action) no confirmation the old link was actually killed. They now show a success toast and surface any error instead of failing quietly
 - **Deleting an entry now asks first:** on your logged sets, the Delete button removed the entry on a single tap — permanently, adjusting your total/streak/XP, and sitting right next to Edit. It now arms to "Confirm?" on the first tap and only deletes on the second (auto-cancels after a few seconds), matching the custom-activity list
 - **Screen-reader labelling of segmented toggles:** the range/metric/chart toggles (Board, Leaderboard, progress chart) announced themselves as "tabs" but had no tab panels or arrow-key model. They're now correctly exposed as a group of pressable buttons, so assistive tech describes them accurately
 - **Challenge intensity picker accessibility:** the Fun/Moderate/Hard/Stupid selector showed its choice with colour only (no screen-reader state) and had no visible keyboard-focus ring. It's now a labelled button group with pressed state and a focus outline

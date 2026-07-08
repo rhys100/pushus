@@ -278,6 +278,15 @@ function MateChallengeCard({ challenge }: { challenge: MateChallengeItem }) {
     }
   }
 
+  async function handleCancel() {
+    try {
+      await cancel.mutateAsync(challenge.id)
+      toast({ message: 'Challenge cancelled.', variant: 'success' })
+    } catch (error) {
+      toast({ message: getErrorMessage(error, 'Could not cancel the challenge.'), variant: 'danger' })
+    }
+  }
+
   return (
     <Card padding="md" className="space-y-2">
       <div className="flex items-center justify-between gap-2">
@@ -340,8 +349,9 @@ function MateChallengeCard({ challenge }: { challenge: MateChallengeItem }) {
       {challenge.status === 'pending' && challenge.is_challenger ? (
         <button
           type="button"
-          className="text-xs text-text-muted transition-colors hover:text-danger"
-          onClick={() => void cancel.mutateAsync(challenge.id)}
+          disabled={cancel.isPending}
+          className="text-xs text-text-muted transition-colors hover:text-danger disabled:opacity-60"
+          onClick={() => void handleCancel()}
         >
           Cancel challenge
         </button>
@@ -405,6 +415,18 @@ export function MatesPage() {
     }
   }
 
+  async function handleRotate() {
+    try {
+      await rotateCode.mutateAsync()
+      toast({
+        message: 'Mate link rotated — the old link no longer works.',
+        variant: 'success',
+      })
+    } catch (error) {
+      toast({ message: getErrorMessage(error, 'Could not rotate your mate link.'), variant: 'danger' })
+    }
+  }
+
   async function handleRespond(connectionId: string, accept: boolean) {
     try {
       await respondRequest.mutateAsync({ connectionId, accept })
@@ -451,7 +473,7 @@ export function MatesPage() {
               variant="secondary"
               className="min-h-10 shrink-0 px-3 text-sm"
               loading={rotateCode.isPending}
-              onClick={() => void rotateCode.mutateAsync()}
+              onClick={() => void handleRotate()}
             >
               Rotate
             </Button>
