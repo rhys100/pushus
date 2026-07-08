@@ -1,6 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { getGroupLocalDateString } from '@/hooks/useTodayData'
-import { fetchVolumeHistoryStats } from '@/lib/training/volumeCalibration'
+import {
+  fetchGroupVolumeStats,
+  type VolumeHistoryStats,
+} from '@/lib/training/volumeCalibration'
 import { resolveMemberTodayTarget, type MemberDayTarget } from '@/lib/training/resolveMemberTodayTarget'
 import { supabase } from '@/lib/supabase'
 import type { Group } from '@/types/database'
@@ -27,19 +30,17 @@ async function fetchGroupDailyTargets(
 
   const targets = new Map<string, MemberDayTarget>()
   const planRows = (data ?? []) as TrainingPlanRow[]
-  const activeRows = planRows.filter((row) => row.wizard_completed)
 
-  const statsByUser = new Map<string, Awaited<ReturnType<typeof fetchVolumeHistoryStats>>>()
-  await Promise.all(
-    activeRows.map(async (row) => {
-      try {
-        const stats = await fetchVolumeHistoryStats(row.user_id, group.id)
-        statsByUser.set(row.user_id, stats)
-      } catch {
-        statsByUser.set(row.user_id, null)
-      }
-    }),
-  )
+  // One batched RPC for the whole group instead of one per member (was an N+1
+  // where non-admins fired N-1 failing calls). Members not in the map — e.g.
+  // other members when a non-admin views the board — resolve with null stats,
+  // exactly as before.
+  let statsByUser: Map<string, VolumeHistoryStats>
+  try {
+    statsByUser = await fetchGroupVolumeStats(group.id)
+  } catch {
+    statsByUser = new Map()
+  }
 
   for (const row of planRows) {
     targets.set(

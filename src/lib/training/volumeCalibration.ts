@@ -285,3 +285,33 @@ export async function fetchVolumeHistoryStats(
 
   return volumeHistoryStatsFromRpc(data as UserVolumeStatsRow)
 }
+
+type GroupVolumeStatsRow = UserVolumeStatsRow & { user_id: string }
+
+/**
+ * Batched stats for a group's Day board — one RPC instead of one per member.
+ * Returns a Map keyed by user_id. Respects the same permission model as
+ * fetchVolumeHistoryStats: the caller always gets their own; a group admin
+ * gets every active member's; others simply aren't in the map (→ null).
+ */
+export async function fetchGroupVolumeStats(
+  groupId: string,
+): Promise<Map<string, VolumeHistoryStats>> {
+  const { data, error } = await supabase.rpc('group_volume_stats', {
+    p_group_id: groupId,
+    p_days: HISTORY_WINDOW_DAYS,
+  })
+
+  if (error) {
+    throw error
+  }
+
+  const byUser = new Map<string, VolumeHistoryStats>()
+  for (const row of (data ?? []) as GroupVolumeStatsRow[]) {
+    const stats = volumeHistoryStatsFromRpc(row)
+    if (row.user_id && stats) {
+      byUser.set(row.user_id, stats)
+    }
+  }
+  return byUser
+}

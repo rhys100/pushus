@@ -26,6 +26,12 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (perf: kill the Day-board N+1 with a batched RPC — deployed to prod)
+
+- **The Day board fired one `user_volume_stats` RPC per member** (~N round-trips; for a non-admin viewer N-1 of them *failed* since that RPC restricts non-admins to their own stats). Replaced with **migration `0040_group_volume_stats`** — a single batched RPC returning per-member stats in one call, with the **identical permission model** (caller always; every active member only if the caller is a group admin) and byte-for-byte the same per-user output as `user_volume_stats` (same 30-day window, same filters, all-time last-log, RIR-filtered estimated max, zeros/NULL parity). `useGroupDailyTargets` now makes **1 call instead of N**; members not returned resolve with null stats exactly as before, and the call is wrapped in try/catch so a batch failure degrades gracefully to no-stats (board never breaks).
+- **Verification (production, `zcwvvhuihqlldnbwhivl`):** adversarially reviewed by 3 independent lenses (parity / security-RLS / SQL-validity) — all *safe-to-deploy*, no blockers. `--dry-run` confirmed only `0040` pending (no drift; remote was at `0039`), applied via `supabase db push`, `migration list` now shows `remote:0040`, and an anon RPC call returns the expected `P0001 Authentication required` (function reachable, granted, guard fires). tsc + lint + 436 tests green; all routes boot clean.
+- **The other deferred item (narrowing the `['leaderboard']` bank invalidation) was investigated and intentionally NOT changed:** `invalidateQueries({ queryKey: leaderboardKeys.all })` uses RQ v5's default `refetchType:'active'`, so it already refetches only the one mounted range×metric variant and merely stale-marks the rest (so they're fresh on switch). It's already one refetch per bank; narrowing would save nothing and risk stale data on metric switch.
+
 ### 2026-07-08 (feed reactions redesign — Discord/FB style, user-reported)
 
 - **Reactions were too small and the picker stayed open** (user-reported: "reacts are so small … when u react the whole thing stays open … not like fb/discord where it just shows emojis and u can add +1 and join in"). Rebuilt the feed reaction UX:
