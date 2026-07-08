@@ -47,7 +47,11 @@ const RING_HIT_STROKE = 44
 const HANDLE_RADIUS = 24
 const HANDLE_GRAB_RADIUS = LOGGER_HANDLE_GRAB_RADIUS
 const CENTER_HIT_RADIUS = RING_RADIUS - RING_STROKE - 8
-const RING_CONTAINER_SIZE = 'min(72vw,336px)'
+// Cap by viewport height too so the ring shrinks (rather than pushing the
+// Bank button off-screen) on short phones — especially with the extra
+// Left/Right row for sided custom activities. The height term reserves room
+// for the day card, activity switcher, side toggle, +10 and Bank rows.
+const RING_CONTAINER_SIZE = 'min(72vw, 336px, calc(100dvh - 25rem))'
 const REP_TICK_ANGLES = Array.from(
   { length: CIRCULAR_COUNTER.repsPerRevolution - 1 },
   (_, index) => (index + 1) * CIRCULAR_COUNTER.degreesPerRep,

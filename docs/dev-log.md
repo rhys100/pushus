@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (UX-audit loop — reported layout fixes)
+
+- **Sided custom activities overflowed the Log screen** (user-reported): the Left/Right toggle added a row that pushed the "Bank …" button behind the bottom nav on standard phones. Recovered ~60px of vertical rhythm on the Log column (`pt-8`→`pt-5`, column `py-4`→`py-2`, switcher `mb-4`→`mb-3`, the three control gaps `mt-4`→`mt-3`) — no element shrunk, nothing removed. Belt-and-suspenders: `RING_CONTAINER_SIZE` is now `min(72vw, 336px, calc(100dvh - 25rem))` so on genuinely short phones the ring shrinks instead of clipping the CTA. Verified the calc engages only under ~660px height (240px ring at 360×640; unchanged 281px at ≥740px), so normal phones keep the full hero.
+- **Settings → Profile had a dead gap** (user-reported): the "Profile" label sat in a header row whose height was set by a 36px Edit button pinned with `items-start`, leaving empty space above the avatar/name. Moved Edit into the avatar/name row (`justify-between`, vertically centred) where it belongs — the button now aligns with the identity it edits; added `truncate`/`min-w-0` so long names/timezones don't push it off.
+
 ### 2026-07-08 (feature: denser feed layout)
 
 - **Compact / Comfortable feed toggle** on the Group feed (persisted to `localStorage`). Dense mode tightens row padding, shrinks the avatar, and folds the timestamp under the rep count so more entries fit per screen; comfortable is the default. Reactions unchanged.

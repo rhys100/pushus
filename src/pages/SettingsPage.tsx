@@ -316,9 +316,20 @@ export function SettingsPage() {
 
       <SettingsSection title="Account">
       <Card padding="md" className="space-y-3">
-        <div className="flex items-start justify-between gap-3">
-          <p className="text-sm font-medium text-text-primary">Profile</p>
-          {profile && !editingProfile ? (
+        <p className="text-sm font-medium text-text-primary">Profile</p>
+        {profile && !editingProfile ? (
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-bg text-2xl">
+                {profile.avatar_emoji}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-text-primary">
+                  {formatProfileName(profile)}
+                </p>
+                <p className="truncate text-xs text-text-muted">{profile.timezone}</p>
+              </div>
+            </div>
             <Button
               variant="secondary"
               className="min-h-9 shrink-0 px-3 text-sm"
@@ -326,19 +337,6 @@ export function SettingsPage() {
             >
               Edit
             </Button>
-          ) : null}
-        </div>
-        {profile && !editingProfile ? (
-          <div className="flex items-center gap-3">
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-bg text-2xl">
-              {profile.avatar_emoji}
-            </span>
-            <div>
-              <p className="font-semibold text-text-primary">
-                {formatProfileName(profile)}
-              </p>
-              <p className="text-xs text-text-muted">{profile.timezone}</p>
-            </div>
           </div>
         ) : profile ? (
           <div className="space-y-3">

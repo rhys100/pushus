@@ -507,7 +507,7 @@ export function TodayPage() {
 
   return (
     <>
-      <div className="flex min-h-[calc(100dvh-var(--bottom-nav-height)-1.5rem)] flex-col pb-2 pt-8">
+      <div className="flex min-h-[calc(100dvh-var(--bottom-nav-height)-1.5rem)] flex-col pb-2 pt-5">
         {billingConfig.enabled ? (
           <BillingBanner
             className="mb-3"
@@ -558,13 +558,13 @@ export function TodayPage() {
           />
         )}
 
-        <div className="flex flex-1 flex-col items-center justify-center py-4">
+        <div className="flex flex-1 flex-col items-center justify-center py-2">
           <ActivitySwitcher
             activities={customActivities}
             selectedActivityId={selectedActivity?.id ?? null}
             onSelect={handleSelectActivity}
             disabled={bankPending}
-            className="mb-4"
+            className="mb-3"
           />
 
           <CircularLogger
@@ -580,7 +580,7 @@ export function TodayPage() {
 
           {isCustomMode && selectedActivity?.track_sides ? (
             <SegmentedControl
-              className="mt-4 w-full max-w-[15rem]"
+              className="mt-3 w-full max-w-[15rem]"
               options={[
                 { value: 'left', label: 'Left' },
                 { value: 'right', label: 'Right' },
@@ -597,7 +597,7 @@ export function TodayPage() {
             disabled={bankPending}
             onClick={() => loggerRef.current?.addReps(10)}
             aria-label="Add 10 reps"
-            className="mt-4 px-10"
+            className="mt-3 px-10"
           >
             +10
           </Button>
@@ -614,7 +614,7 @@ export function TodayPage() {
                   : `Bank ${selectedActivity.name}`
                 : undefined
             }
-            className="mt-4 transition-opacity duration-[var(--duration-fast)]"
+            className="mt-3 transition-opacity duration-[var(--duration-fast)]"
           />
         </div>
 
