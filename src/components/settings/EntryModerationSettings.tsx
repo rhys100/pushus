@@ -83,6 +83,10 @@ export function EntryModerationSettings({ group }: { group: Group }) {
   })
 
   const pending = pendingQuery.data ?? []
+  // While one entry is being reviewed, only its acted button spins and the
+  // rest of the queue is disabled — a shared isPending spun every row's
+  // Approve *and* Reject, hiding which action was actually in flight.
+  const processing = reviewMutation.isPending ? reviewMutation.variables : undefined
 
   return (
     <div className="space-y-4">
@@ -107,15 +111,17 @@ export function EntryModerationSettings({ group }: { group: Group }) {
                 />
                 <Button
                   className="min-h-9 px-3 text-xs"
-                  loading={reviewMutation.isPending}
+                  loading={processing?.entryId === entry.id && processing.approve === true}
+                  disabled={reviewMutation.isPending}
                   onClick={() => reviewMutation.mutate({ entryId: entry.id, approve: true })}
                 >
                   Approve
                 </Button>
                 <Button
-                  variant="ghost"
+                  variant="danger"
                   className="min-h-9 px-3 text-xs"
-                  loading={reviewMutation.isPending}
+                  loading={processing?.entryId === entry.id && processing.approve === false}
+                  disabled={reviewMutation.isPending}
                   onClick={() => reviewMutation.mutate({ entryId: entry.id, approve: false })}
                 >
                   Reject

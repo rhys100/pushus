@@ -26,6 +26,12 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (UX-audit loop — destructive-action safety)
+
+- **"Block" on a mate was a one-tap, permanent footgun.** Blocking severs the connection forever ("they can never reconnect") but was a plain muted-grey text button — identical weight to "Remove mate", no confirm, danger colour only on hover (invisible on touch). Reworked both destructive footer actions into a single mutually-exclusive arm-to-confirm state (`pendingDestructive`) with a 4s auto-disarm; the armed button turns solid `text-danger` with "Tap again to block/remove", a `role="status"` line spells out that blocking is permanent, and both got focus rings. Matches the app's existing archive arm-to-confirm pattern.
+- **Moderation "Reject"/"Decline" looked like neutral actions.** Both were `variant="ghost"` sitting next to a primary Approve, so a consequential action (rejected entries stop counting; declined applicants must re-apply) read as low-stakes → both now `variant="danger"` (outlined red-tinted, distinguished by fill/border not colour alone).
+- **Entry moderation loading was un-scoped:** a shared `reviewMutation.isPending` spun *every* pending row's Approve *and* Reject at once, hiding which action was in flight. Now derives `processing = reviewMutation.variables` so only the acted button spins and the rest of the queue is disabled (GroupAdminSettings already did this per-request).
+
 ### 2026-07-08 (feature: admin banter badges)
 
 - **Banter badges** live (no migration — `custom_badges` / `user_custom_badges` tables + admin-write RLS already existed in 0004). `useCustomBadges` hook (create / delete / award / revoke / read); `CustomBadgeAdmin` card in Group admin lets owners/admins make named+emoji badges and award them to members; awarded badges show in a "Group badges" section on Achievements.

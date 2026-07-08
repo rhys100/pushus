@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { formatDistanceToNowStrict } from 'date-fns'
 import { AppLayout } from '@/components/layout/AppLayout'
 import {
@@ -75,7 +75,17 @@ function MateDetail({ mate, onClose }: { mate: MateListItem; onClose: () => void
   const [duration, setDuration] = useState<1 | 3 | 7>(3)
   // Pop only rewards a tap — the default pill mounts still.
   const [durationInteracted, setDurationInteracted] = useState(false)
-  const [confirmingRemove, setConfirmingRemove] = useState(false)
+  // Remove and Block both arm-to-confirm and are mutually exclusive; a stale
+  // armed button auto-disarms after 4s so it can't fire on a later stray tap.
+  const [pendingDestructive, setPendingDestructive] = useState<'remove' | 'block' | null>(null)
+
+  useEffect(() => {
+    if (!pendingDestructive) {
+      return
+    }
+    const timer = window.setTimeout(() => setPendingDestructive(null), 4000)
+    return () => window.clearTimeout(timer)
+  }, [pendingDestructive])
 
   async function handleNudge(kind: NudgeKind) {
     try {
@@ -104,11 +114,12 @@ function MateDetail({ mate, onClose }: { mate: MateListItem; onClose: () => void
   }
 
   async function handleRemove() {
-    if (!confirmingRemove) {
-      setConfirmingRemove(true)
+    if (pendingDestructive !== 'remove') {
+      setPendingDestructive('remove')
       return
     }
 
+    setPendingDestructive(null)
     try {
       await removeMate.mutateAsync(mate.connection_id)
       toast({ message: 'Mate removed.', variant: 'success' })
@@ -119,6 +130,12 @@ function MateDetail({ mate, onClose }: { mate: MateListItem; onClose: () => void
   }
 
   async function handleBlock() {
+    if (pendingDestructive !== 'block') {
+      setPendingDestructive('block')
+      return
+    }
+
+    setPendingDestructive(null)
     try {
       await blockMate.mutateAsync(mate.user.id)
       toast({ message: 'Blocked. They cannot reconnect.', variant: 'success' })
@@ -194,22 +211,41 @@ function MateDetail({ mate, onClose }: { mate: MateListItem; onClose: () => void
         </Button>
       </div>
 
-      <div className="flex justify-end gap-3 text-xs">
+      <div className="flex items-center justify-end gap-4 text-xs">
         <button
           type="button"
-          className="text-text-muted transition-colors hover:text-danger"
+          aria-pressed={pendingDestructive === 'remove'}
+          className={cn(
+            'min-h-9 rounded-[var(--radius-sm)] px-1 transition-colors',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/50',
+            pendingDestructive === 'remove'
+              ? 'font-semibold text-danger'
+              : 'text-text-muted hover:text-danger',
+          )}
           onClick={() => void handleRemove()}
         >
-          {confirmingRemove ? 'Tap again to remove' : 'Remove mate'}
+          {pendingDestructive === 'remove' ? 'Tap again to remove' : 'Remove mate'}
         </button>
         <button
           type="button"
-          className="text-text-muted transition-colors hover:text-danger"
+          aria-pressed={pendingDestructive === 'block'}
+          className={cn(
+            'min-h-9 rounded-[var(--radius-sm)] px-1 transition-colors',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/50',
+            pendingDestructive === 'block'
+              ? 'font-semibold text-danger'
+              : 'text-text-muted hover:text-danger',
+          )}
           onClick={() => void handleBlock()}
         >
-          Block
+          {pendingDestructive === 'block' ? 'Tap again to block' : 'Block'}
         </button>
       </div>
+      {pendingDestructive === 'block' ? (
+        <p role="status" className="text-right text-[0.6875rem] text-danger">
+          Blocking is permanent — they can never reconnect.
+        </p>
+      ) : null}
     </div>
   )
 }
