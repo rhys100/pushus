@@ -235,12 +235,15 @@ function CreateChallengeForm({ onDone }: { onDone: () => void }) {
       ) : null}
 
       <div className="space-y-1">
-        <span className="text-xs font-medium text-text-muted">Intensity</span>
-        <div className="grid grid-cols-4 gap-2">
+        <span id="intensity-label" className="text-xs font-medium text-text-muted">
+          Intensity
+        </span>
+        <div role="group" aria-labelledby="intensity-label" className="grid grid-cols-4 gap-2">
           {INTENSITY_OPTIONS.map((option) => (
             <button
               key={option.value}
               type="button"
+              aria-pressed={intensity === option.value}
               onClick={() => {
                 if (intensity !== option.value) {
                   tapHaptic()
@@ -251,6 +254,7 @@ function CreateChallengeForm({ onDone }: { onDone: () => void }) {
               className={cn(
                 'min-h-10 rounded-[var(--radius-md)] border px-2 py-1.5 text-sm font-medium',
                 'transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] active:scale-95',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50',
                 intensity === option.value
                   ? cn('border-accent bg-accent-muted text-text-primary', intensityInteracted && 'motion-pop')
                   : 'border-border bg-bg text-text-muted hover:border-accent/30',
