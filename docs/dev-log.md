@@ -26,6 +26,10 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (guest mode layout rework — user-reported)
+
+- **The big guest banner pushed the ring out of the thumb zone and made the page awkward to scroll** (user-reported). Reworked: the account CTAs (Create account / Sign in) moved to a pinned bottom section; the banner became a **slim, dismissible ⚠️ warning bar** (persists dismissed via `dismissGuestWarning`), with the today total folded into the header and the "Guest" chip staying as the persistent reminder. Result (verified live at 375×812): the whole page now **fits with no scroll**, ring centre at **41% viewport** (37% once the warning is dismissed) — back in the natural thumb-swirl zone, matching the real Log screen's spacing. Banking/persistence/milestone toast unchanged.
+
 ### 2026-07-08 (design-audit loop — challenge standings "You" label)
 
 - **Challenge standings flagged your own row with only an accent border** — a colour-only signal (fails "don't rely on colour alone") that's easy to miss while scanning for yourself. Added a "You" subtitle + `active` to the self row's `AvatarChip`, matching the Board leaderboard's existing pattern. Border kept, so it's now colour + text. Reuses existing props; auth-gated so verified via tsc + 431 tests.

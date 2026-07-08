@@ -81,6 +81,25 @@ export function clearGuestLog(): void {
   }
 }
 
+const GUEST_WARNING_DISMISSED_KEY = 'pushus-guest-warning-dismissed'
+
+/** True once the guest has dismissed the top warning bar (stays dismissed). */
+export function isGuestWarningDismissed(): boolean {
+  try {
+    return localStorage.getItem(GUEST_WARNING_DISMISSED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function dismissGuestWarning(): void {
+  try {
+    localStorage.setItem(GUEST_WARNING_DISMISSED_KEY, '1')
+  } catch {
+    // ignore
+  }
+}
+
 const GUEST_IMPORT_DISMISSED_KEY = 'pushus-guest-import-dismissed'
 
 /** True once the user has declined importing their guest reps (don't nag). */

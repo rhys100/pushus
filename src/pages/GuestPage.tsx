@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, ButtonRouterLink, Card, useToast } from '@/components/ui'
+import { Button, ButtonRouterLink, useToast } from '@/components/ui'
 import {
   CircularLogger,
   type CircularLoggerHandle,
@@ -11,9 +11,11 @@ import { successHaptic, tapHaptic } from '@/lib/haptics'
 import { appConfig } from '@/lib/config'
 import {
   addGuestEntry,
+  dismissGuestWarning,
   guestAllTimeTotal,
   guestDayTotal,
   guestEntriesForDay,
+  isGuestWarningDismissed,
   localDateKey,
   markMilestoneShown,
   milestoneToCelebrate,
@@ -38,6 +40,12 @@ export function GuestPage() {
   const loggerRef = useRef<CircularLoggerHandle>(null)
   const [entries, setEntries] = useState<GuestEntry[]>(readGuestLog)
   const [canBank, setCanBank] = useState(false)
+  const [warningHidden, setWarningHidden] = useState(isGuestWarningDismissed)
+
+  function handleDismissWarning() {
+    dismissGuestWarning()
+    setWarningHidden(true)
+  }
 
   const today = localDateKey()
   const todayTotal = useMemo(() => guestDayTotal(entries, today), [entries, today])
@@ -81,50 +89,44 @@ export function GuestPage() {
 
   return (
     <div className="mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col bg-bg px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]">
-      <header className="flex items-center justify-between pb-3">
+      <header className="flex items-center justify-between gap-3 pb-2">
         <p className="text-sm font-bold uppercase tracking-[0.25em] text-text-primary">
           Push<span className="text-accent">·</span>US
         </p>
-        <span className="rounded-[var(--radius-full)] border border-border px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-text-muted">
-          Guest
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-sm text-text-muted">
+            <span className="font-bold text-text-primary">{todayTotal}</span> today ·{' '}
+            {todaySets.length} set{todaySets.length === 1 ? '' : 's'}
+          </span>
+          <span className="rounded-[var(--radius-full)] border border-border px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-text-muted">
+            Guest
+          </span>
+        </div>
       </header>
 
-      {/* Persistent "you're not signed in" reminder */}
-      <Card padding="md" className="space-y-2 border-accent/40 bg-accent-muted">
-        <p className="text-sm font-semibold text-text-primary">You&apos;re just trying it out 👋</p>
-        <p className="text-xs leading-relaxed text-text-muted">
-          Reps you log here are saved on <span className="font-medium text-text-primary">this
-          device only</span> — they could vanish if you clear your browser or switch phones. Make a
-          free account and you can <span className="font-medium text-text-primary">bring these reps
-          with you</span> and push with your mates.
-        </p>
-        <div className="flex gap-2 pt-1">
-          <Button className="min-h-10 flex-1 text-sm" onClick={() => navigate('/login')}>
-            Create free account
-          </Button>
-          <ButtonRouterLink to="/login" variant="secondary" className="min-h-10 flex-1 text-sm">
-            Sign in
-          </ButtonRouterLink>
-        </div>
-      </Card>
-
-      <div className="mt-3 flex items-center justify-between rounded-[var(--radius-md)] border border-border bg-surface px-4 py-2.5">
-        <div>
-          <p className="text-[0.65rem] font-medium uppercase tracking-wide text-text-muted">
-            Today
+      {/* Slim, dismissible warning — the account CTAs live at the bottom so the
+          ring stays in the natural thumb zone (same as the real Log screen). */}
+      {!warningHidden ? (
+        <div className="mb-1 flex items-start gap-2 rounded-[var(--radius-md)] border border-warning/40 bg-warning/10 px-3 py-2">
+          <span aria-hidden="true" className="text-sm leading-tight">
+            ⚠️
+          </span>
+          <p className="flex-1 text-xs leading-snug text-text-muted">
+            Guest mode — reps save on this device only and can be lost. Create an account below to
+            keep them.
           </p>
-          <p className="font-mono text-2xl font-bold tabular-nums text-text-primary">
-            {todayTotal}
-            <span className="ml-1.5 text-sm font-medium text-text-muted">reps</span>
-          </p>
+          <button
+            type="button"
+            aria-label="Dismiss guest warning"
+            onClick={handleDismissWarning}
+            className="-my-1 -mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-lg leading-none text-text-muted transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+          >
+            ×
+          </button>
         </div>
-        <p className="text-xs text-text-muted">
-          {todaySets.length} set{todaySets.length === 1 ? '' : 's'}
-        </p>
-      </div>
+      ) : null}
 
-      <div className="flex flex-1 flex-col items-center justify-center py-3">
+      <div className="flex flex-1 flex-col items-center justify-center py-2">
         <CircularLogger
           ref={loggerRef}
           onCanBankChange={setCanBank}
@@ -167,7 +169,7 @@ export function GuestPage() {
                   <span className="text-xs text-text-muted">{formatTime(entry.ts)}</span>
                   <button
                     type="button"
-                    className="text-xs text-text-muted transition-colors hover:text-danger"
+                    className="text-xs text-text-muted transition-colors hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 rounded-[var(--radius-sm)] px-1"
                     onClick={() => handleDelete(entry.id)}
                   >
                     Delete
@@ -179,9 +181,22 @@ export function GuestPage() {
         </section>
       ) : null}
 
-      <p className="pt-1 text-center text-[0.65rem] text-text-muted">
-        {appConfig.name} — guest mode. Nothing here is shared or synced.
-      </p>
+      {/* Account CTAs pinned to the bottom, out of the ring's thumb zone. */}
+      <div className="mt-2 space-y-2 border-t border-border pt-3">
+        <p className="text-center text-xs text-text-muted">
+          {entries.length > 0
+            ? 'Keep these reps and push with your mates.'
+            : `${appConfig.name} — nothing here is shared or synced.`}
+        </p>
+        <div className="flex gap-2">
+          <Button className="min-h-11 flex-1 text-sm" onClick={() => navigate('/login')}>
+            Create free account
+          </Button>
+          <ButtonRouterLink to="/login" variant="secondary" className="min-h-11 flex-1 text-sm">
+            Sign in
+          </ButtonRouterLink>
+        </div>
+      </div>
     </div>
   )
 }
