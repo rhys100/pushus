@@ -4,6 +4,7 @@ import { format, formatDistanceToNowStrict } from 'date-fns'
 import { AppLayout } from '@/components/layout/AppLayout'
 import {
   AvatarChip,
+  BackLink,
   Badge,
   Button,
   Card,
@@ -98,7 +99,12 @@ export function ChallengeDetailPage() {
 
   if (challengeLoading || !challenge) {
     return (
-      <AppLayout title="Challenge" subtitle={activeGroup?.name} showNav={false}>
+      <AppLayout
+        title="Challenge"
+        subtitle={activeGroup?.name}
+        showNav={false}
+        headerLeading={<BackLink to="/challenges" label="Challenges" />}
+      >
         {challengeLoading ? (
           <div className="space-y-3">
             <Skeleton className="h-28 w-full" />
@@ -150,7 +156,12 @@ export function ChallengeDetailPage() {
   }
 
   return (
-    <AppLayout title={challenge.name} subtitle={activeGroup?.name} showNav={false}>
+    <AppLayout
+      title={challenge.name}
+      subtitle={activeGroup?.name}
+      showNav={false}
+      headerLeading={<BackLink to="/challenges" label="Challenges" />}
+    >
       <div className="space-y-4 pb-8">
         <Card padding="md" className="space-y-2">
           <div className="flex items-center justify-between gap-2">

@@ -12,6 +12,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **No way back from full-screen pages:** Challenges, a challenge's detail, Mates, and Achievements hide the bottom nav but had no back button — so on a home-screen app (no browser bar) you could get stuck with no way back to your group. Each now shows a back link in the header (← Group / ← Challenges), matching Billing
 - **Join failure recovery:** when joining a group by invite link failed, the error screen's "Back" button dropped you on the private-beta gate ("you need an invite to continue") — a mislabeled button and the wrong destination. It now offers "Enter a different code" back to the join screen, matching the invalid-link screen's recovery
 
 ### Performance

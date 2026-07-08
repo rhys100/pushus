@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { Badge, Button, Card, EmptyState, Skeleton, useToast } from '@/components/ui'
+import { BackLink, Badge, Button, Card, EmptyState, Skeleton, useToast } from '@/components/ui'
 import {
   CHALLENGE_FORMAT_OPTIONS,
   CHALLENGE_TYPE_OPTIONS,
@@ -302,7 +302,12 @@ export function ChallengesPage() {
   const ended = competitions.filter((item) => challengeStatus(item) === 'ended')
 
   return (
-    <AppLayout title="Challenges" subtitle={activeGroup?.name} showNav={false}>
+    <AppLayout
+      title="Challenges"
+      subtitle={activeGroup?.name}
+      showNav={false}
+      headerLeading={<BackLink to="/group" label="Group" />}
+    >
       <div className="motion-stagger space-y-6 pb-8">
         {isAdmin && !creating ? (
           <Button fullWidth onClick={() => setCreating(true)}>

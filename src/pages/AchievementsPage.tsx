@@ -1,5 +1,5 @@
 import { AppLayout } from '@/components/layout/AppLayout'
-import { Badge, Button, Card, EmptyState, Skeleton, StatCard, useToast } from '@/components/ui'
+import { BackLink, Badge, Button, Card, EmptyState, Skeleton, StatCard, useToast } from '@/components/ui'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 import {
   useAchievementCatalog,
@@ -48,7 +48,12 @@ export function AchievementsPage() {
   }
 
   return (
-    <AppLayout title="Achievements" subtitle={activeGroup?.name} showNav={false}>
+    <AppLayout
+      title="Achievements"
+      subtitle={activeGroup?.name}
+      showNav={false}
+      headerLeading={<BackLink to="/group" label="Group" />}
+    >
       <div className="space-y-6 pb-8">
         <div className="grid grid-cols-2 gap-3">
           {loading ? (

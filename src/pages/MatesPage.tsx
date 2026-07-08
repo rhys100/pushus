@@ -3,6 +3,7 @@ import { formatDistanceToNowStrict } from 'date-fns'
 import { AppLayout } from '@/components/layout/AppLayout'
 import {
   AvatarChip,
+  BackLink,
   Badge,
   Button,
   Card,
@@ -426,7 +427,12 @@ export function MatesPage() {
   }
 
   return (
-    <AppLayout title="Mates" subtitle="Your crew across groups" showNav={false}>
+    <AppLayout
+      title="Mates"
+      subtitle="Your crew across groups"
+      showNav={false}
+      headerLeading={<BackLink to="/group" label="Group" />}
+    >
       <div className="motion-stagger space-y-6 pb-8">
         <Card padding="md" className="space-y-2">
           <p className="text-sm font-medium text-text-primary">Your mate link</p>
