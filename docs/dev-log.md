@@ -26,6 +26,10 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (feature: denser feed layout)
+
+- **Compact / Comfortable feed toggle** on the Group feed (persisted to `localStorage`). Dense mode tightens row padding, shrinks the avatar, and folds the timestamp under the rep count so more entries fit per screen; comfortable is the default. Reactions unchanged.
+
 ### 2026-07-08 (feature: late-joiner fairness — since-you-joined)
 
 - **"Since you joined" Board view.** A recent joiner (joined after the current month started) gets a toggle that re-scores the whole group over the window they've actually been present, via a period-override on `useLeaderboard` + `useMyJoinDate`. On week/month views they also get a note: "you joined mid-week, official weekly scoring counts from `<next Monday>`" (`officialScoringStartsAt`).
