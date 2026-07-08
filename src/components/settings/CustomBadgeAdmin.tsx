@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button, Card, Skeleton, useToast } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { getErrorMessage } from '@/lib/errors'
@@ -33,6 +33,14 @@ export function CustomBadgeAdmin() {
   const [emoji, setEmoji] = useState(BADGE_EMOJIS[0])
   const [awardBadgeId, setAwardBadgeId] = useState('')
   const [awardMemberId, setAwardMemberId] = useState('')
+  // Deleting a badge is permanent — arm-to-confirm first, auto-disarm after 4s.
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!confirmDeleteId) return
+    const timer = window.setTimeout(() => setConfirmDeleteId(null), 4000)
+    return () => window.clearTimeout(timer)
+  }, [confirmDeleteId])
 
   async function handleCreate() {
     if (!name.trim()) return
@@ -53,6 +61,21 @@ export function CustomBadgeAdmin() {
       toast({ message: 'Badge awarded 🎉', variant: 'success' })
     } catch (error) {
       toast({ message: getErrorMessage(error, 'Could not award badge.'), variant: 'danger' })
+    }
+  }
+
+  async function handleDelete(badgeId: string) {
+    if (confirmDeleteId !== badgeId) {
+      setConfirmDeleteId(badgeId)
+      return
+    }
+
+    setConfirmDeleteId(null)
+    try {
+      await deleteBadge.mutateAsync(badgeId)
+      toast({ message: 'Badge deleted.', variant: 'success' })
+    } catch (error) {
+      toast({ message: getErrorMessage(error, 'Could not delete badge.'), variant: 'danger' })
     }
   }
 
@@ -116,10 +139,20 @@ export function CustomBadgeAdmin() {
                 <span className="flex-1 truncate text-text-primary">{badge.name}</span>
                 <button
                   type="button"
-                  className="text-xs text-text-muted transition-colors hover:text-danger"
-                  onClick={() => void deleteBadge.mutateAsync(badge.id)}
+                  aria-label={
+                    confirmDeleteId === badge.id
+                      ? `Confirm delete ${badge.name}`
+                      : `Delete ${badge.name}`
+                  }
+                  className={cn(
+                    'rounded-[var(--radius-sm)] px-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                    confirmDeleteId === badge.id
+                      ? 'font-semibold text-danger'
+                      : 'text-text-muted hover:text-danger',
+                  )}
+                  onClick={() => void handleDelete(badge.id)}
                 >
-                  Delete
+                  {confirmDeleteId === badge.id ? 'Confirm?' : 'Delete'}
                 </button>
               </li>
             ))}
