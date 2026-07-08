@@ -6,9 +6,10 @@ import {
   REACTION_EMOJIS,
   canReactToFeedItem,
   useActivityFeed,
+  useEntryReactions,
   useToggleReaction,
-  useUserEntryReactions,
   type ActivityFeedItem,
+  type EntryReaction,
   type ReactionEmoji,
 } from '@/hooks/useActivityFeed'
 import { useAuth } from '@/providers/AuthProvider'
@@ -35,17 +36,19 @@ function feedItemSummary(item: ActivityFeedItem): string {
   return `banked ${item.count} push-up${item.count === 1 ? '' : 's'}`
 }
 
+/** Per-emoji tally for one entry: how many reacted, and whether I'm one. */
+export type ReactionSummary = { emoji: ReactionEmoji; count: number; mine: boolean }
+
+/** Shared stable empty array so entries with no reactions keep memo intact. */
+const EMPTY_REACTIONS: ReactionSummary[] = []
+
 type ActivityFeedRowProps = {
   item: ActivityFeedItem
   currentUserId: string | undefined
-  userReactions: Set<string>
+  reactions: ReactionSummary[]
   onToggleReaction: (entryId: string, emoji: ReactionEmoji) => void
   reactionPending: boolean
   dense?: boolean
-}
-
-function reactionKey(entryId: string, emoji: string): string {
-  return `${entryId}:${emoji}`
 }
 
 const FEED_DENSITY_KEY = 'pushus-feed-density'
@@ -66,32 +69,35 @@ function writeFeedDense(dense: boolean): void {
   }
 }
 
-const ActivityFeedRow = memo(function ActivityFeedRow({
+export const ActivityFeedRow = memo(function ActivityFeedRow({
   item,
   currentUserId,
-  userReactions,
+  reactions,
   onToggleReaction,
   reactionPending,
   dense = false,
 }: ActivityFeedRowProps) {
-  const showReactionButtons = canReactToFeedItem(item, currentUserId)
-  const showReactionCount = item.event_type === 'entry' && item.reaction_count > 0
+  const canReact = canReactToFeedItem(item, currentUserId)
+  const hasReactions = reactions.length > 0
   const summary = `${item.display_name} ${feedItemSummary(item)}`
   // Parse/format the timestamp once per item, not on every panel re-render.
   const relativeTime = useMemo(() => formatRelativeTime(item.created_at), [item.created_at])
 
-  // Reactions collapse to a single pill by default so a 50-item feed isn't a
-  // wall of 250 emoji buttons; tapping reveals the palette inline.
+  // Existing reactions always show as tappable count chips (join in with a
+  // tap); the full emoji palette (to add a *new* one) is tucked behind "+" so
+  // a 50-item feed isn't a wall of buttons. Picking closes the palette.
   const [pickerOpen, setPickerOpen] = useState(false)
-  const activeEmojis = useMemo(
-    () =>
-      showReactionButtons
-        ? REACTION_EMOJIS.filter((emoji) => userReactions.has(reactionKey(item.event_id, emoji)))
-        : [],
-    [showReactionButtons, userReactions, item.event_id],
+  const mineSet = useMemo(
+    () => new Set(reactions.filter((reaction) => reaction.mine).map((reaction) => reaction.emoji)),
+    [reactions],
   )
 
-  const reactBtn = dense ? 'h-6 min-w-6 text-xs' : 'h-8 min-w-8 text-sm'
+  const react = (emoji: ReactionEmoji) => {
+    if (!canReact || reactionPending) return
+    tapHaptic()
+    onToggleReaction(item.event_id, emoji)
+    setPickerOpen(false)
+  }
 
   return (
     <li
@@ -144,93 +150,106 @@ const ActivityFeedRow = memo(function ActivityFeedRow({
         </div>
       </div>
 
-      {showReactionButtons || showReactionCount ? (
+      {canReact || hasReactions ? (
         <div
           className={cn(
-            'flex flex-wrap items-center gap-1',
-            dense ? 'mt-1 pl-[2.375rem]' : 'mt-2 pl-[3.25rem]',
+            'flex flex-wrap items-center gap-1.5',
+            dense ? 'mt-1.5 pl-[2.375rem]' : 'mt-2 pl-[3.25rem]',
           )}
         >
-          {showReactionButtons ? (
-            pickerOpen ? (
-              <>
-                {REACTION_EMOJIS.map((emoji) => {
-                  const active = userReactions.has(reactionKey(item.event_id, emoji))
-
-                  return (
-                    <button
-                      key={emoji}
-                      type="button"
-                      disabled={reactionPending}
-                      aria-pressed={active}
-                      aria-label={`React with ${emoji}`}
-                      onClick={() => {
-                        tapHaptic()
-                        onToggleReaction(item.event_id, emoji)
-                      }}
-                      className={cn(
-                        'inline-flex items-center justify-center rounded-[var(--radius-full)] border',
-                        'transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out)]',
-                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 active:scale-90',
-                        reactBtn,
-                        active
-                          ? 'motion-pop border-accent/40 bg-accent-muted'
-                          : 'border-border bg-bg hover:border-accent/30',
-                        reactionPending && 'opacity-60',
-                      )}
-                    >
-                      {emoji}
-                    </button>
-                  )
-                })}
+          {pickerOpen && canReact ? (
+            <>
+              {REACTION_EMOJIS.map((emoji) => (
                 <button
+                  key={emoji}
                   type="button"
-                  aria-label="Close reactions"
-                  onClick={() => setPickerOpen(false)}
+                  disabled={reactionPending}
+                  aria-pressed={mineSet.has(emoji)}
+                  aria-label={`React with ${emoji}`}
+                  onClick={() => react(emoji)}
                   className={cn(
-                    'inline-flex items-center justify-center rounded-[var(--radius-full)] text-text-muted',
-                    'transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
-                    dense ? 'h-6 min-w-6 text-sm' : 'h-8 min-w-8',
+                    'inline-flex items-center justify-center rounded-[var(--radius-full)] border',
+                    'transition-[background-color,border-color,transform] duration-[var(--duration-fast)]',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 active:scale-90',
+                    dense ? 'h-10 w-10 text-lg' : 'h-11 w-11 text-xl',
+                    mineSet.has(emoji)
+                      ? 'motion-pop border-accent/50 bg-accent-muted'
+                      : 'border-border bg-bg hover:border-accent/30',
+                    reactionPending && 'opacity-60',
                   )}
                 >
-                  ×
+                  {emoji}
                 </button>
-              </>
-            ) : (
+              ))}
               <button
                 type="button"
-                aria-label={activeEmojis.length > 0 ? 'Edit your reactions' : 'Add a reaction'}
-                onClick={() => setPickerOpen(true)}
+                aria-label="Close reaction picker"
+                onClick={() => setPickerOpen(false)}
                 className={cn(
-                  'inline-flex items-center gap-1 rounded-[var(--radius-full)] border px-2.5',
-                  'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 active:scale-95',
-                  dense ? 'h-6 text-xs' : 'h-8 text-sm',
-                  activeEmojis.length > 0
-                    ? 'border-accent/40 bg-accent-muted'
-                    : 'border-border bg-bg text-text-muted hover:border-accent/30 hover:text-text-primary',
+                  'inline-flex items-center justify-center rounded-[var(--radius-full)] text-text-muted',
+                  'transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                  dense ? 'h-10 w-10 text-base' : 'h-11 w-11 text-lg',
                 )}
               >
-                {activeEmojis.length > 0 ? (
-                  <span className="flex items-center gap-0.5" aria-hidden="true">
-                    {activeEmojis.map((emoji) => (
-                      <span key={emoji}>{emoji}</span>
-                    ))}
-                  </span>
-                ) : (
-                  <>
-                    <span aria-hidden="true">🙂</span>
-                    <span className="font-medium">React</span>
-                  </>
-                )}
+                ×
               </button>
-            )
-          ) : null}
+            </>
+          ) : (
+            <>
+              {/* Existing reactions — tap a chip to join in or take yours back */}
+              {reactions.map(({ emoji, count, mine }) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  disabled={!canReact || reactionPending}
+                  aria-pressed={mine}
+                  aria-label={`${emoji} ${count} reaction${count === 1 ? '' : 's'}${mine ? ', including you' : ''}${canReact ? ' — tap to toggle yours' : ''}`}
+                  onClick={() => react(emoji)}
+                  className={cn(
+                    'inline-flex items-center gap-1 rounded-[var(--radius-full)] border font-medium tabular-nums',
+                    'transition-[background-color,border-color,transform] duration-[var(--duration-fast)]',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                    canReact && 'active:scale-90',
+                    dense ? 'h-8 px-2 text-xs' : 'h-9 px-2.5 text-sm',
+                    mine
+                      ? 'border-accent/50 bg-accent-muted text-accent'
+                      : 'border-border bg-bg text-text-primary',
+                    !canReact && 'cursor-default',
+                    reactionPending && 'opacity-60',
+                  )}
+                >
+                  <span aria-hidden="true">{emoji}</span>
+                  <span>{count}</span>
+                </button>
+              ))}
 
-          {showReactionCount ? (
-            <span className={cn('text-text-muted', dense ? 'text-[0.625rem]' : 'text-[0.6875rem]')}>
-              {item.reaction_count} reaction{item.reaction_count === 1 ? '' : 's'}
-            </span>
-          ) : null}
+              {/* Add a new reaction — opens the big emoji palette */}
+              {canReact ? (
+                <button
+                  type="button"
+                  aria-label="Add a reaction"
+                  onClick={() => setPickerOpen(true)}
+                  className={cn(
+                    'inline-flex items-center gap-1 rounded-[var(--radius-full)] border border-border bg-bg text-text-muted',
+                    'transition-colors hover:border-accent/30 hover:text-text-primary',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 active:scale-95',
+                    dense ? 'h-8 px-2.5' : 'h-9 px-3',
+                  )}
+                >
+                  {hasReactions ? (
+                    <span className="text-lg leading-none" aria-hidden="true">
+                      +
+                    </span>
+                  ) : (
+                    <>
+                      <span aria-hidden="true">🙂</span>
+                      <span className="text-sm font-medium">React</span>
+                    </>
+                  )}
+                </button>
+              ) : null}
+            </>
+          )}
         </div>
       ) : null}
     </li>
@@ -255,15 +274,38 @@ export function GroupFeedPanel() {
   const { user } = useAuth()
   const { activeGroup } = useActiveGroup()
   const { data: feed = [], isLoading, isError, isFetching, refetch } = useActivityFeed(activeGroup)
-  const { data: userReactionRows = [] } = useUserEntryReactions(activeGroup, feed, user?.id)
+  const { data: reactionRows = [] } = useEntryReactions(activeGroup, feed, user?.id)
   const toggleReaction = useToggleReaction(activeGroup, user?.id)
 
-  // Memoized so a background refetch or isFetching flip doesn't rebuild the
-  // Set (and, with React.memo rows, doesn't re-render every feed row).
-  const userReactions = useMemo(
-    () => new Set(userReactionRows.map((row) => reactionKey(row.target_id, row.emoji))),
-    [userReactionRows],
-  )
+  // Aggregate all group reactions into per-entry, per-emoji tallies once (not
+  // per row, per render). Memoised on the raw rows so a background refetch that
+  // returns equal data keeps stable array refs → React.memo rows don't churn.
+  const reactionsByEntry = useMemo(() => {
+    const rowsByEntry = new Map<string, EntryReaction[]>()
+    for (const row of reactionRows) {
+      const list = rowsByEntry.get(row.target_id)
+      if (list) list.push(row)
+      else rowsByEntry.set(row.target_id, [row])
+    }
+
+    const summaries = new Map<string, ReactionSummary[]>()
+    for (const [entryId, rows] of rowsByEntry) {
+      const summary: ReactionSummary[] = []
+      for (const emoji of REACTION_EMOJIS) {
+        let count = 0
+        let mine = false
+        for (const row of rows) {
+          if (row.emoji === emoji) {
+            count += 1
+            if (row.user_id === user?.id) mine = true
+          }
+        }
+        if (count > 0) summary.push({ emoji, count, mine })
+      }
+      summaries.set(entryId, summary)
+    }
+    return summaries
+  }, [reactionRows, user?.id])
   const showInitialSkeleton = isLoading && feed.length === 0
   const [dense, setDense] = useState(readFeedDense)
 
@@ -356,7 +398,7 @@ export function GroupFeedPanel() {
                 key={`${item.event_type}-${item.event_id}`}
                 item={item}
                 currentUserId={user?.id}
-                userReactions={userReactions}
+                reactions={reactionsByEntry.get(item.event_id) ?? EMPTY_REACTIONS}
                 onToggleReaction={handleToggleReaction}
                 reactionPending={reactionPending}
                 dense={dense}

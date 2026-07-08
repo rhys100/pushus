@@ -73,33 +73,34 @@ async function fetchActivityFeed(groupId: string): Promise<ActivityFeedItem[]> {
   return (data ?? []).map((row: Record<string, unknown>) => mapFeedRow(row))
 }
 
-type UserReaction = {
+// One reaction row (any group member's), used to build per-emoji counts and
+// to know which the current user is in. RLS scopes this to the viewer's group.
+export type EntryReaction = {
   target_id: string
   emoji: string
+  user_id: string
 }
 
-async function fetchUserReactions(
+async function fetchEntryReactions(
   groupId: string,
   entryIds: string[],
-  userId: string,
-): Promise<UserReaction[]> {
+): Promise<EntryReaction[]> {
   if (entryIds.length === 0) {
     return []
   }
 
   const { data, error } = await supabase
     .from('reactions')
-    .select('target_id, emoji')
+    .select('target_id, emoji, user_id')
     .eq('group_id', groupId)
     .eq('target_type', 'entry')
-    .eq('user_id', userId)
     .in('target_id', entryIds)
 
   if (error) {
     throw error
   }
 
-  return (data ?? []) as UserReaction[]
+  return (data ?? []) as EntryReaction[]
 }
 
 export function useActivityFeed(group: Group | null | undefined) {
@@ -111,7 +112,7 @@ export function useActivityFeed(group: Group | null | undefined) {
   })
 }
 
-export function useUserEntryReactions(
+export function useEntryReactions(
   group: Group | null | undefined,
   feed: ActivityFeedItem[],
   userId: string | undefined,
@@ -122,7 +123,7 @@ export function useUserEntryReactions(
 
   return useQuery({
     queryKey: activityFeedKeys.userReactions(group?.id ?? '', entryIds),
-    queryFn: () => fetchUserReactions(group!.id, entryIds, userId!),
+    queryFn: () => fetchEntryReactions(group!.id, entryIds),
     enabled: Boolean(group?.id && userId && entryIds.length > 0),
     staleTime: 30_000,
   })
@@ -190,21 +191,24 @@ export function useToggleReaction(group: Group | null | undefined, userId: strin
     onMutate: async ({ group: activeGroup, entryId, emoji }) => {
       const prefix = activityFeedKeys.reactionsPrefix(activeGroup.id)
       await queryClient.cancelQueries({ queryKey: prefix })
-      const snapshots = queryClient.getQueriesData<UserReaction[]>({ queryKey: prefix })
+      const snapshots = queryClient.getQueriesData<EntryReaction[]>({ queryKey: prefix })
 
-      queryClient.setQueriesData<UserReaction[]>({ queryKey: prefix }, (rows) => {
+      queryClient.setQueriesData<EntryReaction[]>({ queryKey: prefix }, (rows) => {
         if (!rows) return rows
-        const has = rows.some((row) => row.target_id === entryId && row.emoji === emoji)
+        // Only my own row toggles — others' reactions on the same emoji stay.
+        const mine = (row: EntryReaction) =>
+          row.target_id === entryId && row.emoji === emoji && row.user_id === userId
+        const has = rows.some(mine)
         return has
-          ? rows.filter((row) => !(row.target_id === entryId && row.emoji === emoji))
-          : [...rows, { target_id: entryId, emoji }]
+          ? rows.filter((row) => !mine(row))
+          : [...rows, { target_id: entryId, emoji, user_id: userId! }]
       })
 
       return { snapshots }
     },
     onError: (_error, _variables, context) => {
       context?.snapshots?.forEach(([key, data]) =>
-        queryClient.setQueryData<UserReaction[]>(key, data),
+        queryClient.setQueryData<EntryReaction[]>(key, data),
       )
     },
     onSettled: () => {

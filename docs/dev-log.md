@@ -26,6 +26,15 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (feed reactions redesign — Discord/FB style, user-reported)
+
+- **Reactions were too small and the picker stayed open** (user-reported: "reacts are so small … when u react the whole thing stays open … not like fb/discord where it just shows emojis and u can add +1 and join in"). Rebuilt the feed reaction UX:
+  - **Existing reactions now render as per-emoji count chips** (`💪 3`, `🔥 1`), your own highlighted in accent, and **tapping a chip joins in / takes yours back** (+1 / −1) — the FB/Discord pattern. The full emoji palette is behind a **`+`** and **closes as soon as you pick** (no more staying open); entries with none show a `🙂 React` button.
+  - **Bigger touch targets:** palette emoji buttons 44×44px (were 32/24px), count chips ~54×36px.
+- **Data:** the feed only sent a total `reaction_count` + your own reactions — not enough for per-emoji counts. Added `useEntryReactions` (renamed from `useUserEntryReactions`) which now fetches **all** group reactions for the visible entries (`fetchEntryReactions`, RLS already allows group members to read them via `reactions_select_active_members`), and `GroupFeedPanel` aggregates them into per-entry `{ emoji, count, mine }` summaries. Optimistic toggle updated to key on `user_id` so only your row flips (others' counts stay). No migration.
+- **Perf preserved:** aggregation is `useMemo`'d on the raw rows (+ `user?.id`); rows stay `React.memo`'d with a shared `EMPTY_REACTIONS` const for entries with none, so background refetches with equal data still re-render zero rows.
+- **Verified live** on `/dev/preview` (added a `FeedReactionDemo` + exported `ActivityFeedRow`): chips = 54×36 / palette = 44×44 measured, and tapping `💪 3` → `💪 4` + highlighted (join-in works). tsc + lint clean, 436 tests pass, all six routes boot clean.
+
 ### 2026-07-08 (design-audit loop — sign-in-failed screen consistency + a11y)
 
 - **The magic-link callback error screen was the app's weakest recovery point.** On `AuthCallbackPage`, a failed sign-in showed "Sign-in failed" + the error, then a tiny raw `<a href="/login">` text link — a full-page reload, a ~16px tap target, and inconsistent with every other screen (which uses buttons). It also had no `role="alert"`, so screen readers never announced the failure. Reworked to match the app's error pattern (⚠️ + heading + muted detail) with a full-width `ButtonRouterLink` "Back to login" (48px target, client-side nav) and wrapped it in `role="alert"`. Verified live at `/auth/callback` (the error state renders when there are no valid auth params): `role="alert"` present, button 48px, href `/login`. tsc + lint clean.

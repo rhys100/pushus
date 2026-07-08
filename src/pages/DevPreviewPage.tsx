@@ -9,8 +9,10 @@ import { NoseTapMode } from '@/components/logger/NoseTapMode'
 import { DayProgressCard } from '@/components/today/DayProgressCard'
 import { ProgressChart } from '@/components/progress/ProgressChart'
 import { RepCalendar } from '@/components/feed/RepCalendar'
+import { ActivityFeedRow, type ReactionSummary } from '@/components/feed/GroupFeedPanel'
 import { SetEffortSheet } from '@/components/logger/SetEffortSheet'
 import { useFlipList } from '@/hooks/useFlipList'
+import { REACTION_EMOJIS, type ActivityFeedItem, type ReactionEmoji } from '@/hooks/useActivityFeed'
 import type { DayRepSummary } from '@/hooks/useRepHistory'
 import { Button, GoalProgressBar, SegmentedControl, Skeleton, StatCard } from '@/components/ui'
 import type { TodayPrescription } from '@/lib/training/planEngine'
@@ -157,6 +159,8 @@ export function DevPreviewPage() {
 
         <FlipListDemo />
 
+        <FeedReactionDemo />
+
         <SheetDemo />
 
         <CalendarDemo />
@@ -192,6 +196,72 @@ export function DevPreviewPage() {
 }
 
 /** Slide-up sheet demo — same component the post-bank effort check uses. */
+const DEMO_FEED_ITEMS: ActivityFeedItem[] = [
+  {
+    event_type: 'entry', event_id: 'e1', user_id: 'jo', display_name: 'Jo',
+    avatar_emoji: '🔥', avatar_color: '', count: 5, logged_for: '2026-07-08',
+    logged_at: '2026-07-08T04:00:00Z', created_at: '2026-07-08T04:00:00Z', reaction_count: 4,
+  },
+  {
+    event_type: 'entry', event_id: 'e2', user_id: 'jo', display_name: 'Jo',
+    avatar_emoji: '🔥', avatar_color: '', count: 12, logged_for: '2026-07-08',
+    logged_at: '2026-07-08T02:00:00Z', created_at: '2026-07-08T02:00:00Z', reaction_count: 0,
+  },
+]
+
+function sortByEmojiOrder(list: ReactionSummary[]): ReactionSummary[] {
+  return REACTION_EMOJIS.map((emoji) => list.find((r) => r.emoji === emoji)).filter(
+    (r): r is ReactionSummary => Boolean(r),
+  )
+}
+
+/** Feed reaction UI: count chips you tap to join + the "+" emoji palette. */
+function FeedReactionDemo() {
+  const [byEntry, setByEntry] = useState<Record<string, ReactionSummary[]>>({
+    e1: [
+      { emoji: '💪', count: 3, mine: false },
+      { emoji: '🔥', count: 1, mine: true },
+    ],
+    e2: [],
+  })
+
+  const toggle = (entryId: string, emoji: ReactionEmoji) => {
+    setByEntry((prev) => {
+      const list = prev[entryId] ?? []
+      const existing = list.find((r) => r.emoji === emoji)
+      let next: ReactionSummary[]
+      if (existing) {
+        const count = existing.count + (existing.mine ? -1 : 1)
+        next =
+          count <= 0
+            ? list.filter((r) => r.emoji !== emoji)
+            : list.map((r) => (r.emoji === emoji ? { emoji, count, mine: !existing.mine } : r))
+      } else {
+        next = [...list, { emoji, count: 1, mine: true }]
+      }
+      return { ...prev, [entryId]: sortByEmojiOrder(next) }
+    })
+  }
+
+  return (
+    <section aria-label="Feed reaction demo" className="space-y-2">
+      <p className="text-xs font-medium text-text-muted">Feed reactions (tap a chip to join, + to add)</p>
+      <ul className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface">
+        {DEMO_FEED_ITEMS.map((item) => (
+          <ActivityFeedRow
+            key={item.event_id}
+            item={item}
+            currentUserId="me"
+            reactions={byEntry[item.event_id] ?? []}
+            onToggleReaction={toggle}
+            reactionPending={false}
+          />
+        ))}
+      </ul>
+    </section>
+  )
+}
+
 function SheetDemo() {
   const [open, setOpen] = useState(false)
 
