@@ -55,6 +55,7 @@ How we keep public docs clean while the project moves fast.
 | `package-lock.json` | root `version` |
 | `CHANGELOG.md` | latest `## [x.y.z]` heading |
 | `README.md` | `**v{x.y.z}**` in Current status |
+| `src/lib/whatsNew.ts` | `version` set on this release's new items (≤ 3 may stay unversioned) |
 | Git tag | `v{x.y.z}` |
 | Built `version.json` | `version` + `buildId` (from Vite build) |
 
@@ -70,21 +71,26 @@ npm run version:bump -- patch   # or minor / major
 
 After `npm install`, Husky runs `npm run precommit:check` before each commit:
 
-1. **`version:check`** — package, lockfile, CHANGELOG latest heading, and README status row must match.
+1. **`version:check`** — package, lockfile, CHANGELOG latest heading, and README status row must match, **and** no more than `MAX_UNVERSIONED_NEWS` (3) `src/lib/whatsNew.ts` items may lack a `version`.
 2. **`check-docs-staged`** — if you stage user-visible code (`src/pages`, `src/components`, `src/hooks`, `supabase/migrations`, `supabase/functions`), you must also stage at least one doc file (`CHANGELOG.md`, `docs/dev-log.md`, `README.md`, etc.) in the same commit.
 
 This does **not** bump semver on every commit — only enforces alignment and doc pairing. Use `version:bump` when cutting a release.
 
-`version:bump` runs `npm version`, resets CHANGELOG Unreleased, and inserts a stub release section. You still fill in notes and update README / roadmap / dev-log before commit.
+`version:bump` runs `npm version`, then **moves** the current CHANGELOG `## Unreleased` notes into a new `## [x.y.z]` release section (it no longer discards them). You still update README / whatsNew versions / roadmap / dev-log before commit.
+
+### Don't let versions stall (the "still under 1.2" guard)
+
+A **What's New** item (`src/lib/whatsNew.ts`) is only added when a **headline** feature ships. Each such item carries a `version` string once released. The `version:check` guard fails once **more than 3** items sit unversioned — the signal that you've shipped a batch of headline features but never cut a release. When it trips: run `npm run version:bump -- minor`, then set `version: 'x.y.z'` on the new release's items. This is the mechanism that stops many launches from piling up under one stale version.
 
 ### Release checklist
 
-1. `npm run version:bump -- patch` (or minor/major)
-2. Edit CHANGELOG release section
+1. `npm run version:bump -- patch` (or minor/major) — moves Unreleased notes into the new section
+2. Skim the new CHANGELOG release section
 3. README — new `**vX.Y.Z**` status row (latest)
-4. roadmap / product-decisions / dev-log as needed
-5. `npm run version:check && npm test`
-6. Commit, push, tag `vX.Y.Z`, GitHub Release
+4. `src/lib/whatsNew.ts` — set `version: 'X.Y.Z'` on this release's new items
+5. roadmap / product-decisions / dev-log as needed
+6. `npm run version:check && npm test`
+7. Commit, push, tag `vX.Y.Z`, GitHub Release
 
 ### Semver
 

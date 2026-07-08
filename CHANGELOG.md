@@ -10,6 +10,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+_(Nothing yet.)_
+
+---
+
+## [1.3.0] - 2026-07-08
+
 ### Added
 
 - **App-wide motion & haptics:** a shared motion vocabulary (`src/styles/motion.css` + `--ease-spring` token) now runs through the whole app — progress charts draw themselves in ("yarn chasing the dot": a leader dot races along the data path with the line trailing elastically, dots popping as it passes, ping on landing), leaderboard rows glide to new ranks (FLIP), the rep calendar cascades in like a page turn, sheets/popups slide and spring in and out, pages and lists rise with staggers, stat numbers count up, progress bars shimmer while filling and flash green on goal, crossing the daily goal pulses the Today card with a success ring + haptic, and buttons/tabs/segments/chips/reactions give light haptic ticks. The Achievements streak flame flickers only while today is unbanked (with a milestone pulse at 7/14/21/30/50/75/100+ days), and the social surfaces speak the same language — nudges, mate accepts, and challenge creates kick back a success haptic, 1v1 battle scores and you-vs-mate stats count up, challenge standings glide as ranks change, and the mate-link handshake pops. All entrances respect `prefers-reduced-motion`

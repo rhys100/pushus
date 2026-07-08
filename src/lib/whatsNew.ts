@@ -26,6 +26,7 @@ export const NEWS_ITEMS: NewsItem[] = [
   {
     id: '2026-07-07-mates',
     date: '2026-07-07',
+    version: '1.3.0',
     emoji: '🤝',
     title: 'Mates, nudges, and 1v1 battles',
     body: 'Add mates from your group or share your mate link. Compare stats, nudge them (💪 push, 👏 cheer, 😤 stir), and go head to head in 1, 3, or 7-day battles. Find it on the Group tab.',
@@ -33,6 +34,7 @@ export const NEWS_ITEMS: NewsItem[] = [
   {
     id: '2026-07-07-challenges',
     date: '2026-07-07',
+    version: '1.3.0',
     emoji: '🏆',
     title: 'Group challenges',
     body: 'Admins can now run one-day, weekend, week-long, or team-vs-team challenges. Join from the Challenges page — late joiners score from the day they join, so no sneaky backfilled wins.',
@@ -40,6 +42,7 @@ export const NEWS_ITEMS: NewsItem[] = [
   {
     id: '2026-07-07-xp-badges-streaks',
     date: '2026-07-07',
+    version: '1.3.0',
     emoji: '🏅',
     title: 'XP, badges, and streaks',
     body: 'Every push-up now earns 1 XP, badges unlock automatically (your history already counts), and your streak shows on the Badges page — with one freeze a week to protect a missed day.',
@@ -47,6 +50,7 @@ export const NEWS_ITEMS: NewsItem[] = [
   {
     id: '2026-07-07-light-mode',
     date: '2026-07-07',
+    version: '1.3.0',
     emoji: '🌗',
     title: 'Light mode',
     body: 'PushUS now follows your phone theme, or pick Light/Dark in Settings → Appearance.',
@@ -54,6 +58,7 @@ export const NEWS_ITEMS: NewsItem[] = [
   {
     id: '2026-07-07-reminder-fix',
     date: '2026-07-07',
+    version: '1.3.0',
     emoji: 'bolt',
     title: 'Reminders that actually ding',
     body: 'Hourly reminders were silently updating the old notification instead of making noise. Fixed — plus new frequencies from every 30 minutes to once a day in Settings.',

@@ -27,7 +27,8 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 
 | Label | Meaning |
 |-------|---------|
-| **v1.2.0** | Trusted volume calibration, training plan engine v2, max check-in, effort/soreness feedback, Board day progress, SEO/social previews (latest) |
+| **v1.3.0** | Mates + nudges + 1v1 battles, group challenges, XP/badges/streaks, light mode, guest mode, custom activities, reminder reliability, app-wide motion & haptics (latest) |
+| **v1.2.0** | Trusted volume calibration, training plan engine v2, max check-in, effort/soreness feedback, Board day progress, SEO/social previews |
 | **v1.1.0** | Training plan v2, Board day/week/month views, Log ring UX polish, Settings tab |
 | **v1.0.1** | Per-rep haptic feedback on circular logger |
 | **v1.0.0** | First public release (Community beta) |

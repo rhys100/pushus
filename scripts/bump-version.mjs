@@ -18,27 +18,37 @@ const date = new Date().toISOString().slice(0, 10)
 const changelogPath = join(root, 'CHANGELOG.md')
 let changelog = readFileSync(changelogPath, 'utf8')
 
-const releaseBlock = `## [${version}] - ${date}\n\n### Added\n\n- (describe change)\n\n`
+// Capture the current Unreleased body and MOVE it into the new release section,
+// rather than discarding it. The old behaviour reset Unreleased to a stub and
+// dropped every accumulated note, which made cutting a release lossy (and so
+// releases got skipped — the "50 commits still under 1.2" problem).
+const unreleasedMatch = changelog.match(/## Unreleased\n\n([\s\S]*?)\n---/)
 
-changelog = changelog.replace(
-  /## Unreleased\n\n[\s\S]*?(?=\n---)/,
-  '## Unreleased\n\n_(Nothing yet.)_',
-)
-
-const unreleasedSectionEnd = /(## Unreleased[\s\S]*?---\n\n)/
-
-if (!unreleasedSectionEnd.test(changelog)) {
-  console.error('CHANGELOG.md must have ## Unreleased followed by --- before release headings')
+if (!unreleasedMatch) {
+  console.error('CHANGELOG.md must have "## Unreleased" followed by content and a "---" separator')
   process.exit(1)
 }
 
-changelog = changelog.replace(unreleasedSectionEnd, `$1${releaseBlock}---\n\n`)
+const unreleasedBody = unreleasedMatch[1].trim()
+const isEmpty = unreleasedBody === '' || unreleasedBody === '_(Nothing yet.)_'
+const releaseBody = isEmpty ? '### Added\n\n- (describe change)' : unreleasedBody
+
+// Function replacer so a `$` in the notes isn't treated as a replacement token.
+changelog = changelog.replace(
+  /## Unreleased\n\n[\s\S]*?\n---/,
+  () =>
+    `## Unreleased\n\n_(Nothing yet.)_\n\n---\n\n## [${version}] - ${date}\n\n${releaseBody}\n\n---`,
+)
 
 writeFileSync(changelogPath, changelog.endsWith('\n') ? changelog : `${changelog}\n`, 'utf8')
 
-console.log(`\nBumped to ${version}. Update these before commit:\n`)
-console.log('- CHANGELOG.md — fill in the new release section')
-console.log('- README.md — status table row for v' + version + ' (latest)')
+console.log(
+  `\nBumped to ${version}. Unreleased notes were moved into the new [${version}] section.\n`,
+)
+console.log('Finish the release before commit:')
+console.log('- CHANGELOG.md — skim the new [' + version + '] section reads right')
+console.log('- README.md — add a **v' + version + '** row (latest) to Current status')
+console.log("- src/lib/whatsNew.ts — set version: '" + version + "' on this release's new items")
 console.log('- docs/product-roadmap.md — move shipped items to Implemented')
 console.log('- docs/product-decisions.md — any new locked rules')
 console.log('- docs/dev-log.md — daily note')
