@@ -431,7 +431,7 @@ export function TrainingWizard({
               <p className="text-sm font-medium text-text-primary">
                 Any shoulder, elbow, or wrist soreness lately?
               </p>
-              <div className="grid grid-cols-3 gap-2">
+              <div role="group" aria-label="Recent soreness" className="grid grid-cols-3 gap-2">
                 {(
                   [
                     ['none', 'None'],
@@ -442,13 +442,14 @@ export function TrainingWizard({
                   <button
                     key={value}
                     type="button"
+                    aria-pressed={(answers.wizardSorenessLevel ?? 'none') === value}
                     onClick={() =>
                       setAnswers((current) => ({
                         ...current,
                         wizardSorenessLevel: value,
                       }))
                     }
-                    className={`min-h-11 rounded-[var(--radius-md)] border px-2 text-xs font-semibold ${
+                    className={`min-h-11 rounded-[var(--radius-md)] border px-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50 ${
                       (answers.wizardSorenessLevel ?? 'none') === value
                         ? 'border-accent bg-accent-muted text-accent'
                         : 'border-border bg-surface text-text-muted'
@@ -468,13 +469,14 @@ export function TrainingWizard({
 
             <div className="space-y-2">
               <p className="text-sm font-medium text-text-primary">Experience level</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div role="group" aria-label="Experience level" className="grid grid-cols-3 gap-2">
                 {(['beginner', 'intermediate', 'advanced'] as const).map((level) => (
                   <button
                     key={level}
                     type="button"
+                    aria-pressed={answers.trainingLevel === level}
                     onClick={() => setAnswers((current) => ({ ...current, trainingLevel: level }))}
-                    className={`min-h-11 rounded-[var(--radius-md)] border px-2 text-xs font-semibold capitalize ${
+                    className={`min-h-11 rounded-[var(--radius-md)] border px-2 text-xs font-semibold capitalize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50 ${
                       answers.trainingLevel === level
                         ? 'border-accent bg-accent-muted text-accent'
                         : 'border-border bg-surface text-text-muted'
@@ -496,13 +498,14 @@ export function TrainingWizard({
                 Pick the days you want to train. Rest days are built in automatically.
               </p>
             </div>
-            <div className="grid grid-cols-7 gap-1">
+            <div role="group" aria-label="Training days" className="grid grid-cols-7 gap-1">
               {DAY_LABELS.map((label, index) => (
                 <button
                   key={label}
                   type="button"
+                  aria-pressed={answers.preferredTrainingDays.includes(index)}
                   onClick={() => toggleDay(index)}
-                  className={`flex min-h-11 flex-col items-center justify-center rounded-[var(--radius-md)] border text-xs font-semibold ${
+                  className={`flex min-h-11 flex-col items-center justify-center rounded-[var(--radius-md)] border text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50 ${
                     answers.preferredTrainingDays.includes(index)
                       ? 'border-accent bg-accent-muted text-accent'
                       : 'border-border bg-surface text-text-muted'
@@ -523,15 +526,16 @@ export function TrainingWizard({
 
             <div className="space-y-2">
               <p className="text-sm font-medium text-text-primary">Challenge intensity</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div role="group" aria-label="Challenge intensity" className="grid grid-cols-3 gap-2">
                 {(['light', 'moderate', 'intense'] as const).map((intensity) => (
                   <button
                     key={intensity}
                     type="button"
+                    aria-pressed={answers.challengeIntensity === intensity}
                     onClick={() =>
                       setAnswers((current) => ({ ...current, challengeIntensity: intensity }))
                     }
-                    className={`min-h-11 rounded-[var(--radius-md)] border px-2 text-xs font-semibold capitalize ${
+                    className={`min-h-11 rounded-[var(--radius-md)] border px-2 text-xs font-semibold capitalize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50 ${
                       answers.challengeIntensity === intensity
                         ? 'border-accent bg-accent-muted text-accent'
                         : 'border-border bg-surface text-text-muted'
