@@ -59,6 +59,9 @@ const SettingsPage = lazy(() =>
 const AboutPage = lazy(() =>
   import('@/pages/AboutPage').then((m) => ({ default: m.AboutPage })),
 )
+const GuestPage = lazy(() =>
+  import('@/pages/GuestPage').then((m) => ({ default: m.GuestPage })),
+)
 const JoinPage = lazy(() =>
   import('@/pages/JoinPage').then((m) => ({ default: m.JoinPage })),
 )
@@ -163,6 +166,14 @@ export default function App() {
           element={
             <LazyPage>
               <AboutPage />
+            </LazyPage>
+          }
+        />
+        <Route
+          path="/guest"
+          element={
+            <LazyPage>
+              <GuestPage />
             </LazyPage>
           }
         />

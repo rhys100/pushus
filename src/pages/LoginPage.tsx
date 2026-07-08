@@ -230,6 +230,15 @@ export function LoginPage() {
           ) : null}
         </Card>
 
+        {!linkSent ? (
+          <Link
+            to="/guest"
+            className="mt-4 block text-center text-sm font-medium text-text-muted transition-colors hover:text-accent"
+          >
+            Just want a play? Try it as a guest →
+          </Link>
+        ) : null}
+
         <p className="mt-6 text-center text-xs text-text-muted">
           By signing in you agree to train hard and log honestly.{' '}
           <Link to="/about" className="text-accent hover:brightness-110">

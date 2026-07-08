@@ -26,6 +26,10 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-08 (feature: guest mode)
+
+- **No-account guest playground** at public route `/guest` (linked from the login screen: "Just want a play? Try it as a guest →"). Self-contained page (not the auth-gated `TodayPage`) reusing `CircularLogger` + `BankPushupsButton`; reps stored in `localStorage` via `src/lib/guestLog.ts` (no Supabase). Persistent accent banner explains data is device-only and can be lost, with "Create free account" / "Sign in" CTAs; today total + set list with delete. Pure day-grouping logic unit-tested; verified live end-to-end in the preview (bank → localStorage → total, survives reload) since the route needs no auth.
+
 ### 2026-07-08 (UX-audit loop — keyboard focus + touch targets)
 
 - **Focus-visible rings on the app's most-used interactive elements**, which were relying on inconsistent browser-default outlines (or nothing). Swept: `SegmentedControl` (the biggest win — Board range/metric, Log side toggle, progress selectors all run through it), `SettingsLinkRow` (every Settings nav row), `Toast` action + dismiss buttons, the Group hub cards (`role="button"` Mates/Challenges/Badges), Board `MyProgressPanel` activity chips, `RepCalendar` day cells + month nav, and the feed density toggle. Standard is `focus-visible:ring-2 ring-accent/60` — `ring-inset` for dense grids/tabs (so the ring can't be clipped by neighbours) and `ring-offset-2` for the standalone cards. Verified on `/dev/preview`: keyboard focus on a segment yields a computed `rgba(242,93,36,0.6) 0 0 0 2px inset` box-shadow.
