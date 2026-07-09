@@ -7,6 +7,7 @@ import {
   deriveProgressionFromEffort,
   type EffortSummary,
 } from '@/lib/training/effortFeedback'
+import { clamp, roundReps } from '@/lib/training/numeric'
 import {
   buildTrustedDayPrescription,
   parseCalibrationNote,
@@ -130,14 +131,6 @@ export type RecommendOptions = {
 
 export type ProgressionDecision = 'hold' | 'increase' | 'reduce'
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value))
-}
-
-function roundReps(value: number): number {
-  return Math.max(0, Math.round(value))
-}
-
 export function minSetSize(maxCleanSet: number): number {
   if (maxCleanSet <= 3) return 1
   return 2
@@ -172,6 +165,16 @@ export function getDayTypeDisplayLabel(
     return 'Practice'
   }
   return dayType.charAt(0).toUpperCase() + dayType.slice(1)
+}
+
+/** Badge tone for a plan day type — shared by the Today card and wizard preview. */
+export function dayTypeBadgeVariant(
+  dayType: string,
+): 'neutral' | 'accent' | 'success' | 'warning' {
+  if (dayType === 'challenge') return 'accent'
+  if (dayType === 'easy') return 'success'
+  if (dayType === 'moderate') return 'neutral'
+  return 'neutral'
 }
 
 export function applyVolumeCapCoherent(

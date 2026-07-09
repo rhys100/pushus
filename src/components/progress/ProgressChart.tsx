@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { cn } from '@/lib/cn'
-import { prefersReducedMotion } from '@/lib/motion'
+import { easeOutCubic, prefersReducedMotion } from '@/lib/motion'
 
 export type ProgressChartSeries = {
   name: string
@@ -37,10 +37,6 @@ function niceMax(rawMax: number): number {
   if (rawMax <= 50) return Math.ceil(rawMax / 10) * 10
   if (rawMax <= 200) return Math.ceil(rawMax / 25) * 25
   return Math.ceil(rawMax / 100) * 100
-}
-
-function easeOutCubic(t: number): number {
-  return 1 - Math.pow(1 - t, 3)
 }
 
 type Point = { x: number; y: number }

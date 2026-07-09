@@ -7,6 +7,7 @@ import {
 } from '@/lib/training/planEngine'
 import type { VolumeHistoryStats } from '@/lib/training/volumeCalibration'
 import { deriveHistoryConfidence } from '@/lib/training/volumeCalibration'
+import { clamp, roundReps } from '@/lib/training/numeric'
 
 export type VolumeTrustMode = 'none' | 'partial' | 'trusted'
 
@@ -100,14 +101,6 @@ const MESOCYCLE_MULTIPLIER: Record<MesocycleWeek, number> = {
 }
 
 const PARTIAL_TRUST_BLEND = 0.5
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value))
-}
-
-function roundReps(value: number): number {
-  return Math.max(0, Math.round(value))
-}
 
 function setsForDayTypeConservative(
   dayType: DayType,

@@ -1,9 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { prefersReducedMotion } from '@/lib/motion'
-
-function easeOutCubic(t: number): number {
-  return 1 - Math.pow(1 - t, 3)
-}
+import { easeOutCubic, prefersReducedMotion } from '@/lib/motion'
 
 /**
  * Animate a displayed integer toward `target`: counts up (or down) with an

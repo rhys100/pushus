@@ -4,6 +4,7 @@ import {
   type MesocycleWeek,
   type WizardAnswers,
 } from '@/lib/training/planEngine'
+import { clamp, roundReps } from '@/lib/training/numeric'
 import {
   buildTrustPreviewCopy,
   formatCalibrationNote,
@@ -69,14 +70,6 @@ export type WizardPrefill = {
   maxCleanSet: number
   recentDailyAverage: number | null
   suggestedMaxCleanFromHistory: number | null
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value))
-}
-
-function roundReps(value: number): number {
-  return Math.max(0, Math.round(value))
 }
 
 export function summarizeVolumeHistory(entries: VolumeHistoryEntry[]): VolumeHistoryStats {

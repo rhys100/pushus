@@ -3,6 +3,7 @@ import { Badge, Button, Card } from '@/components/ui'
 import { WizardStepHeader } from '@/components/training/WizardStepHeader'
 import {
   DAY_LABELS,
+  dayTypeBadgeVariant,
   DEFAULT_PREFERRED_TRAINING_DAYS,
   formatDayTarget,
   formatDayTypeSetsSummary,
@@ -58,13 +59,6 @@ type TrainingWizardProps = {
   historyLoading?: boolean
   onComplete?: (answers: WizardAnswers) => void | Promise<void>
   onSkip?: () => void
-}
-
-function dayTypeBadgeVariant(dayType: string): 'neutral' | 'accent' | 'warning' | 'success' {
-  if (dayType === 'challenge') return 'accent'
-  if (dayType === 'easy') return 'success'
-  if (dayType === 'moderate') return 'neutral'
-  return 'neutral'
 }
 
 function parseRecentDailyAverage(raw: string): number | null {

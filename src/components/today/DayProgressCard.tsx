@@ -8,7 +8,7 @@ import { useCountUp } from '@/hooks/useCountUp'
 import { cn } from '@/lib/cn'
 import { successHaptic } from '@/lib/haptics'
 import { computeDailySetPlan } from '@/lib/training/dailySetPlan'
-import { type TodayPrescription } from '@/lib/training/planEngine'
+import { dayTypeBadgeVariant, type TodayPrescription } from '@/lib/training/planEngine'
 
 export type DayProgressCardProps = {
   bankedToday: number
@@ -19,15 +19,6 @@ export type DayProgressCardProps = {
   todayPrescription?: TodayPrescription | null
   variant?: 'default' | 'compact'
   className?: string
-}
-
-function dayTypeBadgeVariant(
-  dayType: string,
-): 'neutral' | 'accent' | 'success' | 'warning' {
-  if (dayType === 'challenge') return 'accent'
-  if (dayType === 'easy') return 'success'
-  if (dayType === 'moderate') return 'neutral'
-  return 'neutral'
 }
 
 export const DayProgressCard = memo(function DayProgressCard({

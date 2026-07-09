@@ -19,6 +19,7 @@ import {
   isBeginnerWarningIntensity,
   scoreChallenge,
   scoreTeams,
+  statusVariant,
 } from '@/lib/challenges'
 import { cn } from '@/lib/cn'
 import { formatMemberListName } from '@/lib/memberDisplayName'
@@ -35,12 +36,6 @@ import {
 } from '@/hooks/useChallenges'
 import { useGroupMembers } from '@/hooks/useGroupMembers'
 import { useAuth } from '@/providers/AuthProvider'
-
-function statusVariant(status: 'upcoming' | 'active' | 'ended') {
-  if (status === 'active') return 'success' as const
-  if (status === 'upcoming') return 'accent' as const
-  return 'neutral' as const
-}
 
 function intensityLabel(intensity: string): string {
   return intensity.charAt(0).toUpperCase() + intensity.slice(1)

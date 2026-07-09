@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
 import {
   AvatarChip,
   Badge,
@@ -13,32 +12,17 @@ import {
 import { BillingBanner } from '@/components/billing/BillingBanner'
 import { MemberAliasSheet } from '@/components/group/MemberAliasSheet'
 import { useTabPageMeta } from '@/components/layout/TabPageMeta'
-import { supabase } from '@/lib/supabase'
 import { billingConfig } from '@/lib/billing'
 import { tapHaptic } from '@/lib/haptics'
 import { formatMemberListName } from '@/lib/memberDisplayName'
 import { getErrorMessage } from '@/lib/errors'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
+import { useGroupMembers } from '@/hooks/useGroupMembers'
 import { useGroupAvailability } from '@/hooks/useAvailability'
 import { useGroupBillingStatus, useGroupSubscription } from '@/hooks/useBilling'
 import { useMemberAlias } from '@/hooks/useMemberAlias'
 import { useAuth } from '@/providers/AuthProvider'
 import type { GroupMemberWithProfile } from '@/types/database'
-
-async function fetchMembers(groupId: string): Promise<GroupMemberWithProfile[]> {
-  const { data, error } = await supabase.rpc('list_group_members', {
-    p_group_id: groupId,
-  })
-
-  if (error) throw error
-
-  const parsed =
-    typeof data === 'string'
-      ? (JSON.parse(data) as GroupMemberWithProfile[])
-      : ((data ?? []) as GroupMemberWithProfile[])
-
-  return Array.isArray(parsed) ? parsed : []
-}
 
 function roleLabel(role: string): string {
   if (role === 'owner') return 'Owner'
@@ -58,12 +42,7 @@ export function GroupPage() {
   const aliasMutation = useMemberAlias(groupId)
   const [aliasTarget, setAliasTarget] = useState<GroupMemberWithProfile | null>(null)
 
-  const membersQuery = useQuery({
-    queryKey: ['group-members', groupId],
-    queryFn: () => fetchMembers(groupId!),
-    enabled: Boolean(groupId),
-    staleTime: 30_000,
-  })
+  const membersQuery = useGroupMembers(groupId)
 
   const members = membersQuery.data ?? []
   const { data: availability } = useGroupAvailability(groupId)

@@ -1,5 +1,4 @@
 import { memo, useEffect, useMemo, useState } from 'react'
-import { format, parseISO } from 'date-fns'
 import { cn } from '@/lib/cn'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -7,7 +6,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import type { Group } from '@/types/database'
 import type { PushupEntry } from '@/types/pushupEntry'
 import { useDeleteEntry, useUpdateEntry } from '@/hooks/useTodayData'
-import { formatSelectedDayLabel } from '@/lib/repHistoryFormat'
+import { formatEntryTime, formatSelectedDayLabel } from '@/lib/repHistoryFormat'
 
 export type DayEntriesListProps = {
   group: Group
@@ -16,14 +15,6 @@ export type DayEntriesListProps = {
   todayDate: string
   loading?: boolean
   className?: string
-}
-
-function formatEntryTime(iso: string): string {
-  try {
-    return format(parseISO(iso), 'h:mm a')
-  } catch {
-    return '—'
-  }
 }
 
 function formatSectionHeading(selectedDate: string, todayDate: string): string {

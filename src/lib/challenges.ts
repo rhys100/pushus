@@ -114,6 +114,13 @@ export function challengeStatus(
   return 'active'
 }
 
+/** Badge tone for a challenge's lifecycle status — shared by the list + detail pages. */
+export function statusVariant(status: ChallengeStatus): 'success' | 'accent' | 'neutral' {
+  if (status === 'active') return 'success'
+  if (status === 'upcoming') return 'accent'
+  return 'neutral'
+}
+
 /** Inclusive local-date range covered by a challenge window. */
 export function challengeDateRange(
   competition: Pick<Competition, 'starts_at' | 'ends_at'>,
@@ -162,6 +169,15 @@ export function scoreChallenge(params: {
 }): ChallengeStanding[] {
   const { entries, participants, startIso, endIso, timezone } = params
 
+  // Bucket entries by user once (O(entries)) so each participant only sums its
+  // own rows — avoids re-scanning every entry per participant (was O(P×E)).
+  const entriesByUser = new Map<string, ChallengeEntryRow[]>()
+  for (const entry of entries) {
+    const list = entriesByUser.get(entry.user_id)
+    if (list) list.push(entry)
+    else entriesByUser.set(entry.user_id, [entry])
+  }
+
   const standings = participants.map((participant) => {
     const joinIso = getZonedTimeParts(
       timezone,
@@ -169,8 +185,7 @@ export function scoreChallenge(params: {
     ).dateKey
     const countedFromIso = joinIso > startIso ? joinIso : startIso
 
-    const total = entries.reduce((sum, entry) => {
-      if (entry.user_id !== participant.user_id) return sum
+    const total = (entriesByUser.get(participant.user_id) ?? []).reduce((sum, entry) => {
       if (entry.logged_for < countedFromIso || entry.logged_for > endIso) return sum
       return sum + entry.count
     }, 0)

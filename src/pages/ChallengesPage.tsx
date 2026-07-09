@@ -9,6 +9,7 @@ import {
   INTENSITY_OPTIONS,
   challengeStatus,
   isBeginnerWarningIntensity,
+  statusVariant,
   type ChallengeFormat,
 } from '@/lib/challenges'
 import { getErrorMessage } from '@/lib/errors'
@@ -19,12 +20,6 @@ import { useCompetitions } from '@/hooks/useGamification'
 import { useCreateChallenge } from '@/hooks/useChallenges'
 import { useAuth } from '@/providers/AuthProvider'
 import type { Competition, CompetitionIntensity } from '@/types/gamification'
-
-function statusVariant(status: ReturnType<typeof challengeStatus>) {
-  if (status === 'active') return 'success' as const
-  if (status === 'upcoming') return 'accent' as const
-  return 'neutral' as const
-}
 
 function CompetitionCard({ competition }: { competition: Competition }) {
   const status = challengeStatus(competition)

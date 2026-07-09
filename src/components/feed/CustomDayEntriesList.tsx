@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
-import { format, parseISO } from 'date-fns'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useToast } from '@/components/ui/Toast'
 import { useDeleteCustomActivityEntry } from '@/hooks/useCustomActivityLog'
-import { formatSelectedDayLabel } from '@/lib/repHistoryFormat'
+import { formatEntryTime, formatSelectedDayLabel } from '@/lib/repHistoryFormat'
 import type { CustomActivity, CustomActivityEntry } from '@/types/customActivity'
 
 export type CustomDayEntriesListProps = {
@@ -15,14 +14,6 @@ export type CustomDayEntriesListProps = {
   todayDate: string
   loading?: boolean
   className?: string
-}
-
-function formatEntryTime(iso: string): string {
-  try {
-    return format(parseISO(iso), 'h:mm a')
-  } catch {
-    return '—'
-  }
 }
 
 /** Day set list for a custom activity in Feed → My log; delete is two-tap. */
