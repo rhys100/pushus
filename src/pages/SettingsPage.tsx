@@ -739,6 +739,11 @@ export function SettingsPage() {
       <SettingsSection title="About">
         <Card padding="md" className="space-y-1">
           <SettingsLinkRow
+            to="/settings/how-it-works"
+            title={`How ${appConfig.name} works`}
+            description="The rules: logging, XP, streaks, and more"
+          />
+          <SettingsLinkRow
             to="/settings/whats-new"
             title="What's new"
             description="Feature launches and release notes"

@@ -118,6 +118,9 @@ type BankPushupsInput = {
   userId: string
   profile: UserProfileSnapshot
   isMaxCheckin?: boolean
+  /** Target day (`logged_for`). Omit for today; pass an ISO date to bank a
+   *  backdated set (yesterday). The server enforces the group's backdate policy. */
+  loggedFor?: string
 }
 
 type UndoLastEntryInput = {
@@ -157,8 +160,9 @@ type TodayMutationContext = {
   activityFeedKey?: ReturnType<typeof activityFeedKeys.feed>
 }
 
-function createOptimisticEntry(group: Group, count: number): PushupEntry {
-  const loggedFor = getGroupLocalDateString(group.timezone)
+function createOptimisticEntry(group: Group, count: number, loggedFor?: string): PushupEntry {
+  const today = getGroupLocalDateString(group.timezone)
+  const forDate = loggedFor ?? today
   const now = new Date().toISOString()
 
   return {
@@ -166,9 +170,9 @@ function createOptimisticEntry(group: Group, count: number): PushupEntry {
     group_id: group.id,
     user_id: 'optimistic',
     count,
-    logged_for: loggedFor,
+    logged_for: forDate,
     logged_at: now,
-    is_backdated: false,
+    is_backdated: forDate !== today,
     review_status: 'none',
     source: 'circle_logger',
     reps_in_reserve: null,
@@ -197,8 +201,9 @@ function applyLeaderboardDeltaForToday(
   userId: string,
   delta: number,
   profile?: UserProfileSnapshot,
+  loggedForOverride?: string,
 ): LeaderboardSnapshot[] {
-  const loggedFor = getGroupLocalDateString(group.timezone)
+  const loggedFor = loggedForOverride ?? getGroupLocalDateString(group.timezone)
   const snapshots: LeaderboardSnapshot[] = []
 
   for (const range of LEADERBOARD_RANGES) {
@@ -325,11 +330,12 @@ export function useBankPushups() {
   const { toast } = useToast()
 
   return useMutation({
-    mutationFn: async ({ group, count, isMaxCheckin = false }: BankPushupsInput) => {
+    mutationFn: async ({ group, count, isMaxCheckin = false, loggedFor }: BankPushupsInput) => {
       const { data, error } = await supabase.rpc('bank_pushups', {
         p_group_id: group.id,
         p_count: count,
         p_is_max_checkin: isMaxCheckin,
+        p_logged_for: loggedFor ?? null,
       })
 
       if (error) {
@@ -338,8 +344,8 @@ export function useBankPushups() {
 
       return data as PushupEntry
     },
-    onMutate: async ({ group, count, userId, profile }) => {
-      const loggedFor = getGroupLocalDateString(group.timezone)
+    onMutate: async ({ group, count, userId, profile, loggedFor: inputLoggedFor }) => {
+      const loggedFor = inputLoggedFor ?? getGroupLocalDateString(group.timezone)
       const totalKey = todayKeys.dayTotal(group.id, loggedFor)
       const entriesKey = todayKeys.entries(group.id, loggedFor)
       const activityFeedKey = activityFeedKeys.feed(group.id)
@@ -361,8 +367,9 @@ export function useBankPushups() {
         userId,
         count,
         profile,
+        loggedFor,
       )
-      const optimisticEntry = createOptimisticEntry(group, count)
+      const optimisticEntry = createOptimisticEntry(group, count, loggedFor)
 
       queryClient.setQueryData<number>(totalKey, (current = 0) => current + count)
       queryClient.setQueryData<PushupEntry[]>(entriesKey, (current = []) => [
@@ -401,13 +408,20 @@ export function useBankPushups() {
 
       invalidateTodayRelatedQueries(queryClient, group)
     },
-    onSuccess: (entry, { group, profile, isMaxCheckin, userId }) => {
-      const loggedFor = getGroupLocalDateString(group.timezone)
+    onSuccess: (entry, { group, profile, isMaxCheckin, userId, loggedFor: inputLoggedFor }) => {
+      const today = getGroupLocalDateString(group.timezone)
+      const loggedFor = inputLoggedFor ?? today
       const entriesKey = todayKeys.entries(group.id, loggedFor)
 
       queryClient.setQueryData<PushupEntry[]>(entriesKey, (current = []) =>
         current.map((item) => (item.id.startsWith('optimistic-') ? entry : item)),
       )
+
+      // A backdated bank can land outside the current leaderboard period and its
+      // optimistic feed slot is ordered by "now"; reconcile from the server.
+      if (loggedFor !== today) {
+        invalidateDayRelatedQueries(queryClient, group, loggedFor)
+      }
 
       const activityFeedKey = activityFeedKeys.feed(group.id)
       queryClient.setQueryData<ActivityFeedItem[]>(activityFeedKey, (current) => {
@@ -435,6 +449,10 @@ export function useBankPushups() {
       }
 
       if (userId) {
+        // Every bank raises XP (1 rep = 1 XP), so reconcile the Badges-page total
+        // even when no new badge unlocks — announceFreshAchievements only
+        // invalidates ['xp'] on a fresh unlock, leaving the common case stale.
+        void queryClient.invalidateQueries({ queryKey: ['xp', group.id, userId] })
         void announceFreshAchievements(queryClient, toast, group, userId)
       }
     },

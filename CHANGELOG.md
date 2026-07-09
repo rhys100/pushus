@@ -10,16 +10,28 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Added
+
+- **Log a set you forgot yesterday:** in My log (Feed → your log), pick yesterday on the calendar and add the set you missed. You can log and edit today and yesterday; older days stay locked so scores stay fair
+- **"How PushUS works" page:** a new Settings → About page that lays out the rules in plain language — including a beginner **"reps & sets in 20 seconds"** primer for people new to working out (what a rep and a set are, what "2 sets of 8" means, and that you just log the number of push-ups you did), plus the honour system, the today/yesterday logging window, 1 push-up = 1 XP, streaks and freezes, badges, and the board
+- **XP feedback when you bank:** banking push-ups now shows the XP you earned (e.g. "24 push-ups banked · +24 XP"), so progress is visible on every set — not only when a badge happens to unlock
+
 ### Changed
 
+- **Edit yesterday, not just today:** members can now correct their own sets for yesterday as well as today (matching the group's default backdate window); older days remain locked and deleting stays same-day. Previously any edit of a past day was rejected with "same-day edit only"
 - **Push reminders wording:** the Notifications settings now make explicit that reminders only nudge during your chosen hours and **stop for the day once you've banked all your sets** — the behaviour was already true, but the copy didn't say so
 - **Clearer "banked" confirmation:** the toast after banking has a larger, easier-to-hit Undo (now a pill) and close button, plus a tidier layout, so it's less in the way
 - **Ring sits closer to +10:** on the Log and guest screens the counter ring now hugs the `+10` button (its internal whitespace is absorbed) and sits a touch lower, so both fall in the natural thumb zone
 - **Set effort check-in shows its hints:** "How did that feel?" now shows the guidance under each option (Easy — "Plenty left in the tank", etc.), matching the soreness check-in
 - **Training-plan setup polish:** the wizard's choice buttons now give press feedback, and the "max clean set" slider shows its 1–60 range
 
+### Security
+
+- **Members can't self-edit around an admin review:** editing an entry recomputed its oversize-review status from the new count, so a member could shrink a rejected or pending entry back under the cap and have it silently count again (and admins couldn't re-reject it). Entries under admin review are now un-editable by members — admins still manage them. This also closes the same behaviour that existed for same-day entries
+
 ### Fixed
 
+- **Board score no longer gets cut off:** on the day board, a member's score (e.g. "10/10") could be clipped to "10/1" on narrow phones because the name column reserved a fixed width and pushed the score off the edge. The name now shrinks/truncates so the score always shows in full
 - **Tab names now match their headers:** the bottom nav says "Board" and "Feed", but those pages' headers read "Leaderboard" and "Activity" — two names for the same tab. The headers now say "Board" and "Feed" too, so what you tap is what you land on
 - **Rotating your mate link / cancelling a battle now confirm:** both actions could fail silently — no error message, and (for rotate, a security action) no confirmation the old link was actually killed. They now show a success toast and surface any error instead of failing quietly
 - **Deleting an entry now asks first:** on your logged sets, the Delete button removed the entry on a single tap — permanently, adjusting your total/streak/XP, and sitting right next to Edit. It now arms to "Confirm?" on the first tap and only deletes on the second (auto-cancels after a few seconds), matching the custom-activity list

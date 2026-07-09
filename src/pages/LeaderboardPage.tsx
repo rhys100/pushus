@@ -150,24 +150,24 @@ const LeaderboardRow = memo(function LeaderboardRow({
           {entry.avatar_emoji}
         </span>
 
-        <p className="w-24 shrink-0 truncate text-sm font-medium text-text-primary">
+        <p className="w-24 min-w-0 shrink truncate text-sm font-medium text-text-primary">
           {entry.display_name}
         </p>
 
         <StreakFlame streak={streak} />
 
         {targetsLoading ? (
-          <Skeleton className="h-2.5 min-w-12 flex-1 rounded-full" />
+          <Skeleton className="h-2.5 min-w-8 flex-1 rounded-full" />
         ) : hasTrainingTarget && dayTarget?.target ? (
           <GoalProgressBar
             inline
             current={entry.total}
             target={dayTarget.target}
-            className="min-w-12 flex-1"
+            className="min-w-8 flex-1"
             ariaLabel={`${entry.display_name} daily push-up progress`}
           />
         ) : (
-          <span className="min-w-12 flex-1" aria-hidden="true" />
+          <span className="min-w-8 flex-1" aria-hidden="true" />
         )}
 
         {targetsLoading ? (

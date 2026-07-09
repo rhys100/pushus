@@ -95,6 +95,9 @@ const TrainingSettingsPage = lazy(() =>
 const WhatsNewHistoryPage = lazy(() =>
   import('@/pages/WhatsNewHistoryPage').then((m) => ({ default: m.WhatsNewHistoryPage })),
 )
+const HowItWorksPage = lazy(() =>
+  import('@/pages/HowItWorksPage').then((m) => ({ default: m.HowItWorksPage })),
+)
 
 function PageLoader() {
   return (
@@ -276,6 +279,16 @@ export default function App() {
             <LazyPage>
               <RequireAuth mode="member">
                 <WhatsNewHistoryPage />
+              </RequireAuth>
+            </LazyPage>
+          }
+        />
+        <Route
+          path="/settings/how-it-works"
+          element={
+            <LazyPage>
+              <RequireAuth mode="member">
+                <HowItWorksPage />
               </RequireAuth>
             </LazyPage>
           }

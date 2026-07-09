@@ -3,9 +3,12 @@ import { cn } from '@/lib/cn'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { useToast } from '@/components/ui/Toast'
 import type { Group } from '@/types/database'
 import type { PushupEntry } from '@/types/pushupEntry'
 import { useDeleteEntry, useUpdateEntry } from '@/hooks/useTodayData'
+import { isDeletableDay, isEditableDay } from '@/lib/entryEditWindow'
+import { getErrorMessage } from '@/lib/errors'
 import { formatEntryTime, formatSelectedDayLabel } from '@/lib/repHistoryFormat'
 
 export type DayEntriesListProps = {
@@ -32,11 +35,14 @@ function formatSectionHeading(selectedDate: string, todayDate: string): string {
 type EntryRowProps = {
   group: Group
   entry: PushupEntry
+  canEdit: boolean
+  canDelete: boolean
 }
 
-const EntryRow = memo(function EntryRow({ group, entry }: EntryRowProps) {
+const EntryRow = memo(function EntryRow({ group, entry, canEdit, canDelete }: EntryRowProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [draftCount, setDraftCount] = useState(String(entry.count))
+  const { toast } = useToast()
   const updateEntry = useUpdateEntry()
   const deleteEntry = useDeleteEntry()
   const isBusy = updateEntry.isPending || deleteEntry.isPending
@@ -73,8 +79,13 @@ const EntryRow = memo(function EntryRow({ group, entry }: EntryRowProps) {
         loggedFor: entry.logged_for,
       })
       setIsEditing(false)
-    } catch {
+    } catch (error) {
       setDraftCount(String(entry.count))
+      toast({
+        message: getErrorMessage(error, 'Could not save that change.'),
+        variant: 'danger',
+        durationMs: 5000,
+      })
     }
   }
 
@@ -91,8 +102,13 @@ const EntryRow = memo(function EntryRow({ group, entry }: EntryRowProps) {
         entryId: entry.id,
         loggedFor: entry.logged_for,
       })
-    } catch {
-      // Rollback handled by mutation onError
+    } catch (error) {
+      // Cache rollback is handled by the mutation's onError; surface why it failed.
+      toast({
+        message: getErrorMessage(error, 'Could not delete that entry.'),
+        variant: 'danger',
+        durationMs: 5000,
+      })
     }
   }
 
@@ -145,30 +161,34 @@ const EntryRow = memo(function EntryRow({ group, entry }: EntryRowProps) {
         )}
       </div>
 
-      {!isEditing ? (
+      {!isEditing && (canEdit || canDelete) ? (
         <div className="flex shrink-0 items-center gap-1">
-          <Button
-            variant="ghost"
-            className="min-h-9 min-w-9 px-2 text-xs"
-            disabled={isBusy || entry.id.startsWith('optimistic-')}
-            onClick={() => {
-              setConfirmingDelete(false)
-              setDraftCount(String(entry.count))
-              setIsEditing(true)
-            }}
-          >
-            Edit
-          </Button>
-          <Button
-            variant={confirmingDelete ? 'danger' : 'ghost'}
-            className="min-h-9 min-w-9 px-2 text-xs"
-            loading={deleteEntry.isPending}
-            disabled={isBusy || entry.id.startsWith('optimistic-')}
-            aria-label={confirmingDelete ? 'Confirm delete entry' : 'Delete entry'}
-            onClick={handleDelete}
-          >
-            {confirmingDelete ? 'Confirm?' : 'Delete'}
-          </Button>
+          {canEdit ? (
+            <Button
+              variant="ghost"
+              className="min-h-9 min-w-9 px-2 text-xs"
+              disabled={isBusy || entry.id.startsWith('optimistic-')}
+              onClick={() => {
+                setConfirmingDelete(false)
+                setDraftCount(String(entry.count))
+                setIsEditing(true)
+              }}
+            >
+              Edit
+            </Button>
+          ) : null}
+          {canDelete ? (
+            <Button
+              variant={confirmingDelete ? 'danger' : 'ghost'}
+              className="min-h-9 min-w-9 px-2 text-xs"
+              loading={deleteEntry.isPending}
+              disabled={isBusy || entry.id.startsWith('optimistic-')}
+              aria-label={confirmingDelete ? 'Confirm delete entry' : 'Delete entry'}
+              onClick={handleDelete}
+            >
+              {confirmingDelete ? 'Confirm?' : 'Delete'}
+            </Button>
+          ) : null}
         </div>
       ) : null}
     </li>
@@ -185,6 +205,10 @@ export const DayEntriesList = memo(function DayEntriesList({
 }: DayEntriesListProps) {
   const heading = formatSectionHeading(selectedDate, todayDate)
   const ariaLabel = selectedDate === todayDate ? "Today's entries" : `Entries for ${heading}`
+  const day = selectedDate || todayDate
+  const canEdit = isEditableDay(day, todayDate)
+  const canDelete = isDeletableDay(day, todayDate)
+  const locked = Boolean(todayDate) && !canEdit && !canDelete
 
   if (loading) {
     return (
@@ -221,9 +245,21 @@ export const DayEntriesList = memo(function DayEntriesList({
 
       <ul className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface">
         {entries.map((entry) => (
-          <EntryRow key={entry.id} group={group} entry={entry} />
+          <EntryRow
+            key={entry.id}
+            group={group}
+            entry={entry}
+            canEdit={canEdit}
+            canDelete={canDelete}
+          />
         ))}
       </ul>
+
+      {locked ? (
+        <p className="mt-2 px-1 text-xs text-text-muted">
+          🔒 This day is locked. You can only change today and yesterday.
+        </p>
+      ) : null}
     </section>
   )
 })

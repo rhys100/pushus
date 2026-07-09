@@ -194,6 +194,8 @@ For exploratory ideas without locked rules, see [product-roadmap.md](./product-r
 | Users **edit/delete own entries**; admins manage dodgy entries (Phase 2) | Beta / Phase 2 |
 | **Backdating admin-controlled** per group (`backdate_policy`) | Beta (policy enum) / Phase 2 (admin UI) |
 | Default backdate policy: **today + yesterday** (`today_yesterday`) | Beta |
+| Members may **add + edit** their own entries **within the backdate window** (today + yesterday by default); **delete stays same-day** for members; older days are **locked**. Admins bypass. (`update_pushup_entry` uses `is_backdate_allowed`; mig 0041) | Beta |
+| **Log a missed past day** (yesterday) from the My log calendar; gated by `backdate_policy`, enforced server-side | Beta |
 | Default **max single entry: 100** reps | Phase 2 (enforcement) |
 | Oversize entries: **warn, block, or admin review** | Phase 2 |
 | Admin can **manage dodgy entries** on behalf of group | Phase 2 |

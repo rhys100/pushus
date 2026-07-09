@@ -285,8 +285,8 @@ export function TodayPage() {
 
       toast({
         message: isMaxCheckin
-          ? `${bankedCount} push-ups logged as max set.`
-          : `${bankedCount} push-ups banked.`,
+          ? `${bankedCount} push-ups logged as max set · +${bankedCount} XP`
+          : `${bankedCount} push-ups banked · +${bankedCount} XP`,
         variant: 'success',
         durationMs: 6000,
         actionLabel: 'Undo',
@@ -460,7 +460,7 @@ export function TodayPage() {
         })
         setNoseTapOpen(false)
         toast({
-          message: `${count} nose-tap push-ups banked.`,
+          message: `${count} nose-tap push-ups banked · +${count} XP`,
           variant: 'success',
           durationMs: 6000,
           actionLabel: 'Undo',

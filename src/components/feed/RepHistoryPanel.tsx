@@ -19,10 +19,12 @@ import {
   useDayTotal,
 } from '@/hooks/useTodayData'
 import { useAuth } from '@/providers/AuthProvider'
+import { AddSetForDay } from '@/components/feed/AddSetForDay'
 import { CustomDayEntriesList } from '@/components/feed/CustomDayEntriesList'
 import { DayEntriesList } from '@/components/today/DayEntriesList'
 import { ActivityIcon, EmptyState, Skeleton } from '@/components/ui'
 import { RepCalendar } from '@/components/feed/RepCalendar'
+import { isEditableDay } from '@/lib/entryEditWindow'
 import { formatSelectedDayLabel } from '@/lib/repHistoryFormat'
 
 export function RepHistoryPanel() {
@@ -139,6 +141,13 @@ export function RepHistoryPanel() {
   }
 
   const selectedHeading = formatSelectedDayLabel(selectedDate, todayDate)
+  // Push-ups only: let members log a set they forgot on a still-editable past day
+  // (yesterday). Today already has the main logger, so skip it there.
+  const showAddSet =
+    !isCustom &&
+    Boolean(activeGroup) &&
+    selectedDate !== todayDate &&
+    isEditableDay(selectedDate, todayDate)
   const displayTotal = isCustom ? customDayTotal : dayTotal
   const displaySets = isCustom ? customEntries.length : entries.length
   const totalIsLoading = isCustom
@@ -212,14 +221,23 @@ export function RepHistoryPanel() {
           loading={customEntriesLoading && customEntries.length === 0}
         />
       ) : (
-        <DayEntriesList
-          group={activeGroup!}
-          entries={entries}
-          selectedDate={selectedDate}
-          todayDate={todayDate}
-          loading={entriesLoading && entries.length === 0}
-          className="mt-0"
-        />
+        <>
+          {showAddSet ? (
+            <AddSetForDay
+              group={activeGroup!}
+              loggedFor={selectedDate}
+              dayLabel={selectedHeading}
+            />
+          ) : null}
+          <DayEntriesList
+            group={activeGroup!}
+            entries={entries}
+            selectedDate={selectedDate}
+            todayDate={todayDate}
+            loading={entriesLoading && entries.length === 0}
+            className="mt-0"
+          />
+        </>
       )}
     </div>
   )
