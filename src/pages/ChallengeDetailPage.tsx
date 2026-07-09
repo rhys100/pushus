@@ -46,6 +46,9 @@ function intensityLabel(intensity: string): string {
   return intensity.charAt(0).toUpperCase() + intensity.slice(1)
 }
 
+/** Arming key for the solo (non-team) join button's confirm step. */
+const SOLO_JOIN_KEY = '__solo__'
+
 export function ChallengeDetailPage() {
   const { competitionId } = useParams<{ competitionId: string }>()
   const navigate = useNavigate()
@@ -66,7 +69,10 @@ export function ChallengeDetailPage() {
   const { data: members = [] } = useGroupMembers(activeGroup?.id)
   const joinMutation = useJoinChallenge(competitionId, user?.id)
   const deleteMutation = useDeleteChallenge(activeGroup)
-  const [confirmingWarning, setConfirmingWarning] = useState(false)
+  // Confirm-to-join arming is scoped to the specific target (a team id, or
+  // SOLO_JOIN_KEY) so a warning-intensity team challenge can't arm every team's
+  // button at once — or let a mis-tap join a different team without its warning.
+  const [confirmingJoinKey, setConfirmingJoinKey] = useState<string | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   const nameByUser = useMemo(() => {
@@ -141,14 +147,15 @@ export function ChallengeDetailPage() {
   }
 
   async function handleJoin(teamId?: string) {
-    if (needsWarning && !confirmingWarning && !isParticipant) {
-      setConfirmingWarning(true)
+    const joinKey = teamId ?? SOLO_JOIN_KEY
+    if (needsWarning && confirmingJoinKey !== joinKey && !isParticipant) {
+      setConfirmingJoinKey(joinKey)
       return
     }
 
     try {
       await joinMutation.mutateAsync(teamId)
-      setConfirmingWarning(false)
+      setConfirmingJoinKey(null)
       toast({ message: teamId ? 'Locked in with your team.' : "You're in. Go bank some reps.", variant: 'success' })
     } catch (error) {
       toast({ message: getErrorMessage(error, 'Could not join.'), variant: 'danger' })
@@ -206,7 +213,7 @@ export function ChallengeDetailPage() {
 
           {status !== 'ended' && !isParticipant && !isTeamChallenge ? (
             <div className="space-y-2">
-              {confirmingWarning ? (
+              {confirmingJoinKey === SOLO_JOIN_KEY ? (
                 <p className="text-xs text-warning">
                   {intensityLabel(challenge.intensity)} challenges push hard. Build up with the
                   training plan if you are new — you can still log at your own pace.
@@ -217,7 +224,7 @@ export function ChallengeDetailPage() {
                 loading={joinMutation.isPending}
                 onClick={() => void handleJoin()}
               >
-                {confirmingWarning ? "I know what I'm in for — join" : 'Join challenge'}
+                {confirmingJoinKey === SOLO_JOIN_KEY ? "I know what I'm in for — join" : 'Join challenge'}
               </Button>
             </div>
           ) : null}
@@ -258,7 +265,7 @@ export function ChallengeDetailPage() {
                         loading={joinMutation.isPending}
                         onClick={() => void handleJoin(team.id)}
                       >
-                        {confirmingWarning ? 'Confirm join' : 'Join'}
+                        {confirmingJoinKey === team.id ? 'Confirm join' : 'Join'}
                       </Button>
                     ) : isMyTeam ? (
                       <Badge variant="success">Your team</Badge>
@@ -267,10 +274,10 @@ export function ChallengeDetailPage() {
                 )
               })}
             </div>
-            {confirmingWarning && !myTeamId ? (
+            {confirmingJoinKey !== null && confirmingJoinKey !== SOLO_JOIN_KEY && !myTeamId ? (
               <p className="text-xs text-warning">
-                {intensityLabel(challenge.intensity)} challenges push hard. Tap join again to
-                confirm.
+                {intensityLabel(challenge.intensity)} challenges push hard. Tap Confirm join to lock
+                in that team.
               </p>
             ) : null}
           </section>

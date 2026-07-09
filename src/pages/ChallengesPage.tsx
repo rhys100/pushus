@@ -238,21 +238,19 @@ function CreateChallengeForm({ onDone }: { onDone: () => void }) {
         <span id="intensity-label" className="text-xs font-medium text-text-muted">
           Intensity
         </span>
-        <div role="group" aria-labelledby="intensity-label" className="grid grid-cols-4 gap-2">
+        <div role="group" aria-labelledby="intensity-label" className="grid grid-cols-4 gap-1.5">
           {INTENSITY_OPTIONS.map((option) => (
             <button
               key={option.value}
               type="button"
               aria-pressed={intensity === option.value}
               onClick={() => {
-                if (intensity !== option.value) {
-                  tapHaptic()
-                  setIntensityInteracted(true)
-                }
+                tapHaptic()
+                setIntensityInteracted(true)
                 setIntensity(option.value)
               }}
               className={cn(
-                'min-h-10 rounded-[var(--radius-md)] border px-2 py-1.5 text-sm font-medium',
+                'min-h-10 whitespace-nowrap rounded-[var(--radius-md)] border px-1 py-1.5 text-sm font-medium',
                 'transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] active:scale-95',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50',
                 intensity === option.value
@@ -275,7 +273,7 @@ function CreateChallengeForm({ onDone }: { onDone: () => void }) {
 
       <div className="flex gap-2">
         <Button
-          className="min-h-10 flex-1"
+          className="min-h-10 flex-1 whitespace-nowrap px-3"
           disabled={!valid}
           loading={createMutation.isPending}
           onClick={() => void handleCreate()}
@@ -284,7 +282,7 @@ function CreateChallengeForm({ onDone }: { onDone: () => void }) {
         </Button>
         <Button
           variant="secondary"
-          className="min-h-10 flex-1"
+          className="min-h-10 flex-1 whitespace-nowrap px-3"
           disabled={createMutation.isPending}
           onClick={onDone}
         >

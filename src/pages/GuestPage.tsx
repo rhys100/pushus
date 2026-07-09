@@ -1,6 +1,7 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, ButtonRouterLink, useToast } from '@/components/ui'
+import { cn } from '@/lib/cn'
 import {
   CircularLogger,
   type CircularLoggerHandle,
@@ -41,6 +42,18 @@ export function GuestPage() {
   const [entries, setEntries] = useState<GuestEntry[]>(readGuestLog)
   const [canBank, setCanBank] = useState(false)
   const [warningHidden, setWarningHidden] = useState(isGuestWarningDismissed)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+
+  // Match the app-wide confirm-before-delete pattern — arm for 4s, then a
+  // second tap removes. Guest reps are device-only, so a fat-finger tap on
+  // Delete shouldn't silently lose a set with no undo.
+  useEffect(() => {
+    if (!confirmDeleteId) {
+      return
+    }
+    const timer = window.setTimeout(() => setConfirmDeleteId(null), 4000)
+    return () => window.clearTimeout(timer)
+  }, [confirmDeleteId])
 
   function handleDismissWarning() {
     dismissGuestWarning()
@@ -84,6 +97,11 @@ export function GuestPage() {
   }
 
   function handleDelete(id: string) {
+    if (confirmDeleteId !== id) {
+      setConfirmDeleteId(id)
+      return
+    }
+    setConfirmDeleteId(null)
     setEntries(removeGuestEntry(id))
   }
 
@@ -127,10 +145,13 @@ export function GuestPage() {
       ) : null}
 
       <div className="flex flex-1 flex-col items-center justify-center py-2">
+        {/* Negative bottom margin absorbs the ring SVG's internal whitespace so
+            +10 hugs the ring — matches the tightened Log screen layout. */}
         <CircularLogger
           ref={loggerRef}
           onCanBankChange={setCanBank}
           showDragHint={entries.length === 0}
+          className="px-0 py-0 -mb-5"
         />
 
         <Button
@@ -141,7 +162,7 @@ export function GuestPage() {
             loggerRef.current?.addReps(10)
           }}
           aria-label="Add 10 reps"
-          className="mt-3 min-h-11 px-10"
+          className="mt-2 min-h-11 px-10"
         >
           +10
         </Button>
@@ -169,10 +190,18 @@ export function GuestPage() {
                   <span className="text-xs text-text-muted">{formatTime(entry.ts)}</span>
                   <button
                     type="button"
-                    className="text-xs text-text-muted transition-colors hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 rounded-[var(--radius-sm)] px-1"
+                    aria-label={
+                      confirmDeleteId === entry.id ? 'Confirm delete set' : 'Delete set'
+                    }
+                    className={cn(
+                      'rounded-[var(--radius-sm)] px-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                      confirmDeleteId === entry.id
+                        ? 'font-semibold text-danger'
+                        : 'text-text-muted hover:text-danger',
+                    )}
                     onClick={() => handleDelete(entry.id)}
                   >
-                    Delete
+                    {confirmDeleteId === entry.id ? 'Confirm?' : 'Delete'}
                   </button>
                 </span>
               </li>

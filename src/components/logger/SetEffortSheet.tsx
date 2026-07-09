@@ -47,17 +47,20 @@ export function SetEffortSheet({
         <p className="text-sm font-semibold text-text-primary">How did that feel?</p>
         <p className="mt-1 text-xs text-text-muted">This helps tune your plan — not a test.</p>
 
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 space-y-2">
           {EFFORT_OPTIONS.map((option) => (
             <Button
               key={option.value}
               type="button"
               variant="secondary"
               disabled={saving}
-              className="min-h-10 flex-1 min-w-[4.5rem] px-3"
+              className="min-h-11 w-full justify-start px-3 text-left"
               onClick={() => onSelect(option.value)}
             >
-              {option.label}
+              <span>
+                <span className="block text-sm font-semibold">{option.label}</span>
+                <span className="block text-xs font-normal text-text-muted">{option.hint}</span>
+              </span>
             </Button>
           ))}
         </div>

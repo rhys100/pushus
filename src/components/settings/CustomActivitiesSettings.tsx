@@ -267,7 +267,7 @@ export function CustomActivitiesSettings() {
               </div>
               <Button
                 variant="ghost"
-                className="min-h-8 shrink-0 px-2.5 text-xs"
+                className="min-h-9 shrink-0 px-2.5 text-xs"
                 disabled={saving}
                 onClick={() => openEdit(activity)}
               >
@@ -275,7 +275,7 @@ export function CustomActivitiesSettings() {
               </Button>
               <Button
                 variant={confirmArchiveId === activity.id ? 'danger' : 'ghost'}
-                className="min-h-8 shrink-0 px-2.5 text-xs text-danger"
+                className="min-h-9 shrink-0 px-2.5 text-xs text-danger"
                 disabled={saving}
                 onClick={() => void handleArchive(activity)}
               >
@@ -419,7 +419,7 @@ export function CustomActivitiesSettings() {
                   </div>
                   <Button
                     variant="ghost"
-                    className="min-h-8 shrink-0 px-2.5 text-xs text-accent"
+                    className="min-h-9 shrink-0 px-2.5 text-xs text-accent"
                     disabled={saving}
                     onClick={() => void handleRestore(activity)}
                   >

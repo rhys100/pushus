@@ -10,6 +10,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Changed
+
+- **Push reminders wording:** the Notifications settings now make explicit that reminders only nudge during your chosen hours and **stop for the day once you've banked all your sets** — the behaviour was already true, but the copy didn't say so
+- **Clearer "banked" confirmation:** the toast after banking has a larger, easier-to-hit Undo (now a pill) and close button, plus a tidier layout, so it's less in the way
+- **Ring sits closer to +10:** on the Log and guest screens the counter ring now hugs the `+10` button (its internal whitespace is absorbed) and sits a touch lower, so both fall in the natural thumb zone
+- **Set effort check-in shows its hints:** "How did that feel?" now shows the guidance under each option (Easy — "Plenty left in the tank", etc.), matching the soreness check-in
+- **Training-plan setup polish:** the wizard's choice buttons now give press feedback, and the "max clean set" slider shows its 1–60 range
+
 ### Fixed
 
 - **Tab names now match their headers:** the bottom nav says "Board" and "Feed", but those pages' headers read "Leaderboard" and "Activity" — two names for the same tab. The headers now say "Board" and "Feed" too, so what you tap is what you land on
@@ -24,6 +32,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **About page back button:** the "← Back" on the About page always went to Settings, which bounced logged-out visitors (who reach it from the sign-in footer) to a page they can't open; it now returns to wherever you came from. The bottom "Sign in" button is also hidden when you're already signed in
 - **No way back from full-screen pages:** Challenges, a challenge's detail, Mates, and Achievements hide the bottom nav but had no back button — so on a home-screen app (no browser bar) you could get stuck with no way back to your group. Each now shows a back link in the header (← Group / ← Challenges), matching Billing
 - **Join failure recovery:** when joining a group by invite link failed, the error screen's "Back" button dropped you on the private-beta gate ("you need an invite to continue") — a mislabeled button and the wrong destination. It now offers "Enter a different code" back to the join screen, matching the invalid-link screen's recovery
+- **Trial banner said "0 days":** on the day a trial expires, the banner and the billing panel read "ends in 0 days"; they now say "ends today"
+- **Guest-mode delete now confirms too:** deleting a guest set was a single instant tap with no undo — in the one mode where reps are explicitly device-only. It now arms to "Confirm?" first (auto-cancels after a few seconds), matching the rest of the app
+- **"Create challenge" button no longer wraps** to two lines on narrow phones, the "Moderate" intensity label (and the others) now fit cleanly, and every intensity tap gives feedback
+- **App name is honoured consistently:** the sign-in footer and the invite link/share message hardcoded "PushUS" instead of the configured app name — a renamed deployment now brands correctly, and the login header and footer no longer disagree
+- **Segmented toggle labels keep their casing:** the Board and progress toggles force-capitalised every word ("Best set" → "Best Set", "Most improved" → "Most Improved"); they now render as written
+- **Team-challenge join warning was page-wide:** arming a warning-intensity join flipped *every* team's button to "Confirm" and could let a mis-tap join a different team without seeing its warning; it's now scoped to the team you tapped
+- **Achievement progress bars:** the lifetime-club bars weren't exposed to screen readers and rendered empty until ~1% progress; they're now proper progress bars and show a sliver for any real progress
+- **Assorted copy, layout, and tap-target polish:** the achievements empty state no longer reads like dev notes, nudge buttons and challenge-card headers no longer overflow on small phones, longer leaderboard names show more before truncating, list Edit/Delete controls meet the touch-target floor, and a mid-sentence capitalisation on the no-plan card is fixed
 
 ### Performance
 

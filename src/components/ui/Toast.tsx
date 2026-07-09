@@ -86,12 +86,12 @@ function ToastItem({
       role="status"
       aria-live="polite"
       className={cn(
-        'pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-[var(--radius-md)] border px-4 py-3 shadow-[var(--shadow-toast)]',
+        'pointer-events-auto flex w-full max-w-sm items-center gap-2 rounded-[var(--radius-md)] border py-2.5 pl-4 pr-2 shadow-[var(--shadow-toast)]',
         leaving ? 'toast-out' : 'toast-spring-in',
         variantStyles[variant],
       )}
     >
-      <p className="flex-1 text-sm leading-snug">{toast.message}</p>
+      <p className="flex-1 text-sm font-medium leading-snug">{toast.message}</p>
 
       {toast.actionLabel && toast.onAction ? (
         <button
@@ -100,7 +100,7 @@ function ToastItem({
             toast.onAction?.()
             startDismiss()
           }}
-          className="shrink-0 rounded-[var(--radius-sm)] px-1 text-sm font-semibold text-accent hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+          className="flex min-h-9 shrink-0 items-center rounded-full border border-accent/50 px-3.5 text-sm font-semibold text-accent transition-colors hover:bg-accent-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
         >
           {toast.actionLabel}
         </button>
@@ -110,7 +110,7 @@ function ToastItem({
         type="button"
         aria-label="Dismiss"
         onClick={startDismiss}
-        className="-my-1 -mr-1.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-lg leading-none text-text-muted transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-2xl leading-none text-text-muted transition-colors hover:bg-border/40 hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
       >
         ×
       </button>

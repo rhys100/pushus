@@ -102,8 +102,9 @@ export const DayProgressCard = memo(function DayProgressCard({
           Set up a plan for sensible daily targets.
         </p>
         <p className="mt-1 text-xs text-text-muted">
-          {bankedToday > 0 ? `${bankedToday} banked today — ` : ''}
-          Daily habit + safe gradual fitness, not max-test chasing.
+          {bankedToday > 0
+            ? `${bankedToday} banked today — daily habit + safe gradual fitness, not max-test chasing.`
+            : 'Daily habit + safe gradual fitness, not max-test chasing.'}
         </p>
         <Link
           to="/settings/training"

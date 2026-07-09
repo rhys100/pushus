@@ -111,7 +111,7 @@ export function CustomDayEntriesList({
               </span>
               <Button
                 variant={confirmDeleteId === entry.id ? 'danger' : 'ghost'}
-                className="min-h-8 shrink-0 px-2.5 text-xs text-danger"
+                className="min-h-9 shrink-0 px-2.5 text-xs text-danger"
                 disabled={deleteEntry.isPending}
                 onClick={() => void handleDelete(entry)}
               >

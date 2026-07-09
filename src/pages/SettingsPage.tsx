@@ -595,8 +595,9 @@ export function SettingsPage() {
       <Card padding="md" className="space-y-4">
         <div>
           <p className="text-sm font-medium text-text-primary">Push reminders</p>
-          <p className="mt-1 text-xs text-text-muted">
-            A nudge when you&apos;re behind your daily goal, during your chosen hours.
+          <p className="mt-1 text-xs leading-relaxed text-text-muted">
+            A nudge to finish the day&apos;s sets — only during your chosen hours. They stop for the
+            day as soon as you&apos;ve banked all your sets.
           </p>
         </div>
 

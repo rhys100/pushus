@@ -146,8 +146,8 @@ export function AchievementsPage() {
             </div>
           ) : catalog.length === 0 ? (
             <EmptyState
-              title="No badges configured"
-              description="Achievement catalog loads from the database after migration."
+              title="No badges yet"
+              description="Badges are on their way — check back soon."
             />
           ) : (
             <ul className="motion-stagger space-y-2">
@@ -181,10 +181,21 @@ export function AchievementsPage() {
                         <p className="mt-0.5 text-xs text-text-muted">{achievement.description}</p>
                         {progress !== null && lifetimeTarget ? (
                           <div className="mt-2 space-y-1">
-                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-text-muted/20">
+                            <div
+                              className="h-1.5 w-full overflow-hidden rounded-full bg-text-muted/20"
+                              role="progressbar"
+                              aria-valuemin={0}
+                              aria-valuemax={lifetimeTarget}
+                              aria-valuenow={Math.min(xpTotal, lifetimeTarget)}
+                              aria-label={`${achievement.name} progress`}
+                            >
                               <div
                                 className="h-full rounded-full bg-accent/70"
-                                style={{ width: `${Math.round(progress * 100)}%` }}
+                                // Floor the fill so real-but-tiny progress still shows a sliver
+                                // (matches GoalProgressBar), rather than an empty-looking bar.
+                                style={{
+                                  width: `${xpTotal > 0 ? Math.max(Math.round(progress * 100), 4) : 0}%`,
+                                }}
                               />
                             </div>
                             <p className="font-mono text-[0.65rem] tabular-nums text-text-muted">

@@ -150,7 +150,7 @@ const LeaderboardRow = memo(function LeaderboardRow({
           {entry.avatar_emoji}
         </span>
 
-        <p className="w-[4.5rem] shrink-0 truncate text-sm font-medium text-text-primary">
+        <p className="w-24 shrink-0 truncate text-sm font-medium text-text-primary">
           {entry.display_name}
         </p>
 

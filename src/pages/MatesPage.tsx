@@ -169,7 +169,7 @@ function MateDetail({ mate, onClose }: { mate: MateListItem; onClose: () => void
           <Button
             key={nudge.kind}
             variant="secondary"
-            className="min-h-10 text-sm"
+            className="min-h-10 whitespace-nowrap px-2 text-sm"
             loading={sendNudge.isPending}
             onClick={() => void handleNudge(nudge.kind)}
           >
@@ -290,20 +290,24 @@ function MateChallengeCard({ challenge }: { challenge: MateChallengeItem }) {
   return (
     <Card padding="md" className="space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-text-primary">
+        <p className="min-w-0 truncate text-sm font-semibold text-text-primary">
           You vs {opponentName} · {challenge.duration_days}d
         </p>
         {challenge.status === 'pending' ? (
-          <Badge variant="accent">{challenge.is_challenger ? 'Waiting' : 'Your call'}</Badge>
+          <Badge variant="accent" className="shrink-0">
+            {challenge.is_challenger ? 'Waiting' : 'Your call'}
+          </Badge>
         ) : ended ? (
           <Badge
             variant={winning ? 'success' : 'neutral'}
-            className={winning ? 'motion-pop' : undefined}
+            className={cn('shrink-0', winning && 'motion-pop')}
           >
             {tied ? 'Draw' : winning ? 'You won 🏆' : `${opponentName} won`}
           </Badge>
         ) : (
-          <Badge variant="success">Live</Badge>
+          <Badge variant="success" className="shrink-0">
+            Live
+          </Badge>
         )}
       </div>
 

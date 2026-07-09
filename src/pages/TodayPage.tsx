@@ -569,7 +569,7 @@ export function TodayPage() {
           />
         )}
 
-        <div className="flex flex-1 flex-col items-center justify-center py-1">
+        <div className="flex flex-1 flex-col items-center py-1">
           <ActivitySwitcher
             activities={customActivities}
             selectedActivityId={selectedActivity?.id ?? null}
@@ -578,56 +578,62 @@ export function TodayPage() {
             className="mb-2"
           />
 
-          <CircularLogger
-            ref={loggerRef}
-            onCanBankChange={setCanBank}
-            onBank={handleBankActive}
-            onLongPressCenter={isCustomMode ? undefined : () => setNoseTapOpen(true)}
-            disabled={bankPending}
-            showDragHint={showHint}
-            onHintDismiss={dismissHint}
-            className="px-0 py-0"
-          />
-
-          {isCustomMode && selectedActivity?.track_sides ? (
-            <SegmentedControl
-              className="mt-2 w-full max-w-[17rem]"
-              options={[
-                { value: 'left', label: 'Left' },
-                { value: 'both', label: 'Both' },
-                { value: 'right', label: 'Right' },
-              ]}
-              value={activitySide}
-              onChange={setActivitySide}
-              ariaLabel={`${selectedActivity.name} side`}
+          {/* Ring cluster is centred in the space below the switcher — this sits
+              the ring lower on screen (easier thumb reach) than centring the whole
+              group. The logger's negative bottom margin absorbs the SVG's internal
+              whitespace so +10 hugs the ring. */}
+          <div className="flex w-full flex-1 flex-col items-center justify-center">
+            <CircularLogger
+              ref={loggerRef}
+              onCanBankChange={setCanBank}
+              onBank={handleBankActive}
+              onLongPressCenter={isCustomMode ? undefined : () => setNoseTapOpen(true)}
+              disabled={bankPending}
+              showDragHint={showHint}
+              onHintDismiss={dismissHint}
+              className="px-0 py-0 -mb-5"
             />
-          ) : null}
 
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={bankPending}
-            onClick={() => loggerRef.current?.addReps(10)}
-            aria-label="Add 10 reps"
-            className="mt-2 min-h-11 px-8"
-          >
-            +10
-          </Button>
+            {isCustomMode && selectedActivity?.track_sides ? (
+              <SegmentedControl
+                className="mt-2 w-full max-w-[17rem]"
+                options={[
+                  { value: 'left', label: 'Left' },
+                  { value: 'both', label: 'Both' },
+                  { value: 'right', label: 'Right' },
+                ]}
+                value={activitySide}
+                onChange={setActivitySide}
+                ariaLabel={`${selectedActivity.name} side`}
+              />
+            ) : null}
 
-          <BankPushupsButton
-            placement="inline"
-            disabled={!canBank}
-            loading={bankPending}
-            onBank={handleBankActive}
-            label={
-              isCustomMode && selectedActivity
-                ? selectedActivity.track_sides
-                  ? `Bank ${selectedActivity.name} (${activitySide})`
-                  : `Bank ${selectedActivity.name}`
-                : undefined
-            }
-            className="mt-2 transition-opacity duration-[var(--duration-fast)]"
-          />
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={bankPending}
+              onClick={() => loggerRef.current?.addReps(10)}
+              aria-label="Add 10 reps"
+              className="mt-2 min-h-11 px-8"
+            >
+              +10
+            </Button>
+
+            <BankPushupsButton
+              placement="inline"
+              disabled={!canBank}
+              loading={bankPending}
+              onBank={handleBankActive}
+              label={
+                isCustomMode && selectedActivity
+                  ? selectedActivity.track_sides
+                    ? `Bank ${selectedActivity.name} (${activitySide})`
+                    : `Bank ${selectedActivity.name}`
+                  : undefined
+              }
+              className="mt-3 transition-opacity duration-[var(--duration-fast)]"
+            />
+          </div>
         </div>
 
         {isCustomMode ? null : <NoseHoldHint show={showNoseHint} onDismiss={dismissNoseHint} />}

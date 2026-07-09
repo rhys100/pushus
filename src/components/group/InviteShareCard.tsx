@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Button, Card, useToast } from '@/components/ui'
 import { buildInviteMessage } from '@/lib/inviteMessage'
 import { buildInviteLink } from '@/lib/postAuthRouting'
+import { appConfig } from '@/lib/config'
 import { selectHaptic } from '@/lib/haptics'
 import { cn } from '@/lib/cn'
 
@@ -87,7 +88,7 @@ export function InviteShareCard({ inviteCode, className }: InviteShareCardProps)
     if (!canShare) return
     try {
       await navigator.share({
-        title: 'Join my push-up group on PushUS',
+        title: `Join my push-up group on ${appConfig.name}`,
         text: inviteMessage,
       })
     } catch (error) {

@@ -259,7 +259,7 @@ export function LoginPage() {
         <p className="mt-5 text-center text-xs text-text-muted">
           By signing in you agree to train hard and log honestly.{' '}
           <Link to="/about" className="text-accent hover:brightness-110">
-            About PushUS
+            About {appConfig.name}
           </Link>
         </p>
       </div>
