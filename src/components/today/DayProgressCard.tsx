@@ -113,10 +113,6 @@ export const DayProgressCard = memo(function DayProgressCard({
     const statValueClass = 'text-lg font-bold tabular-nums text-accent'
     const statLabelClass =
       'mt-0.5 text-[0.625rem] font-medium uppercase tracking-wide text-text-muted'
-    const setValue =
-      setPlan?.currentSetNumber && setPlan.setsPlanned > 0
-        ? `${setPlan.currentSetNumber} of ${setPlan.setsPlanned}`
-        : '—'
 
     return (
       <Card
@@ -124,10 +120,10 @@ export const DayProgressCard = memo(function DayProgressCard({
         className={cn('mt-3', celebrate && 'goal-celebrate', className)}
       >
         {loading ? (
-          <div className="grid grid-cols-3 gap-3">
-            <Skeleton className="mx-auto h-9 w-16" />
-            <Skeleton className="mx-auto h-9 w-16" />
-            <Skeleton className="mx-auto h-9 w-16" />
+          <div className="space-y-2">
+            <Skeleton className="mx-auto h-5 w-44" />
+            <Skeleton className="h-2.5 w-full" rounded="full" />
+            <Skeleton className="mx-auto h-3 w-28" />
           </div>
         ) : isRestDay ? (
           <div className="text-center">
@@ -144,28 +140,25 @@ export const DayProgressCard = memo(function DayProgressCard({
             </p>
           </div>
         ) : setPlan ? (
-          <>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div>
-                <p className={statValueClass}>{setValue}</p>
-                <p className={statLabelClass}>Set</p>
-              </div>
-              <div>
-                <p className={statValueClass}>~{setPlan.nextBankTarget}</p>
-                <p className={statLabelClass}>Bank next</p>
-              </div>
-              <div>
-                <p className={statValueClass}>
-                  {bankedToday}
-                  <span className="text-text-muted">/{target}</span>
-                </p>
-                <p className={statLabelClass}>Today</p>
-              </div>
-            </div>
-            <p className="mt-2 text-center text-xs text-text-muted">
-              {prescription?.safetyNote ?? `${setPlan.dayTypeLabel} day`}
+          // Lead with the plain-language plan headline (e.g. "Bank about 5 — set
+          // 2 of 3") + a progress bar. The old three orange columns ("~5 / BANK
+          // NEXT") read as a riddle.
+          <div className="space-y-2">
+            <p className="text-center text-sm font-semibold text-text-primary">
+              {setPlan.headline}
             </p>
-          </>
+            <GoalProgressBar
+              current={bankedToday}
+              target={target}
+              ariaLabel="Daily push-up progress"
+            />
+            <p className="text-center text-xs text-text-muted">
+              <span className="font-medium tabular-nums text-text-primary">
+                {bankedToday} of {target}
+              </span>{' '}
+              today · {prescription?.safetyNote ?? `${setPlan.dayTypeLabel} day`}
+            </p>
+          </div>
         ) : null}
       </Card>
     )
