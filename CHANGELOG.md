@@ -12,6 +12,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Social notifications:** you now get a push when a mate adds you, accepts your request, challenges you to a 1v1, or reacts to your sets — so the mates-and-challenges loop actually reaches people instead of waiting silently in the app. Reactions are batched (a flurry is one buzz), and there's a "Social notifications" toggle in Settings → Notifications to turn them off
 - **Leave a challenge:** you can now leave a challenge you joined — and, on team challenges, drop your team spot — from the challenge page, as long as it hasn't ended. A two-tap confirm prevents accidents
 
 ### Changed

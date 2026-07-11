@@ -41,6 +41,7 @@ const DEFAULT_PREFERENCES: Omit<
   daily_target: 20,
   injury_paused: false,
   injury_paused_until: null,
+  social_push_enabled: true,
 }
 
 function preferencesPayload(
@@ -67,6 +68,7 @@ function preferencesPayload(
     daily_target: next.daily_target,
     injury_paused: next.injury_paused,
     injury_paused_until: next.injury_paused_until,
+    social_push_enabled: next.social_push_enabled,
   }
 }
 

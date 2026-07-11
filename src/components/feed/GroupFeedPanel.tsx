@@ -368,7 +368,12 @@ export function GroupFeedPanel() {
         return
       }
 
-      toggleReactionMutate({ group: activeGroup, entryId, emoji })
+      toggleReactionMutate({
+        group: activeGroup,
+        entryId,
+        emoji,
+        targetUserId: targetItem?.user_id,
+      })
     },
     [activeGroup, feed, user?.id, toggleReactionMutate],
   )

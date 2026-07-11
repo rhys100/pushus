@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { notifySocial } from '@/lib/notifications/notifySocial'
 import type { Group } from '@/types/database'
 
 export type ActivityFeedItem = {
@@ -137,13 +138,15 @@ type ToggleReactionInput = {
   group: Group
   entryId: string
   emoji: ReactionEmoji
+  /** Owner of the reacted-to entry — pushed a "someone reacted" notification. */
+  targetUserId?: string
 }
 
 export function useToggleReaction(group: Group | null | undefined, userId: string | undefined) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ group: activeGroup, entryId, emoji }: ToggleReactionInput) => {
+    mutationFn: async ({ group: activeGroup, entryId, emoji, targetUserId }: ToggleReactionInput) => {
       if (!userId) {
         throw new Error('Authentication required')
       }
@@ -185,6 +188,12 @@ export function useToggleReaction(group: Group | null | undefined, userId: strin
 
       if (insertError) {
         throw insertError
+      }
+
+      // Let the entry's owner know someone reacted (best-effort; debounced +
+      // opt-out-respecting server-side). Never for your own entry.
+      if (targetUserId && targetUserId !== userId) {
+        notifySocial('reaction', targetUserId, { entryId })
       }
 
       return { action: 'added' as const, entryId, emoji }
