@@ -23,10 +23,10 @@ const AUTH_REQUEST_TIMEOUT_MS = 10_000
 function friendlyAuthError(message: string): string {
   const lower = message.toLowerCase()
   if (lower.includes('provider') && lower.includes('not enabled')) {
-    return 'Google sign-in is not enabled on this deployment. Use email magic link instead.'
+    return 'Google sign-in is not enabled on this deployment. Use an email code instead.'
   }
   if (lower.includes('oauth') || lower.includes('google')) {
-    return 'Google sign-in could not be completed. Try email magic link instead.'
+    return 'Google sign-in could not be completed. Try an email code instead.'
   }
   if (lower.includes('rate') || lower.includes('seconds')) {
     return 'Wait a minute before requesting another sign-in email.'
@@ -59,7 +59,7 @@ export function LoginPage() {
   const [showInvite, setShowInvite] = useState(false)
   const authErrorShownRef = useRef(false)
   const sentHeadingRef = useRef<HTMLParagraphElement>(null)
-  // One auth flow at a time — while a magic link is sending or Google is
+  // One auth flow at a time — while an email code is sending or Google is
   // redirecting, neither entry point should let the user kick off the other.
   const isBusy = sending || verifying || googleLoading
 
@@ -113,6 +113,7 @@ export function LoginPage() {
           options: { emailRedirectTo: authCallbackUrl() },
         }),
         AUTH_REQUEST_TIMEOUT_MS,
+        'send-email-timeout',
       )
 
       if (error) {
@@ -123,9 +124,12 @@ export function LoginPage() {
       successHaptic()
       setResendCooldown(RESEND_COOLDOWN_SECONDS)
       return true
-    } catch {
+    } catch (error) {
+      const timedOut = error instanceof Error && error.message === 'send-email-timeout'
       toast({
-        message: 'Could not send the sign-in email. Check your connection and try again.',
+        message: timedOut
+          ? 'The email is taking longer than expected. Check your inbox before trying again.'
+          : 'Could not send the sign-in email. Check your connection and try again.',
         variant: 'danger',
       })
       return false
@@ -168,6 +172,7 @@ export function LoginPage() {
           type: 'email',
         }),
         AUTH_REQUEST_TIMEOUT_MS,
+        'verify-code-timeout',
       )
 
       if (error || !data.session?.user) {
@@ -189,9 +194,12 @@ export function LoginPage() {
         // The session is valid; RequireAuth will finish routing once network returns.
         navigate('/today', { replace: true })
       }
-    } catch {
+    } catch (error) {
+      const timedOut = error instanceof Error && error.message === 'verify-code-timeout'
       toast({
-        message: 'Could not verify the code. Check your connection and try again.',
+        message: timedOut
+          ? 'Verification is taking longer than expected. Wait a moment before retrying.'
+          : 'Could not verify the code. Check your connection and try again.',
         variant: 'danger',
       })
     } finally {
@@ -202,7 +210,7 @@ export function LoginPage() {
   async function handleGoogleSignIn() {
     if (!appConfig.googleAuthEnabled) {
       toast({
-        message: 'Google sign-in is disabled on this deployment. Use email magic link.',
+        message: 'Google sign-in is disabled on this deployment. Use an email code.',
         variant: 'danger',
       })
       return

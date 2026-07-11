@@ -8,6 +8,10 @@ describe('passwordless email template', () => {
     resolve(process.cwd(), 'supabase/templates/magic_link.html'),
     'utf8',
   )
+  const rolloutTemplate = readFileSync(
+    resolve(process.cwd(), 'supabase/templates/magic_link_hybrid_rollout.html'),
+    'utf8',
+  )
 
   it('configures a six-digit OTP and the repository template', () => {
     expect(config).toContain('otp_length = 6')
@@ -19,5 +23,10 @@ describe('passwordless email template', () => {
     expect(template).toContain('{{ .Token }}')
     expect(template).not.toContain('{{ .ConfirmationURL }}')
     expect(template).toContain('Home Screen app')
+  })
+
+  it('keeps a hybrid template for zero-downtime production rollout', () => {
+    expect(rolloutTemplate).toContain('{{ .Token }}')
+    expect(rolloutTemplate).toContain('{{ .ConfirmationURL }}')
   })
 })

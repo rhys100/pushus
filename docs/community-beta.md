@@ -63,13 +63,17 @@ Groups created in Community mode get `billing_status = exempt`. Write access is 
 
 ## 2. Auth configuration
 
-### Email magic link (required)
+### Email code (required)
 
 In **Authentication → Providers → Email**:
 
 - Enable email provider
-- Enable magic link / OTP as needed for your Supabase version
+- Enable email OTP
 - Confirm sign-up is allowed for beta testers
+
+In **Authentication → Email Templates → Magic Link**, copy the contents of
+`supabase/templates/magic_link.html`. Despite the Supabase dashboard label, this
+template sends the six-digit code used by PushUS.
 
 In **Authentication → URL configuration**:
 
@@ -100,7 +104,7 @@ In **Authentication → Providers → Google**:
 3. Paste Client ID and Client Secret into Supabase.
 4. Enable the provider.
 
-Beta works with magic link only. Google is optional convenience.
+Beta works with email codes only. Google is optional convenience.
 
 ---
 
@@ -174,7 +178,7 @@ Any static host works. Common options:
 | **Netlify** | Build `npm run build`, publish `dist` |
 | **nginx / S3** | Upload `dist/` contents; configure SPA fallback to `index.html` for client routes |
 
-**SPA routing:** All paths (`/today`, `/group`, `/auth/callback`, etc.) must serve `index.html`. Without this, direct links and magic-link callbacks will 404.
+**SPA routing:** All paths (`/today`, `/group`, `/auth/callback`, etc.) must serve `index.html`. Without this, direct links and OAuth callbacks will 404.
 
 **HTTPS:** Required for production auth redirects.
 
@@ -183,8 +187,8 @@ Any static host works. Common options:
 ## 5. Post-deploy smoke check (desktop)
 
 1. Open the beta URL — login page loads.
-2. Request magic link — email arrives (check spam).
-3. Complete login — lands on Today or group setup.
+2. Request sign-in code — email arrives (check spam).
+3. Enter the code — lands on Today or group setup.
 4. About page shows **PushUS Community Beta** and source repo link.
 5. Billing UI is hidden (`VITE_BILLING_ENABLED=false`).
 
@@ -196,7 +200,7 @@ Run on a real phone over mobile data (not just desktop DevTools). Use two separa
 
 ### Setup
 
-- [ ] **Create owner account** — sign up with magic link on phone; complete profile if prompted.
+- [ ] **Create owner account** — sign up with the email code on phone; complete profile if prompted.
 - [ ] **Create first group** — name, timezone (e.g. Australia/Sydney), daily target; note the invite code.
 
 ### Invite flow

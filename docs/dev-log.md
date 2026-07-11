@@ -33,7 +33,7 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 - OTP paste normalises spaces/hyphens before applying the six-digit cap; invalid/expired codes get plain recovery copy rather than raw Supabase errors.
 - Send/verify requests time out after 10s and always restore controls; the 60s resend limit also applies after “Use a different email”.
 - Retired bridge reads/writes and delete the legacy `pushus-auth-bridge-v1` cache per context on app boot/sign-out. Same-context resume remains for genuine iOS background suspension; Safari's isolated legacy cache is removed when Safari next loads PushUS.
-- Operational dependency: hosted Supabase Magic Link email template must be updated from `supabase/templates/magic_link.html` when this client ships. No DB migration.
+- Operational dependency: staged hosted-template rollout is required. Deploy `magic_link_hybrid_rollout.html` first, then client, then final `magic_link.html`; see `docs/handoffs/ios-pwa-email-otp.md`. No DB migration.
 
 ### 2026-07-11j (PWA HTML-level boot recovery)
 

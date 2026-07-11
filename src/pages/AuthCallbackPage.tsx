@@ -12,10 +12,10 @@ import { supabase } from '@/lib/supabase'
 function friendlyAuthError(message: string): string {
   const lower = message.toLowerCase()
   if (lower.includes('provider') && lower.includes('not enabled')) {
-    return 'Google sign-in is not enabled on this deployment. Use email magic link instead.'
+    return 'Google sign-in is not enabled on this deployment. Use an email code instead.'
   }
   if (lower.includes('oauth') || lower.includes('google')) {
-    return 'Google sign-in could not be completed. Try email magic link instead.'
+    return 'Google sign-in could not be completed. Try an email code instead.'
   }
   return message
 }
