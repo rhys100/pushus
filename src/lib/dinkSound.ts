@@ -41,10 +41,6 @@ export function primeDinkAudio(): void {
   }
 }
 
-export function isDinkSupported(): boolean {
-  return getAudioContext() != null
-}
-
 /**
  * Play the dink. `emphasis` raises the pitch a bit — used every 10th rep so
  * laps feel rewarded (like the Q3 kill-confirm vs hit tick).

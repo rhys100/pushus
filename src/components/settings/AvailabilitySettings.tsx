@@ -64,10 +64,12 @@ export function AvailabilitySettings({ onChanged }: { onChanged?: () => void }) 
       await setAvailability.mutateAsync({ status: next })
       onChanged?.()
       toast({
+        // Symmetric on purpose: both statuses pause reminders + plan and protect
+        // the streak. Only the lead word (and the group-visible label) differ.
         message:
           next === 'injured'
             ? 'Marked injured. Reminders and your plan are paused, streak protected.'
-            : 'Subbing out. Your group can see you’re away.',
+            : 'Subbing out. Reminders and your plan are paused, streak protected.',
         variant: 'success',
       })
     } catch (error) {
@@ -106,8 +108,8 @@ export function AvailabilitySettings({ onChanged }: { onChanged?: () => void }) 
         <p className="text-sm font-medium text-text-primary">Availability</p>
         <p className="mt-1 text-xs text-text-muted">
           {isAway
-            ? `You're set to ${STATUS_LABEL[status]}. Your group can see it; reminders and plan progression are paused and your streak is protected.`
-            : 'Injured or taking a break? Pause reminders and your plan without breaking your streak.'}
+            ? `You're marked as ${STATUS_LABEL[status]}. Reminders and plan progression are paused and your streak is protected. Your group can see you're away, and logging still works.`
+            : 'Injured or taking a break? Both do the same thing: pause your reminders, pause your plan, and keep your streak safe. The only difference is what your group sees. Logging still works either way.'}
         </p>
       </div>
 
@@ -155,22 +157,32 @@ export function AvailabilitySettings({ onChanged }: { onChanged?: () => void }) 
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-2">
-          <Button
-            variant="secondary"
-            className="min-h-10 text-sm"
-            disabled={busy}
-            onClick={() => void goAway('injured')}
-          >
-            🤕 Injured
-          </Button>
-          <Button
-            variant="secondary"
-            className="min-h-10 text-sm"
-            disabled={busy}
-            onClick={() => void goAway('sub_out')}
-          >
-            ⏸️ Sub out
-          </Button>
+          <div className="flex flex-col gap-1">
+            <Button
+              variant="secondary"
+              className="min-h-10 text-sm"
+              disabled={busy}
+              onClick={() => void goAway('injured')}
+            >
+              🤕 Injured
+            </Button>
+            <p className="px-1 text-[0.7rem] leading-tight text-text-muted">
+              You&apos;re hurt and healing up.
+            </p>
+          </div>
+          <div className="flex flex-col gap-1">
+            <Button
+              variant="secondary"
+              className="min-h-10 text-sm"
+              disabled={busy}
+              onClick={() => void goAway('sub_out')}
+            >
+              ⏸️ Sub out
+            </Button>
+            <p className="px-1 text-[0.7rem] leading-tight text-text-muted">
+              A planned break, travel, or rest.
+            </p>
+          </div>
         </div>
       )}
 

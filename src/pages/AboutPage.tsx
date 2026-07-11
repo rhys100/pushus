@@ -35,7 +35,7 @@ export function AboutPage() {
 
   return (
     <div
-      className="flex min-h-screen flex-col bg-bg px-4 pt-[max(2rem,env(safe-area-inset-top))]"
+      className="flex min-h-[100dvh] flex-col bg-bg px-4 pt-[max(2rem,env(safe-area-inset-top))]"
       style={{ paddingBottom: PAGE_BOTTOM_PADDING }}
     >
       <div className="mx-auto w-full max-w-sm flex-1 py-6">

@@ -28,51 +28,65 @@ export function AuthCallbackPage() {
   useEffect(() => {
     let mounted = true
 
+    // Escape hatch: if any auth call hangs (flaky network, half-consumed code)
+    // the user would sit on the skeleton forever. Surface the error view so
+    // "Back to login" appears. Cleared once handleCallback settles.
+    const timeoutId = window.setTimeout(() => {
+      if (mounted) {
+        setError('This is taking longer than expected. Head back and try signing in again.')
+      }
+    }, 15_000)
+
     async function handleCallback() {
-      const hashParams = new URLSearchParams(window.location.hash.slice(1))
-      const queryParams = new URLSearchParams(window.location.search)
-      const authError =
-        hashParams.get('error_description') ??
-        queryParams.get('error_description') ??
-        hashParams.get('error') ??
-        queryParams.get('error')
+      try {
+        const hashParams = new URLSearchParams(window.location.hash.slice(1))
+        const queryParams = new URLSearchParams(window.location.search)
+        const authError =
+          hashParams.get('error_description') ??
+          queryParams.get('error_description') ??
+          hashParams.get('error') ??
+          queryParams.get('error')
 
-      if (authError) {
-        if (mounted) setError(friendlyAuthError(authError))
-        return
-      }
-
-      const { data, error: sessionError } = await supabase.auth.getSession()
-
-      if (sessionError) {
-        if (mounted) setError(sessionError.message)
-        return
-      }
-
-      if (!data.session) {
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(
-          window.location.href,
-        )
-        if (exchangeError) {
-          if (mounted) setError(friendlyAuthError(exchangeError.message))
+        if (authError) {
+          if (mounted) setError(friendlyAuthError(authError))
           return
         }
-      }
 
-      const { data: refreshed } = await supabase.auth.getSession()
-      const user = refreshed.session?.user
+        const { data, error: sessionError } = await supabase.auth.getSession()
 
-      if (!user) {
-        if (mounted) {
-          setError('Sign-in could not be completed. Try again from the login page.')
+        if (sessionError) {
+          if (mounted) setError(sessionError.message)
+          return
         }
-        return
-      }
 
-      const snapshot = await fetchPostAuthSnapshot(user.id)
+        if (!data.session) {
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(
+            window.location.href,
+          )
+          if (exchangeError) {
+            if (mounted) setError(friendlyAuthError(exchangeError.message))
+            return
+          }
+        }
 
-      if (mounted) {
-        navigateAfterAuth(navigate, snapshot, { replace: true })
+        const { data: refreshed } = await supabase.auth.getSession()
+        const user = refreshed.session?.user
+
+        if (!user) {
+          if (mounted) {
+            setError('Sign-in could not be completed. Try again from the login page.')
+          }
+          return
+        }
+
+        const snapshot = await fetchPostAuthSnapshot(user.id)
+
+        if (mounted) {
+          navigateAfterAuth(navigate, snapshot, { replace: true })
+        }
+      } finally {
+        // Settled (success or handled error) — the hang timeout is no longer needed.
+        window.clearTimeout(timeoutId)
       }
     }
 
@@ -80,12 +94,13 @@ export function AuthCallbackPage() {
 
     return () => {
       mounted = false
+      window.clearTimeout(timeoutId)
     }
   }, [navigate])
 
   if (error) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-4">
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-bg px-4">
         <div className="w-full max-w-xs space-y-4 text-center" role="alert">
           <p className="text-4xl" aria-hidden="true">
             ⚠️
@@ -103,7 +118,7 @@ export function AuthCallbackPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-4">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-bg px-4">
       <div className="w-full max-w-xs space-y-3" role="status" aria-live="polite">
         <Skeleton className="mx-auto h-12 w-12 rounded-full" />
         <p className="text-center text-sm text-text-muted">Signing you in…</p>

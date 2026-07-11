@@ -25,7 +25,18 @@ export function TabPageMetaProvider({ children }: { children: ReactNode }) {
   const [meta, setMetaState] = useState<TabPageMeta>({})
 
   const setMeta = useCallback((next: TabPageMeta) => {
-    setMetaState(next)
+    setMetaState((prev) => {
+      // Bail when nothing actually changed so an unchanged re-set doesn't push a
+      // new context value and re-render every consumer.
+      if (
+        prev.title === next.title &&
+        prev.subtitle === next.subtitle &&
+        prev.headerTrailing === next.headerTrailing
+      ) {
+        return prev
+      }
+      return next
+    })
   }, [])
 
   const value = useMemo(

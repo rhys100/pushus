@@ -9,6 +9,17 @@ import { useActiveGroup } from '@/hooks/useActiveGroup'
 import { useAuth } from '@/providers/AuthProvider'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 
+function friendlyCreateGroupError(message: string): string {
+  const lower = message.toLowerCase()
+  if (lower.includes('duplicate') || lower.includes('already') || lower.includes('unique')) {
+    return 'You already have a group with that name. Try a different one.'
+  }
+  if (lower.includes('network') || lower.includes('fetch')) {
+    return 'Network hiccup — check your connection and try again.'
+  }
+  return "Couldn't create your group. Please try again."
+}
+
 export function CreateGroupPage() {
   useDocumentTitle('Create group')
   const navigate = useNavigate()
@@ -25,7 +36,7 @@ export function CreateGroupPage() {
 
   if (groupLoading) {
     return (
-      <div className="flex min-h-screen flex-col bg-bg px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
+      <div className="flex min-h-[100dvh] flex-col bg-bg px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
         <div className="mx-auto w-full max-w-sm flex-1 py-6 space-y-3">
           <Skeleton className="h-4 w-24" />
           <Skeleton className="h-8 w-56" />
@@ -55,7 +66,8 @@ export function CreateGroupPage() {
     setCreating(false)
 
     if (error) {
-      toast({ message: error.message, variant: 'danger' })
+      console.error('create_group failed', error)
+      toast({ message: friendlyCreateGroupError(error.message), variant: 'danger' })
       return
     }
 
@@ -70,7 +82,7 @@ export function CreateGroupPage() {
 
   if (!appAccess.can_create_group) {
     return (
-      <div className="flex min-h-screen flex-col bg-bg px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
+      <div className="flex min-h-[100dvh] flex-col bg-bg px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
         <div className="mx-auto w-full max-w-sm flex-1 py-6">
           <Card padding="lg" className="space-y-4 text-center">
             <p className="text-4xl" aria-hidden="true">
@@ -104,7 +116,7 @@ export function CreateGroupPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
+    <div className="flex min-h-[100dvh] flex-col bg-bg px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
       <div className="mx-auto w-full max-w-sm flex-1 py-6">
         <div className="mb-6">
           <p className="text-sm font-medium text-accent">Step 2 of 2</p>

@@ -39,6 +39,7 @@ export function LoginPage() {
   // page — most people sign in with email/Google; only invitees need it.
   const [showInvite, setShowInvite] = useState(false)
   const authErrorShownRef = useRef(false)
+  const sentHeadingRef = useRef<HTMLParagraphElement>(null)
 
   useEffect(() => {
     if (resendCooldown <= 0) return
@@ -69,6 +70,14 @@ export function LoginPage() {
       document.documentElement.style.removeProperty('--toast-top')
     }
   }, [])
+
+  // The submit button vanishes when the form is swapped for the confirmation,
+  // so pull focus onto its heading — keyboard/SR users get told the link went out.
+  useEffect(() => {
+    if (linkSent) {
+      sentHeadingRef.current?.focus()
+    }
+  }, [linkSent])
 
   async function sendMagicLink(): Promise<boolean> {
     const trimmed = email.trim()
@@ -127,7 +136,7 @@ export function LoginPage() {
 
   return (
     <div
-      className="flex min-h-screen flex-col bg-bg px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))]"
+      className="flex min-h-[100dvh] flex-col bg-bg px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))]"
     >
       {/* Welcome, card, footer rise in one after another */}
       <div className="motion-stagger mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
@@ -146,7 +155,11 @@ export function LoginPage() {
 
         <Card padding="lg" className="space-y-4">
           {linkSent ? (
-            <div className="motion-rise space-y-3 text-center">
+            <div
+              className="motion-rise space-y-3 text-center"
+              role="status"
+              aria-live="polite"
+            >
               <p
                 className="motion-pop text-4xl"
                 style={{ animationDelay: '120ms' }}
@@ -154,7 +167,13 @@ export function LoginPage() {
               >
                 ✉️
               </p>
-              <p className="text-sm font-medium text-text-primary">Magic link sent</p>
+              <p
+                ref={sentHeadingRef}
+                tabIndex={-1}
+                className="text-sm font-medium text-text-primary focus:outline-none"
+              >
+                Magic link sent
+              </p>
               <p className="text-sm text-text-muted">
                 We emailed a sign-in link to{' '}
                 <span className="font-semibold text-text-primary">{email.trim()}</span>. Open it to

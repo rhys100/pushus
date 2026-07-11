@@ -99,6 +99,7 @@ export function CustomBadgeAdmin() {
               onClick={() => setEmoji(option)}
               className={cn(
                 'flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] border text-lg transition-colors',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
                 emoji === option
                   ? 'border-accent bg-accent-muted'
                   : 'border-border bg-bg hover:border-accent/30',

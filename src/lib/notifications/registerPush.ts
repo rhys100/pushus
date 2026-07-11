@@ -74,10 +74,6 @@ export function resolvePushSupportStatus(
   return 'supported'
 }
 
-export function pushSupportAllowsEnable(status: PushSupportStatus): boolean {
-  return status === 'supported'
-}
-
 export function getPushPermissionStatus(): PushPermissionStatus {
   if (!('Notification' in window)) {
     return 'unsupported'

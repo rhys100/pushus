@@ -14,6 +14,7 @@
   --color-bg: #0a0a0d;
   --color-surface: #16161c;
   --color-accent: #ff6b35;
+  --color-accent-secondary: #5aa9ff;
   --color-accent-hot: #ff8a3d;
   --color-accent-deep: #ff4d00;
   --color-accent-muted: #ff6b3540;
@@ -117,6 +118,7 @@
   --color-bg: #f4f4f7;
   --color-surface: #ffffff;
   --color-accent: #f25d24;
+  --color-accent-secondary: #2f6fd0;
   --color-accent-hot: #ff7a36;
   --color-accent-deep: #e04a00;
   --color-accent-muted: #f25d2430;

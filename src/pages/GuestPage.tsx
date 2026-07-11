@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, ButtonRouterLink, useToast } from '@/components/ui'
+import { Button, useToast } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import {
   CircularLogger,
@@ -217,14 +217,15 @@ export function GuestPage() {
             ? 'Keep these reps and push with your mates.'
             : `${appConfig.name} — nothing here is shared or synced.`}
         </p>
-        <div className="flex gap-2">
-          <Button className="min-h-11 flex-1 text-sm" onClick={() => navigate('/login')}>
-            Create free account
-          </Button>
-          <ButtonRouterLink to="/login" variant="secondary" className="min-h-11 flex-1 text-sm">
-            Sign in
-          </ButtonRouterLink>
-        </div>
+        {/* One CTA: /login is a single passwordless screen that handles both new
+            and returning users, so two buttons here would do exactly the same thing. */}
+        <Button
+          fullWidth
+          className="min-h-11 text-sm"
+          onClick={() => navigate('/login')}
+        >
+          Create free account or sign in
+        </Button>
       </div>
     </div>
   )

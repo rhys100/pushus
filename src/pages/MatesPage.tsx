@@ -74,6 +74,8 @@ function MateDetail({ mate, onClose }: { mate: MateListItem; onClose: () => void
   const removeMate = useRemoveMate()
   const blockMate = useBlockMate()
   const [duration, setDuration] = useState<1 | 3 | 7>(3)
+  // Track which nudge is in flight so only the tapped button spins, not all three.
+  const [nudgingKind, setNudgingKind] = useState<NudgeKind | null>(null)
   // Pop only rewards a tap — the default pill mounts still.
   const [durationInteracted, setDurationInteracted] = useState(false)
   // Remove and Block both arm-to-confirm and are mutually exclusive; a stale
@@ -89,6 +91,7 @@ function MateDetail({ mate, onClose }: { mate: MateListItem; onClose: () => void
   }, [pendingDestructive])
 
   async function handleNudge(kind: NudgeKind) {
+    setNudgingKind(kind)
     try {
       const result = await sendNudge.mutateAsync({ recipientId: mate.user.id, kind })
       successHaptic()
@@ -101,6 +104,8 @@ function MateDetail({ mate, onClose }: { mate: MateListItem; onClose: () => void
       })
     } catch (error) {
       toast({ message: getErrorMessage(error, 'Could not nudge.'), variant: 'danger' })
+    } finally {
+      setNudgingKind(null)
     }
   }
 
@@ -170,7 +175,8 @@ function MateDetail({ mate, onClose }: { mate: MateListItem; onClose: () => void
             key={nudge.kind}
             variant="secondary"
             className="min-h-10 whitespace-nowrap px-2 text-sm"
-            loading={sendNudge.isPending}
+            loading={nudgingKind === nudge.kind}
+            disabled={sendNudge.isPending && nudgingKind !== nudge.kind}
             onClick={() => void handleNudge(nudge.kind)}
           >
             {nudge.emoji} {nudge.label}
@@ -368,7 +374,12 @@ export function MatesPage() {
   const { user } = useAuth()
   const { toast } = useToast()
   const { activeGroup } = useActiveGroup()
-  const { data: mates = [], isLoading: matesLoading } = useMates()
+  const {
+    data: mates = [],
+    isLoading: matesLoading,
+    error: matesError,
+    refetch: refetchMates,
+  } = useMates()
   const { data: leaderboard = [] } = useMateLeaderboard(7)
   const { data: challenges = [] } = useMateChallenges()
   const { data: mateCode } = useMyMateCode()
@@ -378,6 +389,17 @@ export function MatesPage() {
   const requestMate = useRequestMate()
   const rotateCode = useRotateMateCode()
   const [expandedMateId, setExpandedMateId] = useState<string | null>(null)
+  // Rotating invalidates every link already shared, so arm-to-confirm first;
+  // a stale armed state auto-disarms after 4s (matching the mate remove/block flow).
+  const [rotateArmed, setRotateArmed] = useState(false)
+  // Reveal a persistent select-all link when the clipboard write is blocked.
+  const [copyFailed, setCopyFailed] = useState(false)
+
+  useEffect(() => {
+    if (!rotateArmed) return
+    const timer = window.setTimeout(() => setRotateArmed(false), 4000)
+    return () => window.clearTimeout(timer)
+  }, [rotateArmed])
 
   const accepted = mates.filter((mate) => mate.status === 'accepted')
   const incoming = mates.filter((mate) => mate.status === 'pending' && mate.direction === 'incoming')
@@ -413,13 +435,21 @@ export function MatesPage() {
     if (!mateLink) return
     try {
       await navigator.clipboard.writeText(mateLink)
+      setCopyFailed(false)
       toast({ message: 'Mate link copied. Send it to anyone.', variant: 'success' })
     } catch {
-      toast({ message: mateLink, variant: 'default', durationMs: 10_000 })
+      setCopyFailed(true)
+      toast({ message: 'Could not copy link. Select the text below.', variant: 'danger' })
     }
   }
 
   async function handleRotate() {
+    if (!rotateArmed) {
+      setRotateArmed(true)
+      return
+    }
+
+    setRotateArmed(false)
     try {
       await rotateCode.mutateAsync()
       toast({
@@ -474,14 +504,25 @@ export function MatesPage() {
               Copy mate link
             </Button>
             <Button
-              variant="secondary"
+              variant={rotateArmed ? 'danger' : 'secondary'}
               className="min-h-10 shrink-0 px-3 text-sm"
               loading={rotateCode.isPending}
               onClick={() => void handleRotate()}
             >
-              Rotate
+              {rotateArmed ? 'Confirm' : 'Rotate'}
             </Button>
           </div>
+          {rotateArmed ? (
+            <p role="status" className="text-xs text-danger">
+              Rotating makes your current link stop working — anyone you already sent it to will
+              need the new one.
+            </p>
+          ) : null}
+          {copyFailed && mateLink ? (
+            <p className="select-all break-all rounded-[var(--radius-md)] bg-bg px-3 py-2 font-mono text-xs text-text-primary">
+              {mateLink}
+            </p>
+          ) : null}
         </Card>
 
         {receivedNudges.length > 0 ? (
@@ -562,6 +603,14 @@ export function MatesPage() {
           </h2>
           {matesLoading ? (
             <Skeleton className="h-14 w-full" />
+          ) : matesError ? (
+            <EmptyState
+              title="Couldn't load your mates"
+              description="Something went wrong. Check your connection and try again."
+              icon={<span className="text-2xl">⚠️</span>}
+              actionLabel="Try again"
+              onAction={() => void refetchMates()}
+            />
           ) : accepted.length === 0 ? (
             <EmptyState
               title="No mates yet"

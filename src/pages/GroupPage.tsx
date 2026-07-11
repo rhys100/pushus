@@ -10,6 +10,7 @@ import {
   useToast,
 } from '@/components/ui'
 import { BillingBanner } from '@/components/billing/BillingBanner'
+import { InviteShareCard } from '@/components/group/InviteShareCard'
 import { MemberAliasSheet } from '@/components/group/MemberAliasSheet'
 import { useTabPageMeta } from '@/components/layout/TabPageMeta'
 import { billingConfig } from '@/lib/billing'
@@ -41,6 +42,7 @@ export function GroupPage() {
   const subscriptionQuery = useGroupSubscription(groupId)
   const aliasMutation = useMemberAlias(groupId)
   const [aliasTarget, setAliasTarget] = useState<GroupMemberWithProfile | null>(null)
+  const [showInvite, setShowInvite] = useState(false)
 
   const membersQuery = useGroupMembers(groupId)
 
@@ -109,6 +111,10 @@ export function GroupPage() {
 
   const showMembersSkeleton = membersQuery.isLoading && members.length === 0
   const aliasProfile = aliasTarget?.profiles
+  const isAdmin = role === 'owner' || role === 'admin'
+  const canInvite =
+    isAdmin && activeGroup.invite_code_enabled && Boolean(activeGroup.invite_code)
+  const isSoloOwner = canInvite && memberCount === 1
 
   return (
     <div className="space-y-4 pb-4">
@@ -189,6 +195,28 @@ export function GroupPage() {
         </Card>
       </div>
 
+      {canInvite ? (
+        <section className="space-y-2">
+          {isSoloOwner ? (
+            <>
+              <div>
+                <h2 className="text-sm font-semibold text-text-primary">Invite your first mate</h2>
+                <p className="text-xs text-text-muted">
+                  You&apos;re the only one here — share your group link to get the crew going.
+                </p>
+              </div>
+              <InviteShareCard inviteCode={activeGroup.invite_code} />
+            </>
+          ) : showInvite ? (
+            <InviteShareCard inviteCode={activeGroup.invite_code} />
+          ) : (
+            <Button variant="secondary" className="w-full" onClick={() => setShowInvite(true)}>
+              Invite mates
+            </Button>
+          )}
+        </section>
+      ) : null}
+
       <section className="space-y-2">
         <div className="flex items-baseline justify-between gap-2">
           <h2 className="text-sm font-semibold text-text-primary">Members</h2>
@@ -224,7 +252,11 @@ export function GroupPage() {
                 <Card
                   key={member.id}
                   padding="sm"
-                  className={canRename ? 'cursor-pointer transition-colors hover:border-accent/30' : undefined}
+                  className={
+                    canRename
+                      ? 'cursor-pointer transition-colors hover:border-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg'
+                      : undefined
+                  }
                   onClick={canRename ? () => setAliasTarget(member) : undefined}
                   onKeyDown={
                     canRename

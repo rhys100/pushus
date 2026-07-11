@@ -47,7 +47,6 @@ type ActivityFeedRowProps = {
   currentUserId: string | undefined
   reactions: ReactionSummary[]
   onToggleReaction: (entryId: string, emoji: ReactionEmoji) => void
-  reactionPending: boolean
   dense?: boolean
 }
 
@@ -74,7 +73,6 @@ export const ActivityFeedRow = memo(function ActivityFeedRow({
   currentUserId,
   reactions,
   onToggleReaction,
-  reactionPending,
   dense = false,
 }: ActivityFeedRowProps) {
   const canReact = canReactToFeedItem(item, currentUserId)
@@ -93,7 +91,7 @@ export const ActivityFeedRow = memo(function ActivityFeedRow({
   )
 
   const react = (emoji: ReactionEmoji) => {
-    if (!canReact || reactionPending) return
+    if (!canReact) return
     tapHaptic()
     onToggleReaction(item.event_id, emoji)
     setPickerOpen(false)
@@ -163,7 +161,6 @@ export const ActivityFeedRow = memo(function ActivityFeedRow({
                 <button
                   key={emoji}
                   type="button"
-                  disabled={reactionPending}
                   aria-pressed={mineSet.has(emoji)}
                   aria-label={`React with ${emoji}`}
                   onClick={() => react(emoji)}
@@ -175,7 +172,6 @@ export const ActivityFeedRow = memo(function ActivityFeedRow({
                     mineSet.has(emoji)
                       ? 'motion-pop border-accent/50 bg-accent-muted'
                       : 'border-border bg-bg hover:border-accent/30',
-                    reactionPending && 'opacity-60',
                   )}
                 >
                   {emoji}
@@ -201,7 +197,7 @@ export const ActivityFeedRow = memo(function ActivityFeedRow({
                 <button
                   key={emoji}
                   type="button"
-                  disabled={!canReact || reactionPending}
+                  disabled={!canReact}
                   aria-pressed={mine}
                   aria-label={`${emoji} ${count} reaction${count === 1 ? '' : 's'}${mine ? ', including you' : ''}${canReact ? ' — tap to toggle yours' : ''}`}
                   onClick={() => react(emoji)}
@@ -215,7 +211,6 @@ export const ActivityFeedRow = memo(function ActivityFeedRow({
                       ? 'border-accent/50 bg-accent-muted text-accent'
                       : 'border-border bg-bg text-text-primary',
                     !canReact && 'cursor-default',
-                    reactionPending && 'opacity-60',
                   )}
                 >
                   <span aria-hidden="true">{emoji}</span>
@@ -317,10 +312,11 @@ export function GroupFeedPanel() {
   }, [])
 
   const toggleReactionMutate = toggleReaction.mutate
-  const reactionPending = toggleReaction.isPending
+  // Optimistic UI carries the feedback; no global pending flag, so this stays a
+  // stable identity that doesn't re-render every memoised row on each tap.
   const handleToggleReaction = useCallback(
     (entryId: string, emoji: ReactionEmoji) => {
-      if (!activeGroup || reactionPending) {
+      if (!activeGroup) {
         return
       }
 
@@ -333,7 +329,7 @@ export function GroupFeedPanel() {
 
       toggleReactionMutate({ group: activeGroup, entryId, emoji })
     },
-    [activeGroup, feed, user?.id, reactionPending, toggleReactionMutate],
+    [activeGroup, feed, user?.id, toggleReactionMutate],
   )
 
   return (
@@ -400,7 +396,6 @@ export function GroupFeedPanel() {
                 currentUserId={user?.id}
                 reactions={reactionsByEntry.get(item.event_id) ?? EMPTY_REACTIONS}
                 onToggleReaction={handleToggleReaction}
-                reactionPending={reactionPending}
                 dense={dense}
               />
             ))}

@@ -30,7 +30,10 @@ const METRIC_OPTIONS: { value: ProgressMetric; label: string }[] = [
   { value: 'best', label: 'Best set' },
 ]
 
-const RIGHT_SIDE_COLOR = '#5aa9ff'
+// Theme-aware second-series colour (mirrors --color-accent). Falls back to the
+// original blue until the token lands in tokens.css. Used for the Right series
+// line + its legend dot.
+const RIGHT_SIDE_COLOR = 'var(--color-accent-secondary, #5aa9ff)'
 
 export type MyProgressPanelProps = {
   group: Group

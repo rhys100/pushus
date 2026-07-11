@@ -7,16 +7,10 @@ import {
   markPwaStandaloneProof,
 } from '@/lib/storage'
 import {
-  getPwaInstallPlatform,
   isStandaloneDisplayMode,
   shouldShowPwaInstallPrompt,
-  type PwaInstallPlatform,
 } from '@/lib/pwaInstallPrompt'
-import {
-  getPwaInstallDockVisible,
-  setPwaInstallDockVisible,
-  subscribePwaInstallDockVisibility,
-} from '@/lib/pwaInstallDockVisibility'
+import { setPwaInstallDockVisible } from '@/lib/pwaInstallDockVisibility'
 import {
   INSTALL_PROMPT_CHECK_MS,
   isInstallPromptCheckComplete,
@@ -25,7 +19,7 @@ import {
   subscribeInstallPromptAvailability,
 } from '@/lib/pwaInstallPromptAvailability'
 import { syncPwaKnownInstalledFromDisplayMode } from '@/lib/pwaInstalled'
-import { refreshPwaInstallStatus } from '@/lib/pwaInstallStatus'
+import { readPwaInstallPlatform, refreshPwaInstallStatus } from '@/lib/pwaInstallStatus'
 import { useAuth } from '@/providers/AuthProvider'
 
 type BeforeInstallPromptUserChoice = {
@@ -47,26 +41,6 @@ function getIsInstalled(): boolean {
   }
 }
 
-function getPlatform(): PwaInstallPlatform {
-  try {
-    return getPwaInstallPlatform(
-      navigator.userAgent,
-      navigator.platform,
-      navigator.maxTouchPoints,
-    )
-  } catch {
-    return 'other'
-  }
-}
-
-export function usePwaInstallDockVisible(): boolean {
-  return useSyncExternalStore(
-    subscribePwaInstallDockVisibility,
-    getPwaInstallDockVisible,
-    () => false,
-  )
-}
-
 export function usePwaInstallPrompt() {
   const { session, profileOnboarded, appAccess, profileReady, appAccessLoading } = useAuth()
   const location = useLocation()
@@ -80,7 +54,7 @@ export function usePwaInstallPrompt() {
   })
   const [isOpenAppEligible, setIsOpenAppEligible] = useState(false)
   const [promptDismissed, setPromptDismissed] = useState(false)
-  const platform = useMemo(getPlatform, [])
+  const platform = useMemo(readPwaInstallPlatform, [])
   useSyncExternalStore(
     subscribeInstallPromptAvailability,
     isInstallPromptCheckComplete,

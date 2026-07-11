@@ -114,6 +114,7 @@ export function SettingsPage() {
   const [profileTimezone, setProfileTimezone] = useState('UTC')
   const [savingProfile, setSavingProfile] = useState(false)
   const [openAppPromptDismissed, setOpenAppPromptDismissed] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
   const hours = hourOptions()
   const pushPlatform = readPwaInstallPlatform()
   const inBrowserTab = !isStandalonePwa()
@@ -134,9 +135,18 @@ export function SettingsPage() {
   const reminderFreqLabel =
     REMINDER_INTERVAL_OPTIONS.find((option) => option.value === reminderIntervalMinutes)?.label ??
     'Every hour'
-  const activeHoursLabel = `${String(prefs?.active_hours_start ?? 7).padStart(2, '0')}:00–${String(
-    prefs?.active_hours_end ?? 20,
-  ).padStart(2, '0')}:00`
+  const activeHoursStart = prefs?.active_hours_start ?? 7
+  const activeHoursEnd = prefs?.active_hours_end ?? 20
+  const formatHourLabel = (hour: number) => `${String(hour).padStart(2, '0')}:00`
+  // The eligibility engine treats start > end as an overnight window and
+  // start === end as all-day (see isWithinActiveHours), so label those cases
+  // instead of showing a range that looks broken.
+  const activeHoursLabel =
+    activeHoursStart === activeHoursEnd
+      ? 'all day'
+      : activeHoursStart < activeHoursEnd
+        ? `${formatHourLabel(activeHoursStart)}–${formatHourLabel(activeHoursEnd)}`
+        : `${formatHourLabel(activeHoursStart)}–${formatHourLabel(activeHoursEnd)} overnight`
 
   // One plain-language line under the reminders toggle — no dev-speak.
   function reminderStatusLine(): string {
@@ -269,6 +279,20 @@ export function SettingsPage() {
     await updatePreferences({ reminder_interval_minutes: value })
   }
 
+  async function handleSignOut() {
+    if (signingOut) {
+      return
+    }
+    setSigningOut(true)
+    try {
+      await signOut()
+    } catch (error) {
+      // Sign-out failed — the session is still active, so re-enable the button.
+      setSigningOut(false)
+      toast({ message: getErrorMessage(error, 'Could not sign out.'), variant: 'danger' })
+    }
+  }
+
   async function handleSaveProfile() {
     const trimmed = profileDisplayName.trim()
     if (!trimmed) {
@@ -391,6 +415,7 @@ export function SettingsPage() {
                     className={cn(
                       'flex h-10 w-full items-center justify-center rounded-[var(--radius-md)] text-xl',
                       'border transition-colors',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
                       profileEmoji === option
                         ? 'border-accent bg-accent-muted'
                         : 'border-border bg-bg hover:border-accent/30',
@@ -467,6 +492,7 @@ export function SettingsPage() {
               onClick={() => handleThemeChange(option.value)}
               className={cn(
                 'min-h-11 rounded-[var(--radius-md)] border px-3 py-2 text-sm font-medium transition-colors',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
                 themePreference === option.value
                   ? 'border-accent bg-accent-muted text-text-primary'
                   : 'border-border bg-bg text-text-muted hover:border-accent/30',
@@ -690,6 +716,14 @@ export function SettingsPage() {
                       </label>
                     </div>
 
+                    {activeHoursStart >= activeHoursEnd ? (
+                      <p className="text-xs text-text-muted">
+                        {activeHoursStart === activeHoursEnd
+                          ? 'From and Until match, so reminders can arrive any hour of the day.'
+                          : 'This is an overnight window — reminders run from the evening through to the next morning.'}
+                      </p>
+                    ) : null}
+
                     <label className="space-y-1">
                       <span className="text-xs font-medium text-text-muted">Frequency</span>
                       <select
@@ -751,7 +785,12 @@ export function SettingsPage() {
           <SettingsLinkRow to="/about" title={`About ${appConfig.name}`} />
         </Card>
 
-        <Button variant="danger" fullWidth onClick={() => void signOut()}>
+        <Button
+          variant="danger"
+          fullWidth
+          loading={signingOut}
+          onClick={() => void handleSignOut()}
+        >
           Sign out
         </Button>
 

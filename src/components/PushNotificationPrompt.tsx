@@ -61,7 +61,7 @@ export function PushNotificationPrompt() {
               disabled={enabling}
               onClick={dismiss}
             >
-              Not now
+              Don’t ask again
             </Button>
           </>
         )}

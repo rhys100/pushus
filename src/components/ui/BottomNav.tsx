@@ -81,7 +81,7 @@ const navItems: NavConfig[] = [
         className={cn(
           'flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-[var(--duration-fast)]',
           active
-            ? 'bg-accent text-white shadow-[0_0_12px_rgba(255,107,74,0.35)]'
+            ? 'bg-accent text-[var(--color-on-accent)] shadow-[var(--shadow-glow-accent)]'
             : 'border-2 border-accent/80 text-accent',
         )}
       >

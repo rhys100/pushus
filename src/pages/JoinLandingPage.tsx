@@ -5,7 +5,7 @@ import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 export function JoinLandingPage() {
   useDocumentTitle('Join a group')
   return (
-    <div className="flex min-h-screen flex-col bg-bg px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
+    <div className="flex min-h-[100dvh] flex-col bg-bg px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
       <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
         <Card padding="lg" className="space-y-5">
           <div className="space-y-2 text-center">

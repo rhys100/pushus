@@ -55,7 +55,7 @@ export function DevPreviewPage() {
     sided === 'sided'
       ? [
           { name: 'Left', color: 'var(--color-accent)', values: SAMPLE_CHART_VALUES },
-          { name: 'Right', color: '#5aa9ff', values: SAMPLE_CHART_VALUES_B },
+          { name: 'Right', color: 'var(--color-accent-secondary, #5aa9ff)', values: SAMPLE_CHART_VALUES_B },
         ]
       : [{ name: 'Total reps', color: 'var(--color-accent)', values: SAMPLE_CHART_VALUES }]
 
@@ -254,7 +254,6 @@ function FeedReactionDemo() {
             currentUserId="me"
             reactions={byEntry[item.event_id] ?? []}
             onToggleReaction={toggle}
-            reactionPending={false}
           />
         ))}
       </ul>

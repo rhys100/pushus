@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Button, ButtonRouterLink, Card } from '@/components/ui'
+import { Button, ButtonRouterLink, Card, useToast } from '@/components/ui'
 import { appConfig } from '@/lib/config'
 import { getPendingInviteCode } from '@/lib/storage'
 import { useAuth } from '@/providers/AuthProvider'
@@ -8,10 +9,28 @@ import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 export function PrivateBetaPage() {
   useDocumentTitle('Private beta')
   const { signOut, appAccess, refreshAppAccess } = useAuth()
+  const { toast } = useToast()
   const pendingInvite = getPendingInviteCode()
+  const [isChecking, setIsChecking] = useState(false)
+
+  // If access is now granted the route guard whisks the user in, so we only
+  // surface a toast when they're still blocked — otherwise the tap looks dead.
+  async function handleCheckAgain() {
+    setIsChecking(true)
+    try {
+      const next = await refreshAppAccess()
+      if (!next.allowed) {
+        toast({
+          message: 'Still no access yet — ask the group organiser to confirm your email.',
+        })
+      }
+    } finally {
+      setIsChecking(false)
+    }
+  }
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
+    <div className="flex min-h-[100dvh] flex-col bg-bg px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
       <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
         <div className="mb-6 text-center">
           <p className="text-sm uppercase tracking-[0.2em] text-text-muted">Private beta</p>
@@ -54,7 +73,9 @@ export function PrivateBetaPage() {
               variant="secondary"
               fullWidth
               type="button"
-              onClick={() => void refreshAppAccess()}
+              loading={isChecking}
+              disabled={isChecking}
+              onClick={() => void handleCheckAgain()}
             >
               Check again
             </Button>

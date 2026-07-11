@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { parseISO, startOfMonth } from 'date-fns'
 import { cn } from '@/lib/cn'
+import { prefersReducedMotion } from '@/lib/motion'
 import { PUSHUPS_ICON } from '@/lib/activityIcons'
 import { getStoredLogActivityId } from '@/lib/storage'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
@@ -34,6 +35,34 @@ export function RepHistoryPanel() {
   const [selectedDate, setSelectedDate] = useState('')
   const [monthStart, setMonthStart] = useState(() => startOfMonth(new Date()))
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null)
+
+  // The selected day's detail (add-set card + entries) renders below the tall
+  // calendar, so a tap can leave it off-screen. Scroll it into view when the
+  // user picks a day — but not on the initial today-default selection.
+  const detailRef = useRef<HTMLDivElement>(null)
+  const pendingScrollRef = useRef(false)
+
+  function handleSelectDate(nextDate: string) {
+    if (nextDate !== selectedDate) {
+      pendingScrollRef.current = true
+    }
+    setSelectedDate(nextDate)
+  }
+
+  useEffect(() => {
+    if (!pendingScrollRef.current) {
+      return
+    }
+    pendingScrollRef.current = false
+
+    // This runs after commit, so the detail — including a freshly mounted
+    // add-set card — is already laid out. We align its top edge (block: 'start'),
+    // which is stable regardless of the card below, so no rAF deferral is needed.
+    detailRef.current?.scrollIntoView({
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+      block: 'start',
+    })
+  }, [selectedDate])
 
   const { data: customActivities = [] } = useCustomActivities(user?.id)
   const selectedActivity =
@@ -203,42 +232,41 @@ export function RepHistoryPanel() {
         monthStart={monthStart}
         onMonthChange={setMonthStart}
         selectedDate={selectedDate}
-        onSelectDate={setSelectedDate}
+        onSelectDate={handleSelectDate}
         todayDate={todayDate}
         summariesByDate={summariesByDate}
+        loading={monthIsLoading}
       />
 
-      {monthIsLoading ? (
-        <Skeleton className="h-32 w-full rounded-[var(--radius-lg)]" />
-      ) : null}
-
-      {isCustom && selectedActivity ? (
-        <CustomDayEntriesList
-          activity={selectedActivity}
-          entries={customEntries}
-          selectedDate={selectedDate}
-          todayDate={todayDate}
-          loading={customEntriesLoading && customEntries.length === 0}
-        />
-      ) : (
-        <>
-          {showAddSet ? (
-            <AddSetForDay
-              group={activeGroup!}
-              loggedFor={selectedDate}
-              dayLabel={selectedHeading}
-            />
-          ) : null}
-          <DayEntriesList
-            group={activeGroup!}
-            entries={entries}
+      <div ref={detailRef} className="scroll-mt-4 space-y-4">
+        {isCustom && selectedActivity ? (
+          <CustomDayEntriesList
+            activity={selectedActivity}
+            entries={customEntries}
             selectedDate={selectedDate}
             todayDate={todayDate}
-            loading={entriesLoading && entries.length === 0}
-            className="mt-0"
+            loading={customEntriesLoading && customEntries.length === 0}
           />
-        </>
-      )}
+        ) : (
+          <>
+            {showAddSet ? (
+              <AddSetForDay
+                group={activeGroup!}
+                loggedFor={selectedDate}
+                dayLabel={selectedHeading}
+              />
+            ) : null}
+            <DayEntriesList
+              group={activeGroup!}
+              entries={entries}
+              selectedDate={selectedDate}
+              todayDate={todayDate}
+              loading={entriesLoading && entries.length === 0}
+              className="mt-0"
+            />
+          </>
+        )}
+      </div>
     </div>
   )
 }

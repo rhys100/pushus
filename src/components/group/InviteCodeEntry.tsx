@@ -22,6 +22,7 @@ export function InviteCodeEntry({
   const navigate = useNavigate()
   const [code, setCode] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const errorId = `${id}-error`
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -44,7 +45,13 @@ export function InviteCodeEntry({
         id={id}
         type="text"
         autoComplete="off"
+        autoCapitalize="none"
+        autoCorrect="off"
+        inputMode="text"
+        enterKeyHint="go"
         spellCheck={false}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
         value={code}
         onChange={(e) => {
           setCode(e.target.value)
@@ -57,7 +64,11 @@ export function InviteCodeEntry({
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
         )}
       />
-      {error ? <p className="text-xs text-danger">{error}</p> : null}
+      {error ? (
+        <p id={errorId} role="alert" className="text-xs text-danger">
+          {error}
+        </p>
+      ) : null}
       <Button type="submit" variant="secondary" fullWidth>
         {submitLabel}
       </Button>

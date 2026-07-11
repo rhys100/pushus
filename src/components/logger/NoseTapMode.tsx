@@ -201,16 +201,45 @@ export function NoseTapMode({ open, banking = false, onBank, onExit }: NoseTapMo
   const [count, setCount] = useState(0)
   const [tap, setTap] = useState<TapPoint | null>(null)
   const [skin, setSkin] = useState<NoseTapSkinId>(loadSkin)
+  // Guard against silently throwing away counted reps: the first Exit tap with a
+  // non-zero count arms a confirm, the second actually leaves.
+  const [confirmingExit, setConfirmingExit] = useState(false)
   const countRef = useRef(0)
+  const exitConfirmTimerRef = useRef(0)
 
   useEffect(() => {
     if (open) {
       setCount(0)
       countRef.current = 0
       setTap(null)
+      setConfirmingExit(false)
       primeDinkAudio()
     }
   }, [open])
+
+  useEffect(() => {
+    return () => {
+      window.clearTimeout(exitConfirmTimerRef.current)
+    }
+  }, [])
+
+  const handleExit = useCallback(() => {
+    if (banking) {
+      return
+    }
+
+    // Arm the confirm on the first tap when reps would be lost; auto-disarm so a
+    // stray tap doesn't leave it stuck.
+    if (countRef.current > 0 && !confirmingExit) {
+      setConfirmingExit(true)
+      window.clearTimeout(exitConfirmTimerRef.current)
+      exitConfirmTimerRef.current = window.setTimeout(() => setConfirmingExit(false), 3000)
+      return
+    }
+
+    window.clearTimeout(exitConfirmTimerRef.current)
+    onExit()
+  }, [banking, confirmingExit, onExit])
 
   // Lock page scroll behind the overlay while open.
   useEffect(() => {
@@ -292,11 +321,16 @@ export function NoseTapMode({ open, banking = false, onBank, onExit }: NoseTapMo
         </p>
         <button
           type="button"
-          onClick={onExit}
+          onClick={handleExit}
           disabled={banking}
-          className="rounded-[var(--radius-full)] border-2 border-border bg-surface px-4 py-2 text-xs font-bold text-text-muted"
+          className={cn(
+            'rounded-[var(--radius-full)] border-2 px-4 py-2 text-xs font-bold',
+            confirmingExit
+              ? 'border-accent bg-accent/15 text-text-primary'
+              : 'border-border bg-surface text-text-muted',
+          )}
         >
-          Exit
+          {confirmingExit ? `Discard ${count}?` : 'Exit'}
         </button>
       </div>
 

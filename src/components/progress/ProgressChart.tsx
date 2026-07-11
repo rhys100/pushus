@@ -330,7 +330,10 @@ export function ProgressChart({ series, labels, ariaLabel, className }: Progress
       ))}
 
       {labels.map((label, index) =>
-        index % labelStep === 0 || index === pointCount - 1 ? (
+        // Drop a periodic label that lands within one step of the forced final
+        // label, so the last two don't collide at the right edge.
+        (index % labelStep === 0 && pointCount - 1 - index >= labelStep) ||
+        index === pointCount - 1 ? (
           <text
             key={`${label}-${index}`}
             x={xFor(index)}

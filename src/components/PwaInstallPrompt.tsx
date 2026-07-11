@@ -42,7 +42,7 @@ export function PwaInstallPrompt() {
           disabled={installing}
           onClick={dismiss}
         >
-          Not now
+          Don’t ask again
         </Button>
       </div>
     </BottomDockPrompt>

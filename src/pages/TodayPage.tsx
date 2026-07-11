@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useLoggerDragHint } from '@/hooks/useLoggerDragHint'
 import { useNoseHoldHint } from '@/hooks/useNoseHoldHint'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 import { useMyAvailability } from '@/hooks/useAvailability'
 import { shouldConfirmOverage } from '@/lib/overageCap'
-import { OverageConfirmSheet } from '@/components/logger/OverageConfirmSheet'
 import { supabase } from '@/lib/supabase'
 import {
   getGroupLocalDateString,
@@ -40,10 +39,6 @@ import { BankPushupsButton } from '@/components/logger/BankPushupsButton'
 import { CustomActivityDayCard } from '@/components/logger/CustomActivityDayCard'
 import { NoseHoldHint } from '@/components/logger/NoseHoldHint'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
-import { NoseTapMode } from '@/components/logger/NoseTapMode'
-import { SetEffortSheet } from '@/components/logger/SetEffortSheet'
-import { SorenessCheckInSheet } from '@/components/logger/SorenessCheckInSheet'
-import { ChallengeMaxCheckInCard } from '@/components/today/ChallengeMaxCheckInCard'
 import { DayProgressCard } from '@/components/today/DayProgressCard'
 import { GuestImportPrompt } from '@/components/today/GuestImportPrompt'
 import { useAuth } from '@/providers/AuthProvider'
@@ -55,6 +50,46 @@ import {
   shouldPromptSorenessCheckIn,
   sorenessSuppressesMaxCheckIn,
 } from '@/lib/training/sorenessCheckin'
+
+// TodayPage ships in the eager initial chunk, so these rarely-opened modals are
+// code-split out — their JS (and the Web-Audio / haptics they pull in) only loads
+// the first time each is actually opened, keeping first paint lean.
+const OverageConfirmSheet = lazy(() =>
+  import('@/components/logger/OverageConfirmSheet').then((m) => ({
+    default: m.OverageConfirmSheet,
+  })),
+)
+const NoseTapMode = lazy(() =>
+  import('@/components/logger/NoseTapMode').then((m) => ({ default: m.NoseTapMode })),
+)
+const SetEffortSheet = lazy(() =>
+  import('@/components/logger/SetEffortSheet').then((m) => ({ default: m.SetEffortSheet })),
+)
+const SorenessCheckInSheet = lazy(() =>
+  import('@/components/logger/SorenessCheckInSheet').then((m) => ({
+    default: m.SorenessCheckInSheet,
+  })),
+)
+const ChallengeMaxCheckInCard = lazy(() =>
+  import('@/components/today/ChallengeMaxCheckInCard').then((m) => ({
+    default: m.ChallengeMaxCheckInCard,
+  })),
+)
+
+/**
+ * Latch true once `active` has first been true, so a lazily-loaded modal mounts
+ * on first open and then stays mounted — preserving its close/exit animation
+ * instead of hard-unmounting the moment the open flag flips back to false.
+ */
+function useLatch(active: boolean): boolean {
+  const [latched, setLatched] = useState(false)
+
+  if (active && !latched) {
+    setLatched(true)
+  }
+
+  return latched
+}
 
 export function TodayPage() {
   const { toast } = useToast()
@@ -105,6 +140,11 @@ export function TodayPage() {
     planTimezone,
   )
 
+  // Keep each lazy sheet mounted once first opened so its exit animation still plays.
+  const overageSheetLatched = useLatch(overageConfirm !== null)
+  const effortSheetLatched = useLatch(effortEntryId !== null)
+  const sorenessSheetLatched = useLatch(showSorenessSheet)
+
   useEffect(() => {
     if (!user?.id) {
       return
@@ -129,6 +169,9 @@ export function TodayPage() {
     (activityId: string | null) => {
       setSelectedActivityId(activityId)
       setActivitySide('left')
+      // Leaving push-ups (or switching activity) drops max-set mode so the next
+      // set isn't silently logged as a max check-in.
+      setMaxSetMode(false)
       // Reset the ring so reps dialled for one activity can't land in another.
       loggerRef.current?.reset()
 
@@ -537,17 +580,31 @@ export function TodayPage() {
         ) : null}
 
         {maxSetMode && !isCustomMode ? (
-          <p className={cn(noticeInlineClass('accent'), 'mb-2 font-medium')}>
-            Max set mode — one clean set, stop when form breaks.
-          </p>
+          <div
+            className={cn(
+              noticeInlineClass('accent'),
+              'mb-2 flex items-center justify-between gap-3 font-medium',
+            )}
+          >
+            <span>Max set mode — one clean set, stop when form breaks.</span>
+            <button
+              type="button"
+              onClick={() => setMaxSetMode(false)}
+              className="shrink-0 font-semibold text-accent underline underline-offset-2 hover:text-text-primary"
+            >
+              Cancel
+            </button>
+          </div>
         ) : null}
 
         {showCheckIn ? (
-          <ChallengeMaxCheckInCard
-            maxSetModeActive={maxSetMode}
-            onTryMaxSet={() => setMaxSetMode(true)}
-            onStickToPlan={() => setShowMaxCheckInCard(false)}
-          />
+          <Suspense fallback={null}>
+            <ChallengeMaxCheckInCard
+              maxSetModeActive={maxSetMode}
+              onTryMaxSet={() => setMaxSetMode(true)}
+              onStickToPlan={() => setShowMaxCheckInCard(false)}
+            />
+          </Suspense>
         ) : null}
 
         {isCustomMode && selectedActivity ? (
@@ -588,7 +645,9 @@ export function TodayPage() {
               onCanBankChange={setCanBank}
               onBank={handleBankActive}
               onLongPressCenter={isCustomMode ? undefined : () => setNoseTapOpen(true)}
-              disabled={bankPending}
+              // Freeze the ring while the overage confirm is up so the count the
+              // sheet warns about is exactly what "Log it anyway" banks.
+              disabled={bankPending || overageConfirm !== null}
               showDragHint={showHint}
               onHintDismiss={dismissHint}
               className="px-0 py-0 -mb-5"
@@ -639,45 +698,61 @@ export function TodayPage() {
         {isCustomMode ? null : <NoseHoldHint show={showNoseHint} onDismiss={dismissNoseHint} />}
       </div>
 
-      <NoseTapMode
-        open={noseTapOpen}
-        banking={bankPushups.isPending}
-        onBank={(count) => void handleNoseTapBank(count)}
-        onExit={() => setNoseTapOpen(false)}
-      />
+      {noseTapOpen ? (
+        <Suspense fallback={null}>
+          <NoseTapMode
+            open={noseTapOpen}
+            banking={bankPushups.isPending}
+            onBank={(count) => void handleNoseTapBank(count)}
+            onExit={() => setNoseTapOpen(false)}
+          />
+        </Suspense>
+      ) : null}
 
-      <SetEffortSheet
-        open={effortEntryId !== null}
-        saving={recordEntryEffort.isPending}
-        onSelect={(rating) => void handleEffortSelect(rating)}
-        onSkip={() => {
-          setEffortAskedToday(true)
-          closeEffortSheet()
-        }}
-      />
+      {effortSheetLatched ? (
+        <Suspense fallback={null}>
+          <SetEffortSheet
+            open={effortEntryId !== null}
+            saving={recordEntryEffort.isPending}
+            onSelect={(rating) => void handleEffortSelect(rating)}
+            onSkip={() => {
+              setEffortAskedToday(true)
+              closeEffortSheet()
+            }}
+          />
+        </Suspense>
+      ) : null}
 
-      <SorenessCheckInSheet
-        open={showSorenessSheet}
-        saving={sorenessSaving}
-        onSelect={(status) => {
-          void saveStatus(status).then(() => {
-            setSorenessPromptedToday(true)
-            setShowSorenessSheet(false)
-          })
-        }}
-        onSkip={() => {
-          setSorenessPromptedToday(true)
-          setShowSorenessSheet(false)
-        }}
-      />
+      {sorenessSheetLatched ? (
+        <Suspense fallback={null}>
+          <SorenessCheckInSheet
+            open={showSorenessSheet}
+            saving={sorenessSaving}
+            onSelect={(status) => {
+              void saveStatus(status).then(() => {
+                setSorenessPromptedToday(true)
+                setShowSorenessSheet(false)
+              })
+            }}
+            onSkip={() => {
+              setSorenessPromptedToday(true)
+              setShowSorenessSheet(false)
+            }}
+          />
+        </Suspense>
+      ) : null}
 
-      <OverageConfirmSheet
-        open={overageConfirm !== null}
-        projectedTotal={overageConfirm?.projected ?? 0}
-        saving={bankPushups.isPending}
-        onConfirm={confirmOverage}
-        onCancel={() => setOverageConfirm(null)}
-      />
+      {overageSheetLatched ? (
+        <Suspense fallback={null}>
+          <OverageConfirmSheet
+            open={overageConfirm !== null}
+            projectedTotal={overageConfirm?.projected ?? 0}
+            saving={bankPushups.isPending}
+            onConfirm={confirmOverage}
+            onCancel={() => setOverageConfirm(null)}
+          />
+        </Suspense>
+      ) : null}
     </>
   )
 }

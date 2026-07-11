@@ -123,16 +123,3 @@ export function needsPwaInstallForPush(
 
   return !installStatus.isInstalledForPush
 }
-
-/** @deprecated Use isInstalledForPush on PwaInstallStatus */
-export type LegacyPwaInstallStatus = {
-  isStandalone: boolean
-  isInstalled: boolean
-}
-
-export function toLegacyInstallStatus(status: PwaInstallStatus): LegacyPwaInstallStatus {
-  return {
-    isStandalone: status.isStandalone,
-    isInstalled: status.isInstalledForPush,
-  }
-}
