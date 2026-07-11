@@ -71,9 +71,20 @@ In **Authentication → Providers → Email**:
 - Enable email OTP
 - Confirm sign-up is allowed for beta testers
 
-In **Authentication → Email Templates → Magic Link**, copy the contents of
-`supabase/templates/magic_link.html`. Despite the Supabase dashboard label, this
-template sends the six-digit code used by PushUS.
+In **Authentication → Email Templates → Magic Link**:
+
+- **Subject:** `Your PushUS sign-in code`
+- **Body (HTML):** copy `supabase/templates/magic_link.html`
+- **Body (plain text):** copy `supabase/templates/magic_link.txt` if the dashboard shows a Text tab
+
+Or push from the repo once SMTP is configured:
+
+```bash
+SUPABASE_ACCESS_TOKEN=your_token npm run auth:push-email-template
+```
+
+Create the token at [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens).
+Despite the Supabase dashboard label, this template sends the six-digit code used by PushUS.
 
 In **Authentication → URL configuration**:
 

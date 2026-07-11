@@ -8,6 +8,10 @@ describe('passwordless email template', () => {
     resolve(process.cwd(), 'supabase/templates/magic_link.html'),
     'utf8',
   )
+  const textTemplate = readFileSync(
+    resolve(process.cwd(), 'supabase/templates/magic_link.txt'),
+    'utf8',
+  )
   const rolloutTemplate = readFileSync(
     resolve(process.cwd(), 'supabase/templates/magic_link_hybrid_rollout.html'),
     'utf8',
@@ -23,6 +27,8 @@ describe('passwordless email template', () => {
     expect(template).toContain('{{ .Token }}')
     expect(template).not.toContain('{{ .ConfirmationURL }}')
     expect(template).toContain('Home Screen app')
+    expect(textTemplate).toContain('{{ .Token }}')
+    expect(textTemplate).not.toContain('{{ .ConfirmationURL }}')
   })
 
   it('keeps a hybrid template for zero-downtime production rollout', () => {

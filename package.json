@@ -21,6 +21,7 @@
     "test:e2e": "playwright test",
     "prepare": "husky",
     "version:check": "node scripts/check-version.mjs",
+    "auth:push-email-template": "node scripts/push-auth-email-template.mjs",
     "version:bump": "node scripts/bump-version.mjs",
     "precommit:check": "npm run version:check && node scripts/check-docs-staged.mjs",
     "licenses:generate": "license-checker --production --out THIRD_PARTY_NOTICES.md"

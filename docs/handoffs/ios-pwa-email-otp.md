@@ -20,14 +20,16 @@ use isolated storage, so a magic link opened in Safari cannot sign in the PWA.
 
 Auth template and client must overlap safely:
 
-1. In hosted Supabase, copy `supabase/templates/magic_link_hybrid_rollout.html` into
-   **Authentication → Email Templates → Magic Link**. Keep the subject
-   `Your PushUS sign-in code`.
+1. Push the hybrid template (or paste `supabase/templates/magic_link_hybrid_rollout.html` in
+   **Authentication → Email Templates → Magic Link**). Subject: `Your PushUS sign-in code`.
+   Or: `SUPABASE_ACCESS_TOKEN=... npm run auth:push-email-template -- --template hybrid`
 2. Send a production test email. Confirm it contains both a six-digit code and browser
    link. Existing production login must still work.
 3. Merge/deploy the client branch.
 4. Confirm the deployed Login page says **Email me a sign-in code**.
-5. Replace the hosted template with `supabase/templates/magic_link.html` (code-only).
+5. Push the code-only template:
+   `SUPABASE_ACCESS_TOKEN=... npm run auth:push-email-template`
+   (HTML from `magic_link.html`, plain text from `magic_link.txt` for the dashboard Text tab).
 6. On a real iPhone Home Screen install: request email, enter code in the PWA,
    force-close, reopen, and confirm the member stays signed in.
 
