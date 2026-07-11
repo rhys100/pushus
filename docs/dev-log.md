@@ -26,11 +26,18 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-11k (real iOS auth fix — email OTP inside PWA)
+
+- Rhys clarified the remaining issue: the iOS PWA does not retain login. Root cause confirmed: the magic link opens in Safari, and current iOS isolates Safari and Home Screen app localStorage, cookies, IndexedDB **and Cache Storage**. The previously shipped Cache bridge assumption was wrong on modern iOS; it also risked refresh-token rotation races.
+- Replaced cross-context token copying with Supabase email OTP verification **inside the PWA**: sign-in email contains `{{ .Token }}` plus the browser link; Login shows a six-digit `autocomplete="one-time-code"` input and calls `verifyOtp({ type: 'email' })`. This creates/persists the session in the PWA's own localStorage.
+- Retired bridge reads/writes and delete the legacy `pushus-auth-bridge-v1` cache on app boot/sign-out. Same-context resume remains for genuine iOS background suspension.
+- Operational dependency: hosted Supabase Magic Link email template must be updated from `supabase/templates/magic_link.html` when this client ships. No DB migration.
+
 ### 2026-07-11j (PWA HTML-level boot recovery)
 
 - Both `pushus.app` and `www.pushus.app` now serve build `feaf2b6`; Origin/CORS module requests return JavaScript, and Playwright standalone-iPhone probes render Login with an active service worker. A previously opened iOS standalone window can still hold the poisoned document in memory.
 - Added `/boot-guard.js` before the Vite module: if `#root` remains empty after 3s, reload current URL once with a repair nonce; if boot still fails, render a plain HTML “Reload PushUS” screen. This runs even when React's bundle cannot load.
-- Guard is `no-cache`; recovery keeps localStorage and the auth bridge intact, so it does not throw away a valid login.
+- Guard is `no-cache`; recovery keeps localStorage intact, so it does not throw away a valid login.
 
 ### 2026-07-11i (blank screen = Cloudflare CORS asset poison)
 
@@ -54,7 +61,7 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 ### 2026-07-11f (iOS Safari↔PWA auth bridge)
 
 - Re-checked after Rhys said login loss might still happen. First fix (refresh-on-resume) only covers same-context suspend. Bigger remaining cause: **magic links / OAuth complete in Safari**, and iOS isolates Safari localStorage from the Home Screen PWA — so evening reopen of the icon looks "logged out" even though Safari has the session.
-- **Shipped:** Cache Storage auth bridge (`authSessionBridge`) written on sign-in / token refresh / auth callback; PWA cold-start + foreground recovery reads it via `setSession`. Auth callback shows Home Screen handoff when iOS Safari and the app is known installed. Login copy in standalone iOS explains the Safari round-trip. Hardened AuthProvider so null session is not published until recovery finishes; longer refresh backoff; sign-out clears the bridge.
+- **Superseded the same day:** Cache Storage auth bridge (`authSessionBridge`) was written on sign-in / token refresh / auth callback. Device testing proved modern iOS isolates that storage too; entry 2026-07-11k replaces it with in-PWA email OTP and removes bridge token use.
 - Verified: tsc + unit tests (authSessionBridge + authSessionResume).
 
 ### 2026-07-11e (iOS PWA auth persistence)

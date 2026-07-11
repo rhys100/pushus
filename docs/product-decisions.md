@@ -103,7 +103,7 @@ For exploratory ideas without locked rules, see [product-roadmap.md](./product-r
 
 | Decision | Status |
 |----------|--------|
-| **Email magic link** — primary auth method | Beta |
+| **Passwordless email** — browser users may use the magic link; iOS Home Screen users enter the emailed OTP inside the PWA so the session is created in the correct storage context | Beta |
 | **Google OAuth optional** — configured per deployment; skippable for magic-link-only forks | Beta |
 | **No anonymous nickname-only accounts** — real auth required | Beta |
 | Optional **profile name initial** — single letter only, not a last name | Beta |

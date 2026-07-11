@@ -45,7 +45,7 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 
 ### Core
 
-- [x] Magic link auth
+- [x] Passwordless email auth (magic link in browsers; in-app code for iOS PWA)
 - [x] Optional Google auth (when configured in Supabase)
 - [x] Profile onboarding (display name, optional initial, emoji, timezone)
 - [x] Edit profile in Settings (display name, initial, emoji, timezone)

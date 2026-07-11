@@ -1,9 +1,4 @@
 import type { Session } from '@supabase/supabase-js'
-import {
-  clearAuthSessionBridge,
-  readAuthSessionBridge,
-  writeAuthSessionBridge,
-} from '@/lib/authSessionBridge'
 import { getSupabaseAuthStorageKey } from '@/lib/authStorageKey'
 import { supabase } from '@/lib/supabase'
 
@@ -44,42 +39,6 @@ export function hasRecoverableAuthSession(): boolean {
   return typeof stored?.refresh_token === 'string' && stored.refresh_token.length > 0
 }
 
-export async function persistAuthSessionBridge(session: Session | null): Promise<void> {
-  if (!session?.access_token || !session.refresh_token) {
-    return
-  }
-
-  try {
-    await writeAuthSessionBridge({
-      access_token: session.access_token,
-      refresh_token: session.refresh_token,
-      expires_at: session.expires_at,
-    })
-  } catch {
-    // Bridge is best-effort — never block sign-in on Cache Storage.
-  }
-}
-
-async function recoverFromBridge(): Promise<Session | null> {
-  const bridged = await readAuthSessionBridge()
-  if (!bridged) {
-    return null
-  }
-
-  const { data, error } = await supabase.auth.setSession({
-    access_token: bridged.access_token,
-    refresh_token: bridged.refresh_token,
-  })
-
-  if (error || !data.session) {
-    await clearAuthSessionBridge()
-    return null
-  }
-
-  void persistAuthSessionBridge(data.session)
-  return data.session
-}
-
 async function recoverFromRefreshToken(): Promise<Session | null> {
   if (!hasRecoverableAuthSession()) {
     return null
@@ -98,13 +57,11 @@ async function recoverFromRefreshToken(): Promise<Session | null> {
     try {
       const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession()
       if (!refreshError && refreshed.session) {
-        void persistAuthSessionBridge(refreshed.session)
         return refreshed.session
       }
 
       const { data: current } = await supabase.auth.getSession()
       if (current.session) {
-        void persistAuthSessionBridge(current.session)
         return current.session
       }
     } catch {
@@ -116,20 +73,11 @@ async function recoverFromRefreshToken(): Promise<Session | null> {
 }
 
 async function recoverAuthSessionInner(): Promise<Session | null> {
-  const fromStorage = await recoverFromRefreshToken()
-  if (fromStorage) {
-    return fromStorage
-  }
-
-  try {
-    return await recoverFromBridge()
-  } catch {
-    return null
-  }
+  return recoverFromRefreshToken()
 }
 
 /**
- * Try to restore a session after iOS background suspend or Safari→PWA hand-off.
+ * Try to restore a session from this browser context after iOS background suspend.
  * Always settles within AUTH_RECOVERY_TIMEOUT_MS so the UI cannot hang on a blank loader.
  */
 export async function recoverAuthSession(): Promise<Session | null> {

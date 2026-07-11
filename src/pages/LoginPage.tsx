@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Button, Card, useToast } from '@/components/ui'
 import { InviteCodeEntry } from '@/components/group/InviteCodeEntry'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { appConfig } from '@/lib/config'
+import { isCompleteEmailOtp, normalizeEmailOtp } from '@/lib/emailOtp'
 import { isIosDevice, isStandalonePwa } from '@/lib/pwa'
+import { fetchPostAuthSnapshot, navigateAfterAuth } from '@/lib/postAuthNavigation'
 import { supabase } from '@/lib/supabase'
 import { setPendingInviteCode } from '@/lib/storage'
 import { normalizeInviteCode } from '@/lib/postAuthRouting'
@@ -30,9 +32,12 @@ function friendlyAuthError(message: string): string {
 export function LoginPage() {
   useDocumentTitle('Sign in')
   const { toast } = useToast()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [email, setEmail] = useState('')
+  const [otp, setOtp] = useState('')
   const [sending, setSending] = useState(false)
+  const [verifying, setVerifying] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [linkSent, setLinkSent] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
@@ -43,7 +48,7 @@ export function LoginPage() {
   const sentHeadingRef = useRef<HTMLParagraphElement>(null)
   // One auth flow at a time — while a magic link is sending or Google is
   // redirecting, neither entry point should let the user kick off the other.
-  const isBusy = sending || googleLoading
+  const isBusy = sending || verifying || googleLoading
 
   useEffect(() => {
     if (resendCooldown <= 0) return
@@ -114,8 +119,40 @@ export function LoginPage() {
   async function handleResend() {
     if (resendCooldown > 0 || sending) return
     if (await sendMagicLink()) {
-      toast({ message: 'Link re-sent. Check spam if it hides again.', variant: 'success' })
+      setOtp('')
+      toast({ message: 'Sign-in email sent again. Check spam if it hides.', variant: 'success' })
     }
+  }
+
+  async function handleVerifyOtp(event: React.FormEvent) {
+    event.preventDefault()
+    const token = normalizeEmailOtp(otp)
+    const trimmedEmail = email.trim()
+
+    if (!isCompleteEmailOtp(token) || !trimmedEmail) {
+      toast({ message: 'Enter the 6-digit code from your email.', variant: 'danger' })
+      return
+    }
+
+    setVerifying(true)
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: trimmedEmail,
+      token,
+      type: 'email',
+    })
+    setVerifying(false)
+
+    if (error || !data.session?.user) {
+      toast({
+        message: error?.message ?? 'That code could not sign you in. Request a new email.',
+        variant: 'danger',
+      })
+      return
+    }
+
+    successHaptic()
+    const snapshot = await fetchPostAuthSnapshot(data.session.user.id)
+    navigateAfterAuth(navigate, snapshot, { replace: true })
   }
 
   async function handleGoogleSignIn() {
@@ -161,8 +198,6 @@ export function LoginPage() {
           {linkSent ? (
             <div
               className="motion-rise space-y-3 text-center"
-              role="status"
-              aria-live="polite"
             >
               <p
                 className="motion-pop text-4xl"
@@ -176,29 +211,72 @@ export function LoginPage() {
                 tabIndex={-1}
                 className="text-sm font-medium text-text-primary focus:outline-none"
               >
-                Magic link sent
+                Check your email
               </p>
               <p className="text-sm text-text-muted">
-                We emailed a sign-in link to{' '}
-                <span className="font-semibold text-text-primary">{email.trim()}</span>. Open it to
-                sign in — check spam if it&apos;s hiding.
+                We sent a 6-digit sign-in code to{' '}
+                <span className="font-semibold text-text-primary">{email.trim()}</span>.
               </p>
               {isIosDevice() && isStandalonePwa() ? (
                 <p className="rounded-[var(--radius-md)] bg-accent-muted px-3 py-2 text-xs leading-relaxed text-text-muted">
-                  On iPhone the email link opens in Safari. After it signs you in, come back to this
-                  Home Screen app — your login carries across automatically.
+                  Stay in this Home Screen app. Copy the code from your email and enter it below.
+                  Opening the link signs Safari in instead.
                 </p>
               ) : null}
+              <form className="space-y-3 text-left" onSubmit={handleVerifyOtp}>
+                <div className="space-y-1.5">
+                  <label htmlFor="email-otp" className="text-sm font-medium text-text-primary">
+                    Sign-in code
+                  </label>
+                  <input
+                    id="email-otp"
+                    type="text"
+                    autoComplete="one-time-code"
+                    inputMode="numeric"
+                    enterKeyHint="done"
+                    pattern="[0-9]{6}"
+                    maxLength={6}
+                    required
+                    value={otp}
+                    onChange={(event) => setOtp(normalizeEmailOtp(event.target.value))}
+                    placeholder="123456"
+                    className={cn(
+                      'w-full rounded-[var(--radius-md)] border border-border bg-bg px-4 py-3 text-center',
+                      'font-mono text-xl tracking-[0.35em] text-text-primary placeholder:text-text-muted',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                    )}
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  fullWidth
+                  loading={verifying}
+                  disabled={!isCompleteEmailOtp(otp) || isBusy}
+                >
+                  Sign in with code
+                </Button>
+              </form>
+              <p className="text-xs leading-relaxed text-text-muted">
+                The email also has a sign-in link for browser use. Codes expire after one hour.
+              </p>
               <Button
                 variant="secondary"
                 fullWidth
                 loading={sending}
-                disabled={resendCooldown > 0 || sending}
+                disabled={resendCooldown > 0 || isBusy}
                 onClick={() => void handleResend()}
               >
-                {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend link'}
+                {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend email'}
               </Button>
-              <Button variant="ghost" fullWidth onClick={() => setLinkSent(false)}>
+              <Button
+                variant="ghost"
+                fullWidth
+                disabled={isBusy}
+                onClick={() => {
+                  setOtp('')
+                  setLinkSent(false)
+                }}
+              >
                 Use a different email
               </Button>
             </div>
@@ -225,7 +303,7 @@ export function LoginPage() {
                 />
               </div>
               <Button type="submit" fullWidth loading={sending} disabled={isBusy}>
-                Send magic link
+                Email me a sign-in code
               </Button>
             </form>
           )}
