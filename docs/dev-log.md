@@ -26,6 +26,12 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-11j (PWA HTML-level boot recovery)
+
+- Both `pushus.app` and `www.pushus.app` now serve build `feaf2b6`; Origin/CORS module requests return JavaScript, and Playwright standalone-iPhone probes render Login with an active service worker. A previously opened iOS standalone window can still hold the poisoned document in memory.
+- Added `/boot-guard.js` before the Vite module: if `#root` remains empty after 3s, reload current URL once with a repair nonce; if boot still fails, render a plain HTML “Reload PushUS” screen. This runs even when React's bundle cannot load.
+- Guard is `no-cache`; recovery keeps localStorage and the auth bridge intact, so it does not throw away a valid login.
+
 ### 2026-07-11i (blank screen = Cloudflare CORS asset poison)
 
 - Reproduced live: `GET /assets/index-Ry24ymnq.js` without Origin → real JS; **with `Origin: https://www.pushus.app`** (what `crossorigin` module scripts send) → **cached `index.html`** (`text/html`, 4.6KB, `immutable`). React never mounts → blank `#root` on every client, not iOS-only.

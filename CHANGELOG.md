@@ -12,6 +12,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **PWA self-recovery instead of a black screen:** if a broken/stale JavaScript bundle prevents React from starting, a small HTML-level guard now reloads the latest build once, then shows a visible “Reload PushUS” recovery screen instead of leaving the Home Screen app black
 - **Blank app after deploy (Cloudflare asset cache):** a mid-deploy race cached `index.html` under the new `/assets/index-*.js` URL for CORS requests (module scripts send `Origin`). Browsers then refused the “JS” file as HTML and React never mounted — empty screen on every device. Asset cache is no longer `immutable` (5-minute revalidate) so a poisoned entry can’t stick for a year
 - **iOS blank screen (hydrate hang):** even after session recovery, profile/group fetches could hang forever on a suspended auth client and leave the Home Screen app on an empty loader. Boot now has an 8s watchdog, profile/access/group reads time out at 5s, the loader shows “Loading…”, and returning to the foreground refreshes an existing session
 - **iOS blank screen after auth fix:** session recovery could hang inside Supabase's auth lock / network refresh and leave the Home Screen app on an endless loader. Recovery is now deferred off the auth callback, capped at 6s, and gated so cold-launch `pageshow` cannot race the first hydrate

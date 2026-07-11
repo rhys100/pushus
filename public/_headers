@@ -23,6 +23,9 @@
 /sw.js
   Cache-Control: no-cache, must-revalidate
 
+/boot-guard.js
+  Cache-Control: no-cache, must-revalidate
+
 /manifest.json
   Cache-Control: no-cache, must-revalidate
 
