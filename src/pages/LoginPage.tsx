@@ -29,6 +29,14 @@ function friendlyAuthError(message: string): string {
   return message
 }
 
+function friendlyOtpError(message?: string): string {
+  const lower = message?.toLowerCase() ?? ''
+  if (lower.includes('token') || lower.includes('expired') || lower.includes('invalid')) {
+    return 'That code is invalid or expired. Request a new email and try again.'
+  }
+  return 'Could not verify the code. Check your connection and try again.'
+}
+
 export function LoginPage() {
   useDocumentTitle('Sign in')
   const { toast } = useToast()
@@ -144,7 +152,7 @@ export function LoginPage() {
 
     if (error || !data.session?.user) {
       toast({
-        message: error?.message ?? 'That code could not sign you in. Request a new email.',
+        message: friendlyOtpError(error?.message),
         variant: 'danger',
       })
       return
@@ -235,7 +243,6 @@ export function LoginPage() {
                     inputMode="numeric"
                     enterKeyHint="done"
                     pattern="[0-9]{6}"
-                    maxLength={6}
                     required
                     value={otp}
                     onChange={(event) => setOtp(normalizeEmailOtp(event.target.value))}

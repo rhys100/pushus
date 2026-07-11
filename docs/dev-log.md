@@ -30,6 +30,7 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 - Rhys clarified the remaining issue: the iOS PWA does not retain login. Root cause confirmed: the magic link opens in Safari, and current iOS isolates Safari and Home Screen app localStorage, cookies, IndexedDB **and Cache Storage**. The previously shipped Cache bridge assumption was wrong on modern iOS; it also risked refresh-token rotation races.
 - Replaced cross-context token copying with Supabase email OTP verification **inside the PWA**: sign-in email contains `{{ .Token }}` plus the browser link; Login shows a six-digit `autocomplete="one-time-code"` input and calls `verifyOtp({ type: 'email' })`. This creates/persists the session in the PWA's own localStorage.
+- OTP paste normalises spaces/hyphens before applying the six-digit cap; invalid/expired codes get plain recovery copy rather than raw Supabase errors.
 - Retired bridge reads/writes and delete the legacy `pushus-auth-bridge-v1` cache on app boot/sign-out. Same-context resume remains for genuine iOS background suspension.
 - Operational dependency: hosted Supabase Magic Link email template must be updated from `supabase/templates/magic_link.html` when this client ships. No DB migration.
 
