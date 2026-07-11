@@ -10,12 +10,8 @@ import {
 } from 'react'
 import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js'
 import { defaultAppAccess, parseAppAccess, type AppAccessStatus } from '@/lib/appAccess'
-import { clearAuthSessionBridge } from '@/lib/authSessionBridge'
-import {
-  hasRecoverableAuthSession,
-  persistAuthSessionBridge,
-  recoverAuthSession,
-} from '@/lib/authSessionResume'
+import { clearLegacyAuthSessionBridge } from '@/lib/authSessionBridge'
+import { hasRecoverableAuthSession, recoverAuthSession } from '@/lib/authSessionResume'
 import { isProfileOnboardedFromServer } from '@/lib/postAuthNavigation'
 import { supabase } from '@/lib/supabase'
 import { withTimeout } from '@/lib/withTimeout'
@@ -44,7 +40,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 const HYDRATE_EVENTS = new Set<AuthChangeEvent>(['INITIAL_SESSION', 'SIGNED_IN', 'USER_UPDATED'])
-const BRIDGE_EVENTS = new Set<AuthChangeEvent>(['SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED'])
+const SESSION_EVENTS = new Set<AuthChangeEvent>(['SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED'])
 /** Profile / access RPC can hang on iOS after suspend — never block the shell forever. */
 const HYDRATE_FETCH_TIMEOUT_MS = 5_000
 /** Absolute boot safety net if any auth path stalls (also busts a poisoned CF asset cache URL). */
@@ -193,14 +189,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return nextSession
       }
 
-      // Skip recovery when there is nothing local and no point waiting on network.
-      // Still try the Safari↔PWA bridge (fast Cache read) for iOS hand-off.
+      // There is no cross-context recovery on iOS: Safari and Home Screen app
+      // storage are isolated. Email OTP creates the session inside the PWA.
       if (!hasRecoverableAuthSession()) {
-        try {
-          return await recoverAuthSession()
-        } catch {
-          return null
-        }
+        return null
       }
 
       return recoverAuthSession()
@@ -216,9 +208,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!mountedRef.current) return
 
         setSession(resolved)
-        if (resolved) {
-          void persistAuthSessionBridge(resolved)
-        }
         finishHydration(resolved)
       } catch (error) {
         console.error('Auth session hydrate failed', error)
@@ -235,6 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     mountedRef.current = true
     let initialSessionHandled = false
+    void clearLegacyAuthSessionBridge()
 
     // Last-resort: never leave iOS on an endless blank/skeleton loader.
     const bootWatchdog = window.setTimeout(() => {
@@ -281,12 +271,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      if (BRIDGE_EVENTS.has(event) && nextSession) {
-        setSession(nextSession)
-        deferAuthWork(() => {
-          void persistAuthSessionBridge(nextSession)
-        })
-      } else if (nextSession) {
+      if (SESSION_EVENTS.has(event) && nextSession) {
         setSession(nextSession)
       }
 
@@ -326,11 +311,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Session exists but iOS may have killed refresh timers — nudge a refresh
         // without blocking the UI. Failures are ignored.
         deferAuthWork(() => {
-          void supabase.auth.refreshSession().then(({ data }) => {
-            if (data.session) {
-              void persistAuthSessionBridge(data.session)
-            }
-          })
+          void supabase.auth.refreshSession()
         })
         return
       }
@@ -343,7 +324,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         setSession(recovered)
-        void persistAuthSessionBridge(recovered)
         finishHydration(recovered)
       } catch (error) {
         console.error('Foreground auth resume failed', error)
@@ -376,11 +356,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearPendingInviteCode()
     clearPendingMateCode()
     clearStoredActiveGroupId()
-    try {
-      await clearAuthSessionBridge()
-    } catch {
-      // ignore
-    }
+    await clearLegacyAuthSessionBridge()
     await supabase.auth.signOut()
     setSession(null)
     setProfile(null)

@@ -26,19 +26,35 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
-### 2026-07-11k (plan cleanup — cn tailwind-merge + micro-type tokens)
+### 2026-07-11m (plan cleanup — cn tailwind-merge + micro-type tokens)
 
 - Cleared the worthwhile remainder of the polish-audit plan.
-- **cn → tailwind-merge:** added `tailwind-merge@^2`; `cn()` now `twMerge(classes.filter(Boolean).join(' '))` so a later conflicting utility (e.g. a call-site `min-h-10`) reliably beats a component's base `min-h-12` instead of both emitting and CSS source order winning. App-wide; tsc + 457 tests + build green (couldn't visually verify authed pages — worth a smoke test on deploy).
-- **Micro-type tokens:** added tailwind `fontSize` `2xs` (0.6875rem) + `3xs` (0.625rem), size-only so rendering is byte-identical; swept 13 `text-[0.625rem]`/`text-[0.6875rem]` usages across 12 files. (Left `text-[0.8125rem]`/`text-[0.65rem]` — around/above xs, not the sub-xs micro caps the finding targeted.)
-- **`.gitattributes`** `public/_headers text eol=lf` — this Windows/Dropbox tree autocrlf-CRLFs on checkout and kept failing the LF-based assetCacheHeaders test locally (committed blob was always LF / CI-green). Now pinned.
-- **Deliberately NOT done (rationale):** reactions feed-waterfall (needs an activity_feed RPC fold + migration + real feed testing — high risk for modest perf; volatile-key half already shipped); border-weight 1px-vs-2px (subjective global visual, unverifiable); dock-prompt fixed 9.5rem reserve (ResizeObserver wiring, jank risk, 9.5rem is a safe default); bank-label casing ("Bank Push-ups" CTA is LOCKED, toast lowercase is correct body copy — they SHOULD differ); nose-tap keyboard entry (physical, niche); countup rAF-per-stat (finding rates it acceptable).
+- **cn → tailwind-merge:** added `tailwind-merge@^2`; `cn()` now `twMerge(classes.filter(Boolean).join(' '))` so a later conflicting utility (e.g. a call-site `min-h-10`) reliably beats a component's base `min-h-12`. App-wide; tsc + 457 tests + build green (worth a visual smoke test on deploy).
+- **Micro-type tokens:** added tailwind `fontSize` `2xs` (0.6875rem) + `3xs` (0.625rem), size-only so rendering is byte-identical; swept 13 arbitrary usages across 12 files.
+- **`.gitattributes`** `public/_headers text eol=lf` — Windows/Dropbox autocrlf kept failing the LF-based assetCacheHeaders test locally (committed blob was always LF). Now pinned.
+- **Deliberately NOT done (rationale):** reactions feed-waterfall (core activity_feed RPC + migration + real feed testing needed); border-weight 1px/2px (subjective global visual); dock-prompt reserve (ResizeObserver jank risk); bank-label casing (locked CTA vs correct body copy); nose-tap keyboard (physical, niche); countup rAF (finding rates acceptable).
+
+### 2026-07-11k (real iOS auth fix — email OTP inside PWA)
+
+- Rhys clarified the remaining issue: the iOS PWA does not retain login. Root cause confirmed: the magic link opens in Safari, and current iOS isolates Safari and Home Screen app localStorage, cookies, IndexedDB **and Cache Storage**. The previously shipped Cache bridge assumption was wrong on modern iOS; it also risked refresh-token rotation races.
+- Replaced cross-context token copying with Supabase email OTP verification **inside the PWA**: code-only sign-in email contains `{{ .Token }}`; Login shows a six-digit `autocomplete="one-time-code"` input and calls `verifyOtp({ type: 'email' })`. This creates/persists the session in the PWA's own localStorage and avoids mail link scanners consuming the same credential.
+- OTP paste normalises spaces/hyphens before applying the six-digit cap; invalid/expired codes get plain recovery copy rather than raw Supabase errors.
+- Send/verify requests time out after 10s and always restore controls; the 60s resend limit also applies after “Use a different email”.
+- Retired bridge reads/writes and delete the legacy `pushus-auth-bridge-v1` cache per context on app boot/sign-out. Same-context resume remains for genuine iOS background suspension; Safari's isolated legacy cache is removed when Safari next loads PushUS.
+- Operational dependency: staged hosted-template rollout is required. Deploy `magic_link_hybrid_rollout.html` first, then client, then final `magic_link.html`; see `docs/handoffs/ios-pwa-email-otp.md`. Push via `npm run auth:push-email-template` once `SUPABASE_ACCESS_TOKEN` is set. No DB migration.
+
+### 2026-07-11l (boot recovery cache-clear loop)
+
+- Rhys hit the boot-recovery screen on desktop at `/login?_bootRepair=…`; reload looped because the guard only added a query param and never cleared poisoned `/assets/*.js` entries cached as HTML from mid-deploy SPA fallback.
+- `public/assets/404.html` forces real 404s for missing hashed assets (Cloudflare Pages subdirectory 404 pattern) so browsers cannot cache HTML as JavaScript.
+- `boot-guard.js` now unregisters service workers, deletes Cache Storage, strips repair params, and reloads with `_fresh`. Recovery button copy: “Clear cache and reload”; desktop hard-refresh hint added.
+- `clearAppCaches()` now unregisters workers instead of only calling `update()`.
 
 ### 2026-07-11j (PWA HTML-level boot recovery)
 
 - Both `pushus.app` and `www.pushus.app` now serve build `feaf2b6`; Origin/CORS module requests return JavaScript, and Playwright standalone-iPhone probes render Login with an active service worker. A previously opened iOS standalone window can still hold the poisoned document in memory.
 - Added `/boot-guard.js` before the Vite module: if `#root` remains empty after 3s, reload current URL once with a repair nonce; if boot still fails, render a plain HTML “Reload PushUS” screen. This runs even when React's bundle cannot load.
-- Guard is `no-cache`; recovery keeps localStorage and the auth bridge intact, so it does not throw away a valid login.
+- Guard is `no-cache`; recovery keeps localStorage intact, so it does not throw away a valid login.
 
 ### 2026-07-11i (blank screen = Cloudflare CORS asset poison)
 
@@ -62,7 +78,7 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 ### 2026-07-11f (iOS Safari↔PWA auth bridge)
 
 - Re-checked after Rhys said login loss might still happen. First fix (refresh-on-resume) only covers same-context suspend. Bigger remaining cause: **magic links / OAuth complete in Safari**, and iOS isolates Safari localStorage from the Home Screen PWA — so evening reopen of the icon looks "logged out" even though Safari has the session.
-- **Shipped:** Cache Storage auth bridge (`authSessionBridge`) written on sign-in / token refresh / auth callback; PWA cold-start + foreground recovery reads it via `setSession`. Auth callback shows Home Screen handoff when iOS Safari and the app is known installed. Login copy in standalone iOS explains the Safari round-trip. Hardened AuthProvider so null session is not published until recovery finishes; longer refresh backoff; sign-out clears the bridge.
+- **Superseded the same day:** Cache Storage auth bridge (`authSessionBridge`) was written on sign-in / token refresh / auth callback. Device testing proved modern iOS isolates that storage too; entry 2026-07-11k replaces it with in-PWA email OTP and removes bridge token use.
 - Verified: tsc + unit tests (authSessionBridge + authSessionResume).
 
 ### 2026-07-11e (iOS PWA auth persistence)

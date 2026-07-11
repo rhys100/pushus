@@ -12,7 +12,7 @@ Public-friendly view of where PushUS is today and where it may go.
 
 ### Core
 
-- Magic link auth; optional Google OAuth
+- Passwordless email code auth (entered in the browser or installed PWA); optional Google OAuth
 - Profile onboarding (name, emoji, timezone)
 - Private beta allowlist
 - Private groups, invite links/codes, join workflows, roles (owner/admin/member)

@@ -1,38 +1,56 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Button, Card, useToast } from '@/components/ui'
 import { InviteCodeEntry } from '@/components/group/InviteCodeEntry'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { appConfig } from '@/lib/config'
+import { isCompleteEmailOtp, normalizeEmailOtp } from '@/lib/emailOtp'
 import { isIosDevice, isStandalonePwa } from '@/lib/pwa'
+import { fetchPostAuthSnapshot, navigateAfterAuth } from '@/lib/postAuthNavigation'
 import { supabase } from '@/lib/supabase'
 import { setPendingInviteCode } from '@/lib/storage'
 import { normalizeInviteCode } from '@/lib/postAuthRouting'
 import { successHaptic } from '@/lib/haptics'
 import { cn } from '@/lib/cn'
+import { withTimeoutReject } from '@/lib/withTimeout'
 
 const authCallbackUrl = () => `${window.location.origin}/auth/callback`
 
 /** Matches Supabase's OTP rate limit so Resend never invites a rate-limit error. */
 const RESEND_COOLDOWN_SECONDS = 60
+const AUTH_REQUEST_TIMEOUT_MS = 10_000
 
 function friendlyAuthError(message: string): string {
   const lower = message.toLowerCase()
   if (lower.includes('provider') && lower.includes('not enabled')) {
-    return 'Google sign-in is not enabled on this deployment. Use email magic link instead.'
+    return 'Google sign-in is not enabled on this deployment. Use an email code instead.'
   }
   if (lower.includes('oauth') || lower.includes('google')) {
-    return 'Google sign-in could not be completed. Try email magic link instead.'
+    return 'Google sign-in could not be completed. Try an email code instead.'
+  }
+  if (lower.includes('rate') || lower.includes('seconds')) {
+    return 'Wait a minute before requesting another sign-in email.'
   }
   return message
+}
+
+function friendlyOtpError(message?: string): string {
+  const lower = message?.toLowerCase() ?? ''
+  if (lower.includes('token') || lower.includes('expired') || lower.includes('invalid')) {
+    return 'That code is invalid or expired. Request a new email and try again.'
+  }
+  return 'Could not verify the code. Check your connection and try again.'
 }
 
 export function LoginPage() {
   useDocumentTitle('Sign in')
   const { toast } = useToast()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [email, setEmail] = useState('')
+  const [otp, setOtp] = useState('')
   const [sending, setSending] = useState(false)
+  const [verifying, setVerifying] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [linkSent, setLinkSent] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
@@ -41,9 +59,9 @@ export function LoginPage() {
   const [showInvite, setShowInvite] = useState(false)
   const authErrorShownRef = useRef(false)
   const sentHeadingRef = useRef<HTMLParagraphElement>(null)
-  // One auth flow at a time — while a magic link is sending or Google is
+  // One auth flow at a time — while an email code is sending or Google is
   // redirecting, neither entry point should let the user kick off the other.
-  const isBusy = sending || googleLoading
+  const isBusy = sending || verifying || googleLoading
 
   useEffect(() => {
     if (resendCooldown <= 0) return
@@ -85,23 +103,39 @@ export function LoginPage() {
 
   async function sendMagicLink(): Promise<boolean> {
     const trimmed = email.trim()
-    if (!trimmed) return false
+    if (!trimmed || resendCooldown > 0) return false
 
     setSending(true)
-    const { error } = await supabase.auth.signInWithOtp({
-      email: trimmed,
-      options: { emailRedirectTo: authCallbackUrl() },
-    })
-    setSending(false)
+    try {
+      const { error } = await withTimeoutReject(
+        supabase.auth.signInWithOtp({
+          email: trimmed,
+          options: { emailRedirectTo: authCallbackUrl() },
+        }),
+        AUTH_REQUEST_TIMEOUT_MS,
+        'send-email-timeout',
+      )
 
-    if (error) {
-      toast({ message: friendlyAuthError(error.message), variant: 'danger' })
+      if (error) {
+        toast({ message: friendlyAuthError(error.message), variant: 'danger' })
+        return false
+      }
+
+      successHaptic()
+      setResendCooldown(RESEND_COOLDOWN_SECONDS)
+      return true
+    } catch (error) {
+      const timedOut = error instanceof Error && error.message === 'send-email-timeout'
+      toast({
+        message: timedOut
+          ? 'The email is taking longer than expected. Check your inbox before trying again.'
+          : 'Could not send the sign-in email. Check your connection and try again.',
+        variant: 'danger',
+      })
       return false
+    } finally {
+      setSending(false)
     }
-
-    successHaptic()
-    setResendCooldown(RESEND_COOLDOWN_SECONDS)
-    return true
   }
 
   async function handleMagicLink(event: React.FormEvent) {
@@ -114,14 +148,69 @@ export function LoginPage() {
   async function handleResend() {
     if (resendCooldown > 0 || sending) return
     if (await sendMagicLink()) {
-      toast({ message: 'Link re-sent. Check spam if it hides again.', variant: 'success' })
+      setOtp('')
+      toast({ message: 'Sign-in email sent again. Check spam if it hides.', variant: 'success' })
+    }
+  }
+
+  async function handleVerifyOtp(event: React.FormEvent) {
+    event.preventDefault()
+    const token = normalizeEmailOtp(otp)
+    const trimmedEmail = email.trim()
+
+    if (!isCompleteEmailOtp(token) || !trimmedEmail) {
+      toast({ message: 'Enter the 6-digit code from your email.', variant: 'danger' })
+      return
+    }
+
+    setVerifying(true)
+    try {
+      const { data, error } = await withTimeoutReject(
+        supabase.auth.verifyOtp({
+          email: trimmedEmail,
+          token,
+          type: 'email',
+        }),
+        AUTH_REQUEST_TIMEOUT_MS,
+        'verify-code-timeout',
+      )
+
+      if (error || !data.session?.user) {
+        toast({
+          message: friendlyOtpError(error?.message),
+          variant: 'danger',
+        })
+        return
+      }
+
+      successHaptic()
+      try {
+        const snapshot = await withTimeoutReject(
+          fetchPostAuthSnapshot(data.session.user.id),
+          AUTH_REQUEST_TIMEOUT_MS,
+        )
+        navigateAfterAuth(navigate, snapshot, { replace: true })
+      } catch {
+        // The session is valid; RequireAuth will finish routing once network returns.
+        navigate('/today', { replace: true })
+      }
+    } catch (error) {
+      const timedOut = error instanceof Error && error.message === 'verify-code-timeout'
+      toast({
+        message: timedOut
+          ? 'Verification is taking longer than expected. Wait a moment before retrying.'
+          : 'Could not verify the code. Check your connection and try again.',
+        variant: 'danger',
+      })
+    } finally {
+      setVerifying(false)
     }
   }
 
   async function handleGoogleSignIn() {
     if (!appConfig.googleAuthEnabled) {
       toast({
-        message: 'Google sign-in is disabled on this deployment. Use email magic link.',
+        message: 'Google sign-in is disabled on this deployment. Use an email code.',
         variant: 'danger',
       })
       return
@@ -161,8 +250,6 @@ export function LoginPage() {
           {linkSent ? (
             <div
               className="motion-rise space-y-3 text-center"
-              role="status"
-              aria-live="polite"
             >
               <p
                 className="motion-pop text-4xl"
@@ -176,29 +263,71 @@ export function LoginPage() {
                 tabIndex={-1}
                 className="text-sm font-medium text-text-primary focus:outline-none"
               >
-                Magic link sent
+                Check your email
               </p>
               <p className="text-sm text-text-muted">
-                We emailed a sign-in link to{' '}
-                <span className="font-semibold text-text-primary">{email.trim()}</span>. Open it to
-                sign in — check spam if it&apos;s hiding.
+                We sent a 6-digit sign-in code to{' '}
+                <span className="font-semibold text-text-primary">{email.trim()}</span>.
               </p>
               {isIosDevice() && isStandalonePwa() ? (
                 <p className="rounded-[var(--radius-md)] bg-accent-muted px-3 py-2 text-xs leading-relaxed text-text-muted">
-                  On iPhone the email link opens in Safari. After it signs you in, come back to this
-                  Home Screen app — your login carries across automatically.
+                  Stay in this Home Screen app. Copy the code from your email and enter it below so
+                  your login is saved here.
                 </p>
               ) : null}
+              <form className="space-y-3 text-left" onSubmit={handleVerifyOtp}>
+                <div className="space-y-1.5">
+                  <label htmlFor="email-otp" className="text-sm font-medium text-text-primary">
+                    Sign-in code
+                  </label>
+                  <input
+                    id="email-otp"
+                    type="text"
+                    autoComplete="one-time-code"
+                    inputMode="numeric"
+                    enterKeyHint="done"
+                    pattern="[0-9]{6}"
+                    required
+                    value={otp}
+                    onChange={(event) => setOtp(normalizeEmailOtp(event.target.value))}
+                    placeholder="123456"
+                    className={cn(
+                      'w-full rounded-[var(--radius-md)] border border-border bg-bg px-4 py-3 text-center',
+                      'font-mono text-xl tracking-[0.35em] text-text-primary placeholder:text-text-muted',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                    )}
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  fullWidth
+                  loading={verifying}
+                  disabled={!isCompleteEmailOtp(otp) || isBusy}
+                >
+                  Sign in with code
+                </Button>
+              </form>
+              <p className="text-xs leading-relaxed text-text-muted">
+                Codes expire after one hour and can only be used once.
+              </p>
               <Button
                 variant="secondary"
                 fullWidth
                 loading={sending}
-                disabled={resendCooldown > 0 || sending}
+                disabled={resendCooldown > 0 || isBusy}
                 onClick={() => void handleResend()}
               >
-                {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend link'}
+                {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend email'}
               </Button>
-              <Button variant="ghost" fullWidth onClick={() => setLinkSent(false)}>
+              <Button
+                variant="ghost"
+                fullWidth
+                disabled={isBusy}
+                onClick={() => {
+                  setOtp('')
+                  setLinkSent(false)
+                }}
+              >
                 Use a different email
               </Button>
             </div>
@@ -224,8 +353,15 @@ export function LoginPage() {
                   )}
                 />
               </div>
-              <Button type="submit" fullWidth loading={sending} disabled={isBusy}>
-                Send magic link
+              <Button
+                type="submit"
+                fullWidth
+                loading={sending}
+                disabled={isBusy || resendCooldown > 0}
+              >
+                {resendCooldown > 0
+                  ? `Send another in ${resendCooldown}s`
+                  : 'Email me a sign-in code'}
               </Button>
             </form>
           )}

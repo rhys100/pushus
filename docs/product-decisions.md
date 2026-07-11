@@ -103,8 +103,8 @@ For exploratory ideas without locked rules, see [product-roadmap.md](./product-r
 
 | Decision | Status |
 |----------|--------|
-| **Email magic link** — primary auth method | Beta |
-| **Google OAuth optional** — configured per deployment; skippable for magic-link-only forks | Beta |
+| **Passwordless email code** — users enter the emailed OTP inside the browser or PWA so the session is created in the correct storage context; code-only emails avoid link scanners consuming the credential | Beta |
+| **Google OAuth optional** — configured per deployment; skippable for email-code-only forks | Beta |
 | **No anonymous nickname-only accounts** — real auth required | Beta |
 | Optional **profile name initial** — single letter only, not a last name | Beta |
 | **Personal mate labels** — per-viewer alias on Members list only; synced to viewer account | Beta |
