@@ -4,7 +4,9 @@ import {
   fetchPostAuthSnapshot,
   navigateAfterAuth,
 } from '@/lib/postAuthNavigation'
-import { ButtonRouterLink } from '@/components/ui'
+import { persistAuthSessionBridge } from '@/lib/authSessionResume'
+import { isIosDevice, isStandalonePwa } from '@/lib/pwa'
+import { Button, ButtonRouterLink } from '@/components/ui'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { supabase } from '@/lib/supabase'
@@ -20,10 +22,16 @@ function friendlyAuthError(message: string): string {
   return message
 }
 
+/** Magic links always land in Safari on iOS — nudge users back to the Home Screen app. */
+function shouldShowIosPwaHandoff(): boolean {
+  return isIosDevice() && !isStandalonePwa()
+}
+
 export function AuthCallbackPage() {
   useDocumentTitle('Signing in')
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
+  const [iosHandoff, setIosHandoff] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -70,11 +78,23 @@ export function AuthCallbackPage() {
         }
 
         const { data: refreshed } = await supabase.auth.getSession()
-        const user = refreshed.session?.user
+        const session = refreshed.session
+        const user = session?.user
 
-        if (!user) {
+        if (!user || !session) {
           if (mounted) {
             setError('Sign-in could not be completed. Try again from the login page.')
+          }
+          return
+        }
+
+        // Copy tokens into Cache Storage so the home-screen PWA can pick them
+        // up — iOS keeps Safari and standalone localStorage in separate buckets.
+        await persistAuthSessionBridge(session)
+
+        if (shouldShowIosPwaHandoff()) {
+          if (mounted) {
+            setIosHandoff(true)
           }
           return
         }
@@ -112,6 +132,44 @@ export function AuthCallbackPage() {
           <ButtonRouterLink to="/login" variant="secondary" fullWidth>
             Back to login
           </ButtonRouterLink>
+        </div>
+      </div>
+    )
+  }
+
+  if (iosHandoff) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-bg px-4">
+        <div className="w-full max-w-xs space-y-4 text-center" role="status">
+          <p className="text-4xl" aria-hidden="true">
+            ✓
+          </p>
+          <div className="space-y-1.5">
+            <p className="text-lg font-semibold text-text-primary">You&apos;re signed in</p>
+            <p className="text-sm text-text-muted">
+              If you use the PushUS Home Screen app, open it from that icon now — iPhone keeps Safari
+              and the home-screen app separate, and your login is ready for both.
+            </p>
+          </div>
+          <Button
+            variant="secondary"
+            fullWidth
+            onClick={() => {
+              void (async () => {
+                const {
+                  data: { session },
+                } = await supabase.auth.getSession()
+                if (!session?.user) {
+                  navigate('/login', { replace: true })
+                  return
+                }
+                const snapshot = await fetchPostAuthSnapshot(session.user.id)
+                navigateAfterAuth(navigate, snapshot, { replace: true })
+              })()
+            }}
+          >
+            Continue in Safari
+          </Button>
         </div>
       </div>
     )

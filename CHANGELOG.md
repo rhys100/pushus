@@ -12,6 +12,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **iOS PWA login after magic link:** the email link always opens in Safari, and iPhone keeps Safari storage separate from the Home Screen app — so signing in never reached the installed PWA. PushUS now copies the session through Cache Storage (shared on iOS) and asks you to reopen the Home Screen icon after Safari finishes sign-in
 - **iOS PWA login persistence:** reopening the home-screen app after it has been backgrounded no longer drops you back to the magic-link screen when a refresh token is still on the device — the app now retries session recovery on cold start and when the PWA returns to the foreground (common when iOS suspends background token refresh)
 
 ---

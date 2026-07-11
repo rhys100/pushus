@@ -10,7 +10,8 @@ import {
 } from 'react'
 import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js'
 import { defaultAppAccess, parseAppAccess, type AppAccessStatus } from '@/lib/appAccess'
-import { hasRecoverableAuthSession, recoverAuthSession } from '@/lib/authSessionResume'
+import { clearAuthSessionBridge } from '@/lib/authSessionBridge'
+import { persistAuthSessionBridge, recoverAuthSession } from '@/lib/authSessionResume'
 import { isProfileOnboardedFromServer } from '@/lib/postAuthNavigation'
 import { supabase } from '@/lib/supabase'
 import {
@@ -38,6 +39,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 const HYDRATE_EVENTS = new Set<AuthChangeEvent>(['INITIAL_SESSION', 'SIGNED_IN', 'USER_UPDATED'])
+const BRIDGE_EVENTS = new Set<AuthChangeEvent>(['SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED'])
 
 async function fetchProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase
@@ -93,6 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [appAccess, setAppAccess] = useState<AppAccessStatus>(defaultAppAccess)
 
   const sessionRef = useRef<Session | null>(null)
+  const recoveringRef = useRef(false)
   sessionRef.current = session
 
   const user = session?.user ?? null
@@ -155,10 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return nextSession
       }
 
-      if (!hasRecoverableAuthSession()) {
-        return null
-      }
-
+      // Always attempt recovery — localStorage refresh token and/or Safari↔PWA bridge.
       return recoverAuthSession()
     },
     [],
@@ -166,11 +166,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hydrateFromSession = useCallback(
     async (nextSession: Session | null) => {
-      const resolved = await resolveSessionForHydration(nextSession)
-      if (resolved) {
+      recoveringRef.current = true
+      try {
+        const resolved = await resolveSessionForHydration(nextSession)
+        // Only publish null after recovery has finished — avoids flashing login
+        // while iOS cold-start refresh / Cache bridge is still in flight.
         setSession(resolved)
+        if (resolved) {
+          void persistAuthSessionBridge(resolved)
+        }
+        finishHydration(resolved)
+      } finally {
+        recoveringRef.current = false
       }
-      finishHydration(resolved)
     },
     [finishHydration, resolveSessionForHydration],
   )
@@ -184,24 +192,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return
 
-      setSession(nextSession)
-
       if (HYDRATE_EVENTS.has(event)) {
         initialSessionHandled = true
-        void hydrateFromSession(nextSession).then(() => {
-          if (!mounted) return
-        })
+        // Do not setSession(null) here — hydrateFromSession recovers first.
+        if (nextSession) {
+          setSession(nextSession)
+        }
+        void hydrateFromSession(nextSession)
         return
       }
 
       if (event === 'SIGNED_OUT') {
         initialSessionHandled = true
+        // Ignore a transient SIGNED_OUT that races an in-flight recovery
+        // (failed proactive refresh wiping storage while we still have a bridge).
+        if (recoveringRef.current) {
+          return
+        }
+        setSession(null)
         setProfile(null)
         setAppAccess(defaultAppAccess)
         setAppAccessLoading(false)
         setProfileReady(true)
         setLoading(false)
         return
+      }
+
+      if (BRIDGE_EVENTS.has(event) && nextSession) {
+        setSession(nextSession)
+        void persistAuthSessionBridge(nextSession)
+      } else if (nextSession) {
+        setSession(nextSession)
       }
 
       setLoading(false)
@@ -232,17 +253,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      if (!hasRecoverableAuthSession()) {
-        return
-      }
+      // localStorage and/or Safari↔PWA Cache bridge
+      recoveringRef.current = true
+      try {
+        const recovered = await recoverAuthSession()
+        if (!recovered || cancelled) {
+          return
+        }
 
-      const recovered = await recoverAuthSession()
-      if (!recovered || cancelled) {
-        return
+        setSession(recovered)
+        void persistAuthSessionBridge(recovered)
+        finishHydration(recovered)
+      } finally {
+        recoveringRef.current = false
       }
-
-      setSession(recovered)
-      finishHydration(recovered)
     }
 
     function onVisibilityChange() {
@@ -250,7 +274,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     function onPageShow(event: PageTransitionEvent) {
-      if (event.persisted) {
+      // iOS often restores PWAs from bfcache; also run on plain pageshow when
+      // session is still null (cold launch after magic-link completed in Safari).
+      if (event.persisted || !sessionRef.current) {
         void resumeSessionOnForeground()
       }
     }
@@ -269,6 +295,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearPendingInviteCode()
     clearPendingMateCode()
     clearStoredActiveGroupId()
+    await clearAuthSessionBridge()
     await supabase.auth.signOut()
     setSession(null)
     setProfile(null)

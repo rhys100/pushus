@@ -26,6 +26,12 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-11f (iOS Safari↔PWA auth bridge)
+
+- Re-checked after Rhys said login loss might still happen. First fix (refresh-on-resume) only covers same-context suspend. Bigger remaining cause: **magic links / OAuth complete in Safari**, and iOS isolates Safari localStorage from the Home Screen PWA — so evening reopen of the icon looks "logged out" even though Safari has the session.
+- **Shipped:** Cache Storage auth bridge (`authSessionBridge`) written on sign-in / token refresh / auth callback; PWA cold-start + foreground recovery reads it via `setSession`. Auth callback shows Home Screen handoff when iOS Safari and the app is known installed. Login copy in standalone iOS explains the Safari round-trip. Hardened AuthProvider so null session is not published until recovery finishes; longer refresh backoff; sign-out clears the bridge.
+- Verified: tsc + unit tests (authSessionBridge + authSessionResume).
+
 ### 2026-07-11e (iOS PWA auth persistence)
 
 - **Shipped:** iOS home-screen PWA was dropping login by evening — background suspension stops Supabase's refresh timer, so a cold reopen could report no session even though the refresh token was still in localStorage. Added `authSessionResume` helper (storage-key peek + `refreshSession` with short backoff) and wired it into `AuthProvider` on initial hydrate + `visibilitychange` / bfcache `pageshow` when session is null but a refresh token remains.

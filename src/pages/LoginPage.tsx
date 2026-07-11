@@ -4,6 +4,7 @@ import { Button, Card, useToast } from '@/components/ui'
 import { InviteCodeEntry } from '@/components/group/InviteCodeEntry'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { appConfig } from '@/lib/config'
+import { isIosDevice, isStandalonePwa } from '@/lib/pwa'
 import { supabase } from '@/lib/supabase'
 import { setPendingInviteCode } from '@/lib/storage'
 import { normalizeInviteCode } from '@/lib/postAuthRouting'
@@ -182,6 +183,12 @@ export function LoginPage() {
                 <span className="font-semibold text-text-primary">{email.trim()}</span>. Open it to
                 sign in — check spam if it&apos;s hiding.
               </p>
+              {isIosDevice() && isStandalonePwa() ? (
+                <p className="rounded-[var(--radius-md)] bg-accent-muted px-3 py-2 text-xs leading-relaxed text-text-muted">
+                  On iPhone the email link opens in Safari. After it signs you in, come back to this
+                  Home Screen app — your login carries across automatically.
+                </p>
+              ) : null}
               <Button
                 variant="secondary"
                 fullWidth
