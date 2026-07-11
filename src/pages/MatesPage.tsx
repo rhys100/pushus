@@ -640,7 +640,7 @@ export function MatesPage() {
           ) : accepted.length === 0 ? (
             <EmptyState
               title="No mates yet"
-              description="Add someone from your group below, or send your mate link."
+              description="Add someone from your group below, or send your mate link. Once they accept, you can start a 1v1 push-up battle from their card."
               icon={<span className="text-2xl">🤝</span>}
             />
           ) : (

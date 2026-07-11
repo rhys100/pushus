@@ -14,9 +14,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 - **Leave a challenge:** you can now leave a challenge you joined — and, on team challenges, drop your team spot — from the challenge page, as long as it hasn't ended. A two-tap confirm prevents accidents
 
+### Changed
+
+- **Group admin has its own page now:** the group-management tools (join requests, member moderation, invites, badges, billing) moved off the main Settings screen behind an admin-only "Group admin" link. Personal settings and group settings were mixed on one page, which made it unclear whether you were changing your own preferences or the whole group's
+
 ### Fixed
 
 - **Mate links work for members of other groups:** opening a shared mate link used to fail for anyone who wasn't already in the same group; any signed-in, set-up member can now add the mate (mate connections are cross-group by design)
+- **Custom activity rows no longer wrap awkwardly:** a long name (e.g. "Calf raises (single leg)") and its "Left / right tracked" label were squeezed by the Edit/Archive buttons into a clipped name over three cramped lines; each now stays on one clean line
+- **Where 1v1 battles live is clearer:** the Mates screen now says a 1v1 battle starts from a mate's card once they accept your request, so it's findable before you have any mates
 - **Accessibility & polish pass:** the log check-in sheets (effort / soreness / over-target / nose-tap) now move focus in on open, close on Escape, and restore focus on close; more controls meet the 44px touch-target floor and show a keyboard-focus ring; the centre-hold ring now fills exactly as the 1.5s nose-hold completes; and a batch of smaller copy, layout, and labelling nits across the app were tidied
 - **Clearer daily-plan card:** the compact plan card on the Log screen dropped its cryptic three-number row ("~5 / BANK NEXT") for a plain-language line — "Bank about 5 — set 2 of 3" — with a progress bar and a simple "X of Y today · [day type]" summary underneath
 - **More polish:** arming a solo challenge join now has a "Not now" to back out; a team's intensity warning shows on the team you're actually joining; adding a mate shows a friendly "Adding your mate…" state instead of a bare loader; the training wizard's single-choice pickers announce as radio groups; the onboarding emoji picker and the group-admin billing row are properly labelled and consistent; and the trial banner reads "Trial ended" once it lapses instead of counting into negative days

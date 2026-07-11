@@ -4,7 +4,6 @@ import { Button, Card, useToast } from '@/components/ui'
 import { AvailabilitySettings } from '@/components/settings/AvailabilitySettings'
 import { BoardPrivacySettings } from '@/components/settings/BoardPrivacySettings'
 import { CustomActivitiesSettings } from '@/components/settings/CustomActivitiesSettings'
-import { GroupAdminSettings } from '@/components/settings/GroupAdminSettings'
 import { SettingsLinkRow } from '@/components/settings/SettingsLinkRow'
 import { SettingsSection } from '@/components/settings/SettingsSection'
 import { APP_VERSION } from '@/lib/appVersionLabel'
@@ -765,8 +764,14 @@ export function SettingsPage() {
       </SettingsSection>
 
       {isAdmin ? (
-        <SettingsSection title="Group tools">
-          <GroupAdminSettings />
+        <SettingsSection title="Group">
+          <Card padding="md">
+            <SettingsLinkRow
+              to="/settings/group-admin"
+              title="Group admin"
+              description="Members, join requests, moderation, invites, and billing — group settings, not your own"
+            />
+          </Card>
         </SettingsSection>
       ) : null}
 
