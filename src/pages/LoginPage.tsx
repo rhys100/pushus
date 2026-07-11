@@ -4,8 +4,12 @@ import { Button, Card, useToast } from '@/components/ui'
 import { InviteCodeEntry } from '@/components/group/InviteCodeEntry'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { appConfig } from '@/lib/config'
-import { isOpaqueErrorMessage } from '@/lib/errors'
 import { isCompleteEmailOtp, normalizeEmailOtp } from '@/lib/emailOtp'
+import {
+  friendlyAuthRedirectError,
+  friendlySendEmailError,
+  friendlyVerifyEmailError,
+} from '@/lib/authEmailErrors'
 import { isIosDevice, isStandalonePwa } from '@/lib/pwa'
 import { fetchPostAuthSnapshot, navigateAfterAuth } from '@/lib/postAuthNavigation'
 import { supabase } from '@/lib/supabase'
@@ -20,31 +24,6 @@ const authCallbackUrl = () => `${window.location.origin}/auth/callback`
 /** Matches Supabase's OTP rate limit so Resend never invites a rate-limit error. */
 const RESEND_COOLDOWN_SECONDS = 60
 const AUTH_REQUEST_TIMEOUT_MS = 10_000
-
-function friendlyAuthError(message: string): string {
-  const lower = message.toLowerCase()
-  if (lower.includes('provider') && lower.includes('not enabled')) {
-    return 'Google sign-in is not enabled on this deployment. Use an email code instead.'
-  }
-  if (lower.includes('oauth') || lower.includes('google')) {
-    return 'Google sign-in could not be completed. Try an email code instead.'
-  }
-  if (lower.includes('rate') || lower.includes('seconds')) {
-    return 'Wait a minute before requesting another sign-in email.'
-  }
-  // Never surface an opaque blob (e.g. "{}" from a non-JSON error response).
-  return isOpaqueErrorMessage(message)
-    ? 'Could not sign you in. Check your connection and try again.'
-    : message
-}
-
-function friendlyOtpError(message?: string): string {
-  const lower = message?.toLowerCase() ?? ''
-  if (lower.includes('token') || lower.includes('expired') || lower.includes('invalid')) {
-    return 'That code is invalid or expired. Request a new email and try again.'
-  }
-  return 'Could not verify the code. Check your connection and try again.'
-}
 
 export function LoginPage() {
   useDocumentTitle('Sign in')
@@ -82,7 +61,7 @@ export function LoginPage() {
     const authError = searchParams.get('error_description') ?? searchParams.get('error')
     if (authError && !authErrorShownRef.current) {
       authErrorShownRef.current = true
-      toast({ message: friendlyAuthError(authError), variant: 'danger' })
+      toast({ message: friendlyAuthRedirectError(authError), variant: 'danger' })
       window.history.replaceState({}, '', '/login')
     }
   }, [searchParams, toast])
@@ -121,7 +100,7 @@ export function LoginPage() {
       )
 
       if (error) {
-        toast({ message: friendlyAuthError(error.message), variant: 'danger' })
+        toast({ message: friendlySendEmailError(error), variant: 'danger' })
         return false
       }
 
@@ -181,7 +160,7 @@ export function LoginPage() {
 
       if (error || !data.session?.user) {
         toast({
-          message: friendlyOtpError(error?.message),
+          message: friendlyVerifyEmailError(error?.message),
           variant: 'danger',
         })
         return
@@ -227,7 +206,7 @@ export function LoginPage() {
     })
     if (error) {
       setGoogleLoading(false)
-      toast({ message: friendlyAuthError(error.message), variant: 'danger' })
+      toast({ message: friendlyAuthRedirectError(error.message), variant: 'danger' })
     }
   }
 
