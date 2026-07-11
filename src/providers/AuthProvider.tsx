@@ -47,7 +47,7 @@ const HYDRATE_EVENTS = new Set<AuthChangeEvent>(['INITIAL_SESSION', 'SIGNED_IN',
 const BRIDGE_EVENTS = new Set<AuthChangeEvent>(['SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED'])
 /** Profile / access RPC can hang on iOS after suspend — never block the shell forever. */
 const HYDRATE_FETCH_TIMEOUT_MS = 5_000
-/** Absolute boot safety net if any auth path stalls. */
+/** Absolute boot safety net if any auth path stalls (also busts a poisoned CF asset cache URL). */
 const AUTH_BOOT_WATCHDOG_MS = 8_000
 
 async function fetchProfile(userId: string): Promise<Profile | null> {

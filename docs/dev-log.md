@@ -26,6 +26,13 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-11i (blank screen = Cloudflare CORS asset poison)
+
+- Reproduced live: `GET /assets/index-Ry24ymnq.js` without Origin → real JS; **with `Origin: https://www.pushus.app`** (what `crossorigin` module scripts send) → **cached `index.html`** (`text/html`, 4.6KB, `immutable`). React never mounts → blank `#root` on every client, not iOS-only.
+- Cause: CF Pages mid-deploy SPA-fallback of a not-yet-published hashed asset, then `/assets/*` `immutable` pinned the HTML under the CORS cache key.
+- Fix: drop `immutable` on `/assets/*` → `max-age=300, must-revalidate`; redeploy for a new hashed bundle URL. Auth hydrate timeouts from 11h still good as belt-and-braces.
+- Verified: curl Origin probe + Playwright after Pages catches up.
+
 ### 2026-07-11h (iOS blank — hydrate/group hang)
 
 - Verified live Pages is on `d704579` and cold `/login` + iPhone UA render fine. Blank is the **logged-in boot path**: RequireAuth stays on a textless skeleton while profile/app-access/group queries hang on a stuck Supabase client after iOS suspend.
