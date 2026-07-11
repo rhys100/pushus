@@ -56,7 +56,13 @@ export function applyTheme(theme: ResolvedTheme): void {
 
   const meta = document.querySelector('meta[name="theme-color"]')
   if (meta) {
-    meta.setAttribute('content', THEME_COLOR[theme])
+    // Read the resolved --color-bg token (set above via data-theme) so this
+    // tracks tokens.css rather than duplicating the hex. THEME_COLOR is only a
+    // fallback for the rare pre-stylesheet call.
+    const resolved = getComputedStyle(document.documentElement)
+      .getPropertyValue('--color-bg')
+      .trim()
+    meta.setAttribute('content', resolved || THEME_COLOR[theme])
   }
 }
 

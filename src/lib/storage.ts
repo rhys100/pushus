@@ -1,5 +1,10 @@
 const ACTIVE_GROUP_KEY = 'pushus_active_group_id'
 const PENDING_INVITE_CODE_KEY = 'pushus_pending_invite_code'
+const PENDING_MATE_CODE_KEY = 'pushus_pending_mate_code'
+// A stashed mate code should only survive the immediate sign-in round trip, not
+// linger for a later/different account on the same device to silently redeem.
+const PENDING_MATE_CODE_TTL_MS = 60 * 60 * 1000
+const SOUND_ENABLED_KEY = 'pushus_sound_enabled'
 const PROFILE_COMPLETED_KEY = 'pushus_profile_completed'
 const PUSH_PROMPT_DISMISSED_PREFIX = 'pushus-push-prompt-dismissed'
 const PWA_INSTALL_PROMPT_DISMISSED_PREFIX = 'pushus-pwa-install-prompt-dismissed'
@@ -30,6 +35,63 @@ export function setPendingInviteCode(code: string): void {
 export function clearPendingInviteCode(): void {
   try {
     localStorage.removeItem(PENDING_INVITE_CODE_KEY)
+  } catch {
+    // ignore
+  }
+}
+
+// A mate code captured from /mates/add/:code before sign-in, redeemed once the
+// visitor is authenticated + onboarded. Mirrors the pending invite code so a
+// shared mate link survives the magic-link round trip.
+export function getPendingMateCode(): string | null {
+  try {
+    const raw = localStorage.getItem(PENDING_MATE_CODE_KEY)
+    if (!raw) {
+      return null
+    }
+    const parsed = JSON.parse(raw) as { c?: unknown; t?: unknown }
+    const code = typeof parsed.c === 'string' ? parsed.c.trim().toLowerCase() : ''
+    if (!code || typeof parsed.t !== 'number' || Date.now() - parsed.t > PENDING_MATE_CODE_TTL_MS) {
+      clearPendingMateCode()
+      return null
+    }
+    return code
+  } catch {
+    return null
+  }
+}
+
+export function setPendingMateCode(code: string): void {
+  try {
+    localStorage.setItem(
+      PENDING_MATE_CODE_KEY,
+      JSON.stringify({ c: code.trim().toLowerCase(), t: Date.now() }),
+    )
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
+export function clearPendingMateCode(): void {
+  try {
+    localStorage.removeItem(PENDING_MATE_CODE_KEY)
+  } catch {
+    // ignore
+  }
+}
+
+/** Logger sound effects. Defaults on; only an explicit '0' mutes. */
+export function getSoundEnabled(): boolean {
+  try {
+    return localStorage.getItem(SOUND_ENABLED_KEY) !== '0'
+  } catch {
+    return true
+  }
+}
+
+export function setSoundEnabledStored(enabled: boolean): void {
+  try {
+    localStorage.setItem(SOUND_ENABLED_KEY, enabled ? '1' : '0')
   } catch {
     // ignore
   }

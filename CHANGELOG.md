@@ -10,10 +10,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+_(Nothing yet.)_
+
+---
+
+## [1.5.0] - 2026-07-11
+
 ### Added
 
 - **Social notifications:** you now get a push when a mate adds you, accepts your request, challenges you to a 1v1, or reacts to your sets — so the mates-and-challenges loop actually reaches people instead of waiting silently in the app. Reactions are batched (a flurry is one buzz), and there's a "Social notifications" toggle in Settings → Notifications to turn them off
 - **Leave a challenge:** you can now leave a challenge you joined — and, on team challenges, drop your team spot — from the challenge page, as long as it hasn't ended. A two-tap confirm prevents accidents
+- **Mute the sound effects:** a "Sound effects" toggle in Settings → Appearance turns off the ticks while you dial reps and the lock-in sound when you bank
 
 ### Changed
 
@@ -21,7 +28,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
-- **Mate links work for members of other groups:** opening a shared mate link used to fail for anyone who wasn't already in the same group; any signed-in, set-up member can now add the mate (mate connections are cross-group by design)
+- **Shared mate links just work now:** opening a mate link used to fail unless you were already signed in and in the same group. It now works whether you're signed in, in a different group, or brand new — a signed-out visitor gets a sign-in prompt and the link is remembered through sign-in, then redeemed automatically once you're set up (mate connections are cross-group by design)
 - **Custom activity rows no longer wrap awkwardly:** a long name (e.g. "Calf raises (single leg)") and its "Left / right tracked" label were squeezed by the Edit/Archive buttons into a clipped name over three cramped lines; each now stays on one clean line
 - **Where 1v1 battles live is clearer:** the Mates screen now says a 1v1 battle starts from a mate's card once they accept your request, so it's findable before you have any mates
 - **Accessibility & polish pass:** the log check-in sheets (effort / soreness / over-target / nose-tap) now move focus in on open, close on Escape, and restore focus on close; more controls meet the 44px touch-target floor and show a keyboard-focus ring; the centre-hold ring now fills exactly as the 1.5s nose-hold completes; and a batch of smaller copy, layout, and labelling nits across the app were tidied

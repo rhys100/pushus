@@ -4,12 +4,26 @@
  * everything is synthesized with the Web Audio API at tap time.
  */
 
+import { getSoundEnabled, setSoundEnabledStored } from '@/lib/storage'
+
 let audioContext: AudioContext | null = null
+let soundEnabled = getSoundEnabled()
+
+/** Whether logger sound effects are on (user preference, persisted). */
+export function areSoundEffectsEnabled(): boolean {
+  return soundEnabled
+}
+
+/** Mute/unmute the logger sound effects and persist the choice. */
+export function setSoundEffectsEnabled(enabled: boolean): void {
+  soundEnabled = enabled
+  setSoundEnabledStored(enabled)
+}
 
 type AudioContextConstructor = typeof AudioContext
 
 function getAudioContext(): AudioContext | null {
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || !soundEnabled) {
     return null
   }
 

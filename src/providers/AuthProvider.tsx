@@ -11,7 +11,12 @@ import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js'
 import { defaultAppAccess, parseAppAccess, type AppAccessStatus } from '@/lib/appAccess'
 import { isProfileOnboardedFromServer } from '@/lib/postAuthNavigation'
 import { supabase } from '@/lib/supabase'
-import { clearPendingInviteCode, clearStoredActiveGroupId, getPendingInviteCode } from '@/lib/storage'
+import {
+  clearPendingInviteCode,
+  clearPendingMateCode,
+  clearStoredActiveGroupId,
+  getPendingInviteCode,
+} from '@/lib/storage'
 import type { Profile } from '@/types/database'
 
 type AuthContextValue = {
@@ -186,6 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     clearPendingInviteCode()
+    clearPendingMateCode()
     clearStoredActiveGroupId()
     await supabase.auth.signOut()
     setSession(null)
