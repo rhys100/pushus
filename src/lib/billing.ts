@@ -51,9 +51,14 @@ export function billingStatusLabel(status: string): string {
   }
 }
 
+/**
+ * Whole days from now until `isoDate`. Negative once the date is in the past
+ * (e.g. an expired trial) so callers can tell "ends today" (0) apart from
+ * "already ended" (< 0) rather than both clamping to 0.
+ */
 export function daysUntil(isoDate: string | null | undefined): number | null {
   if (!isoDate) return null
   const target = new Date(isoDate).getTime()
   const now = Date.now()
-  return Math.max(0, Math.ceil((target - now) / (1000 * 60 * 60 * 24)))
+  return Math.ceil((target - now) / (1000 * 60 * 60 * 24))
 }

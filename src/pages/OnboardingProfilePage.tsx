@@ -206,8 +206,14 @@ export function OnboardingProfilePage() {
             </div>
 
             <div className="space-y-2">
-              <span className="text-sm font-medium text-text-primary">Avatar emoji</span>
-              <div className="grid grid-cols-8 gap-2">
+              <span id="avatar-emoji-label" className="text-sm font-medium text-text-primary">
+                Avatar emoji
+              </span>
+              <div
+                role="group"
+                aria-labelledby="avatar-emoji-label"
+                className="grid grid-cols-8 gap-2"
+              >
                 {AVATAR_EMOJIS.map((option, index) => (
                   // Entrance cascade lives on the wrapper so it can't clash
                   // with the button's own selection-pop animation.
@@ -231,6 +237,7 @@ export function OnboardingProfilePage() {
                         'flex h-10 w-full items-center justify-center rounded-[var(--radius-md)] text-xl',
                         'border transition-[border-color,background-color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out)]',
                         'active:scale-90',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/60',
                         emoji === option
                           ? cn('border-accent bg-accent-muted', emojiInteracted && 'motion-pop')
                           : 'border-border bg-bg hover:border-accent/30',

@@ -18,6 +18,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 - **Mate links work for members of other groups:** opening a shared mate link used to fail for anyone who wasn't already in the same group; any signed-in, set-up member can now add the mate (mate connections are cross-group by design)
 - **Accessibility & polish pass:** the log check-in sheets (effort / soreness / over-target / nose-tap) now move focus in on open, close on Escape, and restore focus on close; more controls meet the 44px touch-target floor and show a keyboard-focus ring; the centre-hold ring now fills exactly as the 1.5s nose-hold completes; and a batch of smaller copy, layout, and labelling nits across the app were tidied
+- **More polish:** arming a solo challenge join now has a "Not now" to back out; a team's intensity warning shows on the team you're actually joining; adding a mate shows a friendly "Adding your mate…" state instead of a bare loader; the training wizard's single-choice pickers announce as radio groups; the onboarding emoji picker and the group-admin billing row are properly labelled and consistent; and the trial banner reads "Trial ended" once it lapses instead of counting into negative days
 
 ---
 

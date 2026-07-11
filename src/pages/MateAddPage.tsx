@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { Button, Card, Skeleton } from '@/components/ui'
+import { Button, Card } from '@/components/ui'
 import { getErrorMessage } from '@/lib/errors'
 import { successHaptic } from '@/lib/haptics'
 import { useRedeemMateCode } from '@/hooks/useMates'
@@ -37,10 +37,16 @@ export function MateAddPage() {
     <AppLayout title="Add a mate" showNav={false}>
       <div className="space-y-4 pb-8">
         {result.state === 'working' ? (
-          <Skeleton className="h-28 w-full" />
+          <Card padding="lg" className="motion-rise space-y-3 text-center">
+            <p className="text-4xl" aria-hidden="true">
+              🤝
+            </p>
+            <p className="text-lg font-bold text-text-primary">Adding your mate…</p>
+            <p className="text-sm text-text-muted">Hang tight while we link you up.</p>
+          </Card>
         ) : result.state === 'done' ? (
           <Card padding="lg" className="motion-rise space-y-3 text-center">
-            <p className="motion-pop text-4xl" style={{ animationDelay: '140ms' }}>
+            <p className="motion-pop text-4xl" style={{ animationDelay: '140ms' }} aria-hidden="true">
               {result.emoji}
             </p>
             <p className="text-lg font-bold text-text-primary">
@@ -55,7 +61,9 @@ export function MateAddPage() {
           </Card>
         ) : (
           <Card padding="lg" className="motion-rise space-y-3 text-center">
-            <p className="text-4xl">🤝</p>
+            <p className="text-4xl" aria-hidden="true">
+              🤝
+            </p>
             <p className="text-lg font-bold text-text-primary">That link didn&apos;t work</p>
             <p className="text-sm text-text-muted">{result.message}</p>
             <Button variant="secondary" fullWidth onClick={() => navigate('/mates')}>

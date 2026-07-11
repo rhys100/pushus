@@ -453,7 +453,7 @@ export function TrainingWizard({
               <p className="text-sm font-medium text-text-primary">
                 Any shoulder, elbow, or wrist soreness lately?
               </p>
-              <div role="group" aria-label="Recent soreness" className="grid grid-cols-3 gap-2">
+              <div role="radiogroup" aria-label="Recent soreness" className="grid grid-cols-3 gap-2">
                 {(
                   [
                     ['none', 'None'],
@@ -464,7 +464,8 @@ export function TrainingWizard({
                   <button
                     key={value}
                     type="button"
-                    aria-pressed={(answers.wizardSorenessLevel ?? 'none') === value}
+                    role="radio"
+                    aria-checked={(answers.wizardSorenessLevel ?? 'none') === value}
                     onClick={() =>
                       setAnswers((current) => ({
                         ...current,
@@ -491,12 +492,13 @@ export function TrainingWizard({
 
             <div className="space-y-2">
               <p className="text-sm font-medium text-text-primary">Experience level</p>
-              <div role="group" aria-label="Experience level" className="grid grid-cols-3 gap-2">
+              <div role="radiogroup" aria-label="Experience level" className="grid grid-cols-3 gap-2">
                 {(['beginner', 'intermediate', 'advanced'] as const).map((level) => (
                   <button
                     key={level}
                     type="button"
-                    aria-pressed={answers.trainingLevel === level}
+                    role="radio"
+                    aria-checked={answers.trainingLevel === level}
                     onClick={() => setAnswers((current) => ({ ...current, trainingLevel: level }))}
                     className={`min-h-11 rounded-[var(--radius-md)] border px-2 text-xs font-semibold capitalize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50 transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] active:scale-[0.97] ${
                       answers.trainingLevel === level
@@ -548,12 +550,13 @@ export function TrainingWizard({
 
             <div className="space-y-2">
               <p className="text-sm font-medium text-text-primary">Challenge intensity</p>
-              <div role="group" aria-label="Challenge intensity" className="grid grid-cols-3 gap-2">
+              <div role="radiogroup" aria-label="Challenge intensity" className="grid grid-cols-3 gap-2">
                 {(['light', 'moderate', 'intense'] as const).map((intensity) => (
                   <button
                     key={intensity}
                     type="button"
-                    aria-pressed={answers.challengeIntensity === intensity}
+                    role="radio"
+                    aria-checked={answers.challengeIntensity === intensity}
                     onClick={() =>
                       setAnswers((current) => ({ ...current, challengeIntensity: intensity }))
                     }

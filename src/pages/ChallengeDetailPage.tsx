@@ -243,6 +243,15 @@ export function ChallengeDetailPage() {
               >
                 {confirmingJoinKey === SOLO_JOIN_KEY ? "I know what I'm in for — join" : 'Join challenge'}
               </Button>
+              {confirmingJoinKey === SOLO_JOIN_KEY ? (
+                <button
+                  type="button"
+                  className="mx-auto block min-h-9 rounded-[var(--radius-sm)] px-1 text-xs text-text-muted transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+                  onClick={() => setConfirmingJoinKey(null)}
+                >
+                  Not now
+                </button>
+              ) : null}
             </div>
           ) : null}
 
@@ -303,15 +312,23 @@ export function ChallengeDetailPage() {
                       {standing?.memberCount ?? 0} member{(standing?.memberCount ?? 0) === 1 ? '' : 's'}
                     </p>
                     {status !== 'ended' && !myTeamId ? (
-                      <Button
-                        variant="secondary"
-                        fullWidth
-                        className="min-h-9 text-sm"
-                        loading={joinMutation.isPending}
-                        onClick={() => void handleJoin(team.id)}
-                      >
-                        {confirmingJoinKey === team.id ? 'Confirm join' : 'Join'}
-                      </Button>
+                      <>
+                        {confirmingJoinKey === team.id ? (
+                          <p className="text-xs text-warning">
+                            {intensityLabel(challenge.intensity)} challenges push hard. Tap Confirm
+                            join to lock in with {team.name}.
+                          </p>
+                        ) : null}
+                        <Button
+                          variant="secondary"
+                          fullWidth
+                          className="min-h-9 text-sm"
+                          loading={joinMutation.isPending}
+                          onClick={() => void handleJoin(team.id)}
+                        >
+                          {confirmingJoinKey === team.id ? 'Confirm join' : 'Join'}
+                        </Button>
+                      </>
                     ) : isMyTeam ? (
                       <Badge variant="success">Your team</Badge>
                     ) : null}
@@ -319,12 +336,6 @@ export function ChallengeDetailPage() {
                 )
               })}
             </div>
-            {confirmingJoinKey !== null && confirmingJoinKey !== SOLO_JOIN_KEY && !myTeamId ? (
-              <p className="text-xs text-warning">
-                {intensityLabel(challenge.intensity)} challenges push hard. Tap Confirm join to lock
-                in that team.
-              </p>
-            ) : null}
           </section>
         ) : null}
 

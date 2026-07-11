@@ -38,11 +38,13 @@ function bannerCopy(
 
     if (isOwner && daysLeft !== null && daysLeft <= billingConfig.trialEndingSoonDays) {
       return {
-        title: 'Trial ending soon',
+        title: daysLeft < 0 ? 'Trial ended' : 'Trial ending soon',
         message:
-          daysLeft === 0
-            ? 'Your trial ends today.'
-            : `Your trial ends in ${daysLeft} day${daysLeft === 1 ? '' : 's'}.`,
+          daysLeft < 0
+            ? 'Your trial has ended — add billing to keep the group active.'
+            : daysLeft === 0
+              ? 'Your trial ends today.'
+              : `Your trial ends in ${daysLeft} day${daysLeft === 1 ? '' : 's'}.`,
         tone: 'warning',
       }
     }
