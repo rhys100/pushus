@@ -87,7 +87,7 @@ test('clearReloadAttempts removes stored attempts', () => {
   expect(getReloadAttemptCount('abc123')).toBe(0)
 })
 
-test('clearAppCaches updates service workers without unregistering push subscriptions', async () => {
+test('clearAppCaches unregisters service workers and deletes caches', async () => {
   const update = vi.fn().mockResolvedValue(undefined)
   const unregister = vi.fn().mockResolvedValue(true)
   const deleteCache = vi.fn().mockResolvedValue(true)
@@ -108,8 +108,7 @@ test('clearAppCaches updates service workers without unregistering push subscrip
   const { clearAppCaches } = await import('@/lib/reloadApp')
   await clearAppCaches()
 
-  expect(update).toHaveBeenCalledOnce()
-  expect(unregister).not.toHaveBeenCalled()
+  expect(unregister).toHaveBeenCalledOnce()
   expect(deleteCache).toHaveBeenCalledWith('vite-cache')
   expect(deleteCache).toHaveBeenCalledWith('image-cache')
 })

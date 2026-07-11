@@ -13,10 +13,16 @@ describe('PWA boot recovery', () => {
   })
 
   it('reloads once and then renders a visible recovery action', () => {
-    expect(guard).toContain("url.searchParams.set('_bootRepair'")
+    expect(guard).toContain("url.searchParams.set('_fresh'")
     expect(guard).toContain('attempts < 1')
-    expect(guard).toContain('Reload PushUS')
+    expect(guard).toContain('Clear cache and reload')
+    expect(guard).toContain('registration.unregister')
     expect(guard).toContain('root.childElementCount > 0')
+  })
+
+  it('returns 404 for missing hashed assets instead of SPA HTML', () => {
+    const asset404 = readFileSync(resolve(process.cwd(), 'public/assets/404.html'), 'utf8')
+    expect(asset404).toContain('Not found')
   })
 
   it('serves the guard with revalidation', () => {

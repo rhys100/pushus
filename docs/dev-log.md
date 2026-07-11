@@ -35,6 +35,13 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 - Retired bridge reads/writes and delete the legacy `pushus-auth-bridge-v1` cache per context on app boot/sign-out. Same-context resume remains for genuine iOS background suspension; Safari's isolated legacy cache is removed when Safari next loads PushUS.
 - Operational dependency: staged hosted-template rollout is required. Deploy `magic_link_hybrid_rollout.html` first, then client, then final `magic_link.html`; see `docs/handoffs/ios-pwa-email-otp.md`. Push via `npm run auth:push-email-template` once `SUPABASE_ACCESS_TOKEN` is set. No DB migration.
 
+### 2026-07-11l (boot recovery cache-clear loop)
+
+- Rhys hit the boot-recovery screen on desktop at `/login?_bootRepair=…`; reload looped because the guard only added a query param and never cleared poisoned `/assets/*.js` entries cached as HTML from mid-deploy SPA fallback.
+- `public/assets/404.html` forces real 404s for missing hashed assets (Cloudflare Pages subdirectory 404 pattern) so browsers cannot cache HTML as JavaScript.
+- `boot-guard.js` now unregisters service workers, deletes Cache Storage, strips repair params, and reloads with `_fresh`. Recovery button copy: “Clear cache and reload”; desktop hard-refresh hint added.
+- `clearAppCaches()` now unregisters workers instead of only calling `update()`.
+
 ### 2026-07-11j (PWA HTML-level boot recovery)
 
 - Both `pushus.app` and `www.pushus.app` now serve build `feaf2b6`; Origin/CORS module requests return JavaScript, and Playwright standalone-iPhone probes render Login with an active service worker. A previously opened iOS standalone window can still hold the poisoned document in memory.
