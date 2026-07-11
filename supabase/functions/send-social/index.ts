@@ -18,7 +18,16 @@ type PushSubscriptionRow = {
   auth: string
 }
 
-const REACTION_DEBOUNCE_MINUTES = 30
+// Anti-spam cooldown per (recipient, type). Because the function is
+// user-invokable, a looped/forged POST re-verifies a persistent row (an accepted
+// mate connection, a pending challenge) and would otherwise push every time —
+// this bounds it. The log already records every kind.
+const COOLDOWN_MINUTES: Record<SocialType, number> = {
+  reaction: 30,
+  mate_request: 60,
+  mate_accepted: 60,
+  challenge_invite: 60,
+}
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -155,36 +164,43 @@ Deno.serve(async (req) => {
       const [{ data: reaction }, { data: entry }] = await Promise.all([
         admin
           .from('reactions')
-          .select('emoji')
+          .select('emoji, group_id')
           .eq('user_id', callerId)
           .eq('target_type', 'entry')
           .eq('target_id', entryId)
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle(),
-        admin.from('pushup_entries').select('user_id').eq('id', entryId).maybeSingle(),
+        admin.from('pushup_entries').select('user_id, group_id').eq('id', entryId).maybeSingle(),
       ])
-      verified = Boolean(reaction) && (entry as { user_id?: string })?.user_id === targetId
-      if (reaction) context.emoji = (reaction as { emoji?: string }).emoji
+      const r = reaction as { emoji?: string; group_id?: string } | null
+      const e = entry as { user_id?: string; group_id?: string } | null
+      // Require the reaction's group to match the entry's group. The reactions
+      // insert policy only proves the caller is an active member of the
+      // client-supplied group_id, so without this a forged reaction row on a
+      // stranger's entry (with a group the attacker belongs to) would pass.
+      verified = Boolean(r) && e?.user_id === targetId && Boolean(e?.group_id) && r?.group_id === e?.group_id
+      if (r) context.emoji = r.emoji
     }
 
     if (!verified) {
       return jsonResponse({ pushed: 0, reason: 'not_verified' }, 403)
     }
 
-    // Debounce reactions so a burst is a single buzz.
-    if (type === 'reaction') {
-      const since = new Date(Date.now() - REACTION_DEBOUNCE_MINUTES * 60_000).toISOString()
+    // Per-(recipient, type) cooldown — collapses a reaction burst to one buzz
+    // and stops a looped/forged invocation flooding someone.
+    {
+      const since = new Date(Date.now() - COOLDOWN_MINUTES[type] * 60_000).toISOString()
       const { data: recent } = await admin
         .from('social_push_log')
         .select('id')
         .eq('user_id', targetId)
-        .eq('kind', 'reaction')
+        .eq('kind', type)
         .gte('created_at', since)
         .limit(1)
         .maybeSingle()
       if (recent) {
-        return jsonResponse({ pushed: 0, reason: 'reaction_debounced' })
+        return jsonResponse({ pushed: 0, reason: 'cooldown' })
       }
     }
 

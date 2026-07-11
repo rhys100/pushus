@@ -5,6 +5,7 @@ import { AvailabilitySettings } from '@/components/settings/AvailabilitySettings
 import { BoardPrivacySettings } from '@/components/settings/BoardPrivacySettings'
 import { CustomActivitiesSettings } from '@/components/settings/CustomActivitiesSettings'
 import { SettingsLinkRow } from '@/components/settings/SettingsLinkRow'
+import { areSoundEffectsEnabled, setSoundEffectsEnabled } from '@/lib/dinkSound'
 import { SettingsSection } from '@/components/settings/SettingsSection'
 import { APP_VERSION } from '@/lib/appVersionLabel'
 import { useTabPageMeta } from '@/components/layout/TabPageMeta'
@@ -73,7 +74,13 @@ export function SettingsPage() {
   const { activeGroup, role } = useActiveGroup()
   const { toast } = useToast()
   const isAdmin = role === 'owner' || role === 'admin'
+  const [soundOn, setSoundOn] = useState(areSoundEffectsEnabled())
   const planTimezone = profile?.timezone || activeGroup?.timezone || 'UTC'
+
+  function handleSoundToggle(enabled: boolean) {
+    setSoundEffectsEnabled(enabled)
+    setSoundOn(enabled)
+  }
   const {
     dailyTarget,
     todayPrescription,
@@ -504,6 +511,23 @@ export function SettingsPage() {
         <p className="text-xs text-text-muted">
           System follows your phone&apos;s light/dark setting.
         </p>
+      </Card>
+
+      <Card padding="md">
+        <label className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            className="mt-0.5 h-4 w-4 accent-[var(--color-accent)]"
+            checked={soundOn}
+            onChange={(event) => handleSoundToggle(event.target.checked)}
+          />
+          <span>
+            <span className="block text-sm font-medium text-text-primary">Sound effects</span>
+            <span className="mt-0.5 block text-xs text-text-muted">
+              The ticks as you dial reps and the lock-in sound when you bank a set.
+            </span>
+          </span>
+        </label>
       </Card>
 
       <CustomActivitiesSettings />

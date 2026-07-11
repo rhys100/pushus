@@ -24,6 +24,14 @@ export const WHATS_NEW_SIGNOFF = 'Love Rhys + MK 🧡'
 /** Newest first. */
 export const NEWS_ITEMS: NewsItem[] = [
   {
+    id: '2026-07-11-social-notifications',
+    date: '2026-07-11',
+    version: '1.5.0',
+    emoji: '🔔',
+    title: 'Notifications when mates reach out',
+    body: 'Get a heads-up when someone adds you as a mate, accepts your request, challenges you to a 1v1, or reacts to your sets — so you never miss it. Turn it off any time in Settings → Notifications.',
+  },
+  {
     id: '2026-07-11-edit-yesterday',
     date: '2026-07-11',
     version: '1.4.0',

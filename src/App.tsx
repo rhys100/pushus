@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui'
 import { useAppServiceWorker } from '@/hooks/useAppServiceWorker'
 import { useDismissStaleReminders } from '@/hooks/useDismissStaleReminders'
 import { useNotificationClickNavigation } from '@/hooks/useNotificationClickNavigation'
+import { usePendingMateRedeem } from '@/hooks/usePendingMateRedeem'
 import { usePwaLaunchHandler } from '@/hooks/usePwaLaunchHandler'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { TodayPage } from '@/pages/TodayPage'
@@ -143,6 +144,11 @@ function StaleReminderCleanup() {
   return null
 }
 
+function PendingMateRedeemer() {
+  usePendingMateRedeem()
+  return null
+}
+
 export default function App() {
   if (!isSupabaseConfigured) {
     return <ConfigErrorScreen />
@@ -152,6 +158,7 @@ export default function App() {
     <>
       <AppServiceWorkerRegistration />
       <StaleReminderCleanup />
+      <PendingMateRedeemer />
       <PwaLaunchHandlerRegistration />
       <NotificationClickNavigation />
       <AppUpdateChecker />
@@ -361,13 +368,11 @@ export default function App() {
         <Route
           path="/mates/add/:code"
           element={
+            // Public like /join: MateAddPage stashes the code and handles the
+            // signed-out / not-onboarded states itself, so a shared mate link
+            // survives the sign-in round trip and works cross-group.
             <LazyPage>
-              {/* Onboarded, not member: a mate link is redeemable across groups
-                  (redeem_mate_code allows it), so gating on active-group
-                  membership wrongly bounced anyone in a different/other group. */}
-              <RequireAuth mode="onboarded">
-                <MateAddPage />
-              </RequireAuth>
+              <MateAddPage />
             </LazyPage>
           }
         />

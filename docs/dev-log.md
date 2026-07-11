@@ -26,6 +26,13 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-11d (release 1.5.0)
+
+- Cut **1.5.0** (minor). NOTE: `bump-version.mjs minor` bumped package.json+lock but did NOT move the Unreleased CHANGELOG block (exited before the write; CHANGELOG was LF, not a line-ending issue — cause unconfirmed). Fixed the CHANGELOG cut by hand (inserted `## [1.5.0]` heading), + README row + a `whatsNew` social-notifications entry. version:check green.
+- **Remaining audit findings fixed this session:** sound-effects mute (dinkSound gates on getAudioContext + `social`... no — `soundEnabled`; storage + Settings→Appearance toggle); mate-link signed-out flow (public /mates/add route + MateAddPage handles states + `usePendingMateRedeem` background hook, code stashed in localStorage with 1h TTL + cleared on sign-out); theme-color de-dup (applyTheme reads computed --color-bg); deleted orphaned assets (hero.png/react.svg/vite.svg). **Deliberately skipped (rationale):** reactions feed→waterfall (needs an activity_feed RPC fold; volatile-key half already shipped), cn→tailwind-merge (dep + app-wide), typography/border global tokenization (low value), locked "Bank Push-ups" CTA, physical nose-tap keyboard, acceptable countup rAF.
+- **Polish review** (3 parallel agents on the new social/mate-link/sound code) found 3 real issues, all FIXED before release: (1) pending mate code never expired / not cleared on sign-out → cross-account auto-mate — added 1h TTL + clearPendingMateCode in AuthProvider.signOut; (2) social pushes (non-reaction) had no rate limit → spam/harassment vector — generalized the social_push_log cooldown to ALL types (60m for connection/challenge, 30m reaction); (3) reaction verification didn't prove shared group — now requires reaction.group_id === entry.group_id.
+- Verified: tsc 0, eslint 0 err, 440 tests, clean build. **NOT deployed:** migs 0042-0046 + edge fns `send-push-reminders` & `send-social` still need `npx supabase` deploy for any of the notification features to fire.
+
 ### 2026-07-11c (social notifications)
 
 - Rhys hit the gap: mate requests/challenges/reactions never notify anyone (only reminders + nudges push), so his added mates never knew to accept → the whole mates/challenges loop stalled.
