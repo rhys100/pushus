@@ -74,8 +74,8 @@ In **Authentication → Providers → Email**:
 In **Authentication → Email Templates → Magic Link**:
 
 - **Subject:** `Your PushUS sign-in code`
-- **Body (HTML):** copy `supabase/templates/magic_link.html`
-- **Body (plain text):** copy `supabase/templates/magic_link.txt` if the dashboard shows a Text tab
+- **Body (HTML):** copy `supabase/templates/magic_link.html` into the **HTML** body field (not plain text only)
+- **Body (plain text):** copy `supabase/templates/magic_link.txt` into the **Text** tab if shown
 
 Or push from the repo once SMTP is configured:
 

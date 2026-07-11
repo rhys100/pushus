@@ -27,8 +27,11 @@ describe('passwordless email template', () => {
     expect(template).toContain('{{ .Token }}')
     expect(template).not.toContain('{{ .ConfirmationURL }}')
     expect(template).toContain('Home Screen app')
+    expect(template).toContain('#ff6b35')
+    expect(template).toContain('Your sign-in code')
     expect(textTemplate).toContain('{{ .Token }}')
     expect(textTemplate).not.toContain('{{ .ConfirmationURL }}')
+    expect(textTemplate).toMatch(/\n\n\{\{ \.Token \}\}\n\n/)
   })
 
   it('keeps a hybrid template for zero-downtime production rollout', () => {

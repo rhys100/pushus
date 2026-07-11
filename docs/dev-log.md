@@ -43,6 +43,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 - Retired bridge reads/writes and delete the legacy `pushus-auth-bridge-v1` cache per context on app boot/sign-out. Same-context resume remains for genuine iOS background suspension; Safari's isolated legacy cache is removed when Safari next loads PushUS.
 - Operational dependency: staged hosted-template rollout is required. Deploy `magic_link_hybrid_rollout.html` first, then client, then final `magic_link.html`; see `docs/handoffs/ios-pwa-email-otp.md`. Push via `npm run auth:push-email-template` once `SUPABASE_ACCESS_TOKEN` is set. No DB migration.
 
+### 2026-07-11n (sign-in email template polish)
+
+- Redesigned `magic_link.html` to match app tokens: dark `#0a0a0d` / `#16161c` surfaces, `#ff6b35` accent, large mono OTP block, table layout for Gmail. Plain-text template puts the code alone between rules so it is not buried in a paragraph.
+- Rhys must re-paste HTML into Supabase **Authentication → Email Templates → Magic Link** (Body HTML), or run `npm run auth:push-email-template`.
+
 ### 2026-07-11m (SMTP send failure surfaced on login)
 
 - Production `signInWithOtp` returns HTTP 500 `Error sending magic link email` — Supabase cannot send via configured SMTP. Client previously mapped the opaque `{}` AuthRetryableFetchError to “Could not sign you in”.
