@@ -10,6 +10,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Changed
+
+- **Sign-in email design:** Magic Link template restyled to match PushUS dark theme (orange accent, large mono code block, iOS Home Screen note). Plain-text version puts the code on its own line for easy copy.
+
 ### Fixed
 
 - **Sign-in email SMTP failures:** when Supabase cannot send the OTP email, login now says email delivery is misconfigured instead of “check your connection”
