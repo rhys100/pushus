@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AvatarChip,
@@ -107,18 +106,11 @@ export function GroupAdminSettings() {
       ) : null}
 
       {isOwner && billingConfig.enabled ? (
-        <div className="flex items-center justify-between gap-3 rounded-[var(--radius-md)] border border-border bg-bg px-3 py-3">
-          <div>
-            <p className="text-sm text-text-primary">Group billing</p>
-            <p className="text-xs text-text-muted">Manage plan, trial, and invoices.</p>
-          </div>
-          <Link
-            to="/group/billing"
-            className="text-sm font-semibold text-accent hover:underline"
-          >
-            Open
-          </Link>
-        </div>
+        <SettingsLinkRow
+          to="/group/billing"
+          title="Group billing"
+          description="Manage plan, trial, and invoices."
+        />
       ) : null}
 
       <div className="space-y-2">

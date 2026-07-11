@@ -75,9 +75,11 @@ export function BillingPanel({
 
         {billingStatus === 'trialing' && trialDaysLeft !== null ? (
           <p className="mt-3 text-sm text-text-muted">
-            {trialDaysLeft === 0
-              ? 'Trial ends today.'
-              : `Trial ends in ${trialDaysLeft} day${trialDaysLeft === 1 ? '' : 's'}.`}
+            {trialDaysLeft < 0
+              ? 'Trial ended.'
+              : trialDaysLeft === 0
+                ? 'Trial ends today.'
+                : `Trial ends in ${trialDaysLeft} day${trialDaysLeft === 1 ? '' : 's'}.`}
           </p>
         ) : null}
 

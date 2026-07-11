@@ -69,7 +69,7 @@ const CalendarDay = memo(function CalendarDay({
     <button
       type="button"
       disabled={!inMonth || isFuture}
-      aria-label={`${dateLabel}${totalReps > 0 ? `, ${totalReps} reps` : ''}`}
+      aria-label={`${dateLabel}${isToday ? ', today' : ''}${totalReps > 0 ? `, ${totalReps} reps` : ''}`}
       aria-pressed={isSelected}
       onClick={() => {
         if (!isSelected) {
