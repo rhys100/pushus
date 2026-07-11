@@ -10,6 +10,12 @@ export function getTrainingDayWarnings(
 ): string[] {
   const warnings: string[] = []
 
+  if (daysSelected === 0) {
+    warnings.push(
+      'Pick at least one training day — a plan needs somewhere to put your push-ups.',
+    )
+  }
+
   if (daysSelected === 6) {
     warnings.push(
       "That's a lot of training days. PushUS works best when recovery is built in.",

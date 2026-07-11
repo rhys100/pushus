@@ -130,7 +130,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     const id = input.id ?? `toast-${++idRef.current}`
     const record: ToastRecord = { ...input, id }
 
-    setToasts((current) => [...current, record])
+    setToasts((current) => {
+      // A stable id means "update this toast", not "add another" — replace in
+      // place so we never render two nodes with the same React key.
+      const existingIndex = current.findIndex((toast) => toast.id === id)
+      if (existingIndex === -1) {
+        return [...current, record]
+      }
+      const next = current.slice()
+      next[existingIndex] = record
+      return next
+    })
     return id
   }, [])
 

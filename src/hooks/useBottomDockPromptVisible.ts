@@ -12,8 +12,3 @@ export function useInstallOpenAppDockVisible(): boolean {
     () => false,
   )
 }
-
-/** @deprecated Use useInstallOpenAppDockVisible */
-export function usePwaInstallDockVisible(): boolean {
-  return useInstallOpenAppDockVisible()
-}

@@ -6,6 +6,7 @@ import { RequireAuth } from '@/components/auth/RequireAuth'
 import { TabLayout } from '@/components/layout/TabLayout'
 import { Skeleton } from '@/components/ui'
 import { useAppServiceWorker } from '@/hooks/useAppServiceWorker'
+import { useDismissStaleReminders } from '@/hooks/useDismissStaleReminders'
 import { useNotificationClickNavigation } from '@/hooks/useNotificationClickNavigation'
 import { usePwaLaunchHandler } from '@/hooks/usePwaLaunchHandler'
 import { isSupabaseConfigured } from '@/lib/supabase'
@@ -101,7 +102,12 @@ const HowItWorksPage = lazy(() =>
 
 function PageLoader() {
   return (
-    <div className="flex min-h-[50vh] items-center justify-center px-4">
+    <div
+      className="flex min-h-[50vh] items-center justify-center px-4"
+      role="status"
+      aria-live="polite"
+    >
+      <span className="sr-only">Loading…</span>
       <div className="w-full max-w-xs space-y-3">
         <Skeleton className="mx-auto h-10 w-10 rounded-full" />
         <Skeleton className="h-4 w-full" />
@@ -129,6 +135,11 @@ function AppServiceWorkerRegistration() {
   return null
 }
 
+function StaleReminderCleanup() {
+  useDismissStaleReminders()
+  return null
+}
+
 export default function App() {
   if (!isSupabaseConfigured) {
     return <ConfigErrorScreen />
@@ -137,6 +148,7 @@ export default function App() {
   return (
     <>
       <AppServiceWorkerRegistration />
+      <StaleReminderCleanup />
       <PwaLaunchHandlerRegistration />
       <NotificationClickNavigation />
       <AppUpdateChecker />

@@ -25,7 +25,10 @@ function CompetitionCard({ competition }: { competition: Competition }) {
   const status = challengeStatus(competition)
 
   return (
-    <Link to={`/challenges/${competition.id}`} className="block">
+    <Link
+      to={`/challenges/${competition.id}`}
+      className="block rounded-[var(--radius-lg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+    >
       <Card padding="md" className="space-y-2 transition-colors hover:border-accent/30">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">

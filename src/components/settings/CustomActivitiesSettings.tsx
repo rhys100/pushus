@@ -50,6 +50,7 @@ function IconPickerButton({
       className={cn(
         'flex h-10 w-full items-center justify-center rounded-[var(--radius-md)]',
         'border transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
         selected
           ? 'border-accent bg-accent-muted text-accent'
           : 'border-border bg-surface text-text-muted hover:border-accent/30 hover:text-text-primary',

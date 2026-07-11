@@ -52,7 +52,3 @@ export function bumpSemver(version: string, level: SemverBump): string {
   }
   return `${major}.${minor}.${patch + 1}`
 }
-
-export function formatChangelogReleaseSection(version: string, date: string): string {
-  return `## [${version}] - ${date}\n\n### Added\n\n- (describe change)\n\n`
-}

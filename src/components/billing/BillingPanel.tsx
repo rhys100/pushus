@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Badge, Button } from '@/components/ui'
 import { billingConfig, billingStatusLabel, daysUntil } from '@/lib/billing'
 import { BillingPlanCard } from '@/components/billing/BillingPlanCard'
@@ -23,6 +24,7 @@ export function BillingPanel({
   checkoutLoading = false,
   portalLoading = false,
 }: BillingPanelProps) {
+  const [selectedInterval, setSelectedInterval] = useState<'monthly' | 'yearly'>('monthly')
   const trialDaysLeft = daysUntil(subscription?.trial_end)
   const periodEndLabel = subscription?.current_period_end
     ? new Date(subscription.current_period_end).toLocaleDateString()
@@ -93,19 +95,27 @@ export function BillingPanel({
             Choose a plan to activate your group. Members can join after checkout
             completes.
           </p>
-          <BillingPlanCard
-            interval="monthly"
-            priceLabel={billingConfig.monthlyPriceLabel}
-            onSelect={() => onStartCheckout('monthly')}
-            disabled={checkoutLoading}
-          />
-          <BillingPlanCard
-            interval="yearly"
-            priceLabel={billingConfig.yearlyPriceLabel}
-            onSelect={() => onStartCheckout('yearly')}
-            disabled={checkoutLoading}
-          />
-          <Button fullWidth loading={checkoutLoading} onClick={() => onStartCheckout('monthly')}>
+          <div className="space-y-3" role="radiogroup" aria-label="Billing plan">
+            <BillingPlanCard
+              interval="monthly"
+              priceLabel={billingConfig.monthlyPriceLabel}
+              selected={selectedInterval === 'monthly'}
+              onSelect={() => setSelectedInterval('monthly')}
+              disabled={checkoutLoading}
+            />
+            <BillingPlanCard
+              interval="yearly"
+              priceLabel={billingConfig.yearlyPriceLabel}
+              selected={selectedInterval === 'yearly'}
+              onSelect={() => setSelectedInterval('yearly')}
+              disabled={checkoutLoading}
+            />
+          </div>
+          <Button
+            fullWidth
+            loading={checkoutLoading}
+            onClick={() => onStartCheckout(selectedInterval)}
+          >
             Start {billingConfig.trialDays}-day trial
           </Button>
         </div>

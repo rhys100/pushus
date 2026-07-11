@@ -20,19 +20,44 @@ export function AchievementsPage() {
   const { user } = useAuth()
   const { toast } = useToast()
   const { activeGroup, loading: groupLoading } = useActiveGroup()
-  const { data: catalog = [], isLoading: catalogLoading } = useAchievementCatalog()
-  const { data: unlocked = [], isLoading: unlockedLoading } = useUserAchievements(
-    activeGroup,
-    user?.id,
-  )
-  const { data: xpTotal = 0, isLoading: xpLoading } = useXpTotal(activeGroup, user?.id)
-  const { data: streak, isLoading: streakLoading } = useStreakStatus(activeGroup, user?.id)
+  const {
+    data: catalog = [],
+    isLoading: catalogLoading,
+    error: catalogError,
+    refetch: refetchCatalog,
+  } = useAchievementCatalog()
+  const {
+    data: unlocked = [],
+    isLoading: unlockedLoading,
+    error: unlockedError,
+    refetch: refetchUnlocked,
+  } = useUserAchievements(activeGroup, user?.id)
+  const {
+    data: xpTotal = 0,
+    isLoading: xpLoading,
+    error: xpError,
+    refetch: refetchXp,
+  } = useXpTotal(activeGroup, user?.id)
+  const {
+    data: streak,
+    isLoading: streakLoading,
+    error: streakError,
+    refetch: refetchStreak,
+  } = useStreakStatus(activeGroup, user?.id)
   const { data: goalStreak = 0 } = useGoalStreak(activeGroup)
   const { data: banterBadges = [] } = useMyCustomBadges(activeGroup?.id, user?.id)
   const useFreeze = useUseStreakFreeze(activeGroup, user?.id)
 
   const unlockedIds = new Set(unlocked.map((item) => item.achievement_id))
   const loading = groupLoading || catalogLoading || unlockedLoading || xpLoading
+  const loadError = catalogError || unlockedError || xpError || streakError
+
+  function handleRetry() {
+    void refetchCatalog()
+    void refetchUnlocked()
+    void refetchXp()
+    void refetchStreak()
+  }
 
   async function handleUseFreeze() {
     if (!streak?.freeze.protectableDate) {
@@ -144,6 +169,14 @@ export function AchievementsPage() {
               <Skeleton className="h-16 w-full" />
               <Skeleton className="h-16 w-full" />
             </div>
+          ) : loadError ? (
+            <EmptyState
+              title="Couldn't load your achievements"
+              description="Something went wrong. Check your connection and try again."
+              icon={<span className="text-2xl">⚠️</span>}
+              actionLabel="Try again"
+              onAction={handleRetry}
+            />
           ) : catalog.length === 0 ? (
             <EmptyState
               title="No badges yet"
@@ -166,17 +199,23 @@ export function AchievementsPage() {
 
                 return (
                   <li key={achievement.id}>
-                    <Card
-                      padding="md"
-                      className={`flex items-start gap-3 ${isUnlocked ? '' : 'opacity-60'}`}
-                    >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-bg text-xl">
+                    <Card padding="md" className="flex items-start gap-3">
+                      {/* Dim only the icon when locked so description text keeps full contrast. */}
+                      <span
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-bg text-xl${
+                          isUnlocked ? '' : ' opacity-50'
+                        }`}
+                      >
                         {achievement.icon_emoji}
                       </span>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <p className="font-semibold text-text-primary">{achievement.name}</p>
-                          {isUnlocked ? <Badge variant="success">Unlocked</Badge> : null}
+                          {isUnlocked ? (
+                            <Badge variant="success">Unlocked</Badge>
+                          ) : (
+                            <Badge variant="neutral">Locked</Badge>
+                          )}
                         </div>
                         <p className="mt-0.5 text-xs text-text-muted">{achievement.description}</p>
                         {progress !== null && lifetimeTarget ? (

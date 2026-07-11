@@ -4,6 +4,7 @@ import {
   useEffect,
   useImperativeHandle,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -11,6 +12,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 import { cn } from '@/lib/cn'
+import { prefersReducedMotion } from '@/lib/motion'
 import { completedLapColorForCount, LAP_COLORS, lapIndexForCount } from '@/lib/loggerLaps'
 import {
   angleToTotalCount,
@@ -258,8 +260,24 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
         return
       }
 
+      // Reduced motion: skip the spin-down + per-rep trill entirely — reset the
+      // counter instantly but keep the BANKED lock-in confirmation. This mirrors
+      // useCountUp's short-circuit and, crucially, unblocks logging immediately
+      // instead of dead-locking input for the full animation window.
+      if (prefersReducedMotion()) {
+        unwindingRef.current = false
+        setUnwindAngle(null)
+        setHandleTickKey(0)
+        reset()
+        notifyCountChange(0)
+        runLockIn()
+        return
+      }
+
       unwindingRef.current = true
-      const duration = Math.min(2400, 700 + startCount * 55)
+      // Keep the dead window (where drag / +10 / center-tap no-op) well under a
+      // second even for big sets, so the ring never feels frozen after a bank.
+      const duration = Math.min(900, 500 + startCount * 20)
       const startTime = performance.now()
       let lastTick = startCount
 
@@ -393,29 +411,35 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
     // Comet trail: many short segments from the head backwards. Both the stroke
     // width and the opacity taper toward the lap start, giving a teardrop comet
     // — a fat bright head that thins into a faint wisp — rather than a flat ring.
-    const trailSegments: { d: string; opacity: number; width: number; head: boolean }[] = []
+    // Memoised on headAngle so the up-to-72-node geometry is only rebuilt when the
+    // head actually moves, not on unrelated re-renders (pulse / hold / lock-in).
+    const trailSegments = useMemo(() => {
+      const segments: { d: string; opacity: number; width: number; head: boolean }[] = []
 
-    if (headAngle > 0 && !isFullLap) {
-      const segments = Math.max(6, Math.min(72, Math.ceil(headAngle / 3.5)))
-      const span = headAngle / segments
+      if (headAngle > 0 && !isFullLap) {
+        const segmentCount = Math.max(6, Math.min(72, Math.ceil(headAngle / 3.5)))
+        const span = headAngle / segmentCount
 
-      for (let i = 0; i < segments; i += 1) {
-        const end = headAngle - span * i
-        const start = Math.max(0, end - span - 0.9)
+        for (let i = 0; i < segmentCount; i += 1) {
+          const end = headAngle - span * i
+          const start = Math.max(0, end - span - 0.9)
 
-        if (end <= 0.001) {
-          break
+          if (end <= 0.001) {
+            break
+          }
+
+          const t = segmentCount <= 1 ? 0 : i / (segmentCount - 1)
+          segments.push({
+            d: describeArc(RING_CENTER, RING_CENTER, RING_RADIUS, start, end),
+            opacity: Math.max(0.04, Math.pow(1 - t, 1.3)),
+            width: TRAIL_HEAD_WIDTH - (TRAIL_HEAD_WIDTH - TRAIL_TAIL_WIDTH) * t,
+            head: i === 0,
+          })
         }
-
-        const t = segments <= 1 ? 0 : i / (segments - 1)
-        trailSegments.push({
-          d: describeArc(RING_CENTER, RING_CENTER, RING_RADIUS, start, end),
-          opacity: Math.max(0.04, Math.pow(1 - t, 1.3)),
-          width: TRAIL_HEAD_WIDTH - (TRAIL_HEAD_WIDTH - TRAIL_TAIL_WIDTH) * t,
-          head: i === 0,
-        })
       }
-    }
+
+      return segments
+    }, [headAngle, isFullLap])
 
     const headGlowPath =
       headAngle > 4 && !isFullLap

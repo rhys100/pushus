@@ -53,19 +53,9 @@ export function subscribeBottomDockPromptVisibility(notify: () => void): () => v
   return () => subscribers.delete(notify)
 }
 
-/** @deprecated Use getInstallOpenAppDockVisible for push deferral; getBottomDockPromptVisible for layout */
-export function getPwaInstallDockVisible(): boolean {
-  return getInstallOpenAppDockVisible()
-}
-
 /** @deprecated Use setBottomDockPromptVisible */
 export function setPwaInstallDockVisible(source: 'install' | 'open-app', visible: boolean): void {
   setBottomDockPromptVisible(source, visible)
-}
-
-/** @deprecated Use subscribeBottomDockPromptVisibility */
-export function subscribePwaInstallDockVisibility(notify: () => void): () => void {
-  return subscribeBottomDockPromptVisibility(notify)
 }
 
 export type PwaDockSource = BottomDockPromptSource

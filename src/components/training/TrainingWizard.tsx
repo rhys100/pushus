@@ -13,6 +13,7 @@ import {
   type WizardAnswers,
 } from '@/lib/training/planEngine'
 import { noticeInlineClass } from '@/lib/noticeStyles'
+import { prefersReducedMotion } from '@/lib/motion'
 import {
   buildTrustModeLabel,
   deriveHistoryConfidence,
@@ -84,6 +85,8 @@ export function TrainingWizard({
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<WizardAnswers>(initialAnswers ?? DEFAULT_ANSWERS)
   const initializedRef = useRef(false)
+  const stepHeadingRef = useRef<HTMLParagraphElement>(null)
+  const stepChangeMountedRef = useRef(false)
   const [userEditedDailyAvg, setUserEditedDailyAvg] = useState(false)
   const [logSuggestedDailyAvg, setLogSuggestedDailyAvg] = useState<number | null>(null)
   const [showOffAppTraining, setShowOffAppTraining] = useState(false)
@@ -162,6 +165,19 @@ export function TrainingWizard({
     })
   }, [savedAnswersReady, historyLoading, historyStats, initialAnswers, userEditedDailyAvg])
 
+  // On step change, reset scroll to the top and move focus to the step title so
+  // the next (often shorter) step doesn't render mid-page and the change is
+  // announced to screen readers instead of leaving focus on the dock button.
+  useEffect(() => {
+    if (!stepChangeMountedRef.current) {
+      stepChangeMountedRef.current = true
+      return
+    }
+
+    window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' })
+    stepHeadingRef.current?.focus()
+  }, [step])
+
   const offAppConfirmed =
     confirmedOffAppTraining || Boolean(answers.manualConfirmedRegularTraining)
 
@@ -205,7 +221,8 @@ export function TrainingWizard({
     historyStats.daysSinceLastLog > 0
   const startWeek = calibration.startMesocycleWeek
   const daysSelected = answers.preferredTrainingDays.length
-  const canSave = answers.sorenessWarningAcknowledged
+  // A plan with no training days is invalid — block Continue/Save until one is picked.
+  const canSave = answers.sorenessWarningAcknowledged && daysSelected > 0
   const dayWarnings = getTrainingDayWarnings(daysSelected, answers.challengeIntensity)
   const suggestedSetsSummary = formatDayTypeSetsSummary(recommendation.plan.weeklySchedule)
   const hardestDayTarget = recommendation.plan.peakDayTarget
@@ -248,7 +265,12 @@ export function TrainingWizard({
   return (
     <>
       <div className="space-y-4 pb-[calc(var(--bottom-nav-height)+var(--wizard-dock-height)+1rem)]">
-        <WizardStepHeader step={step} totalSteps={STEP_TITLES.length} title={STEP_TITLES[step]} />
+        <WizardStepHeader
+          ref={stepHeadingRef}
+          step={step}
+          totalSteps={STEP_TITLES.length}
+          title={STEP_TITLES[step]}
+        />
 
         {step === 0 ? (
           <Card padding="md" className="space-y-5">
@@ -678,7 +700,7 @@ export function TrainingWizard({
                 stop if I feel pain.
               </span>
             </label>
-            {!canSave ? (
+            {!answers.sorenessWarningAcknowledged ? (
               <p className="text-xs text-text-muted">Tick the box above to save your plan.</p>
             ) : null}
             <p className="text-xs text-text-muted">{recommendation.plan.disclaimer}</p>
@@ -705,7 +727,11 @@ export function TrainingWizard({
               </Button>
             ) : null}
             {step < 2 ? (
-              <Button fullWidth onClick={() => setStep((current) => current + 1)}>
+              <Button
+                fullWidth
+                disabled={step === 1 && daysSelected === 0}
+                onClick={() => setStep((current) => current + 1)}
+              >
                 Continue
               </Button>
             ) : (

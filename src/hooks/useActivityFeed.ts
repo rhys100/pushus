@@ -34,8 +34,8 @@ export function canReactToFeedItem(
 export const activityFeedKeys = {
   all: ['activityFeed'] as const,
   feed: (groupId: string) => ['activityFeed', groupId] as const,
-  userReactions: (groupId: string, entryIds: string[]) =>
-    ['activityFeed', 'reactions', groupId, ...entryIds.sort()] as const,
+  userReactions: (groupId: string, entryCount: number) =>
+    ['activityFeed', 'reactions', groupId, entryCount] as const,
   // Stable prefix that matches every userReactions query for a group,
   // regardless of the entry-id list suffix — use this to invalidate.
   reactionsPrefix: (groupId: string) => ['activityFeed', 'reactions', groupId] as const,
@@ -122,7 +122,11 @@ export function useEntryReactions(
     .map((item) => item.event_id)
 
   return useQuery({
-    queryKey: activityFeedKeys.userReactions(group?.id ?? '', entryIds),
+    // Key on the group + entry count, not the whole sorted id list: an identical
+    // refetch (same entries) keeps the same key so it no longer churns/orphans
+    // the cache, while a changed count still refetches. The reactionsPrefix
+    // invalidation matches this key for optimistic toggles.
+    queryKey: activityFeedKeys.userReactions(group?.id ?? '', entryIds.length),
     queryFn: () => fetchEntryReactions(group!.id, entryIds),
     enabled: Boolean(group?.id && userId && entryIds.length > 0),
     staleTime: 30_000,
@@ -187,7 +191,7 @@ export function useToggleReaction(group: Group | null | undefined, userId: strin
     },
     // Optimistically flip the reaction so the button highlights instantly, then
     // reconcile on settle. Uses the stable prefix so it matches the actual
-    // userReactions query (which is keyed on the full feed entry-id list).
+    // userReactions query (which is keyed under that prefix).
     onMutate: async ({ group: activeGroup, entryId, emoji }) => {
       const prefix = activityFeedKeys.reactionsPrefix(activeGroup.id)
       await queryClient.cancelQueries({ queryKey: prefix })
@@ -213,8 +217,9 @@ export function useToggleReaction(group: Group | null | undefined, userId: strin
     },
     onSettled: () => {
       if (group?.id) {
-        queryClient.invalidateQueries({ queryKey: activityFeedKeys.feed(group.id) })
-        // Prefix match — refreshes the reaction highlight regardless of entry-id suffix.
+        // Only reactions changed — the optimistic cache already reflects the
+        // toggle, so refresh just the reactions prefix and leave the 50-row
+        // feed query untouched (reaction_count isn't used for display).
         queryClient.invalidateQueries({ queryKey: activityFeedKeys.reactionsPrefix(group.id) })
       }
     },

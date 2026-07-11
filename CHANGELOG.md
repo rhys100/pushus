@@ -10,6 +10,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+_(Nothing yet.)_
+
+---
+
+## [1.4.0] - 2026-07-11
+
 ### Added
 
 - **Log a set you forgot yesterday:** in My log (Feed → your log), pick yesterday on the calendar and add the set you missed. You can log and edit today and yesterday; older days stay locked so scores stay fair
@@ -24,6 +30,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Ring sits closer to +10:** on the Log and guest screens the counter ring now hugs the `+10` button (its internal whitespace is absorbed) and sits a touch lower, so both fall in the natural thumb zone
 - **Set effort check-in shows its hints:** "How did that feel?" now shows the guidance under each option (Easy — "Plenty left in the tank", etc.), matching the soreness check-in
 - **Training-plan setup polish:** the wizard's choice buttons now give press feedback, and the "max clean set" slider shows its 1–60 range
+- **Clearer "Injured" vs "Sub out":** the Availability card now says up front that both do the same thing — pause your reminders, pause your plan, and protect your streak — and that the only difference is what your group sees, with a one-line note under each button. The two confirmation messages no longer imply that subbing out does less
 
 ### Security
 
@@ -52,11 +59,23 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Team-challenge join warning was page-wide:** arming a warning-intensity join flipped *every* team's button to "Confirm" and could let a mis-tap join a different team without seeing its warning; it's now scoped to the team you tapped
 - **Achievement progress bars:** the lifetime-club bars weren't exposed to screen readers and rendered empty until ~1% progress; they're now proper progress bars and show a sliver for any real progress
 - **Assorted copy, layout, and tap-target polish:** the achievements empty state no longer reads like dev notes, nudge buttons and challenge-card headers no longer overflow on small phones, longer leaderboard names show more before truncating, list Edit/Delete controls meet the touch-target floor, and a mid-sentence capitalisation on the no-plan card is fixed
+- **Push reminders no longer show yesterday's number:** a reminder generated on an earlier day could sit in your notification tray and show a stale count (e.g. "do 10") that no longer matched today's plan. Reminders now clear when you open the app, tapping one dismisses the rest, and an undelivered reminder expires instead of arriving hours later
+- **Reminder target matches what the app shows:** for members whose daily target is calibrated from their own logging, the reminder could work out a lower number than the Today screen showed; it now reads the same plan data
+- **Logging stays responsive right after you bank:** the counter no longer ignores taps and drags for up to ~2.4s while the ring spins down, and the spin-down now respects Reduce Motion
+- **"Log it anyway" banks exactly what it warned:** when you go over your set, the count can no longer drift while the confirmation sheet is open, so the number you confirm is the number that gets logged
+- **A way out of "Max set mode":** you can now leave max-set mode without banking, and switching activity no longer logs a normal set as a max check-in
+- **Nose-tap mode asks before discarding:** exiting with reps counted now confirms first instead of silently dropping them
+- **Plain-language errors on create / join / onboarding:** raw database messages are replaced with clear ones (name already taken, invite expired, you're offline, …)
+- **Achievements and Mates recover from load errors:** if their data fails to load they now show a "Try again" state instead of looking empty
+- **Training setup needs at least one day:** the plan wizard no longer lets you continue or save with zero training days selected
+- **More assorted polish:** the progress chart's date labels no longer overlap on the two-week view, full-screen pages use the safe viewport height so nothing hides behind the mobile browser bar, more controls show a keyboard-focus ring, and a couple of dead style classes were fixed
 
 ### Performance
 
 - **Smoother Feed, Board, and calendar.** The group feed no longer rebuilds its reaction state or re-parses every timestamp on each background refresh; leaderboard rows and day-log entries only re-render when their own data changes; the rep calendar stops rebuilding its month grid every time you tap a day. Less work per interaction, most noticeable on older phones with long lists
 - **Fewer background refetches.** Queries no longer refetch every time you switch back to the app — data still updates immediately after you bank, react, or edit — saving battery and data on app-switching
+- **Lighter Log screen.** The effort, soreness, over-target, and max-set sheets now load only when first opened, trimming the initial app download
+- **Banking refreshes less.** Logging a set now only refreshes the calendar month it lands in and the leaderboards that actually include that day, instead of every board and month you'd browsed
 
 ### Docs
 

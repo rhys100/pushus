@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { getPwaInstallPlatform, isStandaloneDisplayMode, type PwaInstallPlatform } from '@/lib/pwaInstallPrompt'
+import { isStandaloneDisplayMode } from '@/lib/pwaInstallPrompt'
 import { shouldShowPwaOpenAppPrompt } from '@/lib/pwaOpenAppPrompt'
 import { setPwaInstallDockVisible } from '@/lib/pwaInstallDockVisibility'
-import { refreshPwaInstallStatus } from '@/lib/pwaInstallStatus'
+import { readPwaInstallPlatform, refreshPwaInstallStatus } from '@/lib/pwaInstallStatus'
 import { detectPwaInstalledViaBrowserApi } from '@/lib/pwaInstalled'
 import {
   acknowledgePwaOpenAppPromptOpen,
@@ -17,18 +17,6 @@ import {
 import { useAuth } from '@/providers/AuthProvider'
 import { useNotificationPreferences } from '@/providers/NotificationPreferencesProvider'
 
-function getPlatform(): PwaInstallPlatform {
-  try {
-    return getPwaInstallPlatform(
-      navigator.userAgent,
-      navigator.platform,
-      navigator.maxTouchPoints,
-    )
-  } catch {
-    return 'other'
-  }
-}
-
 export function usePwaOpenAppPrompt() {
   const { session, profileOnboarded, appAccess, profileReady, appAccessLoading } = useAuth()
   const { prefs, installStatus } = useNotificationPreferences()
@@ -38,7 +26,7 @@ export function usePwaOpenAppPrompt() {
   const [sessionSnoozed, setSessionSnoozed] = useState(false)
   const [installPromptDismissed, setInstallPromptDismissed] = useState(false)
   const [isOpenAppEligible, setIsOpenAppEligible] = useState(false)
-  const platform = useMemo(getPlatform, [])
+  const platform = useMemo(readPwaInstallPlatform, [])
   const pushEnabled = prefs?.push_enabled ?? false
 
   const refreshInstallState = useCallback(async () => {

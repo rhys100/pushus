@@ -22,6 +22,8 @@ export function BillingPlanCard({
   return (
     <button
       type="button"
+      role="radio"
+      aria-checked={selected}
       disabled={disabled}
       onClick={onSelect}
       className={cn(

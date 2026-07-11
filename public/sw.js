@@ -38,7 +38,13 @@ self.addEventListener('push', (event) => {
       // day ever made a sound if the user never dismissed it.
       renotify: true,
       timestamp: Date.now(),
-      data: { url: payload.url },
+      // Carry the plan day + send time so the app can spot (and clear) a
+      // reminder left over from an earlier day instead of showing a stale count.
+      data: {
+        url: payload.url,
+        localDate: payload.localDate ?? null,
+        sentAt: payload.sentAt ?? null,
+      },
     }),
   )
 })
@@ -71,6 +77,17 @@ async function focusOrOpenClient(targetUrl) {
   return undefined
 }
 
+async function closeReminderNotifications() {
+  try {
+    const notes = await self.registration.getNotifications({ tag: 'pushus-reminder' })
+    for (const note of notes) {
+      note.close()
+    }
+  } catch {
+    // getNotifications can reject on some engines; clearing is best-effort.
+  }
+}
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
 
@@ -90,5 +107,9 @@ self.addEventListener('notificationclick', (event) => {
     targetUrl = '/today'
   }
 
-  event.waitUntil(focusOrOpenClient(targetUrl))
+  // Also clear any sibling reminders left in the tray so a stale one can't
+  // linger behind the one just tapped.
+  event.waitUntil(
+    Promise.all([closeReminderNotifications(), focusOrOpenClient(targetUrl)]),
+  )
 })

@@ -25,6 +25,25 @@ function isAlreadyMemberError(message: string): boolean {
   return lower.includes('already a member') || lower.includes('already pending')
 }
 
+function friendlyJoinError(message: string): string {
+  const lower = message.toLowerCase()
+  if (
+    lower.includes('invalid') ||
+    lower.includes('not found') ||
+    lower.includes('expired') ||
+    lower.includes('disabled')
+  ) {
+    return 'This invite link is invalid or expired. Ask your group admin for a fresh one.'
+  }
+  if (lower.includes('full') || lower.includes('limit') || lower.includes('max')) {
+    return 'This group is full. Ask your group admin to make room.'
+  }
+  if (lower.includes('network') || lower.includes('fetch')) {
+    return 'Network hiccup — check your connection and try again.'
+  }
+  return "Couldn't join this group. Please try again."
+}
+
 export function JoinPage() {
   const { code } = useParams<{ code: string }>()
   const navigate = useNavigate()
@@ -143,9 +162,11 @@ export function JoinPage() {
         return
       }
 
+      console.error('request_join_group failed', error)
+      const friendly = friendlyJoinError(error.message)
       setState('error')
-      setErrorMessage(error.message)
-      toast({ message: error.message, variant: 'danger' })
+      setErrorMessage(friendly)
+      toast({ message: friendly, variant: 'danger' })
       return
     }
 
@@ -159,7 +180,7 @@ export function JoinPage() {
 
   if (!inviteCode) {
     return (
-      <div className="flex min-h-screen flex-col bg-bg px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
+      <div className="flex min-h-[100dvh] flex-col bg-bg px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
         <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
           <Card padding="lg" className="space-y-4 text-center">
             <p className="text-4xl" aria-hidden="true">
@@ -184,7 +205,7 @@ export function JoinPage() {
 
   if (!session) {
     return (
-      <div className="flex min-h-screen flex-col bg-bg px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
+      <div className="flex min-h-[100dvh] flex-col bg-bg px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
         <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
           <Card padding="lg" className="space-y-4 text-center">
             {state === 'loading_preview' ? (
@@ -224,7 +245,7 @@ export function JoinPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
+    <div className="flex min-h-[100dvh] flex-col bg-bg px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
       <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center">
         <Card padding="lg" className="space-y-4 text-center">
           {state === 'joining' ||

@@ -189,10 +189,46 @@ function getLeaderboardQueryKey(group: Group, range: LeaderboardRange) {
   return leaderboardKeys.period(group.id, range, 'total', period.periodStart, period.periodEnd)
 }
 
-function invalidateLeaderboardQueries(queryClient: ReturnType<typeof useQueryClient>) {
-  // Broad prefix so every metric variant (total / biggest set / most improved)
-  // refetches after a bank.
-  queryClient.invalidateQueries({ queryKey: leaderboardKeys.all })
+/** True when a leaderboard query key's [periodStart, periodEnd] window covers `date`. */
+function leaderboardPeriodContainsDate(
+  queryKey: readonly unknown[],
+  date: string,
+): boolean {
+  const periodStart = queryKey[4]
+  const periodEnd = queryKey[5]
+
+  return (
+    typeof periodStart === 'string' &&
+    typeof periodEnd === 'string' &&
+    date >= periodStart &&
+    date <= periodEnd
+  )
+}
+
+function invalidateLeaderboardQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+  group: Group,
+  loggedFor: string,
+) {
+  // Only boards whose window covers the banked date need updating — not every
+  // range/metric/period the user has browsed. 'total' (which also drives the day
+  // board and is optimistically updated) reconciles immediately; biggest-set /
+  // most-improved just go stale and refetch the next time they're viewed.
+  queryClient.invalidateQueries({
+    queryKey: leaderboardKeys.all,
+    predicate: (query) =>
+      query.queryKey[3] === group.id &&
+      query.queryKey[2] === 'total' &&
+      leaderboardPeriodContainsDate(query.queryKey, loggedFor),
+  })
+  queryClient.invalidateQueries({
+    queryKey: leaderboardKeys.all,
+    refetchType: 'none',
+    predicate: (query) =>
+      query.queryKey[3] === group.id &&
+      query.queryKey[2] !== 'total' &&
+      leaderboardPeriodContainsDate(query.queryKey, loggedFor),
+  })
 }
 
 function applyLeaderboardDeltaForToday(
@@ -257,12 +293,19 @@ function invalidateDayRelatedQueries(
   group: Group,
   loggedFor?: string,
 ) {
-  const { totalKey, entriesKey } = dayCacheKeys(group, loggedFor)
+  const { date, totalKey, entriesKey } = dayCacheKeys(group, loggedFor)
 
   queryClient.invalidateQueries({ queryKey: totalKey })
   queryClient.invalidateQueries({ queryKey: entriesKey })
-  queryClient.invalidateQueries({ queryKey: repHistoryKeys.all })
-  invalidateLeaderboardQueries(queryClient)
+  // Only the calendar month this entry lands in — not every month the user
+  // opened. Month key is the yyyy-MM prefix of the entry's logged_for date.
+  const monthKey = date.slice(0, 7)
+  queryClient.invalidateQueries({
+    queryKey: repHistoryKeys.all,
+    predicate: (query) =>
+      query.queryKey[2] === group.id && query.queryKey[4] === monthKey,
+  })
+  invalidateLeaderboardQueries(queryClient, group, date)
   queryClient.invalidateQueries({ queryKey: activityFeedKeys.feed(group.id) })
 }
 

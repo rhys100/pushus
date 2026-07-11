@@ -35,7 +35,9 @@ export function OverageConfirmSheet({
     <div
       className={cn(
         'fixed inset-x-0 z-[45]',
-        'bottom-[calc(var(--bottom-nav-height)+var(--log-bank-strip-height))]',
+        // Sits flush above the bottom nav — the Today logger banks inline (no
+        // fixed bank dock), so there's no strip to clear.
+        'bottom-[var(--bottom-nav-height)]',
         closing ? 'sheet-out' : 'sheet-in',
         className,
       )}

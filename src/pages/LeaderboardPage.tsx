@@ -47,10 +47,11 @@ const METRIC_OPTIONS: { value: LeaderboardMetric; label: string }[] = [
   { value: 'most_improved', label: 'Most improved' },
 ]
 
-const METRIC_UNIT: Record<LeaderboardMetric, string> = {
-  total: 'reps',
-  biggest_set: 'in a set',
-  most_improved: 'vs last',
+/** Unit caption under a row's value; most-improved spells out the period. */
+function metricUnitLabel(metric: LeaderboardMetric, range: LeaderboardRange): string {
+  if (metric === 'biggest_set') return 'best set'
+  if (metric === 'most_improved') return `vs last ${range === 'month' ? 'month' : 'week'}`
+  return 'reps'
 }
 
 /** Signed delta for most-improved; plain number otherwise. */
@@ -95,6 +96,7 @@ type LeaderboardRowProps = {
   targetsLoading?: boolean
   streak?: number
   metric?: LeaderboardMetric
+  range?: LeaderboardRange
 }
 
 /** Streaks under 2 days aren't worth a flame yet. */
@@ -124,6 +126,7 @@ const LeaderboardRow = memo(function LeaderboardRow({
   targetsLoading = false,
   streak,
   metric = 'total',
+  range = 'week',
 }: LeaderboardRowProps) {
   const hasTrainingTarget =
     dayTarget?.hasPlan && !dayTarget.isRestDay && dayTarget.target != null && dayTarget.target > 0
@@ -172,13 +175,24 @@ const LeaderboardRow = memo(function LeaderboardRow({
 
         {targetsLoading ? (
           <Skeleton className="h-4 w-12 shrink-0" />
-        ) : isCurrentUser && hasTrainingTarget && dayTarget?.target ? (
-          <GoalProgressFraction
-            current={entry.total}
-            target={dayTarget.target}
-            isRestDay={dayTarget.isRestDay}
-            className="shrink-0"
-          />
+        ) : isCurrentUser ? (
+          // Your own row always shows a real value regardless of privacy —
+          // fraction when you're training, otherwise Rest or your raw total.
+          hasTrainingTarget && dayTarget?.target ? (
+            <GoalProgressFraction
+              current={entry.total}
+              target={dayTarget.target}
+              isRestDay={dayTarget.isRestDay}
+              className="shrink-0"
+            />
+          ) : dayTarget?.isRestDay ? (
+            <span className="shrink-0 text-xs font-medium text-text-muted">Rest</span>
+          ) : (
+            <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-text-primary">
+              {entry.total}
+              <span className="ml-1 text-[0.6875rem] font-medium text-text-muted">reps</span>
+            </span>
+          )
         ) : entry.show_rep_totals ? (
           // Member opted in to public rep totals — show the raw number, not %.
           hasTrainingTarget && dayTarget?.target ? (
@@ -200,7 +214,11 @@ const LeaderboardRow = memo(function LeaderboardRow({
           </span>
         ) : dayTarget?.isRestDay ? (
           <span className="shrink-0 text-xs font-medium text-text-muted">Rest</span>
-        ) : null}
+        ) : (
+          // Private member with no target — an explicit placeholder beats an
+          // empty slot that reads as a broken row.
+          <span className="shrink-0 text-xs font-medium text-text-muted">Private</span>
+        )}
       </li>
     )
   }
@@ -232,7 +250,7 @@ const LeaderboardRow = memo(function LeaderboardRow({
           {formatMetricValue(metric, entry.total)}
         </p>
         <p className="text-[0.6875rem] font-medium uppercase tracking-wide text-text-muted">
-          {METRIC_UNIT[metric]}
+          {metricUnitLabel(metric, range)}
         </p>
       </div>
     </li>
@@ -352,13 +370,19 @@ export function LeaderboardPage() {
       ) : null}
 
       {!sinceJoin && range !== 'day' ? (
-        <SegmentedControl
-          className="mb-4"
-          options={METRIC_OPTIONS}
-          value={metric}
-          onChange={setMetric}
-          ariaLabel="Leaderboard metric"
-        />
+        <div className="mb-4">
+          <SegmentedControl
+            options={METRIC_OPTIONS}
+            value={metric}
+            onChange={setMetric}
+            ariaLabel="Leaderboard metric"
+          />
+          {metric === 'most_improved' ? (
+            <p className="mt-2 text-xs text-text-muted">
+              Reps gained vs your previous {range === 'month' ? 'month' : 'week'}.
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       {officialStart && !sinceJoin ? (
@@ -418,6 +442,7 @@ export function LeaderboardPage() {
               targetsLoading={targetsLoading}
               streak={streaks?.get(entry.user_id)}
               metric={effectiveMetric}
+              range={range}
               dayTarget={
                 showDayProgress
                   ? getMemberDayTarget(dailyTargets, entry.user_id)

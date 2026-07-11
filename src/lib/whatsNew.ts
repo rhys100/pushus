@@ -24,6 +24,30 @@ export const WHATS_NEW_SIGNOFF = 'Love Rhys + MK 🧡'
 /** Newest first. */
 export const NEWS_ITEMS: NewsItem[] = [
   {
+    id: '2026-07-11-edit-yesterday',
+    date: '2026-07-11',
+    version: '1.4.0',
+    emoji: '📅',
+    title: 'Log a set you forgot yesterday',
+    body: 'Missed logging a set? In My log (Feed → your log), tap yesterday on the calendar and add it. You can log and edit today and yesterday; older days stay locked so scores stay fair.',
+  },
+  {
+    id: '2026-07-11-how-it-works',
+    date: '2026-07-11',
+    version: '1.4.0',
+    emoji: '📖',
+    title: 'How PushUS works',
+    body: 'New to working out or just want the rules? Settings → About now explains it plainly — a 20-second "reps & sets" primer, the honour system, the today/yesterday window, 1 push-up = 1 XP, streaks, freezes, and badges.',
+  },
+  {
+    id: '2026-07-11-xp-on-bank',
+    date: '2026-07-11',
+    version: '1.4.0',
+    emoji: '✨',
+    title: 'See your XP on every bank',
+    body: 'Banking push-ups now shows the XP you just earned (e.g. "24 push-ups banked · +24 XP"), so your progress is visible every set — not only when a badge happens to unlock.',
+  },
+  {
     id: '2026-07-07-mates',
     date: '2026-07-07',
     version: '1.3.0',
@@ -45,7 +69,7 @@ export const NEWS_ITEMS: NewsItem[] = [
     version: '1.3.0',
     emoji: '🏅',
     title: 'XP, badges, and streaks',
-    body: 'Every push-up now earns 1 XP, badges unlock automatically (your history already counts), and your streak shows on the Badges page — with one freeze a week to protect a missed day.',
+    body: 'Every push-up now earns 1 XP, badges unlock automatically (your history already counts), and your streak shows on the Achievements page — with one freeze a week to protect a missed day.',
   },
   {
     id: '2026-07-07-light-mode',

@@ -41,7 +41,14 @@ type TrainingPlanRow = {
   challenge_intensity: string
   preferred_training_days: number[]
   mesocycle_started_at: string
+  // Read by planResolve.ts (mesocycle week + volume calibration). Omitting these
+  // pinned the edge resolver to the conservative path, so its target could
+  // diverge below what the app shows for calibrated users.
+  mesocycle_block_start_week: number | null
   plan_baseline: number
+  recent_daily_average: number | null
+  calibration_note: string | null
+  wizard_soreness_level: string | null
   wizard_completed: boolean
   updated_at: string
 }
@@ -308,7 +315,7 @@ Deno.serve(async (req) => {
     const { data: planRows, error: planError } = await supabase
       .from('user_training_plans')
       .select(
-        'user_id, group_id, max_clean_set, training_level, challenge_intensity, preferred_training_days, mesocycle_started_at, plan_baseline, wizard_completed, updated_at',
+        'user_id, group_id, max_clean_set, training_level, challenge_intensity, preferred_training_days, mesocycle_started_at, mesocycle_block_start_week, plan_baseline, recent_daily_average, calibration_note, wizard_soreness_level, wizard_completed, updated_at',
       )
       .in('user_id', userIds)
       .eq('wizard_completed', true)
@@ -386,7 +393,24 @@ Deno.serve(async (req) => {
         banksLogged,
         remainingTotal: remaining,
       })
-      const payload = JSON.stringify(notificationCopy)
+      // Stamp the plan day + send time so a client that opens tomorrow can tell a
+      // lingering tray notification is stale and clear it.
+      const payload = JSON.stringify({
+        ...notificationCopy,
+        localDate,
+        sentAt: now.toISOString(),
+      })
+
+      // A reminder is only useful for about one interval. Cap the TTL (web-push
+      // defaults to ~28 days) so an undelivered push EXPIRES instead of arriving
+      // hours or a day late carrying a stale count; Topic collapses any superseded
+      // push still queued at the push service so only the latest is delivered.
+      const ttlSeconds = Math.min(resolveReminderIntervalMinutes(prefs), 360) * 60
+      const sendOptions = {
+        TTL: ttlSeconds,
+        urgency: 'high' as const,
+        topic: 'pushus-reminder',
+      }
 
       let userSent = false
 
@@ -401,6 +425,7 @@ Deno.serve(async (req) => {
               },
             },
             payload,
+            sendOptions,
           )
 
           await logEvent(supabase, {

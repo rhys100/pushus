@@ -2,7 +2,7 @@ import { Card } from '@/components/ui'
 
 export function ConfigErrorScreen() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg px-4 py-8">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-bg px-[max(1rem,env(safe-area-inset-left))] py-[max(2rem,env(safe-area-inset-top))]">
       <Card className="w-full max-w-md space-y-4 p-6">
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-accent">Setup required</p>

@@ -16,6 +16,17 @@ import { useAuth } from '@/providers/AuthProvider'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 
+function friendlyOnboardingError(message: string): string {
+  const lower = message.toLowerCase()
+  if (lower.includes('duplicate') || lower.includes('already') || lower.includes('unique')) {
+    return 'That name is already taken here. Try a different one.'
+  }
+  if (lower.includes('network') || lower.includes('fetch')) {
+    return 'Network hiccup — check your connection and try again.'
+  }
+  return "Couldn't save your profile. Please try again."
+}
+
 export function OnboardingProfilePage() {
   useDocumentTitle('Set up profile')
   const navigate = useNavigate()
@@ -74,8 +85,8 @@ export function OnboardingProfilePage() {
 
     if (error) {
       setSaving(false)
-      setSubmitError(error.message)
-      toast({ message: error.message, variant: 'danger' })
+      console.error('complete_onboarding_profile failed', error)
+      setSubmitError(friendlyOnboardingError(error.message))
       return
     }
 
@@ -93,7 +104,7 @@ export function OnboardingProfilePage() {
 
   if (loading && !profile) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-bg">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-bg">
         <p className="text-sm text-text-muted">Loading profile…</p>
       </div>
     )
@@ -101,7 +112,7 @@ export function OnboardingProfilePage() {
 
   if (profileOnboarded) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-bg">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-bg">
         <p className="text-sm text-text-muted">Redirecting…</p>
       </div>
     )
@@ -110,7 +121,7 @@ export function OnboardingProfilePage() {
   const inviteCode = getPendingInviteCode()
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
+    <div className="flex min-h-[100dvh] flex-col bg-bg px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
       <div className="motion-stagger mx-auto w-full max-w-sm flex-1 py-6">
         <div className="mb-6">
           <p className="text-sm font-medium text-accent">Step 1 of 2</p>
@@ -160,6 +171,8 @@ export function OnboardingProfilePage() {
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Rhys"
+                aria-invalid={submitError ? true : undefined}
+                aria-describedby={submitError ? 'onboarding-name-error' : undefined}
                 className={cn(
                   'w-full rounded-[var(--radius-md)] border border-border bg-bg px-4 py-3',
                   'text-sm text-text-primary placeholder:text-text-muted',
@@ -257,7 +270,13 @@ export function OnboardingProfilePage() {
             Continue
           </Button>
           {submitError ? (
-            <p className="text-center text-sm text-danger">{submitError}</p>
+            <p
+              id="onboarding-name-error"
+              role="alert"
+              className="text-center text-sm text-danger"
+            >
+              {submitError}
+            </p>
           ) : null}
         </form>
       </div>

@@ -137,6 +137,8 @@ export function ChallengeDetailPage() {
       toast({ message: 'Challenge deleted.', variant: 'success' })
       navigate('/challenges')
     } catch (error) {
+      // Disarm on failure so a stray later tap can't delete without re-confirming.
+      setConfirmingDelete(false)
       toast({ message: getErrorMessage(error, 'Could not delete challenge.'), variant: 'danger' })
     }
   }
@@ -340,10 +342,26 @@ export function ChallengeDetailPage() {
         </section>
 
         {isAdmin ? (
-          <div className="flex justify-end">
+          <div className="flex items-center justify-end gap-4 text-xs">
+            {confirmingDelete ? (
+              <button
+                type="button"
+                className="min-h-9 rounded-[var(--radius-sm)] px-1 text-text-muted transition-colors hover:text-text-primary"
+                onClick={() => setConfirmingDelete(false)}
+              >
+                Cancel
+              </button>
+            ) : null}
             <button
               type="button"
-              className="text-xs text-text-muted transition-colors hover:text-danger"
+              aria-pressed={confirmingDelete}
+              className={cn(
+                'min-h-9 rounded-[var(--radius-sm)] px-1 transition-colors',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/50',
+                confirmingDelete
+                  ? 'font-semibold text-danger'
+                  : 'text-text-muted hover:text-danger',
+              )}
               disabled={deleteMutation.isPending}
               onClick={() => void handleDelete()}
             >
