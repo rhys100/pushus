@@ -7,7 +7,7 @@ test.describe('smoke', () => {
 
     await expect(page.getByRole('heading', { name: /PushUS/i })).toBeVisible()
     await expect(page.getByRole('button', { name: /Email me a sign-in code/i })).toBeVisible()
-    await expect(page.getByLabel(/Got an invite code/i)).toBeVisible()
+    await expect(page.getByRole('button', { name: /Got an invite code/i })).toBeVisible()
     await expect(page.getByRole('link', { name: /About PushUS/i })).toBeVisible()
     await expect(page.getByRole('button', { name: /Continue with Google/i })).toHaveCount(0)
   })
@@ -26,7 +26,7 @@ test.describe('smoke', () => {
     await page.waitForLoadState('networkidle')
 
     await expect(page.getByRole('heading', { name: /Join a group/i })).toBeVisible()
-    await expect(page.getByLabel(/Got an invite code/i)).toBeVisible()
+    await expect(page.getByLabel(/Invite code/i)).toBeVisible()
   })
 
   test('join code page shows sign-in prompt for guests', async ({ page }) => {

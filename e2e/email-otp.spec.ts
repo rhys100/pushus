@@ -35,7 +35,9 @@ test.describe('passwordless email code', () => {
       type: 'email',
     })
     await expect(
-      page.getByText('That code is invalid or expired. Request a new email and try again.'),
+      page
+        .getByRole('alert')
+        .getByText('That code is invalid or expired. Request a new email and try again.'),
     ).toBeVisible()
     await expect(page.getByRole('button', { name: 'Sign in with code' })).toBeEnabled()
   })
