@@ -469,9 +469,9 @@ export function MatesPage() {
     }
   }
 
-  async function handleRespond(connectionId: string, accept: boolean) {
+  async function handleRespond(connectionId: string, accept: boolean, requesterId?: string) {
     try {
-      await respondRequest.mutateAsync({ connectionId, accept })
+      await respondRequest.mutateAsync({ connectionId, accept, requesterId })
       if (accept) {
         successHaptic()
       }
@@ -584,7 +584,7 @@ export function MatesPage() {
                 <Button
                   className="min-h-9 px-3 text-sm"
                   loading={respondRequest.isPending}
-                  onClick={() => void handleRespond(mate.connection_id, true)}
+                  onClick={() => void handleRespond(mate.connection_id, true, mate.user.id)}
                 >
                   Accept
                 </Button>

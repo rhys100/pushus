@@ -26,6 +26,8 @@ export type NotificationPreferencesInput = {
   daily_target: number
   injury_paused: boolean
   injury_paused_until: string | null
+  /** Opt-out for mate/challenge/reaction pushes. Defaults true server-side. */
+  social_push_enabled: boolean
 }
 
 /** Minutes interval, falling back to the legacy hours column for pre-migration rows. */

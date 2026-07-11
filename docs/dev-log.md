@@ -26,6 +26,14 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-11c (social notifications)
+
+- Rhys hit the gap: mate requests/challenges/reactions never notify anyone (only reminders + nudges push), so his added mates never knew to accept → the whole mates/challenges loop stalled.
+- Built **send-social** edge fn (mirrors send-nudge): handles `mate_request | mate_accepted | challenge_invite | reaction`. Re-verifies the caller's action against the real row server-side (mate_connections / mate_challenges / reactions+pushup_entries, filtered by the JWT uid) so nobody can push arbitrary users; respects push_enabled + new `social_push_enabled` opt-out; NOT gated on active-hours/injury (those are training-reminder concerns). Reactions debounced 30 min per recipient via `social_push_log`.
+- **Mig 0046:** adds `notification_preferences.social_push_enabled boolean default true` + `social_push_log` table (RLS on, no policies → service-role only).
+- Client: `notifySocial()` fire-and-forget helper; wired into useRequestMate / useRespondMateRequest (threads requesterId from MatesPage incoming card) / useCreateMateChallenge; reaction threads entry-owner `user_id` from GroupFeedPanel through useToggleReaction. Settings → Notifications gets a "Social notifications" checkbox bound to social_push_enabled (added to NotificationPreferencesInput + DEFAULT_PREFERENCES + preferencesPayload; read is select('*') so no read change).
+- Verified: tsc 0, eslint 0 err, 440 tests, clean build. **NOT deployed:** mig 0046 (`npx supabase db push`) + `npx supabase functions deploy send-social` (JWT verify ON) required, plus the client web ship. Can't runtime-test push here.
+
 ### 2026-07-11b (post-1.4.0 — remaining audit backlog + leave-challenge)
 
 - Pushed 1.4.0 to origin (main + tag v1.4.0). Then worked the rest of the audit plan.

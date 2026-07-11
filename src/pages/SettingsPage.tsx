@@ -743,6 +743,27 @@ export function SettingsPage() {
                       </select>
                     </label>
 
+                    <label className="flex items-start gap-3 rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2.5">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 h-4 w-4 accent-[var(--color-accent)]"
+                        checked={prefs?.social_push_enabled ?? true}
+                        disabled={saving}
+                        onChange={(event) =>
+                          void updatePreferences({ social_push_enabled: event.target.checked })
+                        }
+                      />
+                      <span>
+                        <span className="block text-sm font-medium text-text-primary">
+                          Social notifications
+                        </span>
+                        <span className="mt-0.5 block text-xs text-text-muted">
+                          A push when a mate adds you, accepts your request, challenges you to a 1v1,
+                          or reacts to your sets.
+                        </span>
+                      </span>
+                    </label>
+
                     <p className="text-xs text-text-muted">
                       Injured or taking a break? Set your status under{' '}
                       <span className="font-medium text-text-primary">Availability</span> above — it

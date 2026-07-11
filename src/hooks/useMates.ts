@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { notifySocial } from '@/lib/notifications/notifySocial'
 import type {
   MateChallengeItem,
   MateLeaderboardRow,
@@ -128,21 +129,34 @@ export function useRequestMate() {
       const { error } = await supabase.rpc('request_mate', { p_user_id: userId })
       if (error) throw error
     },
-    onSuccess: invalidate,
+    onSuccess: (_data, userId) => {
+      invalidate()
+      notifySocial('mate_request', userId)
+    },
   })
 }
 
 export function useRespondMateRequest() {
   const invalidate = useInvalidateMates()
   return useMutation({
-    mutationFn: async (input: { connectionId: string; accept: boolean }) => {
+    mutationFn: async (input: {
+      connectionId: string
+      accept: boolean
+      /** The requester's user id — notified when you accept. */
+      requesterId?: string
+    }) => {
       const { error } = await supabase.rpc('respond_mate_request', {
         p_connection_id: input.connectionId,
         p_accept: input.accept,
       })
       if (error) throw error
     },
-    onSuccess: invalidate,
+    onSuccess: (_data, input) => {
+      invalidate()
+      if (input.accept && input.requesterId) {
+        notifySocial('mate_accepted', input.requesterId)
+      }
+    },
   })
 }
 
@@ -229,7 +243,10 @@ export function useCreateMateChallenge() {
       })
       if (error) throw error
     },
-    onSuccess: invalidate,
+    onSuccess: (_data, input) => {
+      invalidate()
+      notifySocial('challenge_invite', input.opponentId)
+    },
   })
 }
 
