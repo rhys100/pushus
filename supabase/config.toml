@@ -63,3 +63,19 @@ otp_expiry = 3600
 [auth.email.template.magic_link]
 subject = "Your PushUS sign-in code"
 content_path = "./supabase/templates/magic_link.html"
+
+# Per-function JWT verification. Without these, `functions deploy` defaults to
+# verify_jwt = true, which 401s callers that don't send a Supabase JWT — the
+# cron (Bearer CRON_SECRET) and the Stripe webhook (stripe-signature). Keep them
+# here so a plain redeploy can't silently break those.
+[functions.send-push-reminders]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.send-nudge]
+verify_jwt = true
+
+[functions.send-social]
+verify_jwt = true
