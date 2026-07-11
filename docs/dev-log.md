@@ -26,6 +26,14 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-11k (plan cleanup — cn tailwind-merge + micro-type tokens)
+
+- Cleared the worthwhile remainder of the polish-audit plan.
+- **cn → tailwind-merge:** added `tailwind-merge@^2`; `cn()` now `twMerge(classes.filter(Boolean).join(' '))` so a later conflicting utility (e.g. a call-site `min-h-10`) reliably beats a component's base `min-h-12` instead of both emitting and CSS source order winning. App-wide; tsc + 457 tests + build green (couldn't visually verify authed pages — worth a smoke test on deploy).
+- **Micro-type tokens:** added tailwind `fontSize` `2xs` (0.6875rem) + `3xs` (0.625rem), size-only so rendering is byte-identical; swept 13 `text-[0.625rem]`/`text-[0.6875rem]` usages across 12 files. (Left `text-[0.8125rem]`/`text-[0.65rem]` — around/above xs, not the sub-xs micro caps the finding targeted.)
+- **`.gitattributes`** `public/_headers text eol=lf` — this Windows/Dropbox tree autocrlf-CRLFs on checkout and kept failing the LF-based assetCacheHeaders test locally (committed blob was always LF / CI-green). Now pinned.
+- **Deliberately NOT done (rationale):** reactions feed-waterfall (needs an activity_feed RPC fold + migration + real feed testing — high risk for modest perf; volatile-key half already shipped); border-weight 1px-vs-2px (subjective global visual, unverifiable); dock-prompt fixed 9.5rem reserve (ResizeObserver wiring, jank risk, 9.5rem is a safe default); bank-label casing ("Bank Push-ups" CTA is LOCKED, toast lowercase is correct body copy — they SHOULD differ); nose-tap keyboard entry (physical, niche); countup rAF-per-stat (finding rates it acceptable).
+
 ### 2026-07-11j (PWA HTML-level boot recovery)
 
 - Both `pushus.app` and `www.pushus.app` now serve build `feaf2b6`; Origin/CORS module requests return JavaScript, and Playwright standalone-iPhone probes render Login with an active service worker. A previously opened iOS standalone window can still hold the poisoned document in memory.

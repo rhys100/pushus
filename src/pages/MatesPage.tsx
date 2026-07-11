@@ -250,7 +250,7 @@ function MateDetail({ mate, onClose }: { mate: MateListItem; onClose: () => void
         </button>
       </div>
       {pendingDestructive === 'block' ? (
-        <p role="status" className="text-right text-[0.6875rem] text-danger">
+        <p role="status" className="text-right text-2xs text-danger">
           Blocking is permanent — they can never reconnect.
         </p>
       ) : null}

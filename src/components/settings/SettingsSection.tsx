@@ -16,7 +16,7 @@ type SettingsSectionProps = {
 export function SettingsSection({ title, children, className }: SettingsSectionProps) {
   return (
     <section className={cn('space-y-2', className)}>
-      <h2 className="px-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-text-muted">
+      <h2 className="px-1 text-2xs font-semibold uppercase tracking-wider text-text-muted">
         {title}
       </h2>
       <div className="space-y-3">{children}</div>

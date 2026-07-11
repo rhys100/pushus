@@ -97,7 +97,7 @@ const CalendarDay = memo(function CalendarDay({
       ) : totalReps > 0 ? (
         <span
           className={cn(
-            'mt-0.5 font-mono text-[0.625rem] font-semibold tabular-nums',
+            'mt-0.5 font-mono text-3xs font-semibold tabular-nums',
             isSelected ? 'text-accent/70' : 'text-text-muted',
           )}
         >
@@ -200,7 +200,7 @@ export function RepCalendar({
         {WEEKDAY_LABELS.map((label) => (
           <div
             key={label}
-            className="py-1 text-center text-[0.625rem] font-semibold uppercase tracking-wide text-text-muted"
+            className="py-1 text-center text-3xs font-semibold uppercase tracking-wide text-text-muted"
           >
             {label}
           </div>

@@ -1210,13 +1210,13 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
                 <span className="mt-3 text-[0.75rem] font-medium text-text-muted">
                   Drag the ring
                 </span>
-                <span className="mt-1 text-[0.6875rem] text-text-muted opacity-75">
+                <span className="mt-1 text-2xs text-text-muted opacity-75">
                   One lap = 10
                 </span>
               </>
             ) : null}
             {centerHolding ? (
-              <span className="mt-3 text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-accent">
+              <span className="mt-3 text-2xs font-semibold uppercase tracking-[0.18em] text-accent">
                 Keep holding…
               </span>
             ) : null}

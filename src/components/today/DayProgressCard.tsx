@@ -112,7 +112,7 @@ export const DayProgressCard = memo(function DayProgressCard({
   if (variant === 'compact') {
     const statValueClass = 'text-lg font-bold tabular-nums text-accent'
     const statLabelClass =
-      'mt-0.5 text-[0.625rem] font-medium uppercase tracking-wide text-text-muted'
+      'mt-0.5 text-3xs font-medium uppercase tracking-wide text-text-muted'
 
     return (
       <Card

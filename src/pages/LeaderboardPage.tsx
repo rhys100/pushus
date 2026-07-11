@@ -190,7 +190,7 @@ const LeaderboardRow = memo(function LeaderboardRow({
           ) : (
             <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-text-primary">
               {entry.total}
-              <span className="ml-1 text-[0.6875rem] font-medium text-text-muted">reps</span>
+              <span className="ml-1 text-2xs font-medium text-text-muted">reps</span>
             </span>
           )
         ) : entry.show_rep_totals ? (
@@ -205,7 +205,7 @@ const LeaderboardRow = memo(function LeaderboardRow({
           ) : (
             <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-text-primary">
               {entry.total}
-              <span className="ml-1 text-[0.6875rem] font-medium text-text-muted">reps</span>
+              <span className="ml-1 text-2xs font-medium text-text-muted">reps</span>
             </span>
           )
         ) : progressPercent != null ? (
@@ -260,7 +260,7 @@ const LeaderboardRow = memo(function LeaderboardRow({
         >
           {formatMetricValue(metric, entry.total)}
         </p>
-        <p className="text-[0.6875rem] font-medium uppercase tracking-wide text-text-muted">
+        <p className="text-2xs font-medium uppercase tracking-wide text-text-muted">
           {metricUnitLabel(metric, range)}
         </p>
       </div>

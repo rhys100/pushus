@@ -263,7 +263,7 @@ export function CustomActivitiesSettings() {
                   {activity.name}
                 </p>
                 {activity.track_sides ? (
-                  <p className="truncate text-[0.6875rem] text-text-muted">Left / right tracked</p>
+                  <p className="truncate text-2xs text-text-muted">Left / right tracked</p>
                 ) : null}
               </div>
               <div className="flex shrink-0 items-center gap-1">
@@ -419,7 +419,7 @@ export function CustomActivitiesSettings() {
                     <p className="truncate text-sm font-medium text-text-primary" title={activity.name}>
                       {activity.name}
                     </p>
-                    <p className="truncate text-[0.6875rem] text-text-muted">
+                    <p className="truncate text-2xs text-text-muted">
                       History kept — restore to keep logging
                     </p>
                   </div>

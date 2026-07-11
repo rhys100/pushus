@@ -170,9 +170,9 @@ export const ActivityFeedRow = memo(function ActivityFeedRow({
             {item.count}
           </p>
           {dense ? (
-            <p className="text-[0.625rem] leading-tight text-text-muted">{relativeTime}</p>
+            <p className="text-3xs leading-tight text-text-muted">{relativeTime}</p>
           ) : (
-            <p className="text-[0.6875rem] font-medium uppercase tracking-wide text-text-muted">
+            <p className="text-2xs font-medium uppercase tracking-wide text-text-muted">
               reps
             </p>
           )}

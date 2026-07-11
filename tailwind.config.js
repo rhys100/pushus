@@ -19,6 +19,13 @@ export default {
         display: ['var(--font-display)', 'system-ui', 'sans-serif'],
         mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
       },
+      // Tokenized sub-`xs` steps for tiny caps labels — replaces ad-hoc
+      // text-[0.625rem]/text-[0.6875rem] arbitrary values. Size-only (no line
+      // height) to match the arbitrary values they replace exactly.
+      fontSize: {
+        '2xs': '0.6875rem',
+        '3xs': '0.625rem',
+      },
     },
   },
   plugins: [],

@@ -175,7 +175,7 @@ export function BottomNav({ active, onNavigate, className }: BottomNavProps) {
                 </span>
                 <span
                   className={cn(
-                    'dock-label text-[0.625rem] font-medium leading-none',
+                    'dock-label text-3xs font-medium leading-none',
                     isActive && 'font-semibold',
                   )}
                 >

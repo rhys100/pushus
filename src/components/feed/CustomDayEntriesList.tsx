@@ -93,7 +93,7 @@ export function CustomDayEntriesList({
                 <span className="ml-1 text-xs font-medium text-text-muted">reps</span>
               </p>
               {entry.side ? (
-                <span className="rounded-[var(--radius-full)] border border-border bg-bg px-2 py-0.5 text-[0.6875rem] font-semibold capitalize text-text-muted">
+                <span className="rounded-[var(--radius-full)] border border-border bg-bg px-2 py-0.5 text-2xs font-semibold capitalize text-text-muted">
                   {entry.side}
                 </span>
               ) : null}
