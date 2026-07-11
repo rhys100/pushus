@@ -42,7 +42,7 @@ export function clearPendingInviteCode(): void {
 
 // A mate code captured from /mates/add/:code before sign-in, redeemed once the
 // visitor is authenticated + onboarded. Mirrors the pending invite code so a
-// shared mate link survives the magic-link round trip.
+// shared mate link survives the passwordless email sign-in round trip.
 export function getPendingMateCode(): string | null {
   try {
     const raw = localStorage.getItem(PENDING_MATE_CODE_KEY)

@@ -25,8 +25,9 @@ Self-hosters do **not** need Stripe keys unless they explicitly enable billing.
 
 Configure Supabase Auth providers in your project dashboard:
 
-- Email magic link (recommended minimum)
-- Google OAuth (optional; documented as skippable for magic-link-only forks)
+- Email OTP (recommended minimum) — copy `supabase/templates/magic_link.html` into the
+  hosted project's **Authentication → Email Templates → Magic Link** template
+- Google OAuth (optional; documented as skippable for email-only forks)
 
 Set redirect URLs for localhost and your production domain.
 

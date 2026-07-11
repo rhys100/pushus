@@ -1,0 +1,35 @@
+<!doctype html>
+<!-- Temporary rollout template: compatible with the old link UI and new OTP UI. -->
+<html lang="en">
+  <body style="margin:0;background:#f4f4f7;color:#17171c;font-family:Arial,sans-serif">
+    <div style="max-width:480px;margin:0 auto;padding:32px 20px">
+      <div style="background:#ffffff;border-radius:16px;padding:28px;text-align:center">
+        <div style="font-size:32px;margin-bottom:8px">⚡</div>
+        <h1 style="font-size:22px;margin:0 0 10px">Your PushUS sign-in code</h1>
+        <p style="font-size:14px;line-height:1.5;color:#656572;margin:0 0 20px">
+          Enter this code in PushUS:
+        </p>
+        <div
+          style="font-family:monospace;font-size:32px;font-weight:700;letter-spacing:8px;
+          background:#f0e9ff;color:#5d20c9;border-radius:12px;padding:16px 12px;margin-bottom:20px"
+        >
+          {{ .Token }}
+        </div>
+        <p style="font-size:13px;line-height:1.5;color:#656572;margin:0 0 18px">
+          During this update, you can still use the browser sign-in link below. On iPhone, use the
+          code inside the PushUS Home Screen app.
+        </p>
+        <a
+          href="{{ .ConfirmationURL }}"
+          style="display:inline-block;background:#863bff;color:#ffffff;text-decoration:none;
+          font-size:14px;font-weight:700;border-radius:10px;padding:12px 18px"
+        >
+          Sign in in this browser
+        </a>
+        <p style="font-size:12px;line-height:1.5;color:#8a8a96;margin:20px 0 0">
+          This code and link expire after one hour. If you did not request this email, ignore it.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
