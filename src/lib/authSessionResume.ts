@@ -7,8 +7,11 @@ import {
 import { getSupabaseAuthStorageKey } from '@/lib/authStorageKey'
 import { supabase } from '@/lib/supabase'
 
+/** Cap total recovery time so a hung refresh/network never leaves the app on a blank loader. */
+export const AUTH_RECOVERY_TIMEOUT_MS = 6_000
+
 /** Backoff between refresh attempts — iOS PWAs often wake before the network is ready. */
-const RECOVERY_RETRY_DELAYS_MS = [0, 500, 1_500, 3_000] as const
+const RECOVERY_RETRY_DELAYS_MS = [0, 400, 1_200] as const
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
@@ -46,11 +49,15 @@ export async function persistAuthSessionBridge(session: Session | null): Promise
     return
   }
 
-  await writeAuthSessionBridge({
-    access_token: session.access_token,
-    refresh_token: session.refresh_token,
-    expires_at: session.expires_at,
-  })
+  try {
+    await writeAuthSessionBridge({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+      expires_at: session.expires_at,
+    })
+  } catch {
+    // Bridge is best-effort — never block sign-in on Cache Storage.
+  }
 }
 
 async function recoverFromBridge(): Promise<Session | null> {
@@ -65,12 +72,11 @@ async function recoverFromBridge(): Promise<Session | null> {
   })
 
   if (error || !data.session) {
-    // Stale bridge (rotated refresh token) — drop it so we don't keep retrying.
     await clearAuthSessionBridge()
     return null
   }
 
-  await persistAuthSessionBridge(data.session)
+  void persistAuthSessionBridge(data.session)
   return data.session
 }
 
@@ -85,36 +91,62 @@ async function recoverFromRefreshToken(): Promise<Session | null> {
       await sleep(delayMs)
     }
 
-    // Re-check each attempt — a failed non-retryable refresh may have cleared storage.
     if (!hasRecoverableAuthSession()) {
       break
     }
 
-    const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession()
-    if (!refreshError && refreshed.session) {
-      await persistAuthSessionBridge(refreshed.session)
-      return refreshed.session
-    }
+    try {
+      const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession()
+      if (!refreshError && refreshed.session) {
+        void persistAuthSessionBridge(refreshed.session)
+        return refreshed.session
+      }
 
-    const { data: current } = await supabase.auth.getSession()
-    if (current.session) {
-      await persistAuthSessionBridge(current.session)
-      return current.session
+      const { data: current } = await supabase.auth.getSession()
+      if (current.session) {
+        void persistAuthSessionBridge(current.session)
+        return current.session
+      }
+    } catch {
+      // Network / lock errors — try again or fall through to bridge.
     }
   }
 
   return null
 }
 
-/**
- * Try to restore a session after iOS background suspend or Safari→PWA hand-off.
- * Order: localStorage refresh token → Cache Storage bridge (Safari / PWA partition).
- */
-export async function recoverAuthSession(): Promise<Session | null> {
+async function recoverAuthSessionInner(): Promise<Session | null> {
   const fromStorage = await recoverFromRefreshToken()
   if (fromStorage) {
     return fromStorage
   }
 
-  return recoverFromBridge()
+  try {
+    return await recoverFromBridge()
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Try to restore a session after iOS background suspend or Safari→PWA hand-off.
+ * Always settles within AUTH_RECOVERY_TIMEOUT_MS so the UI cannot hang on a blank loader.
+ */
+export async function recoverAuthSession(): Promise<Session | null> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined
+
+  try {
+    return await Promise.race([
+      recoverAuthSessionInner(),
+      new Promise<null>((resolve) => {
+        timeoutId = setTimeout(() => resolve(null), AUTH_RECOVERY_TIMEOUT_MS)
+      }),
+    ])
+  } catch {
+    return null
+  } finally {
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId)
+    }
+  }
 }

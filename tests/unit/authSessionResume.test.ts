@@ -199,4 +199,21 @@ describe('auth session resume helpers', () => {
     expect(refreshSession).not.toHaveBeenCalled()
     expect(setSession).not.toHaveBeenCalled()
   })
+
+  it('times out hung refresh attempts instead of hanging forever', async () => {
+    vi.useFakeTimers()
+    storage.set(
+      'sb-zcwvvhuihqlldnbwhivl-auth-token',
+      JSON.stringify({ refresh_token: 'rt-hang' }),
+    )
+    refreshSession.mockImplementation(() => new Promise(() => {}))
+    getSession.mockImplementation(() => new Promise(() => {}))
+
+    const pending = recoverAuthSession()
+    await vi.advanceTimersByTimeAsync(6_000)
+    const session = await pending
+
+    expect(session).toBeNull()
+    vi.useRealTimers()
+  })
 })

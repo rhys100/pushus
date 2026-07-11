@@ -26,6 +26,12 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-11g (iOS blank screen after auth bridge)
+
+- Rhys: iOS blank screen after the Safari↔PWA bridge shipped. Root cause: recovery called `refreshSession`/`setSession` in ways that could hang (auth callback lock + unbounded network), and cold-launch `pageshow` raced the first hydrate while `loading` stayed true → endless RequireAuth skeleton (looks blank).
+- Fix: defer all recovery off `onAuthStateChange` with setTimeout(0); hard-cap `recoverAuthSession` at 6s; gate foreground resume until initial hydrate done; catch hydrate failures so loading always clears; don't await Cache bridge on auth callback.
+- Verified: tsc + auth unit tests (incl. timeout).
+
 ### 2026-07-11f (iOS Safari↔PWA auth bridge)
 
 - Re-checked after Rhys said login loss might still happen. First fix (refresh-on-resume) only covers same-context suspend. Bigger remaining cause: **magic links / OAuth complete in Safari**, and iOS isolates Safari localStorage from the Home Screen PWA — so evening reopen of the icon looks "logged out" even though Safari has the session.

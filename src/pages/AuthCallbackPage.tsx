@@ -90,7 +90,8 @@ export function AuthCallbackPage() {
 
         // Copy tokens into Cache Storage so the home-screen PWA can pick them
         // up — iOS keeps Safari and standalone localStorage in separate buckets.
-        await persistAuthSessionBridge(session)
+        // Never block the callback UI on Cache Storage.
+        void persistAuthSessionBridge(session)
 
         if (shouldShowIosPwaHandoff()) {
           if (mounted) {
