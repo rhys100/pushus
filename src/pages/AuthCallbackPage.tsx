@@ -7,6 +7,7 @@ import {
 import { ButtonRouterLink } from '@/components/ui'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
+import { isOpaqueErrorMessage } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 
 function friendlyAuthError(message: string): string {
@@ -17,7 +18,10 @@ function friendlyAuthError(message: string): string {
   if (lower.includes('oauth') || lower.includes('google')) {
     return 'Google sign-in could not be completed. Try an email code instead.'
   }
-  return message
+  // Never surface an opaque blob (e.g. "{}" from a non-JSON error response).
+  return isOpaqueErrorMessage(message)
+    ? 'Sign-in could not be completed. Head back and try again from the login page.'
+    : message
 }
 
 export function AuthCallbackPage() {
@@ -55,7 +59,7 @@ export function AuthCallbackPage() {
         const { data, error: sessionError } = await supabase.auth.getSession()
 
         if (sessionError) {
-          if (mounted) setError(sessionError.message)
+          if (mounted) setError(friendlyAuthError(sessionError.message))
           return
         }
 

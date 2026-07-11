@@ -4,6 +4,7 @@ import { Button, Card, useToast } from '@/components/ui'
 import { InviteCodeEntry } from '@/components/group/InviteCodeEntry'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { appConfig } from '@/lib/config'
+import { isOpaqueErrorMessage } from '@/lib/errors'
 import { isCompleteEmailOtp, normalizeEmailOtp } from '@/lib/emailOtp'
 import { isIosDevice, isStandalonePwa } from '@/lib/pwa'
 import { fetchPostAuthSnapshot, navigateAfterAuth } from '@/lib/postAuthNavigation'
@@ -31,7 +32,10 @@ function friendlyAuthError(message: string): string {
   if (lower.includes('rate') || lower.includes('seconds')) {
     return 'Wait a minute before requesting another sign-in email.'
   }
-  return message
+  // Never surface an opaque blob (e.g. "{}" from a non-JSON error response).
+  return isOpaqueErrorMessage(message)
+    ? 'Could not sign you in. Check your connection and try again.'
+    : message
 }
 
 function friendlyOtpError(message?: string): string {

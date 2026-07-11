@@ -12,6 +12,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **Login error reads as “{}”:** a sign-in that failed with an opaque or empty error response (e.g. a non-JSON body from a proxy/CORS intercept) surfaced a raw `{}` instead of a message. Sign-in and auth-callback errors now always fall back to a plain-language line, and the shared error formatter drops blank / stringified-object messages
 - **Boot recovery loop on desktop:** the recovery screen now unregisters service workers and clears browser caches before reloading, and missing `/assets/*` files return a real 404 instead of `index.html` (which poisoned JS caches and trapped users on “PushUS needs a fresh start”)
 - **PWA self-recovery instead of a black screen:** if a broken/stale JavaScript bundle prevents React from starting, a small HTML-level guard now reloads the latest build once, then shows a visible recovery screen instead of leaving the Home Screen app black
 - **Blank app after deploy (Cloudflare asset cache):** a mid-deploy race cached `index.html` under the new `/assets/index-*.js` URL for CORS requests (module scripts send `Origin`). Browsers then refused the “JS” file as HTML and React never mounted — empty screen on every device. Asset cache is no longer `immutable` (5-minute revalidate) so a poisoned entry can’t stick for a year
