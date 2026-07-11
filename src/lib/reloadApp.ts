@@ -6,9 +6,7 @@ export async function clearAppCaches(): Promise<void> {
     const registrations = await navigator.serviceWorker.getRegistrations()
     await Promise.all(
       registrations.map((registration) =>
-        typeof registration.update === 'function'
-          ? registration.update().catch(() => undefined)
-          : Promise.resolve(),
+        registration.unregister().catch(() => undefined),
       ),
     )
   }
