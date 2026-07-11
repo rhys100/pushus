@@ -125,12 +125,23 @@ const EntryRow = memo(function EntryRow({ group, entry, canEdit, canDelete }: En
               inputMode="numeric"
               value={draftCount}
               onChange={(event) => setDraftCount(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault()
+                  void handleSave()
+                } else if (event.key === 'Escape') {
+                  event.preventDefault()
+                  setDraftCount(String(entry.count))
+                  setIsEditing(false)
+                }
+              }}
+              autoFocus
               className="w-20 rounded-[var(--radius-md)] border border-border bg-bg px-2 py-1.5 font-mono text-sm text-text-primary outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/30"
               aria-label="Edit rep count"
             />
             <Button
               variant="secondary"
-              className="min-h-9 px-3 py-1.5 text-xs"
+              className="min-h-11 px-3 py-1.5 text-xs"
               loading={updateEntry.isPending}
               onClick={handleSave}
             >
@@ -138,7 +149,7 @@ const EntryRow = memo(function EntryRow({ group, entry, canEdit, canDelete }: En
             </Button>
             <Button
               variant="ghost"
-              className="min-h-9 px-3 py-1.5 text-xs"
+              className="min-h-11 px-3 py-1.5 text-xs"
               disabled={isBusy}
               onClick={() => {
                 setDraftCount(String(entry.count))
@@ -159,6 +170,10 @@ const EntryRow = memo(function EntryRow({ group, entry, canEdit, canDelete }: En
             ) : null}
           </p>
         )}
+
+        {confirmingDelete ? (
+          <p className="mt-1 text-xs font-medium text-danger">Tap again to delete</p>
+        ) : null}
       </div>
 
       {!isEditing && (canEdit || canDelete) ? (
@@ -166,7 +181,7 @@ const EntryRow = memo(function EntryRow({ group, entry, canEdit, canDelete }: En
           {canEdit ? (
             <Button
               variant="ghost"
-              className="min-h-9 min-w-9 px-2 text-xs"
+              className="min-h-11 min-w-11 px-2 text-xs"
               disabled={isBusy || entry.id.startsWith('optimistic-')}
               onClick={() => {
                 setConfirmingDelete(false)
@@ -180,7 +195,7 @@ const EntryRow = memo(function EntryRow({ group, entry, canEdit, canDelete }: En
           {canDelete ? (
             <Button
               variant={confirmingDelete ? 'danger' : 'ghost'}
-              className="min-h-9 min-w-9 px-2 text-xs"
+              className="min-h-11 min-w-11 px-2 text-xs"
               loading={deleteEntry.isPending}
               disabled={isBusy || entry.id.startsWith('optimistic-')}
               aria-label={confirmingDelete ? 'Confirm delete entry' : 'Delete entry'}

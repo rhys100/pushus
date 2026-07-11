@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import { cn } from '@/lib/cn'
 import { useBankPushups } from '@/hooks/useTodayData'
 import { useAuth } from '@/providers/AuthProvider'
 import type { Group } from '@/types/database'
+
+/** A single backdated set past this reads as a typo, not a real set. */
+const MAX_SET_REPS = 999
 
 type AddSetForDayProps = {
   group: Group
@@ -23,9 +26,12 @@ export function AddSetForDay({ group, loggedFor, dayLabel }: AddSetForDayProps) 
   const { toast } = useToast()
   const bankPushups = useBankPushups()
   const [value, setValue] = useState('')
+  const hintId = useId()
 
   const count = Number.parseInt(value, 10)
-  const isValid = Number.isFinite(count) && count > 0
+  const isValid = Number.isFinite(count) && count > 0 && count <= MAX_SET_REPS
+  // Only nag once they've typed something that can't be banked.
+  const showHint = value.trim() !== '' && !isValid
 
   async function handleAdd() {
     if (!isValid || !user || !profile || bankPushups.isPending) {
@@ -70,14 +76,20 @@ export function AddSetForDay({ group, loggedFor, dayLabel }: AddSetForDayProps) 
         <input
           type="number"
           min={1}
+          max={MAX_SET_REPS}
+          step={1}
           inputMode="numeric"
           value={value}
           onChange={(event) => setValue(event.target.value)}
           placeholder="Reps"
           aria-label={`Reps to add to ${dayLabel}`}
+          aria-invalid={showHint}
+          aria-describedby={showHint ? hintId : undefined}
           className={cn(
             'w-24 rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 font-mono text-sm text-text-primary',
             'outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/30',
+            // Hide the desktop spinner arrows — the field is numeric-only anyway.
+            '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
           )}
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
@@ -95,6 +107,11 @@ export function AddSetForDay({ group, loggedFor, dayLabel }: AddSetForDayProps) 
           Add set
         </Button>
       </div>
+      {showHint ? (
+        <p id={hintId} className="mt-1.5 text-xs text-danger">
+          Enter a number between 1 and {MAX_SET_REPS}.
+        </p>
+      ) : null}
     </div>
   )
 }

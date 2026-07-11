@@ -77,7 +77,7 @@ export function PrivateBetaPage() {
               disabled={isChecking}
               onClick={() => void handleCheckAgain()}
             >
-              Check again
+              Check now
             </Button>
             <Button variant="ghost" fullWidth type="button" onClick={() => void signOut()}>
               Sign out

@@ -1,4 +1,5 @@
 import { ActivityIcon } from '@/components/ui/ActivityIcon'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { cn } from '@/lib/cn'
 import type { CustomActivity, CustomActivityEntry } from '@/types/customActivity'
 
@@ -7,6 +8,8 @@ export type CustomActivityDayCardProps = {
   entries: CustomActivityEntry[]
   /** All-time best single set (includes today); 0 = never logged. */
   allTimeBest?: number
+  /** True while today's entries are still loading — shows a skeleton, not '0 reps'. */
+  loading?: boolean
   className?: string
 }
 
@@ -15,8 +18,23 @@ export function CustomActivityDayCard({
   activity,
   entries,
   allTimeBest = 0,
+  loading = false,
   className,
 }: CustomActivityDayCardProps) {
+  if (loading) {
+    return (
+      <div
+        className={cn(
+          'w-full rounded-[var(--radius-lg)] border border-border bg-surface px-4 py-3',
+          className,
+        )}
+      >
+        <Skeleton className="h-3.5 w-32" />
+        <Skeleton className="mt-2 h-7 w-40" />
+      </div>
+    )
+  }
+
   const total = entries.reduce((sum, entry) => sum + entry.count, 0)
   const best = entries.reduce((max, entry) => Math.max(max, entry.count), 0)
   // Today's top set matches (or set) the record — celebrate right on the card.

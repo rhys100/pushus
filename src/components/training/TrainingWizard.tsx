@@ -300,6 +300,8 @@ export function TrainingWizard({
               min={1}
               max={60}
               step={1}
+              aria-label="Max clean set"
+              aria-valuetext={`${answers.maxCleanSet} push-ups`}
               value={answers.maxCleanSet}
               onChange={(event) =>
                 setAnswers((current) => ({

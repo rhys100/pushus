@@ -26,6 +26,14 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-11b (post-1.4.0 — remaining audit backlog + leave-challenge)
+
+- Pushed 1.4.0 to origin (main + tag v1.4.0). Then worked the rest of the audit plan.
+- **Batch-2:** 7 parallel disjoint-file agents fixed 46 of the remaining 71 low-severity + larger-a11y findings (logger sheet focus-management + Escape + restore, 44px tap targets, keyboard-focus rings, centre-hold ring timing = CENTER_HOLD_MS, role=group fixes, min-h-[100dvh] on remaining pages, assorted copy/layout). Did NOT change "Bank Push-ups" (locked CTA copy). Verified: tsc 0 err, eslint 0 err, 440 tests.
+- **Mate-link (High) — safe subset:** `/mates/add/:code` guard `member`→`onboarded` in App.tsx, so any onboarded signed-in user (different/no group) can redeem — redeem_mate_code is cross-group by design. Deferred: signed-out brand-new-user threading (persist code across the magic-link round-trip via storage + resolvePostAuthPath) — rewires the auth core, needs device testing.
+- **Leave a challenge:** `useLeaveChallenge` (self-scoped client delete on competition_participants + challenge_team_members) + two-tap confirm UI in ChallengeDetailPage, gated status!=='ended'. Join is a direct self-scoped insert on these tables (0004 insert_self), so leave gets **mig 0045** with symmetric `*_delete_self` DELETE policies (caller's own row + active group member). NOTE: **0045 must deploy** or the Leave button errors ("Could not leave") — the code throws on a 0-row delete rather than false-success. `test:rls` not run here (needs DB); no existing RLS test references these deletes.
+- **Deferred/flagged:** `cn`→tailwind-merge (needs a new dep + app-wide class-resolution change, against the no-heavy-deps rule — left for a decision); mute-sound toggle (needs a persisted setting + Settings UI); reactions feed→waterfall (needs an activity_feed RPC change); a few cross-cutting a11y instances in reserved/out-of-scope files.
+
 ### 2026-07-11 (release 1.4.0 — full-app polish pass + notification/availability fixes)
 
 - **Cut 1.4.0** (minor): moved the accumulated Unreleased batch under `[1.4.0]`, bumped package/lock, README row, three `whatsNew` entries (edit-yesterday, how-it-works, XP-on-bank).

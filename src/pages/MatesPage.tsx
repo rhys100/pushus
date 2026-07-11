@@ -12,6 +12,7 @@ import {
   useToast,
 } from '@/components/ui'
 import { cn } from '@/lib/cn'
+import { appConfig } from '@/lib/config'
 import { getErrorMessage } from '@/lib/errors'
 import { successHaptic, tapHaptic } from '@/lib/haptics'
 import { formatProfileName } from '@/lib/memberDisplayName'
@@ -382,13 +383,16 @@ export function MatesPage() {
   } = useMates()
   const { data: leaderboard = [] } = useMateLeaderboard(7)
   const { data: challenges = [] } = useMateChallenges()
-  const { data: mateCode } = useMyMateCode()
+  const { data: mateCode, isLoading: mateCodeLoading } = useMyMateCode()
   const { data: receivedNudges = [] } = useReceivedNudges(user?.id)
   const { data: members = [] } = useGroupMembers(activeGroup?.id)
   const respondRequest = useRespondMateRequest()
   const requestMate = useRequestMate()
   const rotateCode = useRotateMateCode()
+  const removeMate = useRemoveMate()
   const [expandedMateId, setExpandedMateId] = useState<string | null>(null)
+  // Track which outgoing request is being withdrawn so only its row spins.
+  const [cancellingOutgoingId, setCancellingOutgoingId] = useState<string | null>(null)
   // Rotating invalidates every link already shared, so arm-to-confirm first;
   // a stale armed state auto-disarms after 4s (matching the mate remove/block flow).
   const [rotateArmed, setRotateArmed] = useState(false)
@@ -414,7 +418,11 @@ export function MatesPage() {
       member.user_id !== user?.id && member.profiles && !connectedIds.has(member.user_id),
   )
 
-  const mateLink = mateCode ? `${window.location.origin}/mates/add/${mateCode}` : null
+  // Prefer the canonical app URL (as invite links do) so a shared mate link
+  // never points at a dev/preview origin; fall back to the current origin.
+  const mateLinkOrigin =
+    appConfig.url || (typeof window !== 'undefined' ? window.location.origin : '')
+  const mateLink = mateCode ? `${mateLinkOrigin}/mates/add/${mateCode}` : null
   const now = Date.now()
   const isEndedBattle = (challenge: MateChallengeItem) =>
     challenge.status === 'active' &&
@@ -482,6 +490,18 @@ export function MatesPage() {
     }
   }
 
+  async function handleCancelOutgoing(connectionId: string) {
+    setCancellingOutgoingId(connectionId)
+    try {
+      await removeMate.mutateAsync(connectionId)
+      toast({ message: 'Request withdrawn.', variant: 'success' })
+    } catch (error) {
+      toast({ message: getErrorMessage(error, 'Could not withdraw the request.'), variant: 'danger' })
+    } finally {
+      setCancellingOutgoingId(null)
+    }
+  }
+
   return (
     <AppLayout
       title="Mates"
@@ -498,6 +518,7 @@ export function MatesPage() {
           <div className="flex gap-2">
             <Button
               className="min-h-10 flex-1 text-sm"
+              loading={mateCodeLoading}
               disabled={!mateLink}
               onClick={() => void handleCopyLink()}
             >
@@ -526,21 +547,26 @@ export function MatesPage() {
         </Card>
 
         {receivedNudges.length > 0 ? (
-          <Card padding="sm" className="space-y-1.5">
-            {receivedNudges.map((nudge) => {
-              const sender = mates.find((mate) => mate.user.id === nudge.sender_id)
-              const name = sender ? formatProfileName(sender.user) : 'A mate'
+          <section className="space-y-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+              Recent nudges
+            </h2>
+            <Card padding="sm" className="space-y-1.5">
+              {receivedNudges.map((nudge) => {
+                const sender = mates.find((mate) => mate.user.id === nudge.sender_id)
+                const name = sender ? formatProfileName(sender.user) : 'A mate'
 
-              return (
-                <p key={nudge.id} className="text-sm text-text-primary">
-                  {NUDGE_FEED_COPY[nudge.kind](name)}
-                  <span className="ml-1.5 text-xs text-text-muted">
-                    {formatDistanceToNowStrict(new Date(nudge.created_at), { addSuffix: true })}
-                  </span>
-                </p>
-              )
-            })}
-          </Card>
+                return (
+                  <p key={nudge.id} className="text-sm text-text-primary">
+                    {NUDGE_FEED_COPY[nudge.kind](name)}
+                    <span className="ml-1.5 text-xs text-text-muted">
+                      {formatDistanceToNowStrict(new Date(nudge.created_at), { addSuffix: true })}
+                    </span>
+                  </p>
+                )
+              })}
+            </Card>
+          </section>
         ) : null}
 
         {incoming.length > 0 ? (
@@ -649,9 +675,27 @@ export function MatesPage() {
           )}
 
           {outgoing.length > 0 ? (
-            <p className="text-xs text-text-muted">
-              Waiting on: {outgoing.map((mate) => formatProfileName(mate.user)).join(', ')}
-            </p>
+            <div className="space-y-2">
+              <p className="text-xs text-text-muted">Waiting on their reply</p>
+              {outgoing.map((mate) => (
+                <Card key={mate.connection_id} padding="sm" className="flex items-center gap-3">
+                  <AvatarChip
+                    emoji={mate.user.avatar_emoji}
+                    name={formatProfileName(mate.user)}
+                    className="flex-1 border-0 bg-transparent p-0"
+                  />
+                  <Button
+                    variant="ghost"
+                    className="min-h-9 px-3 text-sm text-text-muted"
+                    loading={cancellingOutgoingId === mate.connection_id}
+                    disabled={removeMate.isPending && cancellingOutgoingId !== mate.connection_id}
+                    onClick={() => void handleCancelOutgoing(mate.connection_id)}
+                  >
+                    Cancel
+                  </Button>
+                </Card>
+              ))}
+            </div>
           ) : null}
         </section>
 

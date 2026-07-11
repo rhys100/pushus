@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Button, ButtonRouterLink, Card, Skeleton, useToast } from '@/components/ui'
 import { supabase } from '@/lib/supabase'
 import { detectTimezone, timezoneOptions } from '@/lib/timezones'
@@ -23,6 +23,10 @@ function friendlyCreateGroupError(message: string): string {
 export function CreateGroupPage() {
   useDocumentTitle('Create group')
   const navigate = useNavigate()
+  const location = useLocation()
+  // Only the onboarding hand-off frames this as a wizard step; other entries
+  // (e.g. the Group page's "Create group" action) opt out via router state.
+  const fromWizard = (location.state as { fromWizard?: boolean } | null)?.fromWizard !== false
   const { toast } = useToast()
   const { appAccess } = useAuth()
   const { refreshGroup, setActiveGroupId, hasActiveGroup, loading: groupLoading } =
@@ -119,7 +123,9 @@ export function CreateGroupPage() {
     <div className="flex min-h-[100dvh] flex-col bg-bg px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))]">
       <div className="mx-auto w-full max-w-sm flex-1 py-6">
         <div className="mb-6">
-          <p className="text-sm font-medium text-accent">Step 2 of 2</p>
+          {fromWizard ? (
+            <p className="text-sm font-medium text-accent">Step 2 of 2</p>
+          ) : null}
           <h1 className="mt-1 text-2xl font-bold text-text-primary">Create your first group</h1>
           <p className="mt-2 text-sm text-text-muted">
             Start a private push-up group for your mates.

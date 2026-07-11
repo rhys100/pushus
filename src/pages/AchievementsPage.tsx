@@ -49,7 +49,11 @@ export function AchievementsPage() {
   const useFreeze = useUseStreakFreeze(activeGroup, user?.id)
 
   const unlockedIds = new Set(unlocked.map((item) => item.achievement_id))
-  const loading = groupLoading || catalogLoading || unlockedLoading || xpLoading
+  const unlockedAtById = new Map(unlocked.map((item) => [item.achievement_id, item.unlocked_at]))
+  // The Total XP stat only needs the XP query — don't make it wait on the
+  // unrelated catalog/unlocked lists.
+  const statLoading = groupLoading || xpLoading
+  const loading = statLoading || catalogLoading || unlockedLoading
   const loadError = catalogError || unlockedError || xpError || streakError
 
   function handleRetry() {
@@ -81,7 +85,7 @@ export function AchievementsPage() {
     >
       <div className="space-y-6 pb-8">
         <div className="grid grid-cols-2 gap-3">
-          {loading ? (
+          {statLoading ? (
             <Skeleton className="h-28 w-full" />
           ) : (
             <StatCard label="Total XP" value={xpTotal} hint="1 XP per push-up banked" />
@@ -186,15 +190,25 @@ export function AchievementsPage() {
             <ul className="motion-stagger space-y-2">
               {catalog.map((achievement) => {
                 const isUnlocked = unlockedIds.has(achievement.id)
-                // Lifetime clubs can show live progress: total XP is exactly
-                // lifetime effective reps (1 rep = 1 XP, no bonuses yet).
-                const lifetimeTarget =
-                  !isUnlocked && achievement.criteria?.type === 'lifetime_total'
+                const unlockedAt = isUnlocked ? unlockedAtById.get(achievement.id) : null
+                // Locked badges show live progress where we already have the stat:
+                // lifetime clubs use Total XP (1 rep = 1 XP, no bonuses yet) and
+                // streak badges use the active streak. Others fall back to their
+                // description, which reads as a how-to-unlock hint.
+                const criteriaType = achievement.criteria?.type
+                const progressTarget =
+                  !isUnlocked && (criteriaType === 'lifetime_total' || criteriaType === 'active_streak')
                     ? Number(achievement.criteria.value)
                     : null
+                const progressCurrent =
+                  progressTarget === null
+                    ? 0
+                    : criteriaType === 'active_streak'
+                      ? streak?.activeStreak ?? 0
+                      : xpTotal
                 const progress =
-                  lifetimeTarget && lifetimeTarget > 0
-                    ? Math.min(xpTotal / lifetimeTarget, 1)
+                  progressTarget && progressTarget > 0
+                    ? Math.min(progressCurrent / progressTarget, 1)
                     : null
 
                 return (
@@ -218,14 +232,18 @@ export function AchievementsPage() {
                           )}
                         </div>
                         <p className="mt-0.5 text-xs text-text-muted">{achievement.description}</p>
-                        {progress !== null && lifetimeTarget ? (
+                        {isUnlocked && unlockedAt ? (
+                          <p className="mt-1 text-[0.65rem] text-text-muted">
+                            Unlocked {new Date(unlockedAt).toLocaleDateString()}
+                          </p>
+                        ) : progress !== null && progressTarget ? (
                           <div className="mt-2 space-y-1">
                             <div
                               className="h-1.5 w-full overflow-hidden rounded-full bg-text-muted/20"
                               role="progressbar"
                               aria-valuemin={0}
-                              aria-valuemax={lifetimeTarget}
-                              aria-valuenow={Math.min(xpTotal, lifetimeTarget)}
+                              aria-valuemax={progressTarget}
+                              aria-valuenow={Math.min(progressCurrent, progressTarget)}
                               aria-label={`${achievement.name} progress`}
                             >
                               <div
@@ -233,12 +251,12 @@ export function AchievementsPage() {
                                 // Floor the fill so real-but-tiny progress still shows a sliver
                                 // (matches GoalProgressBar), rather than an empty-looking bar.
                                 style={{
-                                  width: `${xpTotal > 0 ? Math.max(Math.round(progress * 100), 4) : 0}%`,
+                                  width: `${progressCurrent > 0 ? Math.max(Math.round(progress * 100), 4) : 0}%`,
                                 }}
                               />
                             </div>
                             <p className="font-mono text-[0.65rem] tabular-nums text-text-muted">
-                              {xpTotal.toLocaleString()} / {lifetimeTarget.toLocaleString()}
+                              {progressCurrent.toLocaleString()} / {progressTarget.toLocaleString()}
                             </p>
                           </div>
                         ) : null}
@@ -250,31 +268,6 @@ export function AchievementsPage() {
             </ul>
           )}
         </section>
-
-        {unlocked.length > 0 ? (
-          <section className="space-y-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-              Your unlocks
-            </h2>
-            <ul className="motion-stagger space-y-2">
-              {unlocked.map((item) => (
-                <li key={item.id}>
-                  <Card padding="sm" className="flex items-center gap-3">
-                    <span className="text-xl">{item.achievements?.icon_emoji ?? '🏅'}</span>
-                    <div>
-                      <p className="text-sm font-medium text-text-primary">
-                        {item.achievements?.name ?? 'Achievement'}
-                      </p>
-                      <p className="text-xs text-text-muted">
-                        {new Date(item.unlocked_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </Card>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
 
         {banterBadges.length > 0 ? (
           <section className="space-y-3">

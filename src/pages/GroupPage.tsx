@@ -104,7 +104,7 @@ export function GroupPage() {
         title="No group yet"
         description="Create a group or join one with an invite code."
         actionLabel="Create group"
-        onAction={() => navigate('/group/create')}
+        onAction={() => navigate('/group/create', { state: { fromWizard: false } })}
       />
     )
   }
@@ -238,7 +238,7 @@ export function GroupPage() {
               Try again
             </Button>
           </div>
-        ) : members.length > 0 ? (
+        ) : (
           <div className="space-y-2">
             {members.map((member) => {
               const profile = member.profiles
@@ -301,8 +301,6 @@ export function GroupPage() {
               )
             })}
           </div>
-        ) : (
-          <EmptyState title="No members yet" description="Invite someone to get started." />
         )}
       </section>
 

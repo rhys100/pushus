@@ -90,7 +90,9 @@ export function InviteShareCard({ inviteCode, className }: InviteShareCardProps)
       await navigator.share({
         title: `Join my push-up group on ${appConfig.name}`,
         text: inviteMessage,
+        url: inviteLink,
       })
+      selectHaptic()
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') return
       toast({ message: 'Could not open share sheet.', variant: 'danger' })

@@ -21,7 +21,7 @@ function friendlyAuthError(message: string): string {
     return 'Google sign-in is not enabled on this deployment. Use email magic link instead.'
   }
   if (lower.includes('oauth') || lower.includes('google')) {
-    return 'Google sign-in failed. Try email magic link, or check that Google OAuth is configured in Supabase.'
+    return 'Google sign-in could not be completed. Try email magic link instead.'
   }
   return message
 }
@@ -40,6 +40,9 @@ export function LoginPage() {
   const [showInvite, setShowInvite] = useState(false)
   const authErrorShownRef = useRef(false)
   const sentHeadingRef = useRef<HTMLParagraphElement>(null)
+  // One auth flow at a time — while a magic link is sending or Google is
+  // redirecting, neither entry point should let the user kick off the other.
+  const isBusy = sending || googleLoading
 
   useEffect(() => {
     if (resendCooldown <= 0) return
@@ -214,7 +217,7 @@ export function LoginPage() {
                   )}
                 />
               </div>
-              <Button type="submit" fullWidth loading={sending} disabled={sending}>
+              <Button type="submit" fullWidth loading={sending} disabled={isBusy}>
                 Send magic link
               </Button>
             </form>
@@ -232,7 +235,7 @@ export function LoginPage() {
                 variant="secondary"
                 fullWidth
                 loading={googleLoading}
-                disabled={googleLoading}
+                disabled={isBusy}
                 onClick={() => void handleGoogleSignIn()}
               >
                 Continue with Google
@@ -277,6 +280,10 @@ export function LoginPage() {
 
         <p className="mt-5 text-center text-xs text-text-muted">
           By signing in you agree to train hard and log honestly.{' '}
+          <Link to="/about#privacy" className="text-accent hover:brightness-110">
+            Privacy
+          </Link>
+          {' · '}
           <Link to="/about" className="text-accent hover:brightness-110">
             About {appConfig.name}
           </Link>

@@ -349,7 +349,10 @@ export default function App() {
           path="/mates/add/:code"
           element={
             <LazyPage>
-              <RequireAuth mode="member">
+              {/* Onboarded, not member: a mate link is redeemable across groups
+                  (redeem_mate_code allows it), so gating on active-group
+                  membership wrongly bounced anyone in a different/other group. */}
+              <RequireAuth mode="onboarded">
                 <MateAddPage />
               </RequireAuth>
             </LazyPage>

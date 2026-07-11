@@ -1085,6 +1085,9 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
                   {
                     strokeDasharray: HOLD_CIRCUMFERENCE,
                     '--hold-circ': HOLD_CIRCUMFERENCE,
+                    // Fill lands at 100% exactly when the hold fires, not at ~75%
+                    // (the CSS default is 2000ms vs this 1500ms trigger).
+                    animationDuration: `${CENTER_HOLD_MS}ms`,
                   } as CSSProperties
                 }
                 transform={`rotate(-90 ${RING_CENTER} ${RING_CENTER})`}
@@ -1197,9 +1200,11 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
                 {displayCount}
               </span>
             )}
-            <span className="mt-2 text-[0.8125rem] font-medium uppercase tracking-[0.18em] text-text-muted">
-              reps
-            </span>
+            {lockInPhase === 'doosh' ? null : (
+              <span className="mt-2 text-[0.8125rem] font-medium uppercase tracking-[0.18em] text-text-muted">
+                reps
+              </span>
+            )}
             {showZeroHint ? (
               <>
                 <span className="mt-3 text-[0.75rem] font-medium text-text-muted">

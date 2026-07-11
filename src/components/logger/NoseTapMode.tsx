@@ -206,6 +206,7 @@ export function NoseTapMode({ open, banking = false, onBank, onExit }: NoseTapMo
   const [confirmingExit, setConfirmingExit] = useState(false)
   const countRef = useRef(0)
   const exitConfirmTimerRef = useRef(0)
+  const dialogRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (open) {
@@ -240,6 +241,39 @@ export function NoseTapMode({ open, banking = false, onBank, onExit }: NoseTapMo
     window.clearTimeout(exitConfirmTimerRef.current)
     onExit()
   }, [banking, confirmingExit, onExit])
+
+  // Keep the latest handleExit without re-running the focus effect every render.
+  const handleExitRef = useRef(handleExit)
+  handleExitRef.current = handleExit
+
+  // Genuinely modal (fullscreen + scroll-locked): focus the overlay on open,
+  // route Escape through handleExit (which arms the discard-confirm and is a
+  // no-op while banking), and restore focus to the ring on close.
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    const previouslyFocused = document.activeElement as HTMLElement | null
+    dialogRef.current?.focus({ preventScroll: true })
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        handleExitRef.current()
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+
+      if (previouslyFocused && document.contains(previouslyFocused)) {
+        previouslyFocused.focus()
+      }
+    }
+  }, [open])
 
   // Lock page scroll behind the overlay while open.
   useEffect(() => {
@@ -310,7 +344,9 @@ export function NoseTapMode({ open, banking = false, onBank, onExit }: NoseTapMo
       // Immersive fullscreen surface stays dark in both themes; the nested
       // data-theme resets the token cascade for this subtree.
       data-theme="dark"
-      className="fixed inset-0 z-50 flex flex-col bg-bg"
+      ref={dialogRef}
+      tabIndex={-1}
+      className="fixed inset-0 z-50 flex flex-col bg-bg outline-none"
       role="dialog"
       aria-modal="true"
       aria-label="Nose-tap logging mode"
@@ -324,7 +360,7 @@ export function NoseTapMode({ open, banking = false, onBank, onExit }: NoseTapMo
           onClick={handleExit}
           disabled={banking}
           className={cn(
-            'rounded-[var(--radius-full)] border-2 px-4 py-2 text-xs font-bold',
+            'inline-flex min-h-11 items-center justify-center rounded-[var(--radius-full)] border-2 px-4 py-2 text-xs font-bold',
             confirmingExit
               ? 'border-accent bg-accent/15 text-text-primary'
               : 'border-border bg-surface text-text-muted',
@@ -336,18 +372,17 @@ export function NoseTapMode({ open, banking = false, onBank, onExit }: NoseTapMo
 
       <div
         className="mt-2 flex gap-2 overflow-x-auto px-4 pb-1"
-        role="tablist"
+        role="group"
         aria-label="Nose-tap skin"
       >
         {SKINS.map((option) => (
           <button
             key={option.id}
             type="button"
-            role="tab"
-            aria-selected={skin === option.id}
+            aria-pressed={skin === option.id}
             onClick={() => selectSkin(option.id)}
             className={cn(
-              'shrink-0 rounded-[var(--radius-full)] border-2 px-4 py-1.5 text-xs font-bold transition-[border-color,box-shadow] duration-[var(--duration-fast)]',
+              'inline-flex min-h-11 shrink-0 items-center justify-center rounded-[var(--radius-full)] border-2 px-4 py-1.5 text-xs font-bold transition-[border-color,box-shadow] duration-[var(--duration-fast)]',
               skin === option.id
                 ? 'border-accent bg-accent/15 text-text-primary shadow-[var(--shadow-glow-accent)]'
                 : 'border-border bg-surface text-text-muted',

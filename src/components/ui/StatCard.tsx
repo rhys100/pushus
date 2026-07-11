@@ -43,8 +43,16 @@ export function StatCard({
         {typeof value === 'number' ? <CountUpValue value={value} /> : value}
       </p>
 
-      {hint ? (
-        <p className={cn('text-xs font-medium', trendStyles[trend])}>{hint}</p>
+      {hint || trend !== 'neutral' ? (
+        <p className={cn('flex items-center gap-1 text-xs font-medium', trendStyles[trend])}>
+          {trend !== 'neutral' ? (
+            <>
+              <span className="sr-only">{trend === 'up' ? 'Trending up' : 'Trending down'}</span>
+              <span aria-hidden="true">{trend === 'up' ? '▲' : '▼'}</span>
+            </>
+          ) : null}
+          {hint ? <span>{hint}</span> : null}
+        </p>
       ) : null}
     </Card>
   )

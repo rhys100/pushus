@@ -87,6 +87,8 @@ function CreateChallengeForm({ onDone }: { onDone: () => void }) {
   const needsTeams = challengeType === 'team_total'
   const needsDates = formatValue === 'custom'
   const showWarning = isBeginnerWarningIntensity(intensity)
+  // Local-today ISO gates custom dates so a challenge can't be created already ended.
+  const today = format(new Date(), 'yyyy-MM-dd')
 
   const missing = !name.trim()
     ? 'Give it a name to fire it off.'
@@ -96,7 +98,13 @@ function CreateChallengeForm({ onDone }: { onDone: () => void }) {
         ? 'Pick start and end dates.'
         : needsDates && customStart > customEnd
           ? 'The end date is before the start.'
-          : null
+          : needsDates && customEnd < today
+            ? 'That end date has already passed.'
+            : needsTeams && (!teamA.trim() || !teamB.trim())
+              ? 'Give each team a name.'
+              : needsTeams && teamA.trim().toLowerCase() === teamB.trim().toLowerCase()
+                ? 'Give the two teams different names.'
+                : null
   const valid = missing === null
 
   async function handleCreate() {
@@ -158,6 +166,7 @@ function CreateChallengeForm({ onDone }: { onDone: () => void }) {
             <span className="text-xs font-medium text-text-muted">Starts</span>
             <input
               type="date"
+              min={today}
               value={customStart}
               onChange={(event) => setCustomStart(event.target.value)}
               className={inputClass}
@@ -167,6 +176,7 @@ function CreateChallengeForm({ onDone }: { onDone: () => void }) {
             <span className="text-xs font-medium text-text-muted">Ends (inclusive)</span>
             <input
               type="date"
+              min={customStart || today}
               value={customEnd}
               onChange={(event) => setCustomEnd(event.target.value)}
               className={inputClass}
@@ -236,7 +246,7 @@ function CreateChallengeForm({ onDone }: { onDone: () => void }) {
         <span id="intensity-label" className="text-xs font-medium text-text-muted">
           Intensity
         </span>
-        <div role="group" aria-labelledby="intensity-label" className="grid grid-cols-4 gap-1.5">
+        <div role="group" aria-labelledby="intensity-label" className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
           {INTENSITY_OPTIONS.map((option) => (
             <button
               key={option.value}

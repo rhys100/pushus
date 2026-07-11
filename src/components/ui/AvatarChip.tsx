@@ -23,6 +23,7 @@ export function AvatarChip({
     <Tag
       type={onClick ? 'button' : undefined}
       onClick={onClick}
+      aria-pressed={onClick ? active : undefined}
       className={cn(
         'inline-flex min-h-11 max-w-full items-center gap-2.5 rounded-[var(--radius-full)]',
         'border px-3 py-1.5 text-left transition-colors duration-[var(--duration-fast)]',
