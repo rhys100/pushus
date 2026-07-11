@@ -21,10 +21,11 @@ type RequireAuthProps = {
 function LoadingScreen() {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-bg px-4">
-      <div className="w-full max-w-xs space-y-3">
+      <div className="w-full max-w-xs space-y-3" role="status" aria-live="polite">
         <Skeleton className="mx-auto h-12 w-12 rounded-full" />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-3/4" />
+        <p className="text-center text-sm text-text-muted">Loading…</p>
       </div>
     </div>
   )

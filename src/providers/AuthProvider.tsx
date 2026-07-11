@@ -18,6 +18,7 @@ import {
 } from '@/lib/authSessionResume'
 import { isProfileOnboardedFromServer } from '@/lib/postAuthNavigation'
 import { supabase } from '@/lib/supabase'
+import { withTimeout } from '@/lib/withTimeout'
 import {
   clearPendingInviteCode,
   clearPendingMateCode,
@@ -44,6 +45,10 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 const HYDRATE_EVENTS = new Set<AuthChangeEvent>(['INITIAL_SESSION', 'SIGNED_IN', 'USER_UPDATED'])
 const BRIDGE_EVENTS = new Set<AuthChangeEvent>(['SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED'])
+/** Profile / access RPC can hang on iOS after suspend — never block the shell forever. */
+const HYDRATE_FETCH_TIMEOUT_MS = 5_000
+/** Absolute boot safety net if any auth path stalls. */
+const AUTH_BOOT_WATCHDOG_MS = 8_000
 
 async function fetchProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase
@@ -83,8 +88,12 @@ async function hydrateUser(nextSession: Session | null): Promise<{
   }
 
   const [profile, appAccess] = await Promise.all([
-    fetchProfile(nextSession.user.id),
-    fetchAppAccess(getPendingInviteCode()),
+    withTimeout(fetchProfile(nextSession.user.id), HYDRATE_FETCH_TIMEOUT_MS, null),
+    withTimeout(
+      fetchAppAccess(getPendingInviteCode()),
+      HYDRATE_FETCH_TIMEOUT_MS,
+      defaultAppAccess,
+    ),
   ])
 
   return { profile, appAccess }
@@ -227,6 +236,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     mountedRef.current = true
     let initialSessionHandled = false
 
+    // Last-resort: never leave iOS on an endless blank/skeleton loader.
+    const bootWatchdog = window.setTimeout(() => {
+      if (!mountedRef.current || initialHydrateDoneRef.current) return
+      console.warn('Auth boot watchdog fired — clearing loading state')
+      setAppAccessLoading(false)
+      setProfileReady(true)
+      setLoading(false)
+      initialHydrateDoneRef.current = true
+    }, AUTH_BOOT_WATCHDOG_MS)
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
@@ -284,6 +303,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mountedRef.current = false
+      window.clearTimeout(bootWatchdog)
       subscription.unsubscribe()
     }
   }, [hydrateFromSession])
@@ -303,6 +323,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (sessionRef.current) {
+        // Session exists but iOS may have killed refresh timers — nudge a refresh
+        // without blocking the UI. Failures are ignored.
+        deferAuthWork(() => {
+          void supabase.auth.refreshSession().then(({ data }) => {
+            if (data.session) {
+              void persistAuthSessionBridge(data.session)
+            }
+          })
+        })
         return
       }
 

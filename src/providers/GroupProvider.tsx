@@ -14,8 +14,11 @@ import {
   getStoredActiveGroupId,
   setStoredActiveGroupId,
 } from '@/lib/storage'
+import { withTimeout } from '@/lib/withTimeout'
 import { useAuth } from '@/providers/AuthProvider'
 import type { Group, GroupMember, MemberRole, MemberStatus } from '@/types/database'
+
+const GROUP_FETCH_TIMEOUT_MS = 5_000
 
 type GroupContextValue = {
   activeGroup: Group | null
@@ -78,7 +81,8 @@ export function GroupProvider({ children }: { children: ReactNode }) {
 
   const membershipsQuery = useQuery({
     queryKey: ['memberships', user?.id],
-    queryFn: () => fetchMemberships(user!.id),
+    queryFn: () =>
+      withTimeout(fetchMemberships(user!.id), GROUP_FETCH_TIMEOUT_MS, [] as GroupMember[]),
     enabled: Boolean(user && profileOnboarded),
   })
 
@@ -108,7 +112,7 @@ export function GroupProvider({ children }: { children: ReactNode }) {
 
   const groupQuery = useQuery({
     queryKey: ['group', activeGroupId],
-    queryFn: () => fetchGroup(activeGroupId!),
+    queryFn: () => withTimeout(fetchGroup(activeGroupId!), GROUP_FETCH_TIMEOUT_MS, null),
     enabled: Boolean(activeGroupId && activeMembership),
   })
 

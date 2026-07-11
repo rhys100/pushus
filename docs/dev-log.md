@@ -26,6 +26,12 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-11h (iOS blank — hydrate/group hang)
+
+- Verified live Pages is on `d704579` and cold `/login` + iPhone UA render fine. Blank is the **logged-in boot path**: RequireAuth stays on a textless skeleton while profile/app-access/group queries hang on a stuck Supabase client after iOS suspend.
+- Fix: `withTimeout` on hydrate + membership/group fetches (5s), 8s auth boot watchdog that always clears loading, “Loading…” copy on the auth gate, foreground `refreshSession` when a session already exists.
+- Verified: tsc + unit tests. Merge to main for Pages.
+
 ### 2026-07-11g (iOS blank screen after auth bridge)
 
 - Rhys: iOS blank screen after the Safari↔PWA bridge shipped. Root cause: recovery called `refreshSession`/`setSession` in ways that could hang (auth callback lock + unbounded network), and cold-launch `pageshow` raced the first hydrate while `loading` stayed true → endless RequireAuth skeleton (looks blank).
