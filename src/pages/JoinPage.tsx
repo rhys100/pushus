@@ -152,11 +152,11 @@ export function JoinPage() {
           .eq('user_id', user!.id)
           .in('status', ['active', 'pending'])
 
-        const { hasActiveGroup, pendingGroupId: pendingId } = pickMembershipState(
+        const { hasActiveGroup } = pickMembershipState(
           (memberships ?? []) as Parameters<typeof pickMembershipState>[0],
         )
 
-        navigate(hasActiveGroup ? '/today' : pendingId ? '/pending' : '/pending', {
+        navigate(hasActiveGroup ? '/today' : '/pending', {
           replace: true,
         })
         return

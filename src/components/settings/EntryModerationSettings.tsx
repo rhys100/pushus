@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { format, parseISO } from 'date-fns'
 import { AvatarChip, Button, Skeleton, useToast } from '@/components/ui'
 import { supabase } from '@/lib/supabase'
 import { getErrorMessage } from '@/lib/errors'
@@ -106,7 +107,7 @@ export function EntryModerationSettings({ group }: { group: Group }) {
                 <AvatarChip
                   emoji={entry.avatar_emoji}
                   name={entry.display_name}
-                  subtitle={`${entry.count} reps · ${entry.logged_for}`}
+                  subtitle={`${entry.count} reps · ${format(parseISO(`${entry.logged_for}T12:00:00`), 'd MMM yyyy')}`}
                   className="flex-1 border-0 bg-transparent p-0"
                 />
                 <Button

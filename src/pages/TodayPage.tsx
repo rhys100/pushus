@@ -158,10 +158,8 @@ export function TodayPage() {
     customActivities.find((activity) => activity.id === selectedActivityId) ?? null
   const isCustomMode = selectedActivity != null
   const customLoggedFor = getGroupLocalDateString(planTimezone)
-  const { data: customDayEntries = [] } = useCustomActivityDayEntries(
-    selectedActivity?.id,
-    customLoggedFor,
-  )
+  const { data: customDayEntries = [], isLoading: customDayEntriesLoading } =
+    useCustomActivityDayEntries(selectedActivity?.id, customLoggedFor)
   const { data: customBestSet = 0 } = useCustomActivityBestSet(selectedActivity?.id)
   const bankPending = bankPushups.isPending || bankCustom.isPending
 
@@ -612,6 +610,7 @@ export function TodayPage() {
             activity={selectedActivity}
             entries={customDayEntries}
             allTimeBest={customBestSet}
+            loading={customDayEntriesLoading}
           />
         ) : (
           <DayProgressCard

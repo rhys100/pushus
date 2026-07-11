@@ -57,6 +57,13 @@ function ToastItem({
   const [leaving, setLeaving] = useState(false)
   const leavingRef = useRef(false)
 
+  // Pause the auto-dismiss while the user is reading (hover) or interacting
+  // (keyboard focus within), so a toast — especially one with an action —
+  // can't vanish mid-reach (WCAG 2.2.1).
+  const [hovered, setHovered] = useState(false)
+  const [focused, setFocused] = useState(false)
+  const paused = hovered || focused
+
   // Leave in two beats: play the exit animation, then remove the node.
   const startDismiss = useCallback(() => {
     if (leavingRef.current) {
@@ -76,15 +83,26 @@ function ToastItem({
   }, [leaving, onDismiss, toast.id])
 
   useEffect(() => {
+    if (leaving || paused) {
+      return
+    }
     const duration = toast.durationMs ?? DEFAULT_DURATION_MS
     const timer = window.setTimeout(startDismiss, duration)
     return () => window.clearTimeout(timer)
-  }, [toast.durationMs, startDismiss])
+  }, [leaving, paused, toast.durationMs, startDismiss])
 
   return (
+    // Announcements are handled by persistent live regions in the provider;
+    // this node is purely visual (no live role) so its buttons stay reachable.
     <div
-      role="status"
-      aria-live="polite"
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
+      onFocus={() => setFocused(true)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setFocused(false)
+        }
+      }}
       className={cn(
         'pointer-events-auto flex w-full max-w-sm items-center gap-2 rounded-[var(--radius-md)] border py-2.5 pl-4 pr-2 shadow-[var(--shadow-toast)]',
         leaving ? 'toast-out' : 'toast-spring-in',
@@ -149,6 +167,28 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
+
+      {/*
+       * Persistent, always-mounted live regions. A live region must exist
+       * before its text changes to be announced reliably, so we route toast
+       * copy here rather than depending on the freshly-inserted visual node
+       * (which some SRs, notably VoiceOver, skip). Danger → assertive/alert;
+       * everything else → polite.
+       */}
+      <div aria-live="polite" className="sr-only">
+        {toasts
+          .filter((item) => (item.variant ?? 'default') !== 'danger')
+          .map((item) => (
+            <p key={item.id}>{item.message}</p>
+          ))}
+      </div>
+      <div role="alert" aria-live="assertive" className="sr-only">
+        {toasts
+          .filter((item) => (item.variant ?? 'default') === 'danger')
+          .map((item) => (
+            <p key={item.id}>{item.message}</p>
+          ))}
+      </div>
 
       <div
         aria-label="Notifications"

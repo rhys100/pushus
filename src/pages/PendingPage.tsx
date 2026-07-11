@@ -21,20 +21,29 @@ export function PendingPage() {
   const { pendingGroupId, refreshGroup } = useActiveGroup()
   const [isChecking, setIsChecking] = useState(false)
 
+  // The group name can't change while you're awaiting approval, so fetch it once
+  // (react-query still refetches on window focus). Only the membership is polled.
   const groupNameQuery = useQuery({
     queryKey: ['pending-group-name', pendingGroupId],
     queryFn: () => fetchPendingGroupName(pendingGroupId!),
     enabled: Boolean(pendingGroupId),
-    refetchInterval: 15_000,
   })
 
-  // Poll the membership too — once the admin approves, the route guard whisks
-  // the member in without them having to tap "Check again".
+  // Poll the membership — once the admin approves, the route guard whisks the
+  // member in without them having to tap "Check now". Skip while the tab is
+  // hidden (no point burning requests in the background), and re-check the
+  // moment they return so approval is picked up promptly.
   useEffect(() => {
-    const timer = window.setInterval(() => {
+    const poll = () => {
+      if (document.hidden) return
       void refreshGroup()
-    }, 15_000)
-    return () => window.clearInterval(timer)
+    }
+    const timer = window.setInterval(poll, 15_000)
+    document.addEventListener('visibilitychange', poll)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', poll)
+    }
   }, [refreshGroup])
 
   async function handleRefresh() {

@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { formatDistanceToNow, parseISO } from 'date-fns'
 import { cn } from '@/lib/cn'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
@@ -48,6 +48,8 @@ type ActivityFeedRowProps = {
   reactions: ReactionSummary[]
   onToggleReaction: (entryId: string, emoji: ReactionEmoji) => void
   dense?: boolean
+  /** Panel-level minute tick so relative timestamps refresh together. */
+  nowTick?: number
 }
 
 const FEED_DENSITY_KEY = 'pushus-feed-density'
@@ -74,12 +76,17 @@ export const ActivityFeedRow = memo(function ActivityFeedRow({
   reactions,
   onToggleReaction,
   dense = false,
+  nowTick,
 }: ActivityFeedRowProps) {
   const canReact = canReactToFeedItem(item, currentUserId)
   const hasReactions = reactions.length > 0
   const summary = `${item.display_name} ${feedItemSummary(item)}`
-  // Parse/format the timestamp once per item, not on every panel re-render.
-  const relativeTime = useMemo(() => formatRelativeTime(item.created_at), [item.created_at])
+  // Re-parse only when the timestamp changes or the minute ticks over, so
+  // "2 minutes ago" stays fresh without recomputing on every reaction tap.
+  const relativeTime = useMemo(
+    () => formatRelativeTime(item.created_at),
+    [item.created_at, nowTick],
+  )
 
   // Existing reactions always show as tappable count chips (join in with a
   // tap); the full emoji palette (to add a *new* one) is tucked behind "+" so
@@ -90,10 +97,34 @@ export const ActivityFeedRow = memo(function ActivityFeedRow({
     [reactions],
   )
 
+  // Keyboard focus must not fall to <body> when the palette opens/closes: move
+  // it into the palette on open and hand it back to the trigger on close.
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const firstEmojiRef = useRef<HTMLButtonElement>(null)
+  const restoreFocusRef = useRef(false)
+
+  const openPicker = () => setPickerOpen(true)
+  const closePicker = () => {
+    restoreFocusRef.current = true
+    setPickerOpen(false)
+  }
+
+  useEffect(() => {
+    if (pickerOpen) {
+      firstEmojiRef.current?.focus()
+    } else if (restoreFocusRef.current) {
+      restoreFocusRef.current = false
+      triggerRef.current?.focus()
+    }
+  }, [pickerOpen])
+
   const react = (emoji: ReactionEmoji) => {
     if (!canReact) return
     tapHaptic()
     onToggleReaction(item.event_id, emoji)
+    if (pickerOpen) {
+      restoreFocusRef.current = true
+    }
     setPickerOpen(false)
   }
 
@@ -107,7 +138,7 @@ export const ActivityFeedRow = memo(function ActivityFeedRow({
       <div className={cn('flex items-start', dense ? 'gap-2.5' : 'gap-3')}>
         <div
           className={cn(
-            'flex shrink-0 items-center justify-center rounded-full border border-border bg-bg',
+            'flex shrink-0 items-center justify-center rounded-[var(--radius-full)] border border-border bg-bg',
             dense ? 'h-7 w-7 text-sm' : 'h-10 w-10 text-lg',
           )}
           aria-hidden="true"
@@ -155,96 +186,98 @@ export const ActivityFeedRow = memo(function ActivityFeedRow({
             dense ? 'mt-1.5 pl-[2.375rem]' : 'mt-2 pl-[3.25rem]',
           )}
         >
-          {pickerOpen && canReact ? (
-            <>
-              {REACTION_EMOJIS.map((emoji) => (
+          {/* Existing reactions stay visible even while the palette is open, so
+              the tally of who's already reacted isn't lost while choosing. */}
+          {reactions.map(({ emoji, count, mine }) => (
+            <button
+              key={emoji}
+              type="button"
+              disabled={!canReact}
+              aria-pressed={mine}
+              aria-label={`${emoji} ${count} reaction${count === 1 ? '' : 's'}${mine ? ', including you' : ''}${canReact ? ' — tap to toggle yours' : ''}`}
+              onClick={() => react(emoji)}
+              className={cn(
+                'inline-flex items-center gap-1 rounded-[var(--radius-full)] border font-medium tabular-nums',
+                'transition-[background-color,border-color,transform] duration-[var(--duration-fast)]',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                canReact && 'active:scale-90',
+                dense ? 'h-8 px-2 text-xs' : 'h-9 px-2.5 text-sm',
+                mine
+                  ? 'border-accent/50 bg-accent-muted text-accent'
+                  : 'border-border bg-bg text-text-primary',
+                !canReact && 'cursor-default',
+              )}
+            >
+              <span aria-hidden="true">{emoji}</span>
+              <span>{count}</span>
+            </button>
+          ))}
+
+          {canReact ? (
+            pickerOpen ? (
+              <>
+                {REACTION_EMOJIS.map((emoji, index) => (
+                  <button
+                    key={emoji}
+                    ref={index === 0 ? firstEmojiRef : undefined}
+                    type="button"
+                    aria-pressed={mineSet.has(emoji)}
+                    aria-label={`React with ${emoji}`}
+                    onClick={() => react(emoji)}
+                    className={cn(
+                      'inline-flex items-center justify-center rounded-[var(--radius-full)] border',
+                      'transition-[background-color,border-color,transform] duration-[var(--duration-fast)]',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 active:scale-90',
+                      dense ? 'h-10 w-10 text-lg' : 'h-11 w-11 text-xl',
+                      mineSet.has(emoji)
+                        ? 'motion-pop border-accent/50 bg-accent-muted'
+                        : 'border-border bg-bg hover:border-accent/30',
+                    )}
+                  >
+                    {emoji}
+                  </button>
+                ))}
                 <button
-                  key={emoji}
                   type="button"
-                  aria-pressed={mineSet.has(emoji)}
-                  aria-label={`React with ${emoji}`}
-                  onClick={() => react(emoji)}
+                  aria-label="Close reaction picker"
+                  onClick={closePicker}
                   className={cn(
-                    'inline-flex items-center justify-center rounded-[var(--radius-full)] border',
-                    'transition-[background-color,border-color,transform] duration-[var(--duration-fast)]',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 active:scale-90',
-                    dense ? 'h-10 w-10 text-lg' : 'h-11 w-11 text-xl',
-                    mineSet.has(emoji)
-                      ? 'motion-pop border-accent/50 bg-accent-muted'
-                      : 'border-border bg-bg hover:border-accent/30',
+                    'inline-flex items-center justify-center rounded-[var(--radius-full)] text-text-muted',
+                    'transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                    dense ? 'h-10 w-10 text-base' : 'h-11 w-11 text-lg',
                   )}
                 >
-                  {emoji}
+                  ×
                 </button>
-              ))}
+              </>
+            ) : (
+              /* Add a new reaction — opens the big emoji palette */
               <button
+                ref={triggerRef}
                 type="button"
-                aria-label="Close reaction picker"
-                onClick={() => setPickerOpen(false)}
+                aria-label="Add a reaction"
+                aria-expanded={pickerOpen}
+                onClick={openPicker}
                 className={cn(
-                  'inline-flex items-center justify-center rounded-[var(--radius-full)] text-text-muted',
-                  'transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
-                  dense ? 'h-10 w-10 text-base' : 'h-11 w-11 text-lg',
+                  'inline-flex items-center gap-1 rounded-[var(--radius-full)] border border-border bg-bg text-text-muted',
+                  'transition-colors hover:border-accent/30 hover:text-text-primary',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 active:scale-95',
+                  dense ? 'h-8 px-2.5' : 'h-9 px-3',
                 )}
               >
-                ×
+                {hasReactions ? (
+                  <span className="text-lg leading-none" aria-hidden="true">
+                    +
+                  </span>
+                ) : (
+                  <>
+                    <span aria-hidden="true">🙂</span>
+                    <span className="text-sm font-medium">React</span>
+                  </>
+                )}
               </button>
-            </>
-          ) : (
-            <>
-              {/* Existing reactions — tap a chip to join in or take yours back */}
-              {reactions.map(({ emoji, count, mine }) => (
-                <button
-                  key={emoji}
-                  type="button"
-                  disabled={!canReact}
-                  aria-pressed={mine}
-                  aria-label={`${emoji} ${count} reaction${count === 1 ? '' : 's'}${mine ? ', including you' : ''}${canReact ? ' — tap to toggle yours' : ''}`}
-                  onClick={() => react(emoji)}
-                  className={cn(
-                    'inline-flex items-center gap-1 rounded-[var(--radius-full)] border font-medium tabular-nums',
-                    'transition-[background-color,border-color,transform] duration-[var(--duration-fast)]',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
-                    canReact && 'active:scale-90',
-                    dense ? 'h-8 px-2 text-xs' : 'h-9 px-2.5 text-sm',
-                    mine
-                      ? 'border-accent/50 bg-accent-muted text-accent'
-                      : 'border-border bg-bg text-text-primary',
-                    !canReact && 'cursor-default',
-                  )}
-                >
-                  <span aria-hidden="true">{emoji}</span>
-                  <span>{count}</span>
-                </button>
-              ))}
-
-              {/* Add a new reaction — opens the big emoji palette */}
-              {canReact ? (
-                <button
-                  type="button"
-                  aria-label="Add a reaction"
-                  onClick={() => setPickerOpen(true)}
-                  className={cn(
-                    'inline-flex items-center gap-1 rounded-[var(--radius-full)] border border-border bg-bg text-text-muted',
-                    'transition-colors hover:border-accent/30 hover:text-text-primary',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 active:scale-95',
-                    dense ? 'h-8 px-2.5' : 'h-9 px-3',
-                  )}
-                >
-                  {hasReactions ? (
-                    <span className="text-lg leading-none" aria-hidden="true">
-                      +
-                    </span>
-                  ) : (
-                    <>
-                      <span aria-hidden="true">🙂</span>
-                      <span className="text-sm font-medium">React</span>
-                    </>
-                  )}
-                </button>
-              ) : null}
-            </>
-          )}
+            )
+          ) : null}
         </div>
       ) : null}
     </li>
@@ -304,6 +337,14 @@ export function GroupFeedPanel() {
   const showInitialSkeleton = isLoading && feed.length === 0
   const [dense, setDense] = useState(readFeedDense)
 
+  // A slow minute tick so every row's relative timestamp re-renders together
+  // instead of freezing at its first-render value while the feed stays open.
+  const [nowTick, setNowTick] = useState(0)
+  useEffect(() => {
+    const id = window.setInterval(() => setNowTick((tick) => tick + 1), 60_000)
+    return () => window.clearInterval(id)
+  }, [])
+
   const toggleDense = useCallback(() => {
     setDense((on) => {
       writeFeedDense(!on)
@@ -334,12 +375,6 @@ export function GroupFeedPanel() {
 
   return (
     <>
-      {isFetching && feed.length > 0 ? (
-        <p className="mb-3 text-xs text-text-muted" aria-live="polite">
-          Refreshing…
-        </p>
-      ) : null}
-
       {showInitialSkeleton ? <ActivityFeedSkeleton /> : null}
 
       {!showInitialSkeleton && isError ? (
@@ -374,7 +409,12 @@ export function GroupFeedPanel() {
 
       {!showInitialSkeleton && !isError && feed.length > 0 ? (
         <>
-          <div className="mb-2 flex justify-end">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            {/* Lives in this always-present row so a background refetch doesn't
+                shove the list down when the hint appears/disappears. */}
+            <p className="text-xs text-text-muted" aria-live="polite">
+              {isFetching ? 'Refreshing…' : ''}
+            </p>
             <button
               type="button"
               onClick={toggleDense}
@@ -382,7 +422,7 @@ export function GroupFeedPanel() {
               aria-label={dense ? 'Switch to comfortable feed density' : 'Switch to compact feed density'}
               className="inline-flex min-h-9 items-center gap-1 rounded-[var(--radius-full)] px-2.5 text-xs font-medium text-text-muted transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
             >
-              {dense ? '☰ Comfortable' : '≡ Compact'}
+              {dense ? 'Comfortable' : 'Compact'}
             </button>
           </div>
           <ul
@@ -397,6 +437,7 @@ export function GroupFeedPanel() {
                 reactions={reactionsByEntry.get(item.event_id) ?? EMPTY_REACTIONS}
                 onToggleReaction={handleToggleReaction}
                 dense={dense}
+                nowTick={nowTick}
               />
             ))}
           </ul>

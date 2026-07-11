@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { cn } from '@/lib/cn'
 import { usePresence } from '@/hooks/usePresence'
 import { Button } from '@/components/ui/Button'
@@ -26,6 +27,38 @@ export function OverageConfirmSheet({
   className,
 }: OverageConfirmSheetProps) {
   const { mounted, closing } = usePresence(open)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  // Keep the latest onCancel without re-running the open effect every render.
+  const onCancelRef = useRef(onCancel)
+  onCancelRef.current = onCancel
+
+  // Move focus into the sheet on open, close it on Escape, and restore focus to
+  // whatever launched it on close.
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    const previouslyFocused = document.activeElement as HTMLElement | null
+    dialogRef.current?.focus({ preventScroll: true })
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        onCancelRef.current()
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+
+      if (previouslyFocused && document.contains(previouslyFocused)) {
+        previouslyFocused.focus()
+      }
+    }
+  }, [open])
 
   if (!mounted) {
     return null
@@ -33,8 +66,10 @@ export function OverageConfirmSheet({
 
   return (
     <div
+      ref={dialogRef}
+      tabIndex={-1}
       className={cn(
-        'fixed inset-x-0 z-[45]',
+        'fixed inset-x-0 z-[45] outline-none',
         // Sits flush above the bottom nav — the Today logger banks inline (no
         // fixed bank dock), so there's no strip to clear.
         'bottom-[var(--bottom-nav-height)]',
@@ -58,7 +93,7 @@ export function OverageConfirmSheet({
             type="button"
             disabled={saving}
             loading={saving}
-            className="min-h-10 flex-1"
+            className="min-h-11 flex-1"
             onClick={onConfirm}
           >
             Log it anyway
@@ -67,7 +102,7 @@ export function OverageConfirmSheet({
             type="button"
             variant="secondary"
             disabled={saving}
-            className="min-h-10 flex-1"
+            className="min-h-11 flex-1"
             onClick={onCancel}
           >
             Not yet

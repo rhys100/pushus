@@ -18,7 +18,7 @@ export function JoinLandingPage() {
             </p>
           </div>
 
-          <InviteCodeEntry submitLabel="Join group" />
+          <InviteCodeEntry label="Invite code" submitLabel="Join group" />
 
           <ButtonRouterLink to="/login" variant="ghost" fullWidth>
             Back to sign in

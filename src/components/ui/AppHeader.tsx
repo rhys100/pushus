@@ -19,7 +19,7 @@ export function AppHeader({
   return (
     <header
       className={cn(
-        'z-30 border-b border-border/80 bg-bg',
+        'border-b border-border/80 bg-bg',
         'pt-[env(safe-area-inset-top)]',
         className,
       )}

@@ -260,7 +260,7 @@ function LegendDot({ color, label }: { color: string; label: string }) {
   return (
     <span className="inline-flex items-center gap-1.5">
       <span
-        className="inline-block h-2 w-2 rounded-full"
+        className="inline-block h-2 w-2 rounded-[var(--radius-full)]"
         style={{ backgroundColor: color }}
         aria-hidden="true"
       />

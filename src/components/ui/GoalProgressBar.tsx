@@ -51,12 +51,14 @@ function ProgressTrack({
       className={cn(
         'h-2.5 w-full min-w-0 overflow-hidden rounded-[var(--radius-full)] bg-text-muted/25 ring-1 ring-inset ring-text-muted/40',
         className,
-        barClassName,
       )}
       role="progressbar"
       aria-valuemin={0}
       aria-valuemax={target}
-      aria-valuenow={current}
+      // Clamp so beating the goal never reports valuenow > valuemax (invalid
+      // ARIA); valuetext keeps the true count available to screen readers.
+      aria-valuenow={Math.min(current, target)}
+      aria-valuetext={`${current} of ${target}`}
       aria-label={ariaLabel}
     >
       <div
@@ -64,6 +66,7 @@ function ProgressTrack({
           'relative h-full overflow-hidden rounded-[var(--radius-full)] transition-[width,background-color] duration-[var(--duration-slower)] ease-[var(--ease-out)]',
           goalHit ? 'bg-success' : 'bg-accent',
           flash && 'goal-flash',
+          barClassName,
         )}
         style={{ width: `${Math.max(progress * 100, current > 0 ? 4 : 0)}%` }}
       >

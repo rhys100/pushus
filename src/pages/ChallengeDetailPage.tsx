@@ -33,6 +33,7 @@ import {
   useChallengeTeams,
   useDeleteChallenge,
   useJoinChallenge,
+  useLeaveChallenge,
 } from '@/hooks/useChallenges'
 import { useGroupMembers } from '@/hooks/useGroupMembers'
 import { useAuth } from '@/providers/AuthProvider'
@@ -63,11 +64,13 @@ export function ChallengeDetailPage() {
   )
   const { data: members = [] } = useGroupMembers(activeGroup?.id)
   const joinMutation = useJoinChallenge(competitionId, user?.id)
+  const leaveMutation = useLeaveChallenge(competitionId, user?.id)
   const deleteMutation = useDeleteChallenge(activeGroup)
   // Confirm-to-join arming is scoped to the specific target (a team id, or
   // SOLO_JOIN_KEY) so a warning-intensity team challenge can't arm every team's
   // button at once — or let a mis-tap join a different team without its warning.
   const [confirmingJoinKey, setConfirmingJoinKey] = useState<string | null>(null)
+  const [confirmingLeave, setConfirmingLeave] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   const nameByUser = useMemo(() => {
@@ -140,6 +143,23 @@ export function ChallengeDetailPage() {
       // Disarm on failure so a stray later tap can't delete without re-confirming.
       setConfirmingDelete(false)
       toast({ message: getErrorMessage(error, 'Could not delete challenge.'), variant: 'danger' })
+    }
+  }
+
+  async function handleLeave() {
+    if (!confirmingLeave) {
+      setConfirmingLeave(true)
+      return
+    }
+
+    try {
+      await leaveMutation.mutateAsync(myTeamId ?? undefined)
+      setConfirmingLeave(false)
+      toast({ message: 'You left the challenge.', variant: 'success' })
+    } catch (error) {
+      // Disarm on failure so a stray later tap can't leave without re-confirming.
+      setConfirmingLeave(false)
+      toast({ message: getErrorMessage(error, 'Could not leave the challenge.'), variant: 'danger' })
     }
   }
 
@@ -227,7 +247,35 @@ export function ChallengeDetailPage() {
           ) : null}
 
           {isParticipant && status !== 'ended' ? (
-            <p className="text-xs text-success">You're in this one. Reps bank automatically.</p>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-success">You're in this one. Reps bank automatically.</p>
+              <div className="flex shrink-0 items-center gap-3 text-xs">
+                {confirmingLeave ? (
+                  <button
+                    type="button"
+                    className="min-h-9 rounded-[var(--radius-sm)] px-1 text-text-muted transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+                    onClick={() => setConfirmingLeave(false)}
+                  >
+                    Cancel
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  aria-pressed={confirmingLeave}
+                  className={cn(
+                    'min-h-9 rounded-[var(--radius-sm)] px-1 transition-colors',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/50',
+                    confirmingLeave
+                      ? 'font-semibold text-danger'
+                      : 'text-text-muted hover:text-danger',
+                  )}
+                  disabled={leaveMutation.isPending}
+                  onClick={() => void handleLeave()}
+                >
+                  {confirmingLeave ? 'Tap again to leave' : 'Leave'}
+                </button>
+              </div>
+            </div>
           ) : null}
         </Card>
 

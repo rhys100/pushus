@@ -40,7 +40,7 @@ export function PwaOpenAppPrompt() {
           src="/pwa/icon-192.png"
           alt=""
           aria-hidden="true"
-          className="h-11 w-11 shrink-0 rounded-[0.85rem] border border-border bg-bg"
+          className="h-11 w-11 shrink-0 rounded-[var(--radius-md)] border border-border bg-bg"
         />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-text-primary">

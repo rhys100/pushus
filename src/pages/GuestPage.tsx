@@ -108,8 +108,9 @@ export function GuestPage() {
   return (
     <div className="mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col bg-bg px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]">
       <header className="flex items-center justify-between gap-3 pb-2">
-        <p className="text-sm font-bold uppercase tracking-[0.25em] text-text-primary">
-          Push<span className="text-accent">·</span>US
+        <p className="flex items-baseline text-sm font-bold uppercase tracking-[0.25em] text-text-primary">
+          <span aria-hidden="true" className="mr-1 text-accent">·</span>
+          {appConfig.name}
         </p>
         <div className="flex items-center gap-3">
           <span className="font-mono text-sm text-text-muted">

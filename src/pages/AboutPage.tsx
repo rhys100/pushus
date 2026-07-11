@@ -12,7 +12,9 @@ function licenseUrl(): string {
   if (appConfig.sourceRepoUrl) {
     return `${appConfig.sourceRepoUrl.replace(/\/$/, '')}/blob/main/LICENSE`
   }
-  return '/LICENSE'
+  // No repo configured — a relative '/LICENSE' resolves to the SPA router (404),
+  // so fall back to the canonical AGPL-3.0 text hosted by the FSF.
+  return 'https://www.gnu.org/licenses/agpl-3.0.html'
 }
 
 export function AboutPage() {
@@ -92,6 +94,15 @@ export function AboutPage() {
               </p>
             </section>
           ) : null}
+
+          <section id="privacy" className="space-y-2 scroll-mt-6">
+            <h2 className="text-sm font-semibold text-text-primary">Privacy</h2>
+            <p className="text-sm leading-relaxed text-text-muted">
+              Your reps, profile, and group membership live in this deployment&apos;s own Supabase
+              database — nothing is sold, shared with advertisers, or synced anywhere else. Guest
+              reps never leave your device. Self-hosters own their data outright.
+            </p>
+          </section>
 
           <section className="space-y-2">
             <h2 className="text-sm font-semibold text-text-primary">Licence</h2>

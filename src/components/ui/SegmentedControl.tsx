@@ -42,6 +42,7 @@ export function SegmentedControl<T extends string>({
           <button
             key={option.value}
             type="button"
+            title={option.label}
             aria-pressed={selected}
             onClick={() => {
               if (!selected) {
@@ -51,7 +52,7 @@ export function SegmentedControl<T extends string>({
               onChange(option.value)
             }}
             className={cn(
-              'min-h-11 rounded-[var(--radius-md)] border px-2 text-xs font-semibold',
+              'min-h-11 truncate rounded-[var(--radius-md)] border px-2 text-xs font-semibold',
               'transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out)]',
               'active:scale-[0.96]',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/60',

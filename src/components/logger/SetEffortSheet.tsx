@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { cn } from '@/lib/cn'
 import { usePresence } from '@/hooks/usePresence'
 import { Button } from '@/components/ui/Button'
@@ -25,6 +26,38 @@ export function SetEffortSheet({
   className,
 }: SetEffortSheetProps) {
   const { mounted, closing } = usePresence(open)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  // Keep the latest onSkip without re-running the open effect every render.
+  const onSkipRef = useRef(onSkip)
+  onSkipRef.current = onSkip
+
+  // Move focus into the sheet on open, close it on Escape, and restore focus to
+  // whatever launched it on close.
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    const previouslyFocused = document.activeElement as HTMLElement | null
+    dialogRef.current?.focus({ preventScroll: true })
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        onSkipRef.current()
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+
+      if (previouslyFocused && document.contains(previouslyFocused)) {
+        previouslyFocused.focus()
+      }
+    }
+  }, [open])
 
   if (!mounted) {
     return null
@@ -32,8 +65,10 @@ export function SetEffortSheet({
 
   return (
     <div
+      ref={dialogRef}
+      tabIndex={-1}
       className={cn(
-        'fixed inset-x-0 z-[45]',
+        'fixed inset-x-0 z-[45] outline-none',
         // Sits flush above the bottom nav — the Today logger banks inline (no
         // fixed bank dock), so there's no strip to clear.
         'bottom-[var(--bottom-nav-height)]',
@@ -71,7 +106,7 @@ export function SetEffortSheet({
           type="button"
           variant="ghost"
           disabled={saving}
-          className="mt-2 min-h-10 w-full text-sm"
+          className="mt-2 min-h-11 w-full text-sm"
           onClick={onSkip}
         >
           Skip

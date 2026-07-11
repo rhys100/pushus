@@ -147,7 +147,7 @@ const LeaderboardRow = memo(function LeaderboardRow({
         <RankBadge rank={rank} muted={allZero || entry.total === 0} />
 
         <span
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bg text-base leading-none"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-full)] bg-bg text-base leading-none"
           aria-hidden="true"
         >
           {entry.avatar_emoji}
@@ -160,7 +160,7 @@ const LeaderboardRow = memo(function LeaderboardRow({
         <StreakFlame streak={streak} />
 
         {targetsLoading ? (
-          <Skeleton className="h-2.5 min-w-8 flex-1 rounded-full" />
+          <Skeleton className="h-2.5 min-w-8 flex-1 rounded-[var(--radius-full)]" />
         ) : hasTrainingTarget && dayTarget?.target ? (
           <GoalProgressBar
             inline
@@ -246,7 +246,18 @@ const LeaderboardRow = memo(function LeaderboardRow({
       <StreakFlame streak={streak} />
 
       <div className="shrink-0 text-right">
-        <p className="font-mono text-xl font-bold tabular-nums text-text-primary">
+        <p
+          className={cn(
+            'font-mono text-xl font-bold tabular-nums',
+            // Most-improved can regress: colour the delta by sign like the
+            // progress trend line so a decline doesn't read as a gain.
+            metric === 'most_improved' && entry.total > 0
+              ? 'text-success'
+              : metric === 'most_improved' && entry.total < 0
+                ? 'text-danger'
+                : 'text-text-primary',
+          )}
+        >
           {formatMetricValue(metric, entry.total)}
         </p>
         <p className="text-[0.6875rem] font-medium uppercase tracking-wide text-text-muted">
@@ -265,7 +276,7 @@ function LeaderboardSkeleton() {
           key={index}
           className="flex items-center gap-3 border-b border-border/70 px-4 py-3.5 last:border-b-0"
         >
-          <Skeleton className="h-6 w-11 rounded-full" />
+          <Skeleton className="h-6 w-11 rounded-[var(--radius-full)]" />
           <Skeleton className="h-10 flex-1 rounded-[var(--radius-full)]" />
           <Skeleton className="h-8 w-12" />
         </div>
@@ -394,9 +405,11 @@ export function LeaderboardPage() {
         </p>
       ) : null}
 
-      {isFetching && entries.length > 0 ? (
-        <p className="mb-3 text-xs text-text-muted" aria-live="polite">
-          Refreshing…
+      {entries.length > 0 ? (
+        // Kept mounted with a reserved line so a background refetch's hint
+        // doesn't shove the list down when it appears and back when it ends.
+        <p className="mb-3 min-h-4 text-xs text-text-muted" aria-live="polite">
+          {isFetching ? 'Refreshing…' : ' '}
         </p>
       ) : null}
 

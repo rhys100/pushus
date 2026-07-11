@@ -95,7 +95,12 @@ const CalendarDay = memo(function CalendarDay({
       {loading && inMonth && !isFuture ? (
         <Skeleton className="mt-0.5 h-[0.625rem] w-4" rounded="full" />
       ) : totalReps > 0 ? (
-        <span className="mt-0.5 font-mono text-[0.625rem] font-semibold tabular-nums text-text-muted">
+        <span
+          className={cn(
+            'mt-0.5 font-mono text-[0.625rem] font-semibold tabular-nums',
+            isSelected ? 'text-accent/70' : 'text-text-muted',
+          )}
+        >
           {totalReps}
         </span>
       ) : (

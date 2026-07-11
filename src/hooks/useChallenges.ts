@@ -249,3 +249,54 @@ export function useJoinChallenge(competitionId: string | undefined, userId: stri
     },
   })
 }
+
+/**
+ * Leave a challenge you joined — removes your own participant row and, for team
+ * challenges, your team membership. Gated in the UI to non-ended challenges.
+ *
+ * NOTE: this needs delete-self RLS policies on competition_participants and
+ * challenge_team_members. Until those ship the delete matches 0 rows, so we
+ * `.select()` the participant delete and throw when nothing was removed rather
+ * than reporting a false success.
+ */
+export function useLeaveChallenge(competitionId: string | undefined, userId: string | undefined) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (teamId?: string) => {
+      if (!competitionId || !userId) {
+        throw new Error('Not ready to leave')
+      }
+
+      if (teamId) {
+        const { error: teamError } = await supabase
+          .from('challenge_team_members')
+          .delete()
+          .eq('team_id', teamId)
+          .eq('user_id', userId)
+
+        if (teamError) throw teamError
+      }
+
+      const { data, error } = await supabase
+        .from('competition_participants')
+        .delete()
+        .eq('competition_id', competitionId)
+        .eq('user_id', userId)
+        .select('user_id')
+
+      if (error) throw error
+      // No row removed almost always means a missing delete-self RLS policy —
+      // surface a failure instead of a misleading "you left" toast.
+      if (!data || data.length === 0) {
+        throw new Error('Could not leave the challenge.')
+      }
+    },
+    onSuccess: () => {
+      if (competitionId) {
+        void queryClient.invalidateQueries({ queryKey: challengeKeys.participants(competitionId) })
+        void queryClient.invalidateQueries({ queryKey: challengeKeys.teams(competitionId) })
+      }
+    },
+  })
+}

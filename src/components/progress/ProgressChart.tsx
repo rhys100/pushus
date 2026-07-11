@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useId, useMemo, useRef } from 'react'
 import { cn } from '@/lib/cn'
 import { easeOutCubic, prefersReducedMotion } from '@/lib/motion'
 
@@ -296,13 +296,18 @@ export function ProgressChart({ series, labels, ariaLabel, className }: Progress
   )
 
   const animate = !prefersReducedMotion()
+  // Screen readers get the title from aria-label; this off-screen table hands
+  // them the actual per-bucket numbers, which the visual dots can't convey.
+  const tableId = useId()
 
   return (
+    <>
     <svg
       key={signature}
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
       role="img"
       aria-label={ariaLabel}
+      aria-describedby={tableId}
       className={cn('h-auto w-full', className)}
     >
       {[0, midValue, maxValue].map((gridValue) => (
@@ -359,5 +364,29 @@ export function ProgressChart({ series, labels, ariaLabel, className }: Progress
         />
       ))}
     </svg>
+    <table id={tableId} className="sr-only">
+      <caption>{ariaLabel}</caption>
+      <thead>
+        <tr>
+          <th scope="col">Period</th>
+          {series.map((line) => (
+            <th key={line.name} scope="col">
+              {line.name}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {labels.map((label, index) => (
+          <tr key={`${label}-${index}`}>
+            <th scope="row">{label}</th>
+            {series.map((line) => (
+              <td key={line.name}>{line.values[index] ?? 0}</td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    </>
   )
 }

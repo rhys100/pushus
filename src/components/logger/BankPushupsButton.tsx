@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/Button'
 export type BankPushupsButtonProps = {
   disabled?: boolean
   loading?: boolean
-  showDisabledHint?: boolean
   onBank: () => void
   placement?: 'inline' | 'dock'
   /** Button text — e.g. "Bank Calf raises" when logging a custom activity. */
@@ -15,14 +14,12 @@ export type BankPushupsButtonProps = {
 export function BankPushupsButton({
   disabled = false,
   loading = false,
-  showDisabledHint = false,
   onBank,
   placement = 'dock',
   label = 'Bank Push-ups',
   className,
 }: BankPushupsButtonProps) {
   const isInactive = disabled && !loading
-  const showHint = isInactive && showDisabledHint
   const isInline = placement === 'inline'
 
   return (
@@ -35,15 +32,6 @@ export function BankPushupsButton({
     >
       {isInline ? null : <div className="dock-scrim" aria-hidden="true" />}
       <div className={cn(isInline ? 'px-0' : 'dock-panel pointer-events-auto px-4 py-3')}>
-        {showHint ? (
-          <p
-            data-testid="bank-disabled-hint"
-            className="pointer-events-none mb-2 text-center text-xs text-text-muted"
-          >
-            Drag the ring to bank more
-          </p>
-        ) : null}
-
         <Button
           type="button"
           variant={isInactive ? 'secondary' : 'primary'}
