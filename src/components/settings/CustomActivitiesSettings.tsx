@@ -253,35 +253,40 @@ export function CustomActivitiesSettings() {
           {activities.map((activity) => (
             <li
               key={activity.id}
-              className="flex items-center gap-3 rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2.5"
+              className="flex items-center gap-2.5 rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2.5"
             >
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-surface text-accent">
                 <ActivityIcon icon={activity.emoji} className="h-5 w-5 text-lg" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-text-primary">
+                <p className="truncate text-sm font-medium text-text-primary" title={activity.name}>
                   {activity.name}
                 </p>
                 {activity.track_sides ? (
-                  <p className="text-[0.6875rem] text-text-muted">Left / right tracked</p>
+                  <p className="truncate text-[0.6875rem] text-text-muted">Left / right tracked</p>
                 ) : null}
               </div>
-              <Button
-                variant="ghost"
-                className="min-h-9 shrink-0 px-2.5 text-xs"
-                disabled={saving}
-                onClick={() => openEdit(activity)}
-              >
-                Edit
-              </Button>
-              <Button
-                variant={confirmArchiveId === activity.id ? 'danger' : 'ghost'}
-                className="min-h-9 shrink-0 px-2.5 text-xs text-danger"
-                disabled={saving}
-                onClick={() => void handleArchive(activity)}
-              >
-                {confirmArchiveId === activity.id ? 'Confirm?' : 'Archive'}
-              </Button>
+              <div className="flex shrink-0 items-center gap-1">
+                <Button
+                  variant="ghost"
+                  className="min-h-9 px-2 text-xs"
+                  disabled={saving}
+                  onClick={() => openEdit(activity)}
+                >
+                  Edit
+                </Button>
+                <Button
+                  variant={confirmArchiveId === activity.id ? 'danger' : 'ghost'}
+                  className={cn(
+                    'min-h-9 px-2 text-xs',
+                    confirmArchiveId !== activity.id && 'text-danger',
+                  )}
+                  disabled={saving}
+                  onClick={() => void handleArchive(activity)}
+                >
+                  {confirmArchiveId === activity.id ? 'Confirm?' : 'Archive'}
+                </Button>
+              </div>
             </li>
           ))}
         </ul>
@@ -411,10 +416,10 @@ export function CustomActivitiesSettings() {
                     <ActivityIcon icon={activity.emoji} className="h-5 w-5 text-lg" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-text-primary">
+                    <p className="truncate text-sm font-medium text-text-primary" title={activity.name}>
                       {activity.name}
                     </p>
-                    <p className="text-[0.6875rem] text-text-muted">
+                    <p className="truncate text-[0.6875rem] text-text-muted">
                       History kept — restore to keep logging
                     </p>
                   </div>

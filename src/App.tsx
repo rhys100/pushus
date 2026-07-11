@@ -99,6 +99,9 @@ const WhatsNewHistoryPage = lazy(() =>
 const HowItWorksPage = lazy(() =>
   import('@/pages/HowItWorksPage').then((m) => ({ default: m.HowItWorksPage })),
 )
+const GroupAdminPage = lazy(() =>
+  import('@/pages/GroupAdminPage').then((m) => ({ default: m.GroupAdminPage })),
+)
 
 function PageLoader() {
   return (
@@ -281,6 +284,16 @@ export default function App() {
             <LazyPage>
               <RequireAuth mode="member">
                 <TrainingSettingsPage />
+              </RequireAuth>
+            </LazyPage>
+          }
+        />
+        <Route
+          path="/settings/group-admin"
+          element={
+            <LazyPage>
+              <RequireAuth mode="member">
+                <GroupAdminPage />
               </RequireAuth>
             </LazyPage>
           }
