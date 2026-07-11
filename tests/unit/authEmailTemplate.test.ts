@@ -15,9 +15,9 @@ describe('passwordless email template', () => {
     expect(config).toContain('content_path = "./supabase/templates/magic_link.html"')
   })
 
-  it('includes both the in-app code and browser magic link', () => {
+  it('uses a code-only email so link scanners cannot consume the OTP', () => {
     expect(template).toContain('{{ .Token }}')
-    expect(template).toContain('{{ .ConfirmationURL }}')
+    expect(template).not.toContain('{{ .ConfirmationURL }}')
     expect(template).toContain('Home Screen app')
   })
 })

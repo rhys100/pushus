@@ -29,9 +29,10 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 ### 2026-07-11k (real iOS auth fix — email OTP inside PWA)
 
 - Rhys clarified the remaining issue: the iOS PWA does not retain login. Root cause confirmed: the magic link opens in Safari, and current iOS isolates Safari and Home Screen app localStorage, cookies, IndexedDB **and Cache Storage**. The previously shipped Cache bridge assumption was wrong on modern iOS; it also risked refresh-token rotation races.
-- Replaced cross-context token copying with Supabase email OTP verification **inside the PWA**: sign-in email contains `{{ .Token }}` plus the browser link; Login shows a six-digit `autocomplete="one-time-code"` input and calls `verifyOtp({ type: 'email' })`. This creates/persists the session in the PWA's own localStorage.
+- Replaced cross-context token copying with Supabase email OTP verification **inside the PWA**: code-only sign-in email contains `{{ .Token }}`; Login shows a six-digit `autocomplete="one-time-code"` input and calls `verifyOtp({ type: 'email' })`. This creates/persists the session in the PWA's own localStorage and avoids mail link scanners consuming the same credential.
 - OTP paste normalises spaces/hyphens before applying the six-digit cap; invalid/expired codes get plain recovery copy rather than raw Supabase errors.
-- Retired bridge reads/writes and delete the legacy `pushus-auth-bridge-v1` cache on app boot/sign-out. Same-context resume remains for genuine iOS background suspension.
+- Send/verify requests time out after 10s and always restore controls; the 60s resend limit also applies after “Use a different email”.
+- Retired bridge reads/writes and delete the legacy `pushus-auth-bridge-v1` cache per context on app boot/sign-out. Same-context resume remains for genuine iOS background suspension; Safari's isolated legacy cache is removed when Safari next loads PushUS.
 - Operational dependency: hosted Supabase Magic Link email template must be updated from `supabase/templates/magic_link.html` when this client ships. No DB migration.
 
 ### 2026-07-11j (PWA HTML-level boot recovery)

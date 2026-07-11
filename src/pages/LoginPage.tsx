@@ -12,11 +12,13 @@ import { setPendingInviteCode } from '@/lib/storage'
 import { normalizeInviteCode } from '@/lib/postAuthRouting'
 import { successHaptic } from '@/lib/haptics'
 import { cn } from '@/lib/cn'
+import { withTimeoutReject } from '@/lib/withTimeout'
 
 const authCallbackUrl = () => `${window.location.origin}/auth/callback`
 
 /** Matches Supabase's OTP rate limit so Resend never invites a rate-limit error. */
 const RESEND_COOLDOWN_SECONDS = 60
+const AUTH_REQUEST_TIMEOUT_MS = 10_000
 
 function friendlyAuthError(message: string): string {
   const lower = message.toLowerCase()
@@ -25,6 +27,9 @@ function friendlyAuthError(message: string): string {
   }
   if (lower.includes('oauth') || lower.includes('google')) {
     return 'Google sign-in could not be completed. Try email magic link instead.'
+  }
+  if (lower.includes('rate') || lower.includes('seconds')) {
+    return 'Wait a minute before requesting another sign-in email.'
   }
   return message
 }
@@ -98,23 +103,35 @@ export function LoginPage() {
 
   async function sendMagicLink(): Promise<boolean> {
     const trimmed = email.trim()
-    if (!trimmed) return false
+    if (!trimmed || resendCooldown > 0) return false
 
     setSending(true)
-    const { error } = await supabase.auth.signInWithOtp({
-      email: trimmed,
-      options: { emailRedirectTo: authCallbackUrl() },
-    })
-    setSending(false)
+    try {
+      const { error } = await withTimeoutReject(
+        supabase.auth.signInWithOtp({
+          email: trimmed,
+          options: { emailRedirectTo: authCallbackUrl() },
+        }),
+        AUTH_REQUEST_TIMEOUT_MS,
+      )
 
-    if (error) {
-      toast({ message: friendlyAuthError(error.message), variant: 'danger' })
+      if (error) {
+        toast({ message: friendlyAuthError(error.message), variant: 'danger' })
+        return false
+      }
+
+      successHaptic()
+      setResendCooldown(RESEND_COOLDOWN_SECONDS)
+      return true
+    } catch {
+      toast({
+        message: 'Could not send the sign-in email. Check your connection and try again.',
+        variant: 'danger',
+      })
       return false
+    } finally {
+      setSending(false)
     }
-
-    successHaptic()
-    setResendCooldown(RESEND_COOLDOWN_SECONDS)
-    return true
   }
 
   async function handleMagicLink(event: React.FormEvent) {
@@ -143,24 +160,43 @@ export function LoginPage() {
     }
 
     setVerifying(true)
-    const { data, error } = await supabase.auth.verifyOtp({
-      email: trimmedEmail,
-      token,
-      type: 'email',
-    })
-    setVerifying(false)
+    try {
+      const { data, error } = await withTimeoutReject(
+        supabase.auth.verifyOtp({
+          email: trimmedEmail,
+          token,
+          type: 'email',
+        }),
+        AUTH_REQUEST_TIMEOUT_MS,
+      )
 
-    if (error || !data.session?.user) {
+      if (error || !data.session?.user) {
+        toast({
+          message: friendlyOtpError(error?.message),
+          variant: 'danger',
+        })
+        return
+      }
+
+      successHaptic()
+      try {
+        const snapshot = await withTimeoutReject(
+          fetchPostAuthSnapshot(data.session.user.id),
+          AUTH_REQUEST_TIMEOUT_MS,
+        )
+        navigateAfterAuth(navigate, snapshot, { replace: true })
+      } catch {
+        // The session is valid; RequireAuth will finish routing once network returns.
+        navigate('/today', { replace: true })
+      }
+    } catch {
       toast({
-        message: friendlyOtpError(error?.message),
+        message: 'Could not verify the code. Check your connection and try again.',
         variant: 'danger',
       })
-      return
+    } finally {
+      setVerifying(false)
     }
-
-    successHaptic()
-    const snapshot = await fetchPostAuthSnapshot(data.session.user.id)
-    navigateAfterAuth(navigate, snapshot, { replace: true })
   }
 
   async function handleGoogleSignIn() {
@@ -227,8 +263,8 @@ export function LoginPage() {
               </p>
               {isIosDevice() && isStandalonePwa() ? (
                 <p className="rounded-[var(--radius-md)] bg-accent-muted px-3 py-2 text-xs leading-relaxed text-text-muted">
-                  Stay in this Home Screen app. Copy the code from your email and enter it below.
-                  Opening the link signs Safari in instead.
+                  Stay in this Home Screen app. Copy the code from your email and enter it below so
+                  your login is saved here.
                 </p>
               ) : null}
               <form className="space-y-3 text-left" onSubmit={handleVerifyOtp}>
@@ -264,7 +300,7 @@ export function LoginPage() {
                 </Button>
               </form>
               <p className="text-xs leading-relaxed text-text-muted">
-                The email also has a sign-in link for browser use. Codes expire after one hour.
+                Codes expire after one hour and can only be used once.
               </p>
               <Button
                 variant="secondary"
@@ -309,8 +345,15 @@ export function LoginPage() {
                   )}
                 />
               </div>
-              <Button type="submit" fullWidth loading={sending} disabled={isBusy}>
-                Email me a sign-in code
+              <Button
+                type="submit"
+                fullWidth
+                loading={sending}
+                disabled={isBusy || resendCooldown > 0}
+              >
+                {resendCooldown > 0
+                  ? `Send another in ${resendCooldown}s`
+                  : 'Email me a sign-in code'}
               </Button>
             </form>
           )}

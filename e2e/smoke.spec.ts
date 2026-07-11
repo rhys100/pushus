@@ -6,7 +6,7 @@ test.describe('smoke', () => {
     await page.waitForLoadState('networkidle')
 
     await expect(page.getByRole('heading', { name: /PushUS/i })).toBeVisible()
-    await expect(page.getByRole('button', { name: /Send magic link/i })).toBeVisible()
+    await expect(page.getByRole('button', { name: /Email me a sign-in code/i })).toBeVisible()
     await expect(page.getByLabel(/Got an invite code/i)).toBeVisible()
     await expect(page.getByRole('link', { name: /About PushUS/i })).toBeVisible()
     await expect(page.getByRole('button', { name: /Continue with Google/i })).toHaveCount(0)
