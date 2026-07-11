@@ -6,14 +6,10 @@ describe('public/_headers asset caching', () => {
   const headers = readFileSync(resolve(process.cwd(), 'public/_headers'), 'utf8')
 
   it('does not mark /assets/* immutable (CF Pages SPA-fallback can poison CORS cache)', () => {
-    const assetsBlock = headers.split('/assets/*')[1] ?? ''
-    const cacheLine = assetsBlock
-      .split('\n')
-      .map((line) => line.trim())
-      .find((line) => line.startsWith('Cache-Control:'))
-
-    expect(cacheLine).toBeTruthy()
-    expect(cacheLine).not.toMatch(/immutable/i)
-    expect(cacheLine).toMatch(/must-revalidate/i)
+    const match = headers.match(/\/assets\/\*[\s\S]*?(?=\n\/[^\s]|\n*$)/)
+    expect(match).toBeTruthy()
+    const assetsBlock = match![0]
+    expect(assetsBlock).toMatch(/Cache-Control:\s*public,\s*max-age=300,\s*must-revalidate/)
+    expect(assetsBlock).not.toMatch(/immutable/i)
   })
 })
