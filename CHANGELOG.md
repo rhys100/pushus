@@ -10,7 +10,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
-_(Nothing yet.)_
+### Fixed
+
+- **iOS PWA login persistence:** reopening the home-screen app after it has been backgrounded no longer drops you back to the magic-link screen when a refresh token is still on the device — the app now retries session recovery on cold start and when the PWA returns to the foreground (common when iOS suspends background token refresh)
 
 ---
 

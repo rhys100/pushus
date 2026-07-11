@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-11e (iOS PWA auth persistence)
+
+- **Shipped:** iOS home-screen PWA was dropping login by evening — background suspension stops Supabase's refresh timer, so a cold reopen could report no session even though the refresh token was still in localStorage. Added `authSessionResume` helper (storage-key peek + `refreshSession` with short backoff) and wired it into `AuthProvider` on initial hydrate + `visibilitychange` / bfcache `pageshow` when session is null but a refresh token remains.
+- Verified: tsc + unit tests (authSessionResume).
+
 ### 2026-07-11d (release 1.5.0)
 
 - Cut **1.5.0** (minor). NOTE: `bump-version.mjs minor` bumped package.json+lock but did NOT move the Unreleased CHANGELOG block (exited before the write; CHANGELOG was LF, not a line-ending issue — cause unconfirmed). Fixed the CHANGELOG cut by hand (inserted `## [1.5.0]` heading), + README row + a `whatsNew` social-notifications entry. version:check green.

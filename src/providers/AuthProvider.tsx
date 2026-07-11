@@ -4,11 +4,13 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
 import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js'
 import { defaultAppAccess, parseAppAccess, type AppAccessStatus } from '@/lib/appAccess'
+import { hasRecoverableAuthSession, recoverAuthSession } from '@/lib/authSessionResume'
 import { isProfileOnboardedFromServer } from '@/lib/postAuthNavigation'
 import { supabase } from '@/lib/supabase'
 import {
@@ -90,6 +92,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [appAccessLoading, setAppAccessLoading] = useState(false)
   const [appAccess, setAppAccess] = useState<AppAccessStatus>(defaultAppAccess)
 
+  const sessionRef = useRef<Session | null>(null)
+  sessionRef.current = session
+
   const user = session?.user ?? null
   const profileOnboarded = isProfileOnboardedFromServer(profile, user?.id ?? null)
 
@@ -122,32 +127,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfileReady(true)
   }, [user, refreshAppAccess])
 
+  const finishHydration = useCallback((nextSession: Session | null) => {
+    if (!nextSession?.user) {
+      setProfile(null)
+      setAppAccess(defaultAppAccess)
+      setAppAccessLoading(false)
+      setProfileReady(true)
+      setLoading(false)
+      return
+    }
+
+    setProfileReady(false)
+    setAppAccessLoading(true)
+
+    void hydrateUser(nextSession).then((nextState) => {
+      setProfile(nextState.profile)
+      setAppAccess(nextState.appAccess)
+      setAppAccessLoading(false)
+      setProfileReady(true)
+      setLoading(false)
+    })
+  }, [])
+
+  const resolveSessionForHydration = useCallback(
+    async (nextSession: Session | null): Promise<Session | null> => {
+      if (nextSession?.user) {
+        return nextSession
+      }
+
+      if (!hasRecoverableAuthSession()) {
+        return null
+      }
+
+      return recoverAuthSession()
+    },
+    [],
+  )
+
+  const hydrateFromSession = useCallback(
+    async (nextSession: Session | null) => {
+      const resolved = await resolveSessionForHydration(nextSession)
+      if (resolved) {
+        setSession(resolved)
+      }
+      finishHydration(resolved)
+    },
+    [finishHydration, resolveSessionForHydration],
+  )
+
   useEffect(() => {
     let mounted = true
     let initialSessionHandled = false
-
-    function finishHydration(nextSession: Session | null) {
-      if (!nextSession?.user) {
-        setProfile(null)
-        setAppAccess(defaultAppAccess)
-        setAppAccessLoading(false)
-        setProfileReady(true)
-        setLoading(false)
-        return
-      }
-
-      setProfileReady(false)
-      setAppAccessLoading(true)
-
-      void hydrateUser(nextSession).then((nextState) => {
-        if (!mounted) return
-        setProfile(nextState.profile)
-        setAppAccess(nextState.appAccess)
-        setAppAccessLoading(false)
-        setProfileReady(true)
-        setLoading(false)
-      })
-    }
 
     const {
       data: { subscription },
@@ -158,7 +188,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (HYDRATE_EVENTS.has(event)) {
         initialSessionHandled = true
-        finishHydration(nextSession)
+        void hydrateFromSession(nextSession).then(() => {
+          if (!mounted) return
+        })
         return
       }
 
@@ -178,8 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.setTimeout(() => {
       void supabase.auth.getSession().then(({ data }) => {
         if (!mounted || initialSessionHandled) return
-        setSession(data.session)
-        finishHydration(data.session)
+        void hydrateFromSession(data.session)
       })
     }, 0)
 
@@ -187,7 +218,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false
       subscription.unsubscribe()
     }
-  }, [])
+  }, [hydrateFromSession])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function resumeSessionOnForeground() {
+      if (document.visibilityState !== 'visible') {
+        return
+      }
+
+      if (sessionRef.current) {
+        return
+      }
+
+      if (!hasRecoverableAuthSession()) {
+        return
+      }
+
+      const recovered = await recoverAuthSession()
+      if (!recovered || cancelled) {
+        return
+      }
+
+      setSession(recovered)
+      finishHydration(recovered)
+    }
+
+    function onVisibilityChange() {
+      void resumeSessionOnForeground()
+    }
+
+    function onPageShow(event: PageTransitionEvent) {
+      if (event.persisted) {
+        void resumeSessionOnForeground()
+      }
+    }
+
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    window.addEventListener('pageshow', onPageShow)
+
+    return () => {
+      cancelled = true
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      window.removeEventListener('pageshow', onPageShow)
+    }
+  }, [finishHydration])
 
   const signOut = useCallback(async () => {
     clearPendingInviteCode()
