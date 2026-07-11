@@ -26,6 +26,42 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-11j (PWA HTML-level boot recovery)
+
+- Both `pushus.app` and `www.pushus.app` now serve build `feaf2b6`; Origin/CORS module requests return JavaScript, and Playwright standalone-iPhone probes render Login with an active service worker. A previously opened iOS standalone window can still hold the poisoned document in memory.
+- Added `/boot-guard.js` before the Vite module: if `#root` remains empty after 3s, reload current URL once with a repair nonce; if boot still fails, render a plain HTML “Reload PushUS” screen. This runs even when React's bundle cannot load.
+- Guard is `no-cache`; recovery keeps localStorage and the auth bridge intact, so it does not throw away a valid login.
+
+### 2026-07-11i (blank screen = Cloudflare CORS asset poison)
+
+- Reproduced live: `GET /assets/index-Ry24ymnq.js` without Origin → real JS; **with `Origin: https://www.pushus.app`** (what `crossorigin` module scripts send) → **cached `index.html`** (`text/html`, 4.6KB, `immutable`). React never mounts → blank `#root` on every client, not iOS-only.
+- Cause: CF Pages mid-deploy SPA-fallback of a not-yet-published hashed asset, then `/assets/*` `immutable` pinned the HTML under the CORS cache key.
+- Fix: drop `immutable` on `/assets/*` → `max-age=300, must-revalidate`; redeploy for a new hashed bundle URL. Auth hydrate timeouts from 11h still good as belt-and-braces.
+- Verified: curl Origin probe + Playwright after Pages catches up.
+
+### 2026-07-11h (iOS blank — hydrate/group hang)
+
+- Verified live Pages is on `d704579` and cold `/login` + iPhone UA render fine. Blank is the **logged-in boot path**: RequireAuth stays on a textless skeleton while profile/app-access/group queries hang on a stuck Supabase client after iOS suspend.
+- Fix: `withTimeout` on hydrate + membership/group fetches (5s), 8s auth boot watchdog that always clears loading, “Loading…” copy on the auth gate, foreground `refreshSession` when a session already exists.
+- Verified: tsc + unit tests. Merge to main for Pages.
+
+### 2026-07-11g (iOS blank screen after auth bridge)
+
+- Rhys: iOS blank screen after the Safari↔PWA bridge shipped. Root cause: recovery called `refreshSession`/`setSession` in ways that could hang (auth callback lock + unbounded network), and cold-launch `pageshow` raced the first hydrate while `loading` stayed true → endless RequireAuth skeleton (looks blank).
+- Fix: defer all recovery off `onAuthStateChange` with setTimeout(0); hard-cap `recoverAuthSession` at 6s; gate foreground resume until initial hydrate done; catch hydrate failures so loading always clears; don't await Cache bridge on auth callback.
+- Verified: tsc + auth unit tests (incl. timeout).
+
+### 2026-07-11f (iOS Safari↔PWA auth bridge)
+
+- Re-checked after Rhys said login loss might still happen. First fix (refresh-on-resume) only covers same-context suspend. Bigger remaining cause: **magic links / OAuth complete in Safari**, and iOS isolates Safari localStorage from the Home Screen PWA — so evening reopen of the icon looks "logged out" even though Safari has the session.
+- **Shipped:** Cache Storage auth bridge (`authSessionBridge`) written on sign-in / token refresh / auth callback; PWA cold-start + foreground recovery reads it via `setSession`. Auth callback shows Home Screen handoff when iOS Safari and the app is known installed. Login copy in standalone iOS explains the Safari round-trip. Hardened AuthProvider so null session is not published until recovery finishes; longer refresh backoff; sign-out clears the bridge.
+- Verified: tsc + unit tests (authSessionBridge + authSessionResume).
+
+### 2026-07-11e (iOS PWA auth persistence)
+
+- **Shipped:** iOS home-screen PWA was dropping login by evening — background suspension stops Supabase's refresh timer, so a cold reopen could report no session even though the refresh token was still in localStorage. Added `authSessionResume` helper (storage-key peek + `refreshSession` with short backoff) and wired it into `AuthProvider` on initial hydrate + `visibilitychange` / bfcache `pageshow` when session is null but a refresh token remains.
+- Verified: tsc + unit tests (authSessionResume).
+
 ### 2026-07-11d (release 1.5.0)
 
 - Cut **1.5.0** (minor). NOTE: `bump-version.mjs minor` bumped package.json+lock but did NOT move the Unreleased CHANGELOG block (exited before the write; CHANGELOG was LF, not a line-ending issue — cause unconfirmed). Fixed the CHANGELOG cut by hand (inserted `## [1.5.0]` heading), + README row + a `whatsNew` social-notifications entry. version:check green.
