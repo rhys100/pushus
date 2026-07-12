@@ -26,6 +26,11 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-12b (GitHub Releases required + backfill)
+
+- Backfilled GitHub Releases for **v1.3.0**, **v1.4.0**, **v1.5.0** (tags already existed; GitHub Latest had stalled at v1.2.0).
+- Made GitHub Release a **required** release step (was "optional but preferred") in `.cursor/rules/versioning.mdc`, `AGENTS.md`, and `docs/docs-maintenance.md` — include `gh release create … --latest` with CHANGELOG notes after tagging.
+
 ### 2026-07-12 (mate nudge toast + group challenge push)
 
 - **Fixed:** Mate Push/Cheer/Stir toasted `r.json is not a function` because `useSendNudge` called `.json()` on `error.context` even when invoke failed with a non-Response context (FunctionsFetchError). Extracted `messageFromFunctionsInvokeError` with a `typeof json === 'function'` guard + unit tests.
