@@ -17,6 +17,7 @@ self.addEventListener('push', (event) => {
     title: 'PushUS',
     body: 'Tap to log your push-ups today.',
     url: '/today',
+    tag: 'pushus-reminder',
   }
 
   try {
@@ -27,15 +28,19 @@ self.addEventListener('push', (event) => {
     // Keep defaults when payload is not JSON.
   }
 
+  const tag =
+    typeof payload.tag === 'string' && payload.tag.trim() ? payload.tag.trim() : 'pushus-reminder'
+
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body: payload.body,
       icon: '/pwa/icon-192.png',
       badge: '/pwa/notification-badge-96.png',
-      tag: 'pushus-reminder',
+      tag,
       // Same-tag notifications replace the one already in the tray; without
       // renotify Android does that silently, so only the first reminder of the
-      // day ever made a sound if the user never dismissed it.
+      // day ever made a sound if the user never dismissed it. Social/nudge
+      // payloads send their own tags so they don't wipe a sitting reminder.
       renotify: true,
       timestamp: Date.now(),
       // Carry the plan day + send time so the app can spot (and clear) a

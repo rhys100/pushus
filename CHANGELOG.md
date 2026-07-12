@@ -21,6 +21,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **Mate / reaction pushes silent on iOS:** social and nudge pushes now use high urgency (matching reminders), log web-push failures, disable dead Apple subscriptions that return 403, and use separate notification tags so a social buzz doesn’t replace a sitting reminder. Client also logs zero-push / invoke failures to the console
 - **Mate nudge error toast:** tapping Push them / Cheer / Stir up no longer shows `r.json is not a function` when the nudge edge call fails for a non-HTTP reason — the real error (or a plain fallback) surfaces instead
 - **Sign-in email SMTP failures:** when Supabase cannot send the OTP email, login now says email delivery is misconfigured instead of “check your connection”
 - **Login error reads as “{}”:** a sign-in that failed with an opaque or empty error response (e.g. a non-JSON body from a proxy/CORS intercept) surfaced a raw `{}` instead of a message. Sign-in and auth-callback errors now always fall back to a plain-language line, and the shared error formatter drops blank / stringified-object messages

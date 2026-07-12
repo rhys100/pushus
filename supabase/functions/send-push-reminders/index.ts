@@ -461,7 +461,11 @@ Deno.serve(async (req) => {
             http_status: statusCode,
           })
 
-          if (statusCode === 410 || statusCode === 404) {
+          if (
+            statusCode === 410 ||
+            statusCode === 404 ||
+            (statusCode === 403 && subscription.endpoint.includes('web.push.apple.com'))
+          ) {
             const { error: disableError } = await supabase
               .from('push_subscriptions')
               .update({ enabled: false })
@@ -475,7 +479,10 @@ Deno.serve(async (req) => {
                 user_id: prefs.user_id,
                 subscription_id: subscription.id,
                 event_type: 'subscription_disabled',
-                payload: { reason: 'gone', statusCode },
+                payload: {
+                  reason: statusCode === 403 ? 'apple_forbidden' : 'gone',
+                  statusCode,
+                },
                 http_status: statusCode,
               })
             }

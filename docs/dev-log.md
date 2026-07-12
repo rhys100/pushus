@@ -26,6 +26,12 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-12c (iOS social push delivery)
+
+- Gazza had push on + Apple sub but never received reaction push; zero `social_push_log` / `notification_events` for him ever. FCM→Rhys social worked.
+- **Fixes:** `send-social` / `send-nudge` use `urgency: 'high'`; log webpush failures; disable Apple subs on 403 (stale iOS endpoints); SW honours payload `tag` (`pushus-social` / `pushus-nudge` vs reminder); `notifySocial` console.warns invoke errors and pushed:0.
+- Deploy: `send-social` + `send-nudge`. Gazza should toggle push off/on in Settings after ship to mint a fresh Apple subscription if the old one was dead.
+
 ### 2026-07-12b (GitHub Releases required + backfill)
 
 - Backfilled GitHub Releases for **v1.3.0**, **v1.4.0**, **v1.5.0** (tags already existed; GitHub Latest had stalled at v1.2.0).

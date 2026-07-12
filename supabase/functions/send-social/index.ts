@@ -49,7 +49,7 @@ function requireEnv(name: string): string {
   return value
 }
 
-type Copy = { title: string; body: string; url: string }
+type Copy = { title: string; body: string; url: string; tag?: string }
 
 function socialCopy(
   type: SocialType,
@@ -62,24 +62,28 @@ function socialCopy(
         title: `🤝 ${senderName} wants to be your mate`,
         body: 'Open Mates to accept and start comparing stats.',
         url: '/mates',
+        tag: 'pushus-social',
       }
     case 'mate_accepted':
       return {
         title: `🤝 ${senderName} accepted your mate request`,
         body: "You're mates now — challenge them to a 1v1 battle.",
         url: '/mates',
+        tag: 'pushus-social',
       }
     case 'challenge_invite':
       return {
         title: `⚔️ ${senderName} challenged you to a 1v1`,
         body: `A ${context.durationDays ?? 3}-day push-up battle. Tap to accept.`,
         url: '/mates',
+        tag: 'pushus-social',
       }
     case 'reaction':
       return {
         title: `${context.emoji ?? '💪'} ${senderName} reacted to your push-ups`,
         body: 'Open the Feed to see it.',
         url: '/activity',
+        tag: 'pushus-social',
       }
     case 'group_challenge':
       return {
@@ -88,8 +92,33 @@ function socialCopy(
           ? `"${context.challengeName}" — tap to join.`
           : 'Tap to join before it starts.',
         url: context.competitionId ? `/challenges/${context.competitionId}` : '/challenges',
+        tag: 'pushus-social',
       }
   }
+}
+
+type PushAttemptResult = {
+  pushed: number
+  reason?: 'cooldown' | 'recipient_not_pushable' | 'webpush_failed'
+  failures?: { subscriptionId: string; statusCode?: number; message?: string }[]
+}
+
+function webpushErrorMeta(error: unknown): { statusCode?: number; message?: string } {
+  if (!error || typeof error !== 'object') {
+    return { message: String(error) }
+  }
+  const statusCode =
+    'statusCode' in error && typeof (error as { statusCode: unknown }).statusCode === 'number'
+      ? (error as { statusCode: number }).statusCode
+      : undefined
+  const body = 'body' in error ? String((error as { body: unknown }).body ?? '') : ''
+  const message =
+    error instanceof Error
+      ? error.message
+      : 'message' in error
+        ? String((error as { message: unknown }).message)
+        : body || undefined
+  return { statusCode, message: body ? `${message ?? 'webpush failed'}: ${body}` : message }
 }
 
 async function pushToRecipient(
@@ -99,7 +128,7 @@ async function pushToRecipient(
     type: SocialType
     copy: Copy
   },
-): Promise<number> {
+): Promise<PushAttemptResult> {
   const { recipientId, type, copy } = args
 
   const since = new Date(Date.now() - COOLDOWN_MINUTES[type] * 60_000).toISOString()
@@ -111,7 +140,7 @@ async function pushToRecipient(
     .gte('created_at', since)
     .limit(1)
     .maybeSingle()
-  if (recent) return 0
+  if (recent) return { pushed: 0, reason: 'cooldown' }
 
   const [{ data: prefs }, { data: subscriptions }] = await Promise.all([
     admin
@@ -133,27 +162,50 @@ async function pushToRecipient(
     prefs?.social_push_enabled !== false &&
     (subscriptions?.length ?? 0) > 0
 
-  if (!pushable) return 0
+  if (!pushable) return { pushed: 0, reason: 'recipient_not_pushable' }
 
   const payload = JSON.stringify(copy)
   let pushed = 0
+  const failures: PushAttemptResult['failures'] = []
+
   for (const subscription of (subscriptions ?? []) as PushSubscriptionRow[]) {
     try {
+      // Match reminder urgency — Apple Web Push often drops `normal` while the
+      // PWA is backgrounded, which looked like "push is on but nothing arrives".
       await webpush.sendNotification(
         {
           endpoint: subscription.endpoint,
           keys: { p256dh: subscription.p256dh, auth: subscription.auth },
         },
         payload,
-        { TTL: 24 * 60 * 60, urgency: 'normal' },
+        { TTL: 24 * 60 * 60, urgency: 'high' },
       )
       pushed += 1
     } catch (error) {
-      const statusCode =
-        typeof error === 'object' && error !== null && 'statusCode' in error
-          ? (error as { statusCode: number }).statusCode
-          : undefined
-      if (statusCode === 410 || statusCode === 404) {
+      const meta = webpushErrorMeta(error)
+      failures.push({ subscriptionId: subscription.id, ...meta })
+      console.error('send-social webpush failed', {
+        recipientId,
+        type,
+        subscriptionId: subscription.id,
+        endpointHost: (() => {
+          try {
+            return new URL(subscription.endpoint).host
+          } catch {
+            return 'invalid'
+          }
+        })(),
+        ...meta,
+      })
+      // Gone / not found: drop the sub. Also treat 403 on Apple as a dead sub —
+      // stale iOS PWA endpoints often 403 instead of 410 and otherwise sit
+      // forever as "enabled" while never delivering.
+      const appleHost = subscription.endpoint.includes('web.push.apple.com')
+      if (
+        meta.statusCode === 410 ||
+        meta.statusCode === 404 ||
+        (appleHost && meta.statusCode === 403)
+      ) {
         await admin.from('push_subscriptions').update({ enabled: false }).eq('id', subscription.id)
       }
     }
@@ -163,7 +215,11 @@ async function pushToRecipient(
     await admin.from('social_push_log').insert({ user_id: recipientId, kind: type })
   }
 
-  return pushed
+  if (pushed === 0) {
+    return { pushed: 0, reason: 'webpush_failed', failures }
+  }
+
+  return { pushed, failures: failures.length > 0 ? failures : undefined }
 }
 
 Deno.serve(async (req) => {
@@ -335,11 +391,14 @@ Deno.serve(async (req) => {
     const copy = socialCopy(type, senderProfile?.display_name ?? 'A mate', context)
 
     let pushed = 0
+    const results: ({ recipientId: string } & PushAttemptResult)[] = []
     for (const recipientId of recipientIds) {
-      pushed += await pushToRecipient(admin, { recipientId, type, copy })
+      const result = await pushToRecipient(admin, { recipientId, type, copy })
+      pushed += result.pushed
+      results.push({ recipientId, ...result })
     }
 
-    return jsonResponse({ pushed, recipients: recipientIds.length })
+    return jsonResponse({ pushed, recipients: recipientIds.length, results })
   } catch (error) {
     console.error('send-social failed', error)
     return jsonResponse({ error: error instanceof Error ? error.message : 'Unknown error' }, 500)

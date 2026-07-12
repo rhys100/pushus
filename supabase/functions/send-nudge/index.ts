@@ -156,7 +156,7 @@ Deno.serve(async (req) => {
     )
 
     const copy = nudgeCopy(kind, senderProfile?.display_name ?? 'A mate')
-    const payload = JSON.stringify({ ...copy, url: '/today' })
+    const payload = JSON.stringify({ ...copy, url: '/today', tag: 'pushus-nudge' })
 
     let pushed = 0
     for (const subscription of (subscriptions ?? []) as PushSubscriptionRow[]) {
@@ -167,6 +167,7 @@ Deno.serve(async (req) => {
             keys: { p256dh: subscription.p256dh, auth: subscription.auth },
           },
           payload,
+          { TTL: 24 * 60 * 60, urgency: 'high' },
         )
         pushed += 1
       } catch (error) {
@@ -174,8 +175,24 @@ Deno.serve(async (req) => {
           typeof error === 'object' && error !== null && 'statusCode' in error
             ? (error as { statusCode: number }).statusCode
             : undefined
+        const body =
+          typeof error === 'object' && error !== null && 'body' in error
+            ? String((error as { body: unknown }).body ?? '')
+            : ''
+        console.error('send-nudge webpush failed', {
+          recipientId,
+          subscriptionId: subscription.id,
+          statusCode,
+          body,
+          message: error instanceof Error ? error.message : String(error),
+        })
 
-        if (statusCode === 410 || statusCode === 404) {
+        const appleHost = subscription.endpoint.includes('web.push.apple.com')
+        if (
+          statusCode === 410 ||
+          statusCode === 404 ||
+          (appleHost && statusCode === 403)
+        ) {
           await admin
             .from('push_subscriptions')
             .update({ enabled: false })

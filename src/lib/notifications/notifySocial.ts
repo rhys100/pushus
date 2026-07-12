@@ -16,6 +16,9 @@ export type SocialNotificationType =
  *
  * For `group_challenge`, `targetId` is the competition id — the edge function
  * fans out to every other active group member.
+ *
+ * Invoke `{ error }` and zero-push results are logged to the console so silent
+ * Apple/FCM delivery failures are diagnosable in DevTools / remote logs.
  */
 export function notifySocial(
   type: SocialNotificationType,
@@ -30,7 +33,20 @@ export function notifySocial(
     .invoke('send-social', {
       body: { type, target_id: targetId, entry_id: extra?.entryId },
     })
-    .catch(() => {
-      // Best-effort only — the action itself is unaffected.
+    .then(({ data, error }) => {
+      if (error) {
+        console.warn('[notifySocial]', type, error.message ?? error)
+        return
+      }
+      const pushed =
+        data && typeof data === 'object' && 'pushed' in data
+          ? Number((data as { pushed: unknown }).pushed)
+          : null
+      if (pushed === 0) {
+        console.warn('[notifySocial]', type, 'pushed 0', data)
+      }
+    })
+    .catch((error: unknown) => {
+      console.warn('[notifySocial]', type, error)
     })
 }
