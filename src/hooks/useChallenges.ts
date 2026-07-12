@@ -10,6 +10,7 @@ import {
   type ChallengeTeamRow,
 } from '@/lib/challenges'
 import { gamificationKeys } from '@/hooks/useGamification'
+import { notifySocial } from '@/lib/notifications/notifySocial'
 import type { Group } from '@/types/database'
 import type { Competition, CompetitionIntensity } from '@/types/gamification'
 
@@ -187,6 +188,9 @@ export function useCreateChallenge(group: Group | null | undefined, userId: stri
 
         if (joinError && joinError.code !== '23505') throw joinError
       }
+
+      // Best-effort: ping every other active group member so they can join.
+      notifySocial('group_challenge', competition.id)
 
       return competition
     },

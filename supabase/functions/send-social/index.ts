@@ -1,15 +1,21 @@
 /// <reference types="https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts" />
 
-import { createClient } from 'npm:@supabase/supabase-js@2.45.4'
+import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.45.4'
 import webpush from 'npm:web-push@3.6.7'
 
 // Deliver a social notification (mate request / accepted / 1v1 challenge invite
-// / reaction) as a push. The caller's action is re-verified server-side against
-// the actual row (so nobody can push arbitrary users), delivery respects the
-// recipient's push + social opt-out, and reactions are debounced so a flurry of
-// reacts is one buzz. Deploy with JWT verification ON (user-invoked).
+// / reaction / group challenge created) as a push. The caller's action is
+// re-verified server-side against the actual row (so nobody can push arbitrary
+// users), delivery respects the recipient's push + social opt-out, and
+// reactions are debounced so a flurry of reacts is one buzz. Deploy with JWT
+// verification ON (user-invoked).
 
-type SocialType = 'mate_request' | 'mate_accepted' | 'challenge_invite' | 'reaction'
+type SocialType =
+  | 'mate_request'
+  | 'mate_accepted'
+  | 'challenge_invite'
+  | 'reaction'
+  | 'group_challenge'
 
 type PushSubscriptionRow = {
   id: string
@@ -27,6 +33,7 @@ const COOLDOWN_MINUTES: Record<SocialType, number> = {
   mate_request: 60,
   mate_accepted: 60,
   challenge_invite: 60,
+  group_challenge: 60,
 }
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -47,7 +54,7 @@ type Copy = { title: string; body: string; url: string }
 function socialCopy(
   type: SocialType,
   senderName: string,
-  context: { durationDays?: number; emoji?: string },
+  context: { durationDays?: number; emoji?: string; challengeName?: string; competitionId?: string },
 ): Copy {
   switch (type) {
     case 'mate_request':
@@ -74,7 +81,89 @@ function socialCopy(
         body: 'Open the Feed to see it.',
         url: '/activity',
       }
+    case 'group_challenge':
+      return {
+        title: `🏆 ${senderName} started a group challenge`,
+        body: context.challengeName
+          ? `"${context.challengeName}" — tap to join.`
+          : 'Tap to join before it starts.',
+        url: context.competitionId ? `/challenges/${context.competitionId}` : '/challenges',
+      }
   }
+}
+
+async function pushToRecipient(
+  admin: SupabaseClient,
+  args: {
+    recipientId: string
+    type: SocialType
+    copy: Copy
+  },
+): Promise<number> {
+  const { recipientId, type, copy } = args
+
+  const since = new Date(Date.now() - COOLDOWN_MINUTES[type] * 60_000).toISOString()
+  const { data: recent } = await admin
+    .from('social_push_log')
+    .select('id')
+    .eq('user_id', recipientId)
+    .eq('kind', type)
+    .gte('created_at', since)
+    .limit(1)
+    .maybeSingle()
+  if (recent) return 0
+
+  const [{ data: prefs }, { data: subscriptions }] = await Promise.all([
+    admin
+      .from('notification_preferences')
+      .select('push_enabled, social_push_enabled')
+      .eq('user_id', recipientId)
+      .maybeSingle(),
+    admin
+      .from('push_subscriptions')
+      .select('id, endpoint, p256dh, auth')
+      .eq('user_id', recipientId)
+      .eq('enabled', true),
+  ])
+
+  // Social is opt-out (social_push_enabled defaults true). Not gated on active
+  // hours or injury pause — those are about training reminders, not people.
+  const pushable =
+    prefs?.push_enabled === true &&
+    prefs?.social_push_enabled !== false &&
+    (subscriptions?.length ?? 0) > 0
+
+  if (!pushable) return 0
+
+  const payload = JSON.stringify(copy)
+  let pushed = 0
+  for (const subscription of (subscriptions ?? []) as PushSubscriptionRow[]) {
+    try {
+      await webpush.sendNotification(
+        {
+          endpoint: subscription.endpoint,
+          keys: { p256dh: subscription.p256dh, auth: subscription.auth },
+        },
+        payload,
+        { TTL: 24 * 60 * 60, urgency: 'normal' },
+      )
+      pushed += 1
+    } catch (error) {
+      const statusCode =
+        typeof error === 'object' && error !== null && 'statusCode' in error
+          ? (error as { statusCode: number }).statusCode
+          : undefined
+      if (statusCode === 410 || statusCode === 404) {
+        await admin.from('push_subscriptions').update({ enabled: false }).eq('id', subscription.id)
+      }
+    }
+  }
+
+  if (pushed > 0) {
+    await admin.from('social_push_log').insert({ user_id: recipientId, kind: type })
+  }
+
+  return pushed
 }
 
 Deno.serve(async (req) => {
@@ -96,7 +185,13 @@ Deno.serve(async (req) => {
     const type = body.type
     const targetId = body.target_id
 
-    const validTypes: SocialType[] = ['mate_request', 'mate_accepted', 'challenge_invite', 'reaction']
+    const validTypes: SocialType[] = [
+      'mate_request',
+      'mate_accepted',
+      'challenge_invite',
+      'reaction',
+      'group_challenge',
+    ]
     if (!type || !targetId || !validTypes.includes(type)) {
       return jsonResponse({ error: 'type and target_id are required' }, 400)
     }
@@ -112,7 +207,9 @@ Deno.serve(async (req) => {
     }
     const callerId = userData.user.id
 
-    if (callerId === targetId) {
+    // Single-recipient types never notify yourself. Group challenge fans out to
+    // other members; self is excluded from that list below.
+    if (type !== 'group_challenge' && callerId === targetId) {
       return jsonResponse({ pushed: 0, reason: 'self' })
     }
 
@@ -122,8 +219,13 @@ Deno.serve(async (req) => {
 
     // Re-verify the caller's action against the real row — this is what stops
     // anyone pushing arbitrary users. `callerId` comes from the verified JWT.
-    let verified = false
-    const context: { durationDays?: number; emoji?: string } = {}
+    let recipientIds: string[] = []
+    const context: {
+      durationDays?: number
+      emoji?: string
+      challengeName?: string
+      competitionId?: string
+    } = {}
 
     if (type === 'mate_request') {
       const { data } = await admin
@@ -133,7 +235,7 @@ Deno.serve(async (req) => {
         .eq('addressee_id', targetId)
         .eq('status', 'pending')
         .maybeSingle()
-      verified = Boolean(data)
+      if (data) recipientIds = [targetId]
     } else if (type === 'mate_accepted') {
       // Caller accepted the target's incoming request; notify the requester (target).
       const { data } = await admin
@@ -143,7 +245,7 @@ Deno.serve(async (req) => {
         .eq('addressee_id', callerId)
         .eq('status', 'accepted')
         .maybeSingle()
-      verified = Boolean(data)
+      if (data) recipientIds = [targetId]
     } else if (type === 'challenge_invite') {
       const { data } = await admin
         .from('mate_challenges')
@@ -154,8 +256,10 @@ Deno.serve(async (req) => {
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()
-      verified = Boolean(data)
-      if (data) context.durationDays = (data as { duration_days?: number }).duration_days
+      if (data) {
+        recipientIds = [targetId]
+        context.durationDays = (data as { duration_days?: number }).duration_days
+      }
     } else if (type === 'reaction') {
       const entryId = body.entry_id
       if (!entryId) {
@@ -179,54 +283,41 @@ Deno.serve(async (req) => {
       // insert policy only proves the caller is an active member of the
       // client-supplied group_id, so without this a forged reaction row on a
       // stranger's entry (with a group the attacker belongs to) would pass.
-      verified = Boolean(r) && e?.user_id === targetId && Boolean(e?.group_id) && r?.group_id === e?.group_id
-      if (r) context.emoji = r.emoji
-    }
-
-    if (!verified) {
-      return jsonResponse({ pushed: 0, reason: 'not_verified' }, 403)
-    }
-
-    // Per-(recipient, type) cooldown — collapses a reaction burst to one buzz
-    // and stops a looped/forged invocation flooding someone.
-    {
-      const since = new Date(Date.now() - COOLDOWN_MINUTES[type] * 60_000).toISOString()
-      const { data: recent } = await admin
-        .from('social_push_log')
-        .select('id')
-        .eq('user_id', targetId)
-        .eq('kind', type)
-        .gte('created_at', since)
-        .limit(1)
+      const verified =
+        Boolean(r) && e?.user_id === targetId && Boolean(e?.group_id) && r?.group_id === e?.group_id
+      if (verified) {
+        recipientIds = [targetId]
+        if (r) context.emoji = r.emoji
+      }
+    } else if (type === 'group_challenge') {
+      // target_id is the competition id. Only the creator can fan out a push.
+      const { data: competition } = await admin
+        .from('competitions')
+        .select('id, group_id, name, created_by')
+        .eq('id', targetId)
         .maybeSingle()
-      if (recent) {
-        return jsonResponse({ pushed: 0, reason: 'cooldown' })
+      const c = competition as {
+        id?: string
+        group_id?: string
+        name?: string
+        created_by?: string
+      } | null
+      if (c?.id && c.group_id && c.created_by === callerId) {
+        context.challengeName = c.name
+        context.competitionId = c.id
+        const { data: members } = await admin
+          .from('group_members')
+          .select('user_id')
+          .eq('group_id', c.group_id)
+          .eq('status', 'active')
+        recipientIds = ((members ?? []) as { user_id: string }[])
+          .map((m) => m.user_id)
+          .filter((id) => id !== callerId)
       }
     }
 
-    const [{ data: prefs }, { data: senderProfile }, { data: subscriptions }] = await Promise.all([
-      admin
-        .from('notification_preferences')
-        .select('push_enabled, social_push_enabled')
-        .eq('user_id', targetId)
-        .maybeSingle(),
-      admin.from('profiles').select('display_name').eq('id', callerId).single(),
-      admin
-        .from('push_subscriptions')
-        .select('id, endpoint, p256dh, auth')
-        .eq('user_id', targetId)
-        .eq('enabled', true),
-    ])
-
-    // Social is opt-out (social_push_enabled defaults true). Not gated on active
-    // hours or injury pause — those are about training reminders, not people.
-    const pushable =
-      prefs?.push_enabled === true &&
-      prefs?.social_push_enabled !== false &&
-      (subscriptions?.length ?? 0) > 0
-
-    if (!pushable) {
-      return jsonResponse({ pushed: 0, reason: 'recipient_not_pushable' })
+    if (recipientIds.length === 0) {
+      return jsonResponse({ pushed: 0, reason: 'not_verified' }, 403)
     }
 
     webpush.setVapidDetails(
@@ -235,37 +326,20 @@ Deno.serve(async (req) => {
       requireEnv('VAPID_PRIVATE_KEY'),
     )
 
+    const { data: senderProfile } = await admin
+      .from('profiles')
+      .select('display_name')
+      .eq('id', callerId)
+      .single()
+
     const copy = socialCopy(type, senderProfile?.display_name ?? 'A mate', context)
-    const payload = JSON.stringify(copy)
 
     let pushed = 0
-    for (const subscription of (subscriptions ?? []) as PushSubscriptionRow[]) {
-      try {
-        await webpush.sendNotification(
-          {
-            endpoint: subscription.endpoint,
-            keys: { p256dh: subscription.p256dh, auth: subscription.auth },
-          },
-          payload,
-          { TTL: 24 * 60 * 60, urgency: 'normal' },
-        )
-        pushed += 1
-      } catch (error) {
-        const statusCode =
-          typeof error === 'object' && error !== null && 'statusCode' in error
-            ? (error as { statusCode: number }).statusCode
-            : undefined
-        if (statusCode === 410 || statusCode === 404) {
-          await admin.from('push_subscriptions').update({ enabled: false }).eq('id', subscription.id)
-        }
-      }
+    for (const recipientId of recipientIds) {
+      pushed += await pushToRecipient(admin, { recipientId, type, copy })
     }
 
-    if (pushed > 0) {
-      await admin.from('social_push_log').insert({ user_id: targetId, kind: type })
-    }
-
-    return jsonResponse({ pushed })
+    return jsonResponse({ pushed, recipients: recipientIds.length })
   } catch (error) {
     console.error('send-social failed', error)
     return jsonResponse({ error: error instanceof Error ? error.message : 'Unknown error' }, 500)

@@ -364,6 +364,7 @@ For exploratory ideas without locked rules, see [product-roadmap.md](./product-r
 | Android and iOS users should be guided to **install the PushUS PWA** for reliable reminders; Android installed web apps avoid Chrome's automatic notification permission removal, and iOS reminders should use the home-screen app path | Beta |
 | Future reminder frequency: **custom intervals** | Future |
 | **Banter notifications:** opt-in only | Future |
+| **Group challenge create push:** when an admin creates a group challenge, other active members with push + social notifications on get a heads-up (deep-link to the challenge). No push on start/end yet | Beta |
 | **Weekly gentle check-in** while injury-paused | Future |
 | Friend nudge notifications | Future (mate graph) |
 

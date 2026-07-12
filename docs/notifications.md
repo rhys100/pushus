@@ -117,7 +117,17 @@ curl -X POST "http://127.0.0.1:54321/functions/v1/send-push-reminders" \
 3. Tap **Turn on** — the browser asks for notification permission.
 4. Adjust active hours, reminder frequency, or enable **Injury pause** as needed.
 
-## Operations
+## Social notifications
+
+Mate requests / accepts, 1v1 challenge invites, **group challenge creates**, and feed reactions are delivered by the `send-social` edge function (JWT verification ON — user-invoked). Delivery respects `push_enabled` and the `social_push_enabled` opt-out (default on). Group challenge create fans out to every other active group member and deep-links to `/challenges/:id`.
+
+Deploy:
+
+```bash
+npx supabase functions deploy send-social
+```
+
+Requires migration `0046_social_notifications.sql` (`social_push_enabled` + `social_push_log`).
 
 - **Repeat reminders must ding:** `sw.js` shows reminders with a fixed `tag` plus `renotify: true`. Without `renotify`, Android silently replaces the notification already in the tray, so users who never dismissed the first reminder only ever heard one sound per day.
 - **410/404 from push service:** The edge function disables the subscription and logs `subscription_disabled`.

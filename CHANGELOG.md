@@ -10,12 +10,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Added
+
+- **Group challenge push:** when an admin creates a group challenge, other active group members with social notifications on get a push that deep-links to the challenge so they can join
+
 ### Changed
 
 - **Sign-in email design:** Magic Link template restyled to match PushUS dark theme (orange accent, large mono code block, iOS Home Screen note). Plain-text version puts the code on its own line for easy copy.
 
 ### Fixed
 
+- **Mate nudge error toast:** tapping Push them / Cheer / Stir up no longer shows `r.json is not a function` when the nudge edge call fails for a non-HTTP reason — the real error (or a plain fallback) surfaces instead
 - **Sign-in email SMTP failures:** when Supabase cannot send the OTP email, login now says email delivery is misconfigured instead of “check your connection”
 - **Login error reads as “{}”:** a sign-in that failed with an opaque or empty error response (e.g. a non-JSON body from a proxy/CORS intercept) surfaced a raw `{}` instead of a message. Sign-in and auth-callback errors now always fall back to a plain-language line, and the shared error formatter drops blank / stringified-object messages
 - **Boot recovery loop on desktop:** the recovery screen now unregisters service workers and clears browser caches before reloading, and missing `/assets/*` files return a real 404 instead of `index.html` (which poisoned JS caches and trapped users on “PushUS needs a fresh start”)

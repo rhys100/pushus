@@ -121,7 +121,10 @@ function CreateChallengeForm({ onDone }: { onDone: () => void }) {
       })
 
       successHaptic()
-      toast({ message: 'Challenge created. Rally the troops.', variant: 'success' })
+      toast({
+        message: 'Challenge created. Mates with notifications on just got a heads-up.',
+        variant: 'success',
+      })
       onDone()
       navigate(`/challenges/${competition.id}`)
     } catch (error) {

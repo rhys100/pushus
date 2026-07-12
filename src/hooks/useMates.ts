@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { messageFromFunctionsInvokeError } from '@/lib/functionsInvokeError'
 import { supabase } from '@/lib/supabase'
 import { notifySocial } from '@/lib/notifications/notifySocial'
 import type {
@@ -219,12 +220,11 @@ export function useSendNudge() {
       })
 
       if (error) {
-        // Surface the server's message (e.g. the once-per-day limit) if present.
-        const context = (error as { context?: Response }).context
-        if (context) {
-          const body = (await context.json().catch(() => null)) as { error?: string } | null
-          if (body?.error) throw new Error(body.error)
-        }
+        // Surface the server's message (e.g. the once-per-day limit) when the
+        // invoke failure carried an HTTP body. Non-HTTP failures leave
+        // error.context as a plain Error — never call .json() on those.
+        const serverMessage = await messageFromFunctionsInvokeError(error)
+        if (serverMessage) throw new Error(serverMessage)
         throw error
       }
 

@@ -783,7 +783,7 @@ export function SettingsPage() {
                         </span>
                         <span className="mt-0.5 block text-xs text-text-muted">
                           A push when a mate adds you, accepts your request, challenges you to a 1v1,
-                          or reacts to your sets.
+                          starts a group challenge, or reacts to your sets.
                         </span>
                       </span>
                     </label>

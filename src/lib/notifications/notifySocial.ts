@@ -5,13 +5,17 @@ export type SocialNotificationType =
   | 'mate_accepted'
   | 'challenge_invite'
   | 'reaction'
+  | 'group_challenge'
 
 /**
- * Best-effort social push (mate request / accepted / 1v1 invite / reaction).
- * Fire-and-forget on purpose: the underlying action already succeeded, so a
- * push-delivery hiccup must never surface to the user or block the UI. The
- * edge function re-verifies the relationship and respects the recipient's
- * opt-out, so calling this is always safe.
+ * Best-effort social push (mate request / accepted / 1v1 invite / reaction /
+ * group challenge created). Fire-and-forget on purpose: the underlying action
+ * already succeeded, so a push-delivery hiccup must never surface to the user
+ * or block the UI. The edge function re-verifies the relationship and respects
+ * the recipient's opt-out, so calling this is always safe.
+ *
+ * For `group_challenge`, `targetId` is the competition id — the edge function
+ * fans out to every other active group member.
  */
 export function notifySocial(
   type: SocialNotificationType,

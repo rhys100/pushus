@@ -84,7 +84,8 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 - [x] **Mates** — consent-based connections (shared-group requests or personal mate link), aggregate-stats profile cards, mate leaderboard, block/remove
 - [x] Mate nudges (push them / cheer / stir up) with push notifications, one per mate per day
 - [x] 1v1 mate battles (1/3/7-day rep battles with live scores)
-- [x] Group challenges — one-day, weekend, 7/14/30-day, custom dates; leaderboard, group target, and team-vs-team types; late joiners score from their join day
+- [x] Group challenges — one-day, weekend, 7/14/30-day, custom dates; leaderboard, group target, and team-vs-team types; late joiners score from their join day; create sends a push to other group members with social notifications on
+- [x] Social notifications — mate request / accept, 1v1 invite, group challenge create, feed reactions (opt-out in Settings)
 - [x] XP (1 rep = 1 XP), achievements with server-side unlocks, active streaks with weekly streak freezes
 - [x] Admin entry review queue, oversize entry policy, and feed visibility modes
 - [x] Group invite tools

@@ -26,6 +26,14 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-07-12 (mate nudge toast + group challenge push)
+
+- **Fixed:** Mate Push/Cheer/Stir toasted `r.json is not a function` because `useSendNudge` called `.json()` on `error.context` even when invoke failed with a non-Response context (FunctionsFetchError). Extracted `messageFromFunctionsInvokeError` with a `typeof json === 'function'` guard + unit tests.
+- **Added:** Creating a group challenge now best-effort calls `notifySocial('group_challenge', competitionId)`. `send-social` fans out to every other active group member (re-verified: competition.created_by = caller), respects push_enabled + social_push_enabled, deep-links to `/challenges/:id`. Settings + create toast copy updated.
+- **Deploy required for push to fire:** `npx supabase functions deploy send-social` (JWT verify ON). Client ship alone only fixes the nudge toast. Confirm migs through 0046 are on prod if social pushes never worked.
+- **Deployed 2026-07-12:** `send-social` + `send-nudge` to prod `zcwvvhuihqlldnbwhivl`. Remote migrations already through **0046**. Client/CF Pages ship still needed for the nudge toast fix + create-challenge notify call.
+- **Not built:** push on challenge start/end (time-based; needs cron). Members without push on still need an out-of-band rally.
+
 ### 2026-07-11m (plan cleanup — cn tailwind-merge + micro-type tokens)
 
 - Cleared the worthwhile remainder of the polish-audit plan.

@@ -24,6 +24,13 @@ export const WHATS_NEW_SIGNOFF = 'Love Rhys + MK 🧡'
 /** Newest first. */
 export const NEWS_ITEMS: NewsItem[] = [
   {
+    id: '2026-07-12-group-challenge-push',
+    date: '2026-07-12',
+    emoji: '🏆',
+    title: 'Heads-up when a group challenge starts',
+    body: 'When someone in your group creates a challenge, you get a push (if notifications are on) so you can join before it kicks off. Turn social notifications off any time in Settings.',
+  },
+  {
     id: '2026-07-11-social-notifications',
     date: '2026-07-11',
     version: '1.5.0',
