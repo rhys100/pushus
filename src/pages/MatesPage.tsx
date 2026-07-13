@@ -272,7 +272,13 @@ function MateChallengeCard({ challenge }: { challenge: MateChallengeItem }) {
 
   async function handleRespond(accept: boolean) {
     try {
-      await respond.mutateAsync({ challengeId: challenge.id, accept })
+      // When accepting, we're the opponent — `challenge.opponent` is the
+      // challenger, who gets notified their battle is live.
+      await respond.mutateAsync({
+        challengeId: challenge.id,
+        accept,
+        challengerId: challenge.opponent.id,
+      })
       if (accept) {
         successHaptic()
       }

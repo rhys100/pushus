@@ -4,6 +4,7 @@ export type SocialNotificationType =
   | 'mate_request'
   | 'mate_accepted'
   | 'challenge_invite'
+  | 'challenge_accepted'
   | 'reaction'
   | 'group_challenge'
 
@@ -26,11 +27,18 @@ export function notifySocial(
     return
   }
 
+  // Best-effort only — the action itself is unaffected. But `functions.invoke`
+  // resolves (doesn't reject) with `{ error }` on most HTTP failures, so a plain
+  // `.catch()` never sees them. Inspect the resolved error too, and log both
+  // paths so a broken push is diagnosable in the field instead of silent.
   void supabase.functions
     .invoke('send-social', {
       body: { type, target_id: targetId, entry_id: extra?.entryId },
     })
-    .catch(() => {
-      // Best-effort only — the action itself is unaffected.
+    .then(({ error }) => {
+      if (error) console.warn('[notifySocial]', type, error)
+    })
+    .catch((error) => {
+      console.warn('[notifySocial]', type, error)
     })
 }

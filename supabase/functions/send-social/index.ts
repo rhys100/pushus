@@ -2,6 +2,7 @@
 
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.45.4'
 import webpush from 'npm:web-push@3.6.7'
+import { corsHeaders, jsonResponse } from '../_shared/supabase.ts'
 
 // Deliver a social notification (mate request / accepted / 1v1 challenge invite
 // / reaction / group challenge created) as a push. The caller's action is
@@ -14,6 +15,7 @@ type SocialType =
   | 'mate_request'
   | 'mate_accepted'
   | 'challenge_invite'
+  | 'challenge_accepted'
   | 'reaction'
   | 'group_challenge'
 
@@ -33,14 +35,8 @@ const COOLDOWN_MINUTES: Record<SocialType, number> = {
   mate_request: 60,
   mate_accepted: 60,
   challenge_invite: 60,
+  challenge_accepted: 60,
   group_challenge: 60,
-}
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  })
 }
 
 function requireEnv(name: string): string {
@@ -73,6 +69,12 @@ function socialCopy(
       return {
         title: `⚔️ ${senderName} challenged you to a 1v1`,
         body: `A ${context.durationDays ?? 3}-day push-up battle. Tap to accept.`,
+        url: '/mates',
+      }
+    case 'challenge_accepted':
+      return {
+        title: `⚔️ ${senderName} accepted your challenge`,
+        body: 'Your 1v1 battle is live — start banking reps.',
         url: '/mates',
       }
     case 'reaction':
@@ -167,6 +169,10 @@ async function pushToRecipient(
 }
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders() })
+  }
+
   if (req.method !== 'POST') {
     return jsonResponse({ error: 'Method not allowed' }, 405)
   }
@@ -189,6 +195,7 @@ Deno.serve(async (req) => {
       'mate_request',
       'mate_accepted',
       'challenge_invite',
+      'challenge_accepted',
       'reaction',
       'group_challenge',
     ]
@@ -260,6 +267,17 @@ Deno.serve(async (req) => {
         recipientIds = [targetId]
         context.durationDays = (data as { duration_days?: number }).duration_days
       }
+    } else if (type === 'challenge_accepted') {
+      // Caller accepted the target's challenge; notify the challenger (target).
+      // A live battle has status 'active' (respond_mate_challenge sets it).
+      const { data } = await admin
+        .from('mate_challenges')
+        .select('id')
+        .eq('challenger_id', targetId)
+        .eq('opponent_id', callerId)
+        .eq('status', 'active')
+        .maybeSingle()
+      if (data) recipientIds = [targetId]
     } else if (type === 'reaction') {
       const entryId = body.entry_id
       if (!entryId) {

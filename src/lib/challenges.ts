@@ -1,4 +1,4 @@
-import { addDays, startOfDay } from 'date-fns'
+import { addDays, format, startOfDay } from 'date-fns'
 import { fromZonedTime, toZonedTime } from 'date-fns-tz'
 import { getZonedTimeParts } from '@/lib/notificationEligibility'
 import type { Competition, CompetitionIntensity } from '@/types/gamification'
@@ -133,6 +133,24 @@ export function challengeDateRange(
   ).dateKey
 
   return { startIso, endIso }
+}
+
+/**
+ * Human label for a challenge's inclusive date span, e.g. "13 Jul – 14 Jul 2026".
+ * Uses the group timezone and the inclusive last day (`ends_at` is stored as an
+ * exclusive boundary), so the card matches the scored window instead of showing
+ * an off-by-one span.
+ */
+export function formatChallengeRange(
+  competition: Pick<Competition, 'starts_at' | 'ends_at'>,
+  timezone: string,
+): string {
+  const { startIso, endIso } = challengeDateRange(competition, timezone)
+  // The ISO strings are already group-local calendar dates; parse them as local
+  // midnight so formatting only reads the y/m/d parts (no further tz shift).
+  const start = new Date(`${startIso}T00:00:00`)
+  const end = new Date(`${endIso}T00:00:00`)
+  return `${format(start, 'd MMM')} – ${format(end, 'd MMM yyyy')}`
 }
 
 export type ChallengeEntryRow = {

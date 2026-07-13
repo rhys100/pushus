@@ -8,6 +8,7 @@ import {
   CHALLENGE_TYPE_OPTIONS,
   INTENSITY_OPTIONS,
   challengeStatus,
+  formatChallengeRange,
   isBeginnerWarningIntensity,
   statusVariant,
   type ChallengeFormat,
@@ -21,7 +22,13 @@ import { useCreateChallenge } from '@/hooks/useChallenges'
 import { useAuth } from '@/providers/AuthProvider'
 import type { Competition, CompetitionIntensity } from '@/types/gamification'
 
-function CompetitionCard({ competition }: { competition: Competition }) {
+function CompetitionCard({
+  competition,
+  timezone,
+}: {
+  competition: Competition
+  timezone: string
+}) {
   const status = challengeStatus(competition)
 
   return (
@@ -39,10 +46,7 @@ function CompetitionCard({ competition }: { competition: Competition }) {
           </div>
           <Badge variant={statusVariant(status)}>{status}</Badge>
         </div>
-        <p className="text-xs text-text-muted">
-          {format(new Date(competition.starts_at), 'd MMM')} –{' '}
-          {format(new Date(competition.ends_at), 'd MMM yyyy')}
-        </p>
+        <p className="text-xs text-text-muted">{formatChallengeRange(competition, timezone)}</p>
         {competition.target_total ? (
           <p className="text-sm text-text-primary">
             Target:{' '}
@@ -311,6 +315,8 @@ export function ChallengesPage() {
   const [showAllEnded, setShowAllEnded] = useState(false)
 
   const isAdmin = role === 'owner' || role === 'admin'
+  const challengeTimezone =
+    activeGroup?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
   const active = competitions.filter((item) => challengeStatus(item) === 'active')
   const upcoming = competitions.filter((item) => challengeStatus(item) === 'upcoming')
   const ended = competitions.filter((item) => challengeStatus(item) === 'ended')
@@ -361,7 +367,11 @@ export function ChallengesPage() {
                   Active
                 </h2>
                 {active.map((competition) => (
-                  <CompetitionCard key={competition.id} competition={competition} />
+                  <CompetitionCard
+                    key={competition.id}
+                    competition={competition}
+                    timezone={challengeTimezone}
+                  />
                 ))}
               </section>
             ) : null}
@@ -372,7 +382,11 @@ export function ChallengesPage() {
                   Upcoming
                 </h2>
                 {upcoming.map((competition) => (
-                  <CompetitionCard key={competition.id} competition={competition} />
+                  <CompetitionCard
+                    key={competition.id}
+                    competition={competition}
+                    timezone={challengeTimezone}
+                  />
                 ))}
               </section>
             ) : null}
@@ -383,7 +397,11 @@ export function ChallengesPage() {
                   Past
                 </h2>
                 {(showAllEnded ? ended : ended.slice(0, 5)).map((competition) => (
-                  <CompetitionCard key={competition.id} competition={competition} />
+                  <CompetitionCard
+                    key={competition.id}
+                    competition={competition}
+                    timezone={challengeTimezone}
+                  />
                 ))}
                 {ended.length > 5 && !showAllEnded ? (
                   <button

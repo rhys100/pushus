@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { messageFromFunctionsInvokeError } from '@/lib/functionsInvokeError'
 import { supabase } from '@/lib/supabase'
 import { billingConfig, type DeploymentSettings, type GroupSubscriptionOwner } from '@/lib/billing'
 
@@ -80,7 +81,11 @@ export async function startCheckoutSession(
     body: { group_id: groupId, plan_interval: planInterval },
   })
 
-  if (error) throw error
+  if (error) {
+    const serverMessage = await messageFromFunctionsInvokeError(error)
+    if (serverMessage) throw new Error(serverMessage)
+    throw error
+  }
   if (!data?.url) {
     throw new Error(data?.error ?? 'Checkout session could not be created')
   }
@@ -94,7 +99,11 @@ export async function openCustomerPortal(groupId: string): Promise<string> {
     { body: { group_id: groupId } },
   )
 
-  if (error) throw error
+  if (error) {
+    const serverMessage = await messageFromFunctionsInvokeError(error)
+    if (serverMessage) throw new Error(serverMessage)
+    throw error
+  }
   if (!data?.url) {
     throw new Error(data?.error ?? 'Customer portal session could not be created')
   }
