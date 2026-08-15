@@ -15,6 +15,13 @@ export type WebAppManifest = {
   categories?: string[]
   prefer_related_applications?: boolean
   related_applications?: Array<{ platform?: string; url?: string; id?: string }>
+  shortcuts?: Array<{
+    name?: string
+    short_name?: string
+    description?: string
+    url?: string
+    icons?: Array<{ src?: string; sizes?: string; type?: string }>
+  }>
   icons?: Array<{ src?: string; sizes?: string; type?: string; purpose?: string }>
 }
 
@@ -41,6 +48,29 @@ export const BASE_WEB_APP_MANIFEST: WebAppManifest = {
   orientation: 'portrait-primary',
   lang: 'en-AU',
   categories: ['fitness', 'health', 'social'],
+  shortcuts: [
+    {
+      name: 'Log push-ups',
+      short_name: 'Log',
+      description: 'Open the logger and bank a set',
+      url: '/today?source=shortcut',
+      icons: [{ src: '/pwa/icon-192.png', sizes: '192x192', type: 'image/png' }],
+    },
+    {
+      name: 'Leaderboard',
+      short_name: 'Board',
+      description: 'See where you sit against your mates',
+      url: '/leaderboard?source=shortcut',
+      icons: [{ src: '/pwa/icon-192.png', sizes: '192x192', type: 'image/png' }],
+    },
+    {
+      name: 'Group feed',
+      short_name: 'Feed',
+      description: 'Catch up on what the group has banked',
+      url: '/activity?source=shortcut',
+      icons: [{ src: '/pwa/icon-192.png', sizes: '192x192', type: 'image/png' }],
+    },
+  ],
   prefer_related_applications: false,
   related_applications: [
     {

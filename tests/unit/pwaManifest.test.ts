@@ -67,6 +67,27 @@ describe('PWA manifest', () => {
     expect(legacyManifest).toEqual(manifest)
   })
 
+  // There are THREE copies of this manifest and only two of them were pinned to
+  // each other: public/manifest.json (dev middleware + dist) and
+  // public/manifest.webmanifest. The deployed site serves neither — Cloudflare
+  // runs functions/manifest.json.ts, which returns BASE_WEB_APP_MANIFEST. So a
+  // field added to public/manifest.json alone passed every test and still never
+  // reached a single real user. Pin the production copy too.
+  it('keeps the deployed edge manifest aligned with manifest.json', () => {
+    const deployed = buildWebAppManifestForOrigin('https://www.pushus.app') as Record<
+      string,
+      unknown
+    >
+    const source = { ...(manifest as Record<string, unknown>) }
+
+    // related_applications is the one field the edge handler intentionally
+    // rewrites (relative path -> absolute URL); it has its own test above.
+    delete deployed.related_applications
+    delete source.related_applications
+
+    expect(deployed).toEqual(source)
+  })
+
   it('links manifest.json from index.html', () => {
     expect(indexHtml).toContain('rel="manifest" href="/manifest.json"')
   })
