@@ -1,0 +1,65 @@
+plugins {
+    id 'com.android.application'
+}
+
+// versionName tracks package.json; versionCode is supplied by CI (see
+// .github/workflows/android-apk.yml). Both fall back to sane local defaults so
+// `gradle assembleDebug` works with no arguments.
+def appVersionName = project.findProperty('pushusVersionName') ?: '1.5.0'
+def appVersionCode = (project.findProperty('pushusVersionCode') ?: '1') as Integer
+
+android {
+    namespace 'app.pushus.twa'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'app.pushus.twa'
+        // TWA needs the Custom Tabs support that shipped in Android 5.
+        minSdk 21
+        targetSdk 35
+        versionCode appVersionCode
+        versionName appVersionName
+    }
+
+    signingConfigs {
+        release {
+            // Populated only when the release keystore secrets are present; the
+            // build falls back to debug signing otherwise (see below).
+            def storePath = System.getenv('ANDROID_KEYSTORE_PATH')
+            if (storePath) {
+                storeFile file(storePath)
+                storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            // An unsigned release APK cannot be installed at all. Without a
+            // keystore we still sign — with the debug key — so the artifact is
+            // sideloadable for testing. Play uploads require the real keystore.
+            signingConfig System.getenv('ANDROID_KEYSTORE_PATH')
+                ? signingConfigs.release
+                : signingConfigs.debug
+            minifyEnabled false
+            shrinkResources false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    // No Java/Kotlin of our own: androidbrowserhelper's LauncherActivity is the
+    // whole app. Keep the packaged APK to just resources + the helper library.
+    buildFeatures {
+        buildConfig false
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+}

@@ -1,8 +1,8 @@
-# PushUS
+﻿# PushUS
 
 **Bank push-ups. Push your mates. Don't wreck yourself.**
 
-PushUS is an open-source, private group push-up challenge app for mates, clubs, teams, and small groups. Log reps with a fast circular logger, bank your sets, and keep each other honest — without public leaderboards or creepy tracking.
+PushUS is an open-source, private group push-up challenge app for mates, clubs, teams, and small groups. Log reps with a fast circular logger, bank your sets, and keep each other honest ΓÇö without public leaderboards or creepy tracking.
 
 **Licence:** [AGPL-3.0-only](LICENSE)
 
@@ -14,10 +14,10 @@ PushUS is a **private mates and group challenge app**, not a public social netwo
 
 It is built for **quick daily logging** on your phone: drag the ring, bank your push-ups, check the leaderboard, react to your crew's activity, and move on.
 
-- **Private groups** — invite-only, admin-controlled
-- **Mobile-first** — Log screen is the hero
-- **Open source** — self-host the Community edition on your own Supabase project
-- **Honour system** — no proof videos or photos required
+- **Private groups** ΓÇö invite-only, admin-controlled
+- **Mobile-first** ΓÇö Log screen is the hero
+- **Open source** ΓÇö self-host the Community edition on your own Supabase project
+- **Honour system** ΓÇö no proof videos or photos required
 
 For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [docs/security.md](docs/security.md).
 
@@ -37,7 +37,7 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 | **Private beta** | Invite and allowlist-controlled access on the official deployment |
 | **Community edition** | Free, self-hosted; billing disabled by default |
 | **Billing disabled** | No Stripe required for Community |
-| **PushUS Cloud** | Official hosted paid option — planned; code exists but not beta-enabled |
+| **PushUS Cloud** | Official hosted paid option ΓÇö planned; code exists but not beta-enabled |
 
 ---
 
@@ -59,7 +59,7 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 ### Logging
 
 - [x] Direct-drag circular logger (no plus button)
-- [x] One lap = 10 push-ups on the ring; each lap fills in a new colour, ramping cool → hot across 10 laps (up to 100 reps)
+- [x] One lap = 10 push-ups on the ring; each lap fills in a new colour, ramping cool ΓåÆ hot across 10 laps (up to 100 reps)
 - [x] Current lap draws as a tapering comet "snake" with a glowing head at the handle
 - [x] Centre tap inside ring to add one rep (hands-free logging)
 - [x] Hold the ring centre for 1.5 seconds to open nose-tap mode (dismissible hint teaches the gesture)
@@ -80,12 +80,12 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 
 - [x] Leaderboard (day, week, month views; daily goal progress on Day view; percent progress for other members)
 - [x] Activity feed (Group stream + **My log** personal history with month calendar)
-- [x] Emoji reactions (💪 🔥 😂 👏 😤)
-- [x] **Mates** — consent-based connections (shared-group requests or personal mate link), aggregate-stats profile cards, mate leaderboard, block/remove
+- [x] Emoji reactions (≡ƒÆ¬ ≡ƒöÑ ≡ƒÿé ≡ƒæÅ ≡ƒÿñ)
+- [x] **Mates** ΓÇö consent-based connections (shared-group requests or personal mate link), aggregate-stats profile cards, mate leaderboard, block/remove
 - [x] Mate nudges (push them / cheer / stir up) with push notifications, one per mate per day
 - [x] 1v1 mate battles (1/3/7-day rep battles with live scores)
-- [x] Group challenges — one-day, weekend, 7/14/30-day, custom dates; leaderboard, group target, and team-vs-team types; late joiners score from their join day; create sends a push to other group members with social notifications on
-- [x] Social notifications — mate request / accept, 1v1 invite, group challenge create, feed reactions (opt-out in Settings)
+- [x] Group challenges ΓÇö one-day, weekend, 7/14/30-day, custom dates; leaderboard, group target, and team-vs-team types; late joiners score from their join day; create sends a push to other group members with social notifications on
+- [x] Social notifications ΓÇö mate request / accept, 1v1 invite, group challenge create, feed reactions (opt-out in Settings)
 - [x] XP (1 rep = 1 XP), achievements with server-side unlocks, active streaks with weekly streak freezes
 - [x] Admin entry review queue, oversize entry policy, and feed visibility modes
 - [x] Group invite tools
@@ -108,9 +108,11 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 
 - [x] Supabase backend (Auth, Postgres, RLS, Edge Functions)
 - [x] Row Level Security on group data
-- [x] Cloudflare Pages–friendly static SPA build
+- [x] Cloudflare PagesΓÇôfriendly static SPA build
 - [x] Per-route browser titles and Open Graph meta for public pages
 - [x] Installable Android and iOS PWA setup with app icons, install prompt, and open-from-home-screen nudge when the browser tab is opened by mistake
+- [x] Native Android app (Trusted Web Activity wrapper around the same PWA, so one codebase — see [docs/android-apk.md](docs/android-apk.md))
+- [x] Offline app shell — PushUS opens with no connection; banking a set still needs one
 - [x] AGPL-3.0-only licence
 - [x] Self-hostable Community mode
 - [x] Optional web push reminders (behind goal, user timezone, configurable frequency; installable app path for more reliable mobile delivery)
@@ -119,7 +121,7 @@ For privacy and security detail, see [docs/privacy.md](docs/privacy.md) and [doc
 
 ## Roadmap
 
-These are **directional ideas** — not all implemented yet. See [docs/product-roadmap.md](docs/product-roadmap.md) for detail.
+These are **directional ideas** ΓÇö not all implemented yet. See [docs/product-roadmap.md](docs/product-roadmap.md) for detail.
 
 - Group-visible injury/sub-out status with plan pause and ramp-back
 - Streak and improvement challenge types; official weekly/monthly auto-competitions
@@ -188,7 +190,7 @@ PushUS is licensed under **[AGPL-3.0-only](LICENSE)**.
 
 - Free to use, modify, and self-host
 - If you run a modified version publicly, AGPL requires making corresponding source available to users
-- An official **PushUS Cloud** hosted service may exist later — same open-source codebase, paid for convenience and operations, not for closed source
+- An official **PushUS Cloud** hosted service may exist later ΓÇö same open-source codebase, paid for convenience and operations, not for closed source
 
 See [docs/license-summary.md](docs/license-summary.md) (not legal advice).
 
@@ -204,12 +206,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Contributions are AGPL-3.0-only. No CLA.
 
 | Doc | Description |
 |-----|-------------|
-| [AGENTS.md](AGENTS.md) | Working guide for AI/dev agents — architecture, commands, performance & styling rules, versioning workflow, careful areas |
+| [AGENTS.md](AGENTS.md) | Working guide for AI/dev agents ΓÇö architecture, commands, performance & styling rules, versioning workflow, careful areas |
 | [CHANGELOG.md](CHANGELOG.md) | Meaningful release-level changes |
 | [docs/dev-log.md](docs/dev-log.md) | Day-to-day progress (rolled up weekly/monthly) |
 | [docs/product-roadmap.md](docs/product-roadmap.md) | Product direction |
 | [docs/product-decisions.md](docs/product-decisions.md) | Locked product decisions |
 | [docs/self-hosting.md](docs/self-hosting.md) | Self-hosting guide |
+| [docs/android-apk.md](docs/android-apk.md) | Android APK build, signing and Digital Asset Links |
 | [docs/audio-spec.md](docs/audio-spec.md) | UI sound cue spec for audio production |
 | [docs/privacy.md](docs/privacy.md) | Privacy summary |
 | [docs/security.md](docs/security.md) | Security and RLS |

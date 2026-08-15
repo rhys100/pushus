@@ -76,3 +76,27 @@ describe('activityFeedKeys.reactionsPrefix', () => {
     expect(otherGroup.slice(0, prefix.length)).not.toEqual([...prefix])
   })
 })
+
+describe('activityFeedKeys.userReactions', () => {
+  it('reuses one cache slot when the same entries come back in any order', () => {
+    expect(activityFeedKeys.userReactions('group-1', ['entry-1', 'entry-2'])).toEqual(
+      activityFeedKeys.userReactions('group-1', ['entry-2', 'entry-1']),
+    )
+  })
+
+  // The feed is capped, so on an active group a new bank pushes the oldest entry
+  // off the end and the LENGTH never changes. Keying on length alone served the
+  // previous window's reactions for a completely different set of entries.
+  it('re-keys when the window shifts even though the entry count is identical', () => {
+    const before = activityFeedKeys.userReactions('group-1', ['entry-1', 'entry-2', 'entry-3'])
+    const after = activityFeedKeys.userReactions('group-1', ['entry-2', 'entry-3', 'entry-4'])
+
+    expect(after).not.toEqual(before)
+  })
+
+  it('separates groups that hold the very same entry ids', () => {
+    expect(activityFeedKeys.userReactions('group-1', ['entry-1'])).not.toEqual(
+      activityFeedKeys.userReactions('group-2', ['entry-1']),
+    )
+  })
+})

@@ -5,6 +5,7 @@ import { Card, useToast } from '@/components/ui'
 import { BillingPanel } from '@/components/billing/BillingPanel'
 import { appConfig } from '@/lib/config'
 import { billingConfig } from '@/lib/billing'
+import { getErrorMessage } from '@/lib/errors'
 import {
   openCustomerPortal,
   startCheckoutSession,
@@ -88,7 +89,7 @@ export function BillingPage() {
       const url = await startCheckoutSession(activeGroup.id, interval)
       window.location.assign(url)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Checkout failed'
+      const message = getErrorMessage(error, 'Checkout failed')
       toast({ message, variant: 'danger' })
       setCheckoutLoading(false)
     }
@@ -102,7 +103,7 @@ export function BillingPage() {
       const url = await openCustomerPortal(activeGroup.id)
       window.location.assign(url)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Portal failed'
+      const message = getErrorMessage(error, 'Portal failed')
       toast({ message, variant: 'danger' })
       setPortalLoading(false)
     }

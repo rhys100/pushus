@@ -118,6 +118,17 @@ export const ActivityFeedRow = memo(function ActivityFeedRow({
     }
   }, [pickerOpen])
 
+  /**
+   * Reaction chips are deliberately small pills, but they are the most-tapped
+   * control in the app and 36px (32px dense) sits under the 44px minimum. Grow
+   * the touch target with a transparent pseudo-element instead of the box, so
+   * the chip stays the size the design wants while the thumb gets 44px.
+   */
+  const reactionChipHitArea = cn(
+    "relative before:absolute before:left-0 before:right-0 before:content-['']",
+    dense ? 'before:-inset-y-1.5' : 'before:-inset-y-1',
+  )
+
   const react = (emoji: ReactionEmoji) => {
     if (!canReact) return
     tapHaptic()
@@ -182,8 +193,10 @@ export const ActivityFeedRow = memo(function ActivityFeedRow({
       {canReact || hasReactions ? (
         <div
           className={cn(
-            'flex flex-wrap items-center gap-1.5',
-            dense ? 'mt-1.5 pl-[2.375rem]' : 'mt-2 pl-[3.25rem]',
+            // Row gap is widened to exactly absorb the chips' expanded hit areas
+            // (see reactionChipHitArea) so wrapped rows never overlap targets.
+            'flex flex-wrap items-center gap-x-1.5',
+            dense ? 'mt-1.5 gap-y-3 pl-[2.375rem]' : 'mt-2 gap-y-2 pl-[3.25rem]',
           )}
         >
           {/* Existing reactions stay visible even while the palette is open, so
@@ -201,6 +214,7 @@ export const ActivityFeedRow = memo(function ActivityFeedRow({
                 'transition-[background-color,border-color,transform] duration-[var(--duration-fast)]',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
                 canReact && 'active:scale-90',
+                canReact && reactionChipHitArea,
                 dense ? 'h-8 px-2 text-xs' : 'h-9 px-2.5 text-sm',
                 mine
                   ? 'border-accent/50 bg-accent-muted text-accent'
@@ -262,6 +276,7 @@ export const ActivityFeedRow = memo(function ActivityFeedRow({
                   'inline-flex items-center gap-1 rounded-[var(--radius-full)] border border-border bg-bg text-text-muted',
                   'transition-colors hover:border-accent/30 hover:text-text-primary',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 active:scale-95',
+                  reactionChipHitArea,
                   dense ? 'h-8 px-2.5' : 'h-9 px-3',
                 )}
               >

@@ -16,6 +16,7 @@ import {
 import {
   challengeDateRange,
   challengeStatus,
+  formatChallengeRange,
   isBeginnerWarningIntensity,
   scoreChallenge,
   scoreTeams,
@@ -196,10 +197,7 @@ export function ChallengeDetailPage() {
               </Badge>
             </div>
             <div className="text-right">
-              <p className="text-xs text-text-muted">
-                {format(new Date(challenge.starts_at), 'd MMM')} –{' '}
-                {format(new Date(challenge.ends_at), 'd MMM yyyy')}
-              </p>
+              <p className="text-xs text-text-muted">{formatChallengeRange(challenge, timezone)}</p>
               {status === 'active' ? (
                 <p className="text-xs font-medium text-accent">
                   ends {formatDistanceToNowStrict(new Date(challenge.ends_at), { addSuffix: true })}

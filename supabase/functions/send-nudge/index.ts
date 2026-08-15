@@ -2,6 +2,7 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4'
 import webpush from 'npm:web-push@3.6.7'
+import { corsHeaders, jsonResponse } from '../_shared/supabase.ts'
 
 // Deliver a mate nudge as a push notification. Consent and the one-per-mate-
 // per-day etiquette limit are enforced by the record_nudge RPC (runs as the
@@ -17,13 +18,6 @@ type PushSubscriptionRow = {
   endpoint: string
   p256dh: string
   auth: string
-}
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  })
 }
 
 function requireEnv(name: string): string {
@@ -69,6 +63,10 @@ function localHour(timezone: string, date: Date = new Date()): number {
 }
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders() })
+  }
+
   if (req.method !== 'POST') {
     return jsonResponse({ error: 'Method not allowed' }, 405)
   }

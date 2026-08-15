@@ -1,3 +1,11 @@
+---
+type: Changelog
+title: Changelog
+description: Knowledge page for push-ups-app/CHANGELOG.md.
+tags: [push-ups-app]
+updated: 2026-07-20
+---
+
 # Changelog
 
 All notable user-facing and operational changes to PushUS are documented here.
@@ -12,15 +20,21 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Android app:** PushUS now builds as an installable Android APK — a Trusted Web Activity wrapper around the same PWA, so there is one codebase and a web deploy updates the Android app immediately. Push reminders are delegated to the app so they carry the PushUS name and icon. Built by the new `Android APK` GitHub Action and attached to each GitHub Release. See [docs/android-apk.md](docs/android-apk.md)
+- **Works offline:** the service worker now caches the app shell and the fingerprinted JavaScript/CSS bundles. Reopening PushUS serves ~460 kB from disk instead of the network, and the app still opens with no connection (banking a set still needs one)
 - **Group challenge push:** when an admin creates a group challenge, other active group members with social notifications on get a push that deep-links to the challenge so they can join
 
 ### Changed
 
+- **Faster cold start:** memberships and the active group used to load one after the other; they now arrive in a single request, removing a round trip from every launch
 - **Release process:** cutting a version now requires a GitHub Release (not just a git tag) so GitHub Latest matches README; agent/versioning docs spell out the `gh release create` step
 - **Sign-in email design:** Magic Link template restyled to match PushUS dark theme (orange accent, large mono code block, iOS Home Screen note). Plain-text version puts the code on its own line for easy copy.
 
 ### Fixed
 
+- **Reactions showing on the wrong entries:** the feed's reaction cache was keyed on how many entries were on screen. Because the feed is capped at 50, an active group sat permanently at that number, so a shifted feed window silently reused the previous window's reactions until the cache went stale
+- **Fiddly reaction buttons:** emoji reaction chips and the "React" button had a 36 px tap target (32 px in the compact feed) against the 44 px minimum. The chips look the same but now take a full-size thumb
+- **Small tap targets on the sign-in screen:** "Got an invite code?", "Try it as a guest" and the guest-mode dismiss button were all under 44 px tall
 - **Mate / reaction pushes silent on iOS:** social and nudge pushes now use high urgency (matching reminders), log web-push failures, disable dead Apple subscriptions that return 403, and use separate notification tags so a social buzz doesn’t replace a sitting reminder. Client also logs zero-push / invoke failures to the console
 - **Mate nudge error toast:** tapping Push them / Cheer / Stir up no longer shows `r.json is not a function` when the nudge edge call fails for a non-HTTP reason — the real error (or a plain fallback) surfaces instead
 - **Sign-in email SMTP failures:** when Supabase cannot send the OTP email, login now says email delivery is misconfigured instead of “check your connection”

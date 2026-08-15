@@ -1,3 +1,11 @@
+---
+type: Note
+title: PushUS dev log
+description: Knowledge page for push-ups-app/docs/dev-log.md.
+tags: [push-ups-app]
+updated: 2026-07-20
+---
+
 # PushUS dev log
 
 Working notes while building PushUS. This file is **not** the public README.
@@ -25,6 +33,44 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 ---
 
 ## Daily notes
+
+### 2026-08-15 (full test pass, offline SW, Android TWA, tap targets)
+
+- **Test sweep.** `tsc -b` clean; 473 unit tests pass; e2e green. Two failures found
+  were both stale tests, not app bugs: `authEmailTemplate` asserted `\n\n` against a
+  CRLF working copy, and `smoke.spec` looked for a `button` where `ButtonRouterLink`
+  renders an `<a>`. RLS and billing suites self-skip without Supabase service creds —
+  they are gated, not broken. Lint: 0 errors, 10 warnings (was 11).
+- **Service worker was a no-op** (`addEventListener('fetch', () => {})`) — zero caching,
+  zero offline. Now: navigations network-first with a cached-shell fallback,
+  `/assets/*` cache-first (safe: Vite content-hashes them), icons/manifest SWR.
+  Verified against `vite preview`: all 13 asset requests served from cache on reload,
+  `/version.json` never cached (the update prompt still works), offline navigation
+  renders. `tests/unit/serviceWorkerCaching.test.ts` locks the invariants — the file
+  lives outside the bundle so nothing else typechecks it.
+  The HTML-content-type guard also defends the mid-deploy SPA-fallback poisoning
+  that `_headers` currently works around.
+- **Reaction cache bug.** `useEntryReactions` keyed on `entryIds.length`. The feed is
+  capped at 50, so an active group pins that number and a shifted window reuses the
+  previous window's reactions. Now keyed on an order-independent fingerprint of the
+  ids, with `placeholderData` so re-keying doesn't blank the highlights. The existing
+  test passed vacuously — it was already calling the key builder with an array against
+  a `number` signature (tests aren't in the `tsc -b` project).
+- **Cold start.** `GroupProvider` fetched memberships, *then* the group. Now one
+  request embedding `groups(*)` over the existing FK, seeding `['group', id]` so the
+  group query resolves from cache. Also `useMemo`'d `memberships` — the identity churn
+  was re-running a localStorage read on every render of the whole app.
+- **Android.** `android/` is a TWA wrapper with no Java/Kotlin of ours —
+  androidbrowserhelper's `LauncherActivity` plus manifest and resources. Launcher icons
+  are generated from the same SVG as the PWA icons. `.github/workflows/android-apk.yml`
+  builds and signs it. **Not yet run** — needs the workflow pushed, and the release
+  keystore created before any public link (see docs/android-apk.md).
+- **Tap targets** under the documented 44 px minimum: sign-in secondary actions, the
+  guest dismiss, and the feed reaction chips. Chips keep their visual size and grow the
+  hit area with a `::before` overlay; row gap widened so wrapped rows can't overlap.
+  Measured 36 px → ~44 px effective.
+- `.env` pointed `VITE_SOURCE_REPO_URL` at `github.com/your-org/pushus`, so About
+  rendered a dead source link — an AGPL source-availability problem, not just a typo.
 
 ### 2026-07-12c (iOS social push delivery)
 

@@ -34,20 +34,51 @@ type GroupContextValue = {
 
 const GroupContext = createContext<GroupContextValue | null>(null)
 
-async function fetchMemberships(userId: string): Promise<GroupMember[]> {
+type MembershipsResult = {
+  memberships: GroupMember[]
+  /** Groups that came back embedded, used to seed the group query cache. */
+  groups: Group[]
+}
+
+/**
+ * Memberships and the active group used to be two serial round trips on every
+ * cold start — the group query could not even begin until memberships resolved
+ * and named an active group. Embedding `groups(*)` over the existing foreign key
+ * collapses that into one request, and the embedded row seeds the ['group', id]
+ * cache so `groupQuery` resolves without touching the network.
+ *
+ * The embed is an optimisation, not a contract: if RLS declines to expose the
+ * group here it simply arrives null and the standalone fetchGroup still runs.
+ */
+async function fetchMemberships(userId: string): Promise<MembershipsResult> {
   const { data, error } = await supabase
     .from('group_members')
-    .select('id, group_id, user_id, role, status, created_at')
+    .select('id, group_id, user_id, role, status, created_at, groups(*)')
     .eq('user_id', userId)
     .in('status', ['active', 'pending'])
     .order('created_at', { ascending: true })
 
   if (error) {
     console.error('Failed to load memberships', error)
-    return []
+    return { memberships: [], groups: [] }
   }
 
-  return (data ?? []) as GroupMember[]
+  const rows = (data ?? []) as Array<Record<string, unknown>>
+  const memberships: GroupMember[] = []
+  const groups: Group[] = []
+
+  for (const row of rows) {
+    const { groups: embedded, ...membership } = row
+    memberships.push(membership as unknown as GroupMember)
+
+    // PostgREST returns a to-one embed as an object, but tolerate an array.
+    const group = Array.isArray(embedded) ? embedded[0] : embedded
+    if (group) {
+      groups.push(group as Group)
+    }
+  }
+
+  return { memberships, groups }
 }
 
 async function fetchGroup(groupId: string): Promise<Group | null> {
@@ -81,12 +112,29 @@ export function GroupProvider({ children }: { children: ReactNode }) {
 
   const membershipsQuery = useQuery({
     queryKey: ['memberships', user?.id],
-    queryFn: () =>
-      withTimeout(fetchMemberships(user!.id), GROUP_FETCH_TIMEOUT_MS, [] as GroupMember[]),
+    queryFn: async () => {
+      const result = await withTimeout(fetchMemberships(user!.id), GROUP_FETCH_TIMEOUT_MS, {
+        memberships: [],
+        groups: [],
+      } satisfies MembershipsResult)
+
+      // Seed before returning so the group query below is already warm on the
+      // render that first learns which group is active.
+      for (const group of result.groups) {
+        queryClient.setQueryData(['group', group.id], group)
+      }
+
+      return result
+    },
     enabled: Boolean(user && profileOnboarded),
   })
 
-  const memberships = membershipsQuery.data ?? []
+  // Stable identity: this feeds an effect that reads localStorage, and a fresh
+  // [] on every render would re-run it on every render of the whole app.
+  const memberships = useMemo(
+    () => membershipsQuery.data?.memberships ?? [],
+    [membershipsQuery.data],
+  )
   const { active: activeMembership, pending: pendingMembership } =
     pickActiveMembership(memberships)
 

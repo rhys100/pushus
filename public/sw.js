@@ -1,16 +1,194 @@
-/* PushUS service worker — web push only (no web-push npm in browser). */
+/* PushUS service worker — web push + app-shell caching. */
 
-self.addEventListener('install', () => {
-  self.skipWaiting()
+// Caches are NOT keyed by build id: `/assets/*` URLs are content-hashed by Vite,
+// so a new build simply requests new URLs and misses cleanly. Renaming a cache
+// below is enough to evict the old one (see `activate`).
+const SHELL_CACHE = 'pushus-shell-v1'
+const ASSET_CACHE = 'pushus-assets-v1'
+const KNOWN_CACHES = new Set([SHELL_CACHE, ASSET_CACHE])
+
+/** Cap the hashed-asset cache so superseded builds can't grow it forever. */
+const ASSET_CACHE_MAX_ENTRIES = 60
+/** Fall back to the cached shell rather than making the user watch a dead socket. */
+const NAVIGATION_TIMEOUT_MS = 3_000
+const SHELL_URL = '/index.html'
+
+// Never cached: the update checker reads these to decide whether a newer build
+// is live, so a cached copy would pin the app to the build it first saw.
+const NEVER_CACHE = new Set(['/version.json', '/sw.js', '/boot-guard.js'])
+
+self.addEventListener('install', (event) => {
+  // Warm the offline shell so the very first offline launch has something to
+  // render. Best-effort — a failure here must not block activation.
+  event.waitUntil(
+    caches
+      .open(SHELL_CACHE)
+      .then((cache) => cache.add(new Request(SHELL_URL, { cache: 'reload' })))
+      .catch(() => undefined)
+      .then(() => self.skipWaiting()),
+  )
 })
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim())
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(keys.filter((key) => !KNOWN_CACHES.has(key)).map((key) => caches.delete(key))),
+      )
+      .catch(() => undefined)
+      .then(() => self.clients.claim()),
+  )
 })
 
-// Keep network behaviour unchanged while satisfying older Chromium PWA checks that expect
-// a fetch-capable service worker.
-self.addEventListener('fetch', () => {})
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'pushus:skip-waiting') {
+    self.skipWaiting()
+  }
+})
+
+async function trimCache(cacheName, maxEntries) {
+  const cache = await caches.open(cacheName)
+  const keys = await cache.keys()
+
+  // Cache.keys() is insertion-ordered, so the head is the oldest entry.
+  for (let index = 0; index < keys.length - maxEntries; index += 1) {
+    await cache.delete(keys[index])
+  }
+}
+
+/**
+ * Cloudflare Pages can SPA-fallback a missing `/assets/*.js` to index.html
+ * mid-deploy. Caching that HTML under a JS URL would serve a broken app from
+ * cache long after the deploy settled, so only store what we actually asked for.
+ */
+function isCacheableAssetResponse(request, response) {
+  if (!response || !response.ok || response.type === 'opaque') {
+    return false
+  }
+
+  const contentType = response.headers.get('content-type') ?? ''
+  const wantsHtml = request.destination === 'document'
+
+  return wantsHtml || !contentType.includes('text/html')
+}
+
+async function cacheFirst(request, cacheName) {
+  const cache = await caches.open(cacheName)
+  const cached = await cache.match(request)
+
+  if (cached) {
+    return cached
+  }
+
+  const response = await fetch(request)
+
+  if (isCacheableAssetResponse(request, response)) {
+    await cache.put(request, response.clone())
+    void trimCache(cacheName, ASSET_CACHE_MAX_ENTRIES)
+  }
+
+  return response
+}
+
+async function staleWhileRevalidate(request, cacheName) {
+  const cache = await caches.open(cacheName)
+  const cached = await cache.match(request)
+
+  const network = fetch(request)
+    .then((response) => {
+      if (isCacheableAssetResponse(request, response)) {
+        void cache.put(request, response.clone())
+      }
+      return response
+    })
+    .catch(() => undefined)
+
+  if (cached) {
+    void network
+    return cached
+  }
+
+  const response = await network
+  return response ?? Response.error()
+}
+
+/**
+ * Navigations stay network-first so a deploy is picked up on the next launch;
+ * the cached shell only steps in when the network is gone or hung. React Router
+ * renders the requested route from the shell either way.
+ */
+async function navigationWithShellFallback(request) {
+  const cache = await caches.open(SHELL_CACHE)
+
+  try {
+    const response = await Promise.race([
+      fetch(request),
+      new Promise((_resolve, reject) => {
+        setTimeout(() => reject(new Error('navigation timeout')), NAVIGATION_TIMEOUT_MS)
+      }),
+    ])
+
+    if (isCacheableAssetResponse(request, response)) {
+      void cache.put(SHELL_URL, response.clone())
+    }
+
+    return response
+  } catch {
+    const cached = (await cache.match(SHELL_URL)) ?? (await cache.match(request))
+
+    if (cached) {
+      return cached
+    }
+
+    throw new Error('offline and no cached shell')
+  }
+}
+
+self.addEventListener('fetch', (event) => {
+  const { request } = event
+
+  // Only same-origin GETs are ours to cache. Supabase reads/writes, auth token
+  // refreshes and edge-function calls are cross-origin and pass straight through.
+  if (request.method !== 'GET' || request.cache === 'no-store') {
+    return
+  }
+
+  let url
+
+  try {
+    url = new URL(request.url)
+  } catch {
+    return
+  }
+
+  if (url.origin !== self.location.origin || NEVER_CACHE.has(url.pathname)) {
+    return
+  }
+
+  if (request.mode === 'navigate') {
+    event.respondWith(navigationWithShellFallback(request))
+    return
+  }
+
+  // Content-hashed by Vite — the URL changes whenever the bytes do, so serving
+  // straight from cache can never go stale. This is the repeat-launch win.
+  if (url.pathname.startsWith('/assets/')) {
+    event.respondWith(cacheFirst(request, ASSET_CACHE))
+    return
+  }
+
+  // Stable filenames whose bytes can change between deploys (icons, manifest).
+  if (
+    url.pathname.startsWith('/pwa/') ||
+    url.pathname === '/favicon.svg' ||
+    url.pathname === '/icons.svg' ||
+    url.pathname === '/manifest.json' ||
+    url.pathname === '/manifest.webmanifest'
+  ) {
+    event.respondWith(staleWhileRevalidate(request, ASSET_CACHE))
+  }
+})
 
 self.addEventListener('push', (event) => {
   let payload = {

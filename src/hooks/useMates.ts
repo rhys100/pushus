@@ -253,14 +253,24 @@ export function useCreateMateChallenge() {
 export function useRespondMateChallenge() {
   const invalidate = useInvalidateMates()
   return useMutation({
-    mutationFn: async (input: { challengeId: string; accept: boolean }) => {
+    mutationFn: async (input: {
+      challengeId: string
+      accept: boolean
+      /** The challenger's user id — notified when you accept, so the battle doesn't start silently. */
+      challengerId?: string
+    }) => {
       const { error } = await supabase.rpc('respond_mate_challenge', {
         p_challenge_id: input.challengeId,
         p_accept: input.accept,
       })
       if (error) throw error
     },
-    onSuccess: invalidate,
+    onSuccess: (_data, input) => {
+      invalidate()
+      if (input.accept && input.challengerId) {
+        notifySocial('challenge_accepted', input.challengerId)
+      }
+    },
   })
 }
 
