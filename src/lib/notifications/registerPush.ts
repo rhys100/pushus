@@ -2,6 +2,7 @@ import type { PwaInstallStatus } from '@/lib/pwaInstallStatus'
 import { needsPwaInstallForPush, readPwaInstallPlatform } from '@/lib/pwaInstallStatus'
 import { needsIosHomeScreenInstall } from '@/lib/pwa'
 import { supabase } from '@/lib/supabase'
+import { withTimeoutReject } from '@/lib/withTimeout'
 
 export type PushSupportStatus =
   | 'supported'
@@ -82,6 +83,21 @@ export function getPushPermissionStatus(): PushPermissionStatus {
   return Notification.permission
 }
 
+/**
+ * Nothing on the push path used to have a timeout, so any step that never
+ * settled left the "Enable reminders" spinner up forever with no error — the
+ * user has no way to tell a hang from slow work. AuthProvider already learned
+ * this lesson; these are the same idea applied to push.
+ */
+const SW_READY_TIMEOUT_MS = 10_000
+const SUBSCRIBE_TIMEOUT_MS = 20_000
+/**
+ * Generous on purpose: this one is waiting on a human reading an OS dialog, so
+ * it is a backstop against a prompt that never appears at all, not a deadline
+ * for the user to answer.
+ */
+const PERMISSION_TIMEOUT_MS = 120_000
+
 export async function registerAppServiceWorker(): Promise<ServiceWorkerRegistration> {
   if (!('serviceWorker' in navigator)) {
     throw new PushRegistrationError(
@@ -94,7 +110,14 @@ export async function registerAppServiceWorker(): Promise<ServiceWorkerRegistrat
     scope: '/',
   })
 
-  await navigator.serviceWorker.ready
+  // `serviceWorker.ready` never settles if no worker ever reaches "activated",
+  // so an install failure would hang every caller indefinitely.
+  await withTimeoutReject(
+    navigator.serviceWorker.ready,
+    SW_READY_TIMEOUT_MS,
+    'The app background service did not start. Close and reopen PushUS, then try again.',
+  )
+
   return registration
 }
 
@@ -128,7 +151,15 @@ export async function subscribeToPush(
     )
   }
 
-  const permission = await Notification.requestPermission()
+  // In a Trusted Web Activity the browser can hand this to the Android app,
+  // and if that hand-off goes nowhere the promise never settles at all —
+  // no dialog, no rejection. Bound it so the UI can always recover.
+  const permission = await withTimeoutReject(
+    Notification.requestPermission(),
+    PERMISSION_TIMEOUT_MS,
+    'Android never showed the notification permission dialog. Check notification permission for PushUS in Android Settings → Apps, then try again.',
+  )
+
   if (permission !== 'granted') {
     throw new PushRegistrationError(
       'Notification permission was not granted.',
@@ -141,10 +172,14 @@ export async function subscribeToPush(
     return existing
   }
 
-  return registration.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(vapidKey),
-  })
+  return withTimeoutReject(
+    registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidKey),
+    }),
+    SUBSCRIBE_TIMEOUT_MS,
+    'Could not reach the push service. Check your connection and try again.',
+  )
 }
 
 export async function savePushSubscription(

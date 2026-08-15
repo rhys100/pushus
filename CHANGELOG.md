@@ -34,6 +34,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **"Allow notifications" hung forever in the Android app:** the wrapper declared the notification delegation service but not the activity Android needs to show the permission dialog. Chrome asked for a prompt that could never appear and waited for a reply that never came, so the button span forever with no error. The permission flow also now times out instead of spinning indefinitely if anything else stalls
+
 - **Android app showed a browser URL bar:** the site's Digital Asset Links file still carried a placeholder fingerprint, so Android could not verify the app and fell back to showing browser chrome over it
 - **Android app icon looked cramped on the home screen:** the icon artwork was sized for a web maskable icon (80% safe zone) rather than an Android adaptive icon, whose launcher mask only shows the centre 66%. The logo was also painted onto an opaque square instead of a transparent layer, so it could not blend with the launcher's own mask
 

@@ -57,6 +57,38 @@
             </intent-filter>
         </activity>
 
+        <!--
+          Chrome launches this via a PendingIntent to run the POST_NOTIFICATIONS
+          runtime prompt on Android 13+.
+
+          androidbrowserhelper does NOT declare it in the library's own manifest
+          (its manifest is a <queries> block and nothing else), so every app
+          using notification delegation must declare it. Worse, the library
+          builds the PendingIntent without checking the component resolves — so
+          when it is missing, Chrome believes the request succeeded, waits on a
+          Messenger reply that never comes, and Notification.requestPermission()
+          NEVER SETTLES. No dialog, no rejection, just a spinner forever.
+
+          A translucent theme is required: this app's AppTheme is opaque, so the
+          default would flash a solid screen behind the system dialog.
+        -->
+        <activity
+            android:name="com.google.androidbrowserhelper.trusted.NotificationPermissionRequestActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <!-- Lets a notification tap bring the running app forward. Absent, the
+             library degrades silently (it resolveActivityInfo-guards this one). -->
+        <activity
+            android:name="com.google.androidbrowserhelper.trusted.FocusActivity"
+            android:exported="false" />
+
+        <!-- Fallback for devices with no TWA-capable browser installed. -->
+        <activity
+            android:name="com.google.androidbrowserhelper.trusted.WebViewFallbackActivity"
+            android:configChanges="orientation|screenSize"
+            android:exported="false" />
+
         <!-- Lets web push notifications be posted by this app instead of the
              browser, so reminders carry the PushUS icon and open the app. -->
         <service
