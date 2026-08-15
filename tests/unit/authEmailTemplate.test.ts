@@ -8,10 +8,14 @@ describe('passwordless email template', () => {
     resolve(process.cwd(), 'supabase/templates/magic_link.html'),
     'utf8',
   )
+  // Normalise CRLF: this repo is edited on Windows, so the .txt template is
+  // checked out with \r\n. The assertions below are about the template's
+  // *structure* (the code on its own blank-line-separated line), not about
+  // which newline bytes the working copy happens to use.
   const textTemplate = readFileSync(
     resolve(process.cwd(), 'supabase/templates/magic_link.txt'),
     'utf8',
-  )
+  ).replace(/\r\n/g, '\n')
   const rolloutTemplate = readFileSync(
     resolve(process.cwd(), 'supabase/templates/magic_link_hybrid_rollout.html'),
     'utf8',

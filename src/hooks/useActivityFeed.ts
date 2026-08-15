@@ -32,13 +32,36 @@ export function canReactToFeedItem(
   )
 }
 
+/**
+ * Order-independent fingerprint of the entry-id list.
+ *
+ * The reactions query has to re-key when the *set* of entries changes, but not
+ * when an identical refetch returns the same entries in the same order (keying
+ * on the raw list churned the cache). Keying on the id count alone was worse:
+ * the feed is capped at DEFAULT_FEED_LIMIT, so on an active group every new
+ * bank pushes one entry off the end and the count stays pinned at the cap —
+ * a completely different window reusing the previous window's reactions.
+ */
+function fingerprintEntryIds(entryIds: readonly string[]): string {
+  let hash = 0x811c9dc5
+
+  for (const id of [...entryIds].sort()) {
+    for (let index = 0; index < id.length; index += 1) {
+      hash ^= id.charCodeAt(index)
+      hash = Math.imul(hash, 0x01000193)
+    }
+  }
+
+  return `${entryIds.length}:${(hash >>> 0).toString(36)}`
+}
+
 export const activityFeedKeys = {
   all: ['activityFeed'] as const,
   feed: (groupId: string) => ['activityFeed', groupId] as const,
-  userReactions: (groupId: string, entryCount: number) =>
-    ['activityFeed', 'reactions', groupId, entryCount] as const,
+  userReactions: (groupId: string, entryIds: readonly string[]) =>
+    ['activityFeed', 'reactions', groupId, fingerprintEntryIds(entryIds)] as const,
   // Stable prefix that matches every userReactions query for a group,
-  // regardless of the entry-id list suffix — use this to invalidate.
+  // regardless of the entry-id fingerprint suffix — use this to invalidate.
   reactionsPrefix: (groupId: string) => ['activityFeed', 'reactions', groupId] as const,
 }
 
@@ -123,14 +146,13 @@ export function useEntryReactions(
     .map((item) => item.event_id)
 
   return useQuery({
-    // Key on the group + entry count, not the whole sorted id list: an identical
-    // refetch (same entries) keeps the same key so it no longer churns/orphans
-    // the cache, while a changed count still refetches. The reactionsPrefix
-    // invalidation matches this key for optimistic toggles.
-    queryKey: activityFeedKeys.userReactions(group?.id ?? '', entryIds.length),
+    queryKey: activityFeedKeys.userReactions(group?.id ?? '', entryIds),
     queryFn: () => fetchEntryReactions(group!.id, entryIds),
     enabled: Boolean(group?.id && userId && entryIds.length > 0),
     staleTime: 30_000,
+    // Re-keying on a shifted feed window would otherwise blank every reaction
+    // highlight until the new fetch lands; keep showing the last set meanwhile.
+    placeholderData: (previous) => previous,
   })
 }
 

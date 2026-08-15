@@ -385,7 +385,7 @@ export function LoginPage() {
                 onClick={() => setShowInvite(true)}
                 aria-expanded={false}
                 className={cn(
-                  'w-full rounded-[var(--radius-sm)] py-1 text-center text-sm font-medium text-text-muted',
+                  'flex min-h-11 w-full items-center justify-center rounded-[var(--radius-sm)] px-2 text-center text-sm font-medium text-text-muted',
                   'transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
                 )}
               >
@@ -398,7 +398,7 @@ export function LoginPage() {
         {!linkSent ? (
           <Link
             to="/guest"
-            className="mt-4 block text-center text-sm font-medium text-text-muted transition-colors hover:text-accent"
+            className="mt-2 flex min-h-11 items-center justify-center rounded-[var(--radius-sm)] text-center text-sm font-medium text-text-muted transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
           >
             Just want a play? Try it as a guest →
           </Link>

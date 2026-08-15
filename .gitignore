@@ -24,6 +24,15 @@ pnpm-debug.log*
 .env.*.local
 *.pem
 *.key
+# Android signing keys — a leaked upload key lets anyone ship as PushUS
+*.jks
+*.keystore
+
+# Android build output (see android/ and docs/android-apk.md)
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
 
 # Editor and OS
 .vscode/*

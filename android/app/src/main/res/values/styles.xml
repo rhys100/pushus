@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The TWA is chrome-less: the web app draws everything, so the only job
+         of the Android theme is to avoid a white flash before the web view
+         paints. NoActionBar + the app's own background colour does that. -->
+    <style name="AppTheme" parent="android:Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">@color/backgroundColor</item>
+    </style>
+</resources>

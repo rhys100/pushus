@@ -33,7 +33,8 @@ test.describe('smoke', () => {
     await page.goto('/join/testcode12')
     await page.waitForLoadState('networkidle')
 
-    await expect(page.getByRole('button', { name: /Sign in to join/i })).toBeVisible()
+    // Rendered by ButtonRouterLink, so it is an <a> (role=link) — not a button.
+    await expect(page.getByRole('link', { name: /Sign in to join/i })).toBeVisible()
     await expect(page.getByText(/testcode12/i)).toBeVisible()
   })
 })

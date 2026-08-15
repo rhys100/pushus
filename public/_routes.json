@@ -7,6 +7,7 @@
     "/icons.svg",
     "/pwa/*",
     "/sw.js",
-    "/version.json"
+    "/version.json",
+    "/.well-known/*"
   ]
 }

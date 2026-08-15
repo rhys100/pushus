@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PushUS</string>
+    <string name="host">www.pushus.app</string>
+    <string name="launch_url">https://www.pushus.app/today?source=twa</string>
+
+    <!--
+      Digital Asset Links statement. This must match the site's
+      /.well-known/assetlinks.json, which in turn must list the SHA-256
+      fingerprint of the key this APK is signed with. Until both sides agree,
+      Android cannot verify the link and the app shows a browser URL bar.
+    -->
+    <string name="asset_statements" translatable="false">
+        [{
+          \"relation\": [\"delegate_permission/common.handle_all_urls\"],
+          \"target\": {
+            \"namespace\": \"web\",
+            \"site\": \"https://www.pushus.app\"
+          }
+        }]
+    </string>
+</resources>

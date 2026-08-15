@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mirrors the web manifest's theme_color / background_color so the system
+         chrome, splash and web app are one continuous surface on launch. -->
+    <color name="colorPrimary">#0a0a0d</color>
+    <color name="backgroundColor">#0a0a0d</color>
+    <color name="ic_launcher_background">#0a0a0d</color>
+</resources>

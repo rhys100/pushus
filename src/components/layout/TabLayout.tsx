@@ -48,11 +48,36 @@ function TabLayoutShell() {
     [navigate],
   )
 
+  // Warm the sibling tab chunks so switching tabs never shows the loader — but
+  // only once the browser is idle. Fetching them during mount put ~70 kB of
+  // non-urgent JS in front of the Today screen's own data on a cold start.
   useEffect(() => {
-    void import('@/pages/LeaderboardPage')
-    void import('@/pages/ActivityPage')
-    void import('@/pages/GroupPage')
-    void import('@/pages/SettingsPage')
+    let cancelled = false
+
+    const warm = () => {
+      if (cancelled) {
+        return
+      }
+
+      for (const prefetch of Object.values(tabChunkPrefetches)) {
+        void prefetch()
+      }
+    }
+
+    // requestIdleCallback is still missing on older Safari, so feature-detect.
+    const supportsIdle = typeof window.requestIdleCallback === 'function'
+    const handle = supportsIdle
+      ? window.requestIdleCallback(warm, { timeout: 3_000 })
+      : window.setTimeout(warm, 1_500)
+
+    return () => {
+      cancelled = true
+      if (supportsIdle) {
+        window.cancelIdleCallback(handle)
+      } else {
+        window.clearTimeout(handle)
+      }
+    }
   }, [])
 
   return (
