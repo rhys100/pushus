@@ -79,6 +79,19 @@ jobs:
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
             "platforms;android-35" "build-tools;35.0.0" "platform-tools"
 
+      # Runners are ephemeral, so Gradle mints a brand new debug keystore every
+      # run — a different signing identity each time, which silently invalidates
+      # the assetlinks.json committed for the previous build and puts the URL
+      # bar back. Persisting it keeps unsigned-release builds on ONE identity.
+      # This is a stopgap for testing builds; a real release keystore
+      # (ANDROID_KEYSTORE_BASE64) is still required before publishing.
+      - name: Persist the CI debug keystore
+        if: env.ANDROID_KEYSTORE_BASE64 == ''
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: pushus-android-debug-keystore-v1
+
       - name: Decode release keystore
         if: env.ANDROID_KEYSTORE_BASE64 != ''
         run: |
