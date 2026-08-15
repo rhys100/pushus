@@ -22,6 +22,13 @@ const GROUP_FETCH_TIMEOUT_MS = 5_000
 
 type GroupContextValue = {
   activeGroup: Group | null
+  /**
+   * Every group the member is active in, not just the selected one. The
+   * memberships query already embeds these, so exposing them costs nothing —
+   * and anything claiming to show "your data" is wrong if it only reads
+   * `activeGroup`.
+   */
+  groups: Group[]
   membership: GroupMember | null
   membershipStatus: MemberStatus | null
   role: MemberRole | null
@@ -183,9 +190,18 @@ export function GroupProvider({ children }: { children: ReactNode }) {
     memberships.find((m) => m.group_id === activeGroupId && m.status === 'active') ??
     activeMembership
 
+  // Stable identity so adding this to the context does not defeat the memo below.
+  const activeGroups = useMemo(() => {
+    const activeIds = new Set(
+      memberships.filter((m) => m.status === 'active').map((m) => m.group_id),
+    )
+    return (membershipsQuery.data?.groups ?? []).filter((group) => activeIds.has(group.id))
+  }, [membershipsQuery.data, memberships])
+
   const value = useMemo<GroupContextValue>(
     () => ({
       activeGroup: groupQuery.data ?? null,
+      groups: activeGroups,
       membership: currentMembership,
       membershipStatus: currentMembership?.status ?? pendingMembership?.status ?? null,
       role: currentMembership?.role ?? null,
@@ -198,6 +214,7 @@ export function GroupProvider({ children }: { children: ReactNode }) {
     [
       groupQuery.data,
       groupQuery.isLoading,
+      activeGroups,
       activeMembership,
       currentMembership,
       pendingMembership,

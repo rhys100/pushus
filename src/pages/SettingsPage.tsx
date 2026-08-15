@@ -4,6 +4,7 @@ import { Button, Card, useToast } from '@/components/ui'
 import { AvailabilitySettings } from '@/components/settings/AvailabilitySettings'
 import { BoardPrivacySettings } from '@/components/settings/BoardPrivacySettings'
 import { CustomActivitiesSettings } from '@/components/settings/CustomActivitiesSettings'
+import { DataExportSettings } from '@/components/settings/DataExportSettings'
 import { SettingsLinkRow } from '@/components/settings/SettingsLinkRow'
 import { areSoundEffectsEnabled, setSoundEffectsEnabled } from '@/lib/dinkSound'
 import { SettingsSection } from '@/components/settings/SettingsSection'
@@ -806,6 +807,10 @@ export function SettingsPage() {
           </>
         )}
       </Card>
+      </SettingsSection>
+
+      <SettingsSection title="Your data">
+        <DataExportSettings />
       </SettingsSection>
 
       {isAdmin ? (
