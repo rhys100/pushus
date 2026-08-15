@@ -34,6 +34,36 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-08-16 (CSV export, Android icon + asset links, manifest fix)
+
+- **Manifest had THREE sources and only two were pinned.** `public/manifest.json`
+  (vite dev + dist), `public/manifest.webmanifest` (legacy, pinned by test), and
+  `BASE_WEB_APP_MANIFEST` in `functions/_shared/webAppManifest.ts` — which is what
+  Cloudflare actually returns for `/manifest.json`. The shortcuts commit added the
+  field to the first only, so it passed tests and reached zero users. Added a test
+  pinning the deployed edge manifest to `public/manifest.json`; that gap was the
+  real defect, the missing shortcuts were the symptom.
+- **TWA showed a URL bar.** `/.well-known/assetlinks.json` served fine (200,
+  application/json, checked against production) but held the placeholder
+  fingerprint. Filled in the built key's SHA-256. Caveat that matters: it is the
+  CI *debug* key and runners are ephemeral, so Gradle mints a new one per run and
+  the next debug build breaks verification again. Workflow now warns on mismatch;
+  a release keystore is the only real fix.
+- **Adaptive icon was sized as a maskable web icon.** Web maskable assumes an 80%
+  safe zone; Android crops a 108dp foreground to the centre 72dp. 0.56 ran to the
+  mask edge. Now 0.44 (Material keyline), verified by rendering the masked
+  composite rather than eyeballing the source PNG. Foreground also had an opaque
+  background rect, defeating the two-layer model — transparent now.
+- **CSV export** in Settings. Three traps handled: `max_rows = 1000` truncates
+  PostgREST reads *silently* (paginate); user-authored activity names make CSV
+  formula injection a live path (prefix `= + - @`); `logged_for` is already a
+  group-local date so it is emitted verbatim rather than re-derived from the
+  device clock. `GroupProvider` now exposes all groups — an export that read only
+  `activeGroup` would silently omit data while claiming to be complete.
+- Test note for whoever is next: I committed the shortcuts after running only my
+  own new test file. `npm test` was red on HEAD for ~10 minutes because of it.
+  Run the whole suite.
+
 ### 2026-08-15 (full test pass, offline SW, Android TWA, tap targets)
 
 - **Test sweep.** `tsc -b` clean; 473 unit tests pass; e2e green. Two failures found
