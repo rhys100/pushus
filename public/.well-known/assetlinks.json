@@ -5,7 +5,8 @@
       "namespace": "android_app",
       "package_name": "app.pushus.twa",
       "sha256_cert_fingerprints": [
-        "62:48:2E:C1:31:9F:B8:5E:62:06:9D:57:0D:70:32:22:67:2B:23:34:52:CE:C9:80:E1:BC:DA:1A:59:C4:7D:8D"
+        "62:48:2E:C1:31:9F:B8:5E:62:06:9D:57:0D:70:32:22:67:2B:23:34:52:CE:C9:80:E1:BC:DA:1A:59:C4:7D:8D",
+        "A5:8A:DC:03:39:AE:47:3B:8E:E8:DD:AE:F5:2F:36:71:5F:EA:ED:9E:77:E0:66:9E:11:CE:EA:D9:78:9B:6F:06"
       ]
     }
   }
