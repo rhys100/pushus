@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLoggerDragHint } from '@/hooks/useLoggerDragHint'
 import { useNoseHoldHint } from '@/hooks/useNoseHoldHint'
 import { useActiveGroup } from '@/hooks/useActiveGroup'
@@ -43,6 +43,7 @@ import { DayProgressCard } from '@/components/today/DayProgressCard'
 import { GuestImportPrompt } from '@/components/today/GuestImportPrompt'
 import { useAuth } from '@/providers/AuthProvider'
 import { useTrainingPlan } from '@/hooks/useTrainingPlan'
+import { buildTargetExplanation } from '@/lib/training/targetExplanation'
 import { useSorenessCheckin } from '@/hooks/useSorenessCheckin'
 import { effortRatingToRir, shouldAskEffortFeedback } from '@/lib/training/effortRating'
 import type { EffortRating } from '@/lib/training/effortRating'
@@ -68,6 +69,11 @@ const SetEffortSheet = lazy(() =>
 const SorenessCheckInSheet = lazy(() =>
   import('@/components/logger/SorenessCheckInSheet').then((m) => ({
     default: m.SorenessCheckInSheet,
+  })),
+)
+const TargetExplainerSheet = lazy(() =>
+  import('@/components/today/TargetExplainerSheet').then((m) => ({
+    default: m.TargetExplainerSheet,
   })),
 )
 const ChallengeMaxCheckInCard = lazy(() =>
@@ -104,6 +110,8 @@ export function TodayPage() {
     wizardCompleted,
     hasPlan,
     plan,
+    trainingPlan,
+    isRampBack,
   } = useTrainingPlan(user?.id, activeGroup?.id, planTimezone)
   const { showHint, dismissHint } = useLoggerDragHint()
   const { showNoseHint, dismissNoseHint } = useNoseHoldHint()
@@ -132,6 +140,7 @@ export function TodayPage() {
   const [showMaxCheckInCard, setShowMaxCheckInCard] = useState(true)
   const [showSorenessSheet, setShowSorenessSheet] = useState(false)
   const [noseTapOpen, setNoseTapOpen] = useState(false)
+  const [explainerOpen, setExplainerOpen] = useState(false)
   const [sorenessPromptedToday, setSorenessPromptedToday] = useState(false)
 
   const { status: sorenessStatus, saveStatus, saving: sorenessSaving } = useSorenessCheckin(
@@ -140,7 +149,26 @@ export function TodayPage() {
     planTimezone,
   )
 
+  // Only explains a target the engine actually produced — never invents one.
+  const targetExplanation = useMemo(() => {
+    if (!hasPlan || !trainingPlan || !todayPrescription) {
+      return null
+    }
+
+    return buildTargetExplanation({
+      plan: trainingPlan,
+      prescription: todayPrescription,
+      dailyTarget,
+      isRampBack,
+      wizardSorenessLevel: plan?.wizard_soreness_level ?? null,
+    })
+  }, [dailyTarget, hasPlan, isRampBack, plan?.wizard_soreness_level, todayPrescription, trainingPlan])
+
+  const openExplainer = useCallback(() => setExplainerOpen(true), [])
+  const closeExplainer = useCallback(() => setExplainerOpen(false), [])
+
   // Keep each lazy sheet mounted once first opened so its exit animation still plays.
+  const explainerLatched = useLatch(explainerOpen)
   const overageSheetLatched = useLatch(overageConfirm !== null)
   const effortSheetLatched = useLatch(effortEntryId !== null)
   const sorenessSheetLatched = useLatch(showSorenessSheet)
@@ -622,6 +650,7 @@ export function TodayPage() {
             hasPlan={hasPlan}
             dailyTarget={dailyTarget}
             todayPrescription={todayPrescription}
+            onExplain={targetExplanation ? openExplainer : undefined}
           />
         )}
 
@@ -737,6 +766,16 @@ export function TodayPage() {
               setSorenessPromptedToday(true)
               setShowSorenessSheet(false)
             }}
+          />
+        </Suspense>
+      ) : null}
+
+      {explainerLatched ? (
+        <Suspense fallback={null}>
+          <TargetExplainerSheet
+            open={explainerOpen}
+            explanation={targetExplanation}
+            onClose={closeExplainer}
           />
         </Suspense>
       ) : null}

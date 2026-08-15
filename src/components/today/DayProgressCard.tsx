@@ -18,6 +18,8 @@ export type DayProgressCardProps = {
   dailyTarget?: number | null
   todayPrescription?: TodayPrescription | null
   variant?: 'default' | 'compact'
+  /** Opens the "why this target" sheet. Omit to hide the affordance entirely. */
+  onExplain?: () => void
   className?: string
 }
 
@@ -28,6 +30,7 @@ export const DayProgressCard = memo(function DayProgressCard({
   hasPlan = false,
   dailyTarget,
   todayPrescription,
+  onExplain,
   variant = 'default',
   className,
 }: DayProgressCardProps) {
@@ -157,6 +160,25 @@ export const DayProgressCard = memo(function DayProgressCard({
                 {bankedToday} of {target}
               </span>{' '}
               today · {prescription?.safetyNote ?? `${setPlan.dayTypeLabel} day`}
+              {onExplain ? (
+                <>
+                  {' · '}
+                  <button
+                    type="button"
+                    onClick={onExplain}
+                    // The line is dense, so the tap target is grown with a
+                    // transparent overlay rather than by padding the text.
+                    className={cn(
+                      'relative font-semibold text-accent underline underline-offset-2',
+                      "before:absolute before:-inset-y-3 before:left-0 before:right-0 before:content-['']",
+                      'transition-colors hover:text-text-primary',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60',
+                    )}
+                  >
+                    Why?
+                  </button>
+                </>
+              ) : null}
             </p>
           </div>
         ) : null}

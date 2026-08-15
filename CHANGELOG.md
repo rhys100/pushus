@@ -20,6 +20,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Why this target?** tap it on the Today card for a plain-language breakdown of how your daily number was worked out — your clean max, the day type, where you are in the 4-week block, how it splits into sets, and any easing for ramp-back or soreness
+
 - **Export your log:** Settings → Your data downloads every push-up set and custom activity you have logged, across every group you are in, as a CSV. Dates use each group's timezone so they match what you saw when you banked them
 
 - **Android app:** PushUS now builds as an installable Android APK — a Trusted Web Activity wrapper around the same PWA, so there is one codebase and a web deploy updates the Android app immediately. Push reminders are delegated to the app so they carry the PushUS name and icon. Built by the new `Android APK` GitHub Action and attached to each GitHub Release. See [docs/android-apk.md](docs/android-apk.md)
