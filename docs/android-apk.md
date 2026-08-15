@@ -130,7 +130,21 @@ file statically instead of falling through to the SPA.
 
 **If the fingerprint is wrong or missing the app still works** — it just shows a
 browser URL bar across the top, which is the single most common "why does my TWA
-look wrong" cause.
+look wrong" cause. The workflow now warns when the APK it just built is signed
+with a key the committed `assetlinks.json` does not list.
+
+### The debug key is not stable — this will bite twice
+
+GitHub runners are ephemeral, and Gradle generates `~/.android/debug.keystore`
+on first use. So **every CI run without the release secrets produces a different
+signing key and therefore a different fingerprint**, and each one invalidates the
+`assetlinks.json` committed for the last build.
+
+`assetlinks.json` currently lists the debug fingerprint of the first build, so
+the APK from that run verifies. Any subsequent debug build will not, until its
+new fingerprint is committed. Configuring `ANDROID_KEYSTORE_BASE64` ends this
+permanently — it is the only way to get a key that survives across builds, and
+it is required before any public download link regardless.
 
 ## Distributing
 

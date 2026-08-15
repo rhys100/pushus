@@ -137,6 +137,16 @@ jobs:
           JSON
           cat out/assetlinks.json
 
+          # If the committed assetlinks.json does not list the key that signed
+          # THIS apk, Android cannot verify the app and silently falls back to
+          # showing a browser URL bar over it — the app still works, so nothing
+          # fails loudly and the regression reaches users. Say so here instead.
+          if grep -qF "$FINGERPRINT" public/.well-known/assetlinks.json; then
+            echo "assetlinks.json lists this signing key — the TWA will run without a URL bar."
+          else
+            echo "::warning::public/.well-known/assetlinks.json does NOT list this APK's signing key ($FINGERPRINT). The installed app will show a browser URL bar until the site is redeployed with this fingerprint. Note the CI debug key is regenerated on every runner — configure ANDROID_KEYSTORE_BASE64 for a stable key. See docs/android-apk.md."
+          fi
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:

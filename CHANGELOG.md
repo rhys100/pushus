@@ -20,6 +20,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Export your log:** Settings → Your data downloads every push-up set and custom activity you have logged, across every group you are in, as a CSV. Dates use each group's timezone so they match what you saw when you banked them
+
 - **Android app:** PushUS now builds as an installable Android APK — a Trusted Web Activity wrapper around the same PWA, so there is one codebase and a web deploy updates the Android app immediately. Push reminders are delegated to the app so they carry the PushUS name and icon. Built by the new `Android APK` GitHub Action and attached to each GitHub Release. See [docs/android-apk.md](docs/android-apk.md)
 - **Works offline:** the service worker now caches the app shell and the fingerprinted JavaScript/CSS bundles. Reopening PushUS serves ~460 kB from disk instead of the network, and the app still opens with no connection (banking a set still needs one)
 - **Group challenge push:** when an admin creates a group challenge, other active group members with social notifications on get a push that deep-links to the challenge so they can join
@@ -31,6 +33,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Sign-in email design:** Magic Link template restyled to match PushUS dark theme (orange accent, large mono code block, iOS Home Screen note). Plain-text version puts the code on its own line for easy copy.
 
 ### Fixed
+
+- **Android app showed a browser URL bar:** the site's Digital Asset Links file still carried a placeholder fingerprint, so Android could not verify the app and fell back to showing browser chrome over it
+- **Android app icon looked cramped on the home screen:** the icon artwork was sized for a web maskable icon (80% safe zone) rather than an Android adaptive icon, whose launcher mask only shows the centre 66%. The logo was also painted onto an opaque square instead of a transparent layer, so it could not blend with the launcher's own mask
 
 - **Reactions showing on the wrong entries:** the feed's reaction cache was keyed on how many entries were on screen. Because the feed is capped at 50, an active group sat permanently at that number, so a shifted feed window silently reused the previous window's reactions until the cache went stale
 - **Fiddly reaction buttons:** emoji reaction chips and the "React" button had a 36 px tap target (32 px in the compact feed) against the 44 px minimum. The chips look the same but now take a full-size thumb
