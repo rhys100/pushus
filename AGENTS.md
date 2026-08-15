@@ -148,6 +148,11 @@ need to match `package.json`). **Cutting a release** = move `Unreleased` under a
 add matching `whatsNew.ts` entries, then `version:check` must pass. Prefer
 `npm run version:bump`.
 
+After the release commit is on `main`: annotated tag `vX.Y.Z`, push the tag, then
+**create a GitHub Release** (`gh release create vX.Y.Z … --latest`) with notes from
+that CHANGELOG section. Do not treat the tag alone as a finished release — GitHub
+Latest must match README. See `.cursor/rules/versioning.mdc`.
+
 - **Patch** — bug fixes, polish, perf, copy, internal refactors (no user-facing
   behaviour change).
 - **Minor** — new user-facing features/settings, meaningful UX or perf upgrades.

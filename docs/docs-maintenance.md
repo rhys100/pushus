@@ -57,6 +57,7 @@ How we keep public docs clean while the project moves fast.
 | `README.md` | `**v{x.y.z}**` in Current status |
 | `src/lib/whatsNew.ts` | `version` set on this release's new items (≤ 3 may stay unversioned) |
 | Git tag | `v{x.y.z}` |
+| GitHub Release | `v{x.y.z}` published and marked Latest (required — not tag-only) |
 | Built `version.json` | `version` + `buildId` (from Vite build) |
 
 ### Commands
@@ -90,7 +91,15 @@ A **What's New** item (`src/lib/whatsNew.ts`) is only added when a **headline** 
 4. `src/lib/whatsNew.ts` — set `version: 'X.Y.Z'` on this release's new items
 5. roadmap / product-decisions / dev-log as needed
 6. `npm run version:check && npm test`
-7. Commit, push, tag `vX.Y.Z`, GitHub Release
+7. Commit and push the release commit
+8. `git tag -a vX.Y.Z -m "vX.Y.Z"` and `git push origin vX.Y.Z`
+9. Create the GitHub Release (required — incomplete without this):
+
+```bash
+gh release create vX.Y.Z --title "PushUS vX.Y.Z" --notes-file path/to/changelog-section.md --latest
+```
+
+Use that version's `## [X.Y.Z]` body from `CHANGELOG.md` as the notes. Confirm GitHub shows **Latest** on `vX.Y.Z`.
 
 ### Semver
 

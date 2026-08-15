@@ -27,7 +27,6 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ### Changed
 
 - **Faster cold start:** memberships and the active group used to load one after the other; they now arrive in a single request, removing a round trip from every launch
-
 - **Release process:** cutting a version now requires a GitHub Release (not just a git tag) so GitHub Latest matches README; agent/versioning docs spell out the `gh release create` step
 - **Sign-in email design:** Magic Link template restyled to match PushUS dark theme (orange accent, large mono code block, iOS Home Screen note). Plain-text version puts the code on its own line for easy copy.
 

@@ -121,10 +121,13 @@ curl -X POST "http://127.0.0.1:54321/functions/v1/send-push-reminders" \
 
 Mate requests / accepts, 1v1 challenge invites, **group challenge creates**, and feed reactions are delivered by the `send-social` edge function (JWT verification ON — user-invoked). Delivery respects `push_enabled` and the `social_push_enabled` opt-out (default on). Group challenge create fans out to every other active group member and deep-links to `/challenges/:id`.
 
+Social / nudge payloads use **high** urgency (same as reminders) and distinct SW tags (`pushus-social`, `pushus-nudge`) so they don’t replace a sitting reminder. Apple Web Push endpoints that return **403** are disabled (stale Home Screen subscriptions often 403 instead of 410).
+
 Deploy:
 
 ```bash
 npx supabase functions deploy send-social
+npx supabase functions deploy send-nudge
 ```
 
 Requires migration `0046_social_notifications.sql` (`social_push_enabled` + `social_push_log`).
