@@ -44,6 +44,11 @@ import { GuestImportPrompt } from '@/components/today/GuestImportPrompt'
 import { useAuth } from '@/providers/AuthProvider'
 import { useTrainingPlan } from '@/hooks/useTrainingPlan'
 import { usePostBankQueue } from '@/hooks/usePostBankQueue'
+import { getNextSetReminder } from '@/lib/nextSetReminder'
+import {
+  cancelNextSetReminder,
+  scheduleNextSetReminder,
+} from '@/lib/notifications/scheduleNextSet'
 import { buildTargetExplanation } from '@/lib/training/targetExplanation'
 import { useSorenessCheckin } from '@/hooks/useSorenessCheckin'
 import { effortRatingToRir } from '@/lib/training/effortRating'
@@ -57,6 +62,9 @@ const OverageConfirmSheet = lazy(() =>
   import('@/components/logger/OverageConfirmSheet').then((m) => ({
     default: m.OverageConfirmSheet,
   })),
+)
+const NextSetSheet = lazy(() =>
+  import('@/components/logger/NextSetSheet').then((m) => ({ default: m.NextSetSheet })),
 )
 const NoseTapMode = lazy(() =>
   import('@/components/logger/NoseTapMode').then((m) => ({ default: m.NoseTapMode })),
@@ -170,6 +178,7 @@ export function TodayPage() {
   const overageSheetLatched = useLatch(overageConfirm !== null)
   const effortSheetLatched = useLatch(postBank.current?.kind === 'effort')
   const sorenessSheetLatched = useLatch(postBank.current?.kind === 'soreness')
+  const nextSetSheetLatched = useLatch(postBank.current?.kind === 'nextSet')
 
   useEffect(() => {
     if (!user?.id) {
@@ -338,8 +347,23 @@ export function TodayPage() {
         effortAskedToday,
         alreadyCheckedInToday: sorenessStatus != null || sorenessPromptedToday,
         previousBestSet: 0,
-        nextSetRemindersEnabled: false,
+        // The sheet always confirms what's next; the nudge only fires if the
+        // member picked an interval, which is off by default.
+        nextSetRemindersEnabled: true,
       })
+
+      const reminderMinutes = getNextSetReminder()
+      const setsPlanned = todayPrescription?.sets ?? 0
+      const banksAfter = entries.length + 1
+
+      if (reminderMinutes && setsPlanned > 0 && banksAfter < setsPlanned) {
+        scheduleNextSetReminder({
+          minutes: reminderMinutes,
+          setNumber: banksAfter + 1,
+          setsPlanned,
+          reps: todayPrescription?.setSize ?? 0,
+        })
+      }
 
       toast({
         message: isMaxCheckin
@@ -350,6 +374,7 @@ export function TodayPage() {
         actionLabel: 'Undo',
         onAction: () => {
           postBank.clear()
+          cancelNextSetReminder()
           undoLastEntry.mutate(
             { group: activeGroup, userId: user.id },
             {
@@ -744,6 +769,19 @@ export function TodayPage() {
               setEffortAskedToday(true)
               postBank.advance()
             }}
+          />
+        </Suspense>
+      ) : null}
+
+      {nextSetSheetLatched ? (
+        <Suspense fallback={null}>
+          <NextSetSheet
+            open={postBank.current?.kind === 'nextSet'}
+            setNumber={postBank.current?.kind === 'nextSet' ? postBank.current.setNumber : 0}
+            setsPlanned={postBank.current?.kind === 'nextSet' ? postBank.current.setsPlanned : 0}
+            nextTarget={postBank.current?.kind === 'nextSet' ? postBank.current.nextTarget : 0}
+            reminderMinutes={getNextSetReminder()}
+            onDismiss={postBank.advance}
           />
         </Suspense>
       ) : null}

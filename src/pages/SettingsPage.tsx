@@ -5,6 +5,7 @@ import { AvailabilitySettings } from '@/components/settings/AvailabilitySettings
 import { BoardPrivacySettings } from '@/components/settings/BoardPrivacySettings'
 import { CustomActivitiesSettings } from '@/components/settings/CustomActivitiesSettings'
 import { DataExportSettings } from '@/components/settings/DataExportSettings'
+import { NextSetReminderSettings } from '@/components/settings/NextSetReminderSettings'
 import { SettingsLinkRow } from '@/components/settings/SettingsLinkRow'
 import { areSoundEffectsEnabled, setSoundEffectsEnabled } from '@/lib/dinkSound'
 import { SettingsSection } from '@/components/settings/SettingsSection'
@@ -637,6 +638,8 @@ export function SettingsPage() {
           description="Max set, training days, and your 4-week build"
         />
       </Card>
+
+      <NextSetReminderSettings />
 
       <AvailabilitySettings onChanged={() => void refreshPrefs()} />
       </SettingsSection>
