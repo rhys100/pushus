@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Long-press shortcuts on the app icon, mirroring the PWA manifest `shortcuts`
+  so the app behaves the same whether it was installed from the browser or the
+  APK. Android also lets the user drag any of these onto the home screen as its
+  own tile, which is the launcher-tile behaviour without a widget — no
+  AppWidgetProvider, and so no Java or Kotlin of our own.
+
+  Each launches the existing deep-link intent-filter on LauncherActivity, which
+  androidbrowserhelper resolves in preference to DEFAULT_URL.
+-->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="log"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_log_short"
+        android:shortcutLongLabel="@string/shortcut_log_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="app.pushus.twa"
+            android:targetClass="com.google.androidbrowserhelper.trusted.LauncherActivity"
+            android:data="https://www.pushus.app/today?source=shortcut" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="leaderboard"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_board_short"
+        android:shortcutLongLabel="@string/shortcut_board_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="app.pushus.twa"
+            android:targetClass="com.google.androidbrowserhelper.trusted.LauncherActivity"
+            android:data="https://www.pushus.app/leaderboard?source=shortcut" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="activity"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_feed_short"
+        android:shortcutLongLabel="@string/shortcut_feed_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="app.pushus.twa"
+            android:targetClass="com.google.androidbrowserhelper.trusted.LauncherActivity"
+            android:data="https://www.pushus.app/activity?source=shortcut" />
+    </shortcut>
+</shortcuts>

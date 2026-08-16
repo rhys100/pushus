@@ -20,6 +20,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Android home-screen tiles:** long-press the PushUS icon for Log, Board and Feed — and drag any of them onto your home screen as its own tile
+
 - **Next-set nudge:** bank a set with more to go and PushUS confirms what's next — and, if you pick an interval in Settings → Training, reminds you when it's time. Off by default, and you choose the spacing: the plan works best spread through the day, so the app doesn't prescribe one
 
 - **Why this target?** tap it on the Today card for a plain-language breakdown of how your daily number was worked out — your clean max, the day type, where you are in the 4-week block, how it splits into sets, and any easing for ramp-back or soreness
