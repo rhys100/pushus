@@ -69,10 +69,18 @@ export function AchievementsPage() {
     }
 
     try {
-      await useFreeze.mutateAsync(streak.freeze.protectableDate)
+      // The server picks the date from the group's timezone — passing one from
+      // here is what let the date be forged in the first place.
+      await useFreeze.mutateAsync()
       toast({ message: 'Streak freeze used — yesterday is protected.', variant: 'success' })
-    } catch {
-      toast({ message: 'Could not use the freeze. Try again.', variant: 'danger' })
+    } catch (error) {
+      toast({
+        message:
+          error instanceof Error && error.message
+            ? error.message
+            : 'Could not use the freeze. Try again.',
+        variant: 'danger',
+      })
     }
   }
 
@@ -148,7 +156,7 @@ export function AchievementsPage() {
               {streak.freeze.protectableDate ? (
                 <Button
                   variant="secondary"
-                  className="min-h-9 shrink-0 px-3 text-sm"
+                  className="min-h-11 shrink-0 px-3 text-sm"
                   loading={useFreeze.isPending}
                   onClick={() => void handleUseFreeze()}
                 >

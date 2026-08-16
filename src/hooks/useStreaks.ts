@@ -4,7 +4,6 @@ import { getZonedTimeParts } from '@/lib/notificationEligibility'
 import {
   computeStreakStatus,
   isoDateAddDays,
-  mondayOf,
   type StreakFreezeRow,
   type StreakStatus,
 } from '@/lib/gamification/streakStatus'
@@ -91,21 +90,24 @@ export function useGoalStreak(group: Group | null | undefined) {
   })
 }
 
-/** Consume this week's streak freeze to protect a specific (unlogged) date. */
+/** Consume this week's streak freeze. The server decides which day it covers. */
 export function useUseStreakFreeze(group: Group | null | undefined, userId: string | undefined) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (protectDate: string) => {
+    // Spending a freeze goes through a SECURITY DEFINER RPC (migration 0048).
+    // This used to be a direct table insert with the client choosing both
+    // `week_start` and `used_on`, which let any member protect arbitrary dates
+    // from a console — the one-per-week and yesterday-only rules lived only
+    // here in JS. The server now decides the date from the GROUP's timezone,
+    // so no date is accepted from the caller at all.
+    mutationFn: async () => {
       if (!group?.id || !userId) {
         throw new Error('No active group')
       }
 
-      const { error } = await supabase.from('streak_freezes').insert({
-        user_id: userId,
-        group_id: group.id,
-        week_start: mondayOf(protectDate),
-        used_on: protectDate,
+      const { error } = await supabase.rpc('use_streak_freeze', {
+        p_group_id: group.id,
       })
 
       if (error) {
