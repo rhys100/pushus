@@ -20,6 +20,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Personal-record card:** beat your biggest single set and PushUS says so, with a shareable image you can send to the group chat
+
 - **Android home-screen tiles:** long-press the PushUS icon for Log, Board and Feed — and drag any of them onto your home screen as its own tile
 
 - **Next-set nudge:** bank a set with more to go and PushUS confirms what's next — and, if you pick an interval in Settings → Training, reminds you when it's time. Off by default, and you choose the spacing: the plan works best spread through the day, so the app doesn't prescribe one

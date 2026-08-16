@@ -44,6 +44,7 @@ import { GuestImportPrompt } from '@/components/today/GuestImportPrompt'
 import { useAuth } from '@/providers/AuthProvider'
 import { useTrainingPlan } from '@/hooks/useTrainingPlan'
 import { usePostBankQueue } from '@/hooks/usePostBankQueue'
+import { useMyBestSet } from '@/hooks/useBestSet'
 import { getNextSetReminder } from '@/lib/nextSetReminder'
 import {
   cancelNextSetReminder,
@@ -62,6 +63,9 @@ const OverageConfirmSheet = lazy(() =>
   import('@/components/logger/OverageConfirmSheet').then((m) => ({
     default: m.OverageConfirmSheet,
   })),
+)
+const PrShareCard = lazy(() =>
+  import('@/components/today/PrShareCard').then((m) => ({ default: m.PrShareCard })),
 )
 const NextSetSheet = lazy(() =>
   import('@/components/logger/NextSetSheet').then((m) => ({ default: m.NextSetSheet })),
@@ -125,6 +129,7 @@ export function TodayPage() {
   const subscriptionQuery = useGroupSubscription(activeGroup?.id)
   const { data: dayTotal = 0, isLoading: totalLoading } = useDayTotal(activeGroup)
   const { data: entries = [] } = useDayEntries(activeGroup, user?.id)
+  const { data: bestSet = 0 } = useMyBestSet(activeGroup, user?.id)
 
   const bankPushups = useBankPushups()
   const recordEntryEffort = useRecordEntryEffort()
@@ -179,6 +184,7 @@ export function TodayPage() {
   const effortSheetLatched = useLatch(postBank.current?.kind === 'effort')
   const sorenessSheetLatched = useLatch(postBank.current?.kind === 'soreness')
   const nextSetSheetLatched = useLatch(postBank.current?.kind === 'nextSet')
+  const prCardLatched = useLatch(postBank.current?.kind === 'prCelebration')
 
   useEffect(() => {
     if (!user?.id) {
@@ -346,7 +352,7 @@ export function TodayPage() {
         setSize: todayPrescription?.setSize ?? 0,
         effortAskedToday,
         alreadyCheckedInToday: sorenessStatus != null || sorenessPromptedToday,
-        previousBestSet: 0,
+        previousBestSet: bestSet,
         // The sheet always confirms what's next; the nudge only fires if the
         // member picked an interval, which is off by default.
         nextSetRemindersEnabled: true,
@@ -406,6 +412,7 @@ export function TodayPage() {
   }, [
     activeGroup,
     bankPushups,
+    bestSet,
     canBank,
     postBank,
     dailyTarget,
@@ -769,6 +776,20 @@ export function TodayPage() {
               setEffortAskedToday(true)
               postBank.advance()
             }}
+          />
+        </Suspense>
+      ) : null}
+
+      {prCardLatched ? (
+        <Suspense fallback={null}>
+          <PrShareCard
+            open={postBank.current?.kind === 'prCelebration'}
+            count={postBank.current?.kind === 'prCelebration' ? postBank.current.count : 0}
+            previousBest={
+              postBank.current?.kind === 'prCelebration' ? postBank.current.previousBest : 0
+            }
+            displayName={profile?.display_name ?? ''}
+            onDismiss={postBank.advance}
           />
         </Suspense>
       ) : null}
