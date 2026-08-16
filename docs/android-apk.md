@@ -16,8 +16,10 @@ updates the Android app the moment users reopen it.
 
 ## Why a TWA rather than a rebuild
 
-- **One codebase.** The wrapper contains no Java or Kotlin of our own. Every
-  screen, every query and every migration is the code already in `src/`.
+- **One codebase.** The wrapper still contains no Java or Kotlin of our own —
+  including the home-screen tiles, which are static shortcuts rather than an
+  AppWidgetProvider. Every screen, every query and every migration is the code
+  already in `src/`.
 - **Updates without the Play review queue.** A Cloudflare Pages deploy is live
   in the Android app immediately; the APK only needs re-releasing when the
   wrapper itself changes (icon, package id, target SDK).
@@ -38,6 +40,7 @@ android/
     build.gradle           applicationId, SDK levels, signing
     src/main/AndroidManifest.xml
     src/main/res/values/   strings (launch URL, asset statements), colours, theme
+    src/main/res/xml/      launcher shortcuts (mirrors the PWA manifest)
     src/main/res/mipmap-*/ launcher icons — GENERATED, see below
 scripts/generate-android-icons.ts
 .github/workflows/android-apk.yml

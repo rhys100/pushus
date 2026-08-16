@@ -62,3 +62,45 @@ describe('Android TWA manifest', () => {
     )
   })
 })
+
+describe('Android launcher shortcuts', () => {
+  const manifest = readFileSync(
+    resolve(process.cwd(), 'android/app/src/main/AndroidManifest.xml'),
+    'utf8',
+  )
+  const shortcuts = readFileSync(
+    resolve(process.cwd(), 'android/app/src/main/res/xml/shortcuts.xml'),
+    'utf8',
+  )
+  const webManifest = JSON.parse(
+    readFileSync(resolve(process.cwd(), 'public/manifest.json'), 'utf8'),
+  ) as { shortcuts?: Array<{ url: string }> }
+
+  it('is registered on the launcher activity', () => {
+    expect(manifest).toMatch(/android:name="android\.app\.shortcuts"/)
+    expect(manifest).toMatch(/android:resource="@xml\/shortcuts"/)
+  })
+
+  it('covers the same routes as the PWA manifest shortcuts', () => {
+    // Installed-from-browser and installed-from-APK should behave the same.
+    for (const shortcut of webManifest.shortcuts ?? []) {
+      const route = shortcut.url.split('?')[0]
+      expect(shortcuts, `no Android shortcut for ${route}`).toContain(`${route}?`)
+    }
+  })
+
+  it('targets the launcher activity that the manifest actually declares', () => {
+    expect(shortcuts).toContain(
+      'com.google.androidbrowserhelper.trusted.LauncherActivity',
+    )
+    expect(manifest).toContain(
+      'com.google.androidbrowserhelper.trusted.LauncherActivity',
+    )
+  })
+
+  it('does not mark them as conversation shortcuts', () => {
+    // android.shortcut.conversation is the People API; using it here would put
+    // PushUS in the conversations section of the share sheet.
+    expect(shortcuts).not.toContain('android.shortcut.conversation')
+  })
+})

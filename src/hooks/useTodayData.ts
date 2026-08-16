@@ -492,6 +492,10 @@ export function useBankPushups() {
       }
 
       if (userId) {
+        // A bank can be a new biggest set, and the record check compares the
+        // NEXT bank against this value — leaving it stale would let the same
+        // record be celebrated twice.
+        void queryClient.invalidateQueries({ queryKey: ['bestSet', group.id, userId] })
         // Every bank raises XP (1 rep = 1 XP), so reconcile the Badges-page total
         // even when no new badge unlocks — announceFreshAchievements only
         // invalidates ['xp'] on a fresh unlock, leaving the common case stale.

@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">PushUS</string>
+
+    <!-- Launcher shortcuts. Android truncates the short label hard in the
+         long-press popup, so these stay to a single word. -->
+    <string name="shortcut_log_short">Log</string>
+    <string name="shortcut_log_long">Log push-ups</string>
+    <string name="shortcut_board_short">Board</string>
+    <string name="shortcut_board_long">Leaderboard</string>
+    <string name="shortcut_feed_short">Feed</string>
+    <string name="shortcut_feed_long">Group feed</string>
     <string name="host">www.pushus.app</string>
     <string name="launch_url">https://www.pushus.app/today?source=twa</string>
 

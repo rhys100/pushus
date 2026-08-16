@@ -43,14 +43,29 @@ import { DayProgressCard } from '@/components/today/DayProgressCard'
 import { GuestImportPrompt } from '@/components/today/GuestImportPrompt'
 import { useAuth } from '@/providers/AuthProvider'
 import { useTrainingPlan } from '@/hooks/useTrainingPlan'
+import { usePostBankQueue } from '@/hooks/usePostBankQueue'
+import { useMyBestSet } from '@/hooks/useBestSet'
+import {
+  isOnline,
+  notifyQueueChanged,
+  useOfflineBankQueue,
+} from '@/hooks/useOfflineBankQueue'
+import {
+  enqueueBank,
+  queuedDayTotal,
+  queuedForGroupDay,
+  removeQueued,
+} from '@/lib/offlineBankQueue'
+import { getNextSetReminder } from '@/lib/nextSetReminder'
+import {
+  cancelNextSetReminder,
+  scheduleNextSetReminder,
+} from '@/lib/notifications/scheduleNextSet'
 import { buildTargetExplanation } from '@/lib/training/targetExplanation'
 import { useSorenessCheckin } from '@/hooks/useSorenessCheckin'
-import { effortRatingToRir, shouldAskEffortFeedback } from '@/lib/training/effortRating'
+import { effortRatingToRir } from '@/lib/training/effortRating'
 import type { EffortRating } from '@/lib/training/effortRating'
-import {
-  shouldPromptSorenessCheckIn,
-  sorenessSuppressesMaxCheckIn,
-} from '@/lib/training/sorenessCheckin'
+import { sorenessSuppressesMaxCheckIn } from '@/lib/training/sorenessCheckin'
 
 // TodayPage ships in the eager initial chunk, so these rarely-opened modals are
 // code-split out — their JS (and the Web-Audio / haptics they pull in) only loads
@@ -59,6 +74,12 @@ const OverageConfirmSheet = lazy(() =>
   import('@/components/logger/OverageConfirmSheet').then((m) => ({
     default: m.OverageConfirmSheet,
   })),
+)
+const PrShareCard = lazy(() =>
+  import('@/components/today/PrShareCard').then((m) => ({ default: m.PrShareCard })),
+)
+const NextSetSheet = lazy(() =>
+  import('@/components/logger/NextSetSheet').then((m) => ({ default: m.NextSetSheet })),
 )
 const NoseTapMode = lazy(() =>
   import('@/components/logger/NoseTapMode').then((m) => ({ default: m.NoseTapMode })),
@@ -119,6 +140,16 @@ export function TodayPage() {
   const subscriptionQuery = useGroupSubscription(activeGroup?.id)
   const { data: dayTotal = 0, isLoading: totalLoading } = useDayTotal(activeGroup)
   const { data: entries = [] } = useDayEntries(activeGroup, user?.id)
+  const { data: bestSet = 0 } = useMyBestSet(activeGroup, user?.id)
+  const offlineQueue = useOfflineBankQueue()
+
+  // Sets waiting to sync are real to the member — they must appear in today's
+  // total, or banking offline looks like it did nothing.
+  const todayIso = activeGroup ? getGroupLocalDateString(activeGroup.timezone) : ''
+  const pendingReps = activeGroup ? queuedDayTotal(offlineQueue, activeGroup.id, todayIso) : 0
+  const pendingCount = activeGroup
+    ? queuedForGroupDay(offlineQueue, activeGroup.id, todayIso).length
+    : 0
 
   const bankPushups = useBankPushups()
   const recordEntryEffort = useRecordEntryEffort()
@@ -134,11 +165,11 @@ export function TodayPage() {
   const overrideConfirmedRef = useRef(false)
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null)
   const [activitySide, setActivitySide] = useState<SideChoice>('left')
-  const [effortEntryId, setEffortEntryId] = useState<string | null>(null)
   const [effortAskedToday, setEffortAskedToday] = useState(false)
   const [maxSetMode, setMaxSetMode] = useState(false)
   const [showMaxCheckInCard, setShowMaxCheckInCard] = useState(true)
-  const [showSorenessSheet, setShowSorenessSheet] = useState(false)
+  // Single owner for everything shown after a bank — see usePostBankQueue.
+  const postBank = usePostBankQueue()
   const [noseTapOpen, setNoseTapOpen] = useState(false)
   const [explainerOpen, setExplainerOpen] = useState(false)
   const [sorenessPromptedToday, setSorenessPromptedToday] = useState(false)
@@ -170,8 +201,10 @@ export function TodayPage() {
   // Keep each lazy sheet mounted once first opened so its exit animation still plays.
   const explainerLatched = useLatch(explainerOpen)
   const overageSheetLatched = useLatch(overageConfirm !== null)
-  const effortSheetLatched = useLatch(effortEntryId !== null)
-  const sorenessSheetLatched = useLatch(showSorenessSheet)
+  const effortSheetLatched = useLatch(postBank.current?.kind === 'effort')
+  const sorenessSheetLatched = useLatch(postBank.current?.kind === 'soreness')
+  const nextSetSheetLatched = useLatch(postBank.current?.kind === 'nextSet')
+  const prCardLatched = useLatch(postBank.current?.kind === 'prCelebration')
 
   useEffect(() => {
     if (!user?.id) {
@@ -195,6 +228,9 @@ export function TodayPage() {
     (activityId: string | null) => {
       setSelectedActivityId(activityId)
       setActivitySide('left')
+      // The queued post-bank steps are about a push-up set that is no longer
+      // the active activity — drop them rather than show them over a new one.
+      postBank.clear()
       // Leaving push-ups (or switching activity) drops max-set mode so the next
       // set isn't silently logged as a max check-in.
       setMaxSetMode(false)
@@ -205,7 +241,7 @@ export function TodayPage() {
         setStoredLogActivityId(user.id, activityId)
       }
     },
-    [user?.id],
+    [postBank, user?.id],
   )
 
   const isTrainingDay =
@@ -214,36 +250,22 @@ export function TodayPage() {
     !todayPrescription.isRestDay &&
     (dailyTarget ?? 0) > 0
 
-  const closeEffortSheet = useCallback(() => {
-    setEffortEntryId(null)
-  }, [])
-
   const handleEffortSelect = useCallback(
     async (rating: EffortRating) => {
-      if (!activeGroup || !effortEntryId) {
-        closeEffortSheet()
+      const entryId = postBank.current?.kind === 'effort' ? postBank.current.entryId : null
+
+      if (!activeGroup || !entryId) {
+        postBank.advance()
         return
       }
 
       try {
         await recordEntryEffort.mutateAsync({
           group: activeGroup,
-          entryId: effortEntryId,
+          entryId,
           repsInReserve: effortRatingToRir(rating),
         })
         setEffortAskedToday(true)
-
-        if (
-          rating === 'hard' &&
-          todayPrescription?.dayType === 'challenge' &&
-          shouldPromptSorenessCheckIn({
-            wasChallengeDay: true,
-            lastEffortWasHard: true,
-            alreadyCheckedInToday: sorenessStatus != null || sorenessPromptedToday,
-          })
-        ) {
-          setShowSorenessSheet(true)
-        }
       } catch {
         toast({
           message: 'Could not save effort feedback.',
@@ -251,10 +273,23 @@ export function TodayPage() {
           durationMs: 4000,
         })
       } finally {
-        closeEffortSheet()
+        // A "hard" rating on a challenge day escalates to the soreness
+        // check-in; the queue decides, not this handler.
+        postBank.resolveEffort(rating, {
+          dayType: todayPrescription?.dayType ?? 'rest',
+          alreadyCheckedInToday: sorenessStatus != null || sorenessPromptedToday,
+        })
       }
     },
-    [activeGroup, closeEffortSheet, effortEntryId, recordEntryEffort, sorenessPromptedToday, sorenessStatus, todayPrescription?.dayType, toast],
+    [
+      activeGroup,
+      postBank,
+      recordEntryEffort,
+      sorenessPromptedToday,
+      sorenessStatus,
+      todayPrescription?.dayType,
+      toast,
+    ],
   )
 
   const handleBank = useCallback(async () => {
@@ -283,6 +318,59 @@ export function TodayPage() {
       })
     ) {
       setOverageConfirm({ count: bankedCount, projected: dayTotal + bankedCount })
+      return
+    }
+
+    // Offline: queue it and stop here, deliberately WITHOUT going through the
+    // mutation. useBankPushups writes optimistically to the day total, entries,
+    // feed and leaderboards; letting that run while the queue overlay also
+    // counts the same reps would show them twice. Skipping the mutation
+    // entirely means there is nothing to reconcile and no rollback path.
+    if (!isOnline()) {
+      const queued = enqueueBank({
+        groupId: activeGroup.id,
+        userId: user.id,
+        count: bankedCount,
+        // Pinned NOW, in the group's timezone. Recomputing at flush time would
+        // move a set banked at 23:55 into the next day.
+        loggedFor: getGroupLocalDateString(activeGroup.timezone),
+        isMaxCheckin,
+      })
+
+      notifyQueueChanged()
+      loggerRef.current?.unwind()
+      dismissHint()
+
+      postBank.start({
+        count: bankedCount,
+        // No server id yet, so the queue skips the effort ask (which writes
+        // against a real row) but still allows a record celebration.
+        entryId: null,
+        isTrainingDay,
+        wizardCompleted,
+        isRestDay: todayPrescription?.isRestDay ?? true,
+        dayType: todayPrescription?.dayType ?? 'rest',
+        banksLogged: entries.length + pendingCount + 1,
+        setsPlanned: todayPrescription?.sets ?? 0,
+        setSize: todayPrescription?.setSize ?? 0,
+        effortAskedToday,
+        alreadyCheckedInToday: sorenessStatus != null || sorenessPromptedToday,
+        previousBestSet: bestSet,
+        nextSetRemindersEnabled: true,
+      })
+
+      toast({
+        message: `${bankedCount} banked offline — syncs when you're back online.`,
+        variant: 'default',
+        durationMs: 6000,
+        actionLabel: 'Undo',
+        onAction: () => {
+          postBank.clear()
+          removeQueued(queued.id)
+          notifyQueueChanged()
+        },
+      })
+
       return
     }
 
@@ -323,33 +411,37 @@ export function TodayPage() {
         }
       }
 
+      // One owner decides what (if anything) follows a bank, from a snapshot
+      // taken now — so a refetch landing mid-sheet cannot change it.
+      postBank.start({
+        count: bankedCount,
+        entryId: entry.id ?? null,
+        isTrainingDay,
+        wizardCompleted,
+        isRestDay: todayPrescription?.isRestDay ?? true,
+        dayType: todayPrescription?.dayType ?? 'rest',
+        banksLogged: entries.length + 1,
+        setsPlanned: todayPrescription?.sets ?? 0,
+        setSize: todayPrescription?.setSize ?? 0,
+        effortAskedToday,
+        alreadyCheckedInToday: sorenessStatus != null || sorenessPromptedToday,
+        previousBestSet: bestSet,
+        // The sheet always confirms what's next; the nudge only fires if the
+        // member picked an interval, which is off by default.
+        nextSetRemindersEnabled: true,
+      })
+
+      const reminderMinutes = getNextSetReminder()
       const setsPlanned = todayPrescription?.sets ?? 0
       const banksAfter = entries.length + 1
-      const shouldAsk =
-        isTrainingDay &&
-        entry.id &&
-        !entry.id.startsWith('optimistic-') &&
-        shouldAskEffortFeedback({
-          wizardCompleted,
-          isRestDay: todayPrescription?.isRestDay ?? true,
-          banksLogged: banksAfter,
-          setsPlanned,
-          effortAskedToday,
-          dayType: todayPrescription?.dayType ?? 'rest',
-        })
 
-      if (shouldAsk) {
-        setEffortEntryId(entry.id)
-      } else if (
-        todayPrescription?.dayType === 'challenge' &&
-        banksAfter >= setsPlanned &&
-        shouldPromptSorenessCheckIn({
-          wasChallengeDay: true,
-          lastEffortWasHard: false,
-          alreadyCheckedInToday: sorenessStatus != null || sorenessPromptedToday,
+      if (reminderMinutes && setsPlanned > 0 && banksAfter < setsPlanned) {
+        scheduleNextSetReminder({
+          minutes: reminderMinutes,
+          setNumber: banksAfter + 1,
+          setsPlanned,
+          reps: todayPrescription?.setSize ?? 0,
         })
-      ) {
-        setShowSorenessSheet(true)
       }
 
       toast({
@@ -360,7 +452,8 @@ export function TodayPage() {
         durationMs: 6000,
         actionLabel: 'Undo',
         onAction: () => {
-          closeEffortSheet()
+          postBank.clear()
+          cancelNextSetReminder()
           undoLastEntry.mutate(
             { group: activeGroup, userId: user.id },
             {
@@ -392,8 +485,10 @@ export function TodayPage() {
   }, [
     activeGroup,
     bankPushups,
+    bestSet,
     canBank,
-    closeEffortSheet,
+    pendingCount,
+    postBank,
     dailyTarget,
     dayTotal,
     dismissHint,
@@ -644,8 +739,8 @@ export function TodayPage() {
           <DayProgressCard
             variant="compact"
             className="w-full"
-            bankedToday={dayTotal}
-            banksLogged={entries.length}
+            bankedToday={dayTotal + pendingReps}
+            banksLogged={entries.length + pendingCount}
             loading={(totalLoading && dayTotal === 0) || planLoading}
             hasPlan={hasPlan}
             dailyTarget={dailyTarget}
@@ -672,7 +767,15 @@ export function TodayPage() {
               ref={loggerRef}
               onCanBankChange={setCanBank}
               onBank={handleBankActive}
-              onLongPressCenter={isCustomMode ? undefined : () => setNoseTapOpen(true)}
+              onLongPressCenter={
+                isCustomMode
+                  ? undefined
+                  : () => {
+                      // Immersive mode owns the screen; no sheet may sit under it.
+                      postBank.clear()
+                      setNoseTapOpen(true)
+                    }
+              }
               // Freeze the ring while the overage confirm is up so the count the
               // sheet warns about is exactly what "Log it anyway" banks.
               disabled={bankPending || overageConfirm !== null}
@@ -740,13 +843,40 @@ export function TodayPage() {
       {effortSheetLatched ? (
         <Suspense fallback={null}>
           <SetEffortSheet
-            open={effortEntryId !== null}
+            open={postBank.current?.kind === 'effort'}
             saving={recordEntryEffort.isPending}
             onSelect={(rating) => void handleEffortSelect(rating)}
             onSkip={() => {
               setEffortAskedToday(true)
-              closeEffortSheet()
+              postBank.advance()
             }}
+          />
+        </Suspense>
+      ) : null}
+
+      {prCardLatched ? (
+        <Suspense fallback={null}>
+          <PrShareCard
+            open={postBank.current?.kind === 'prCelebration'}
+            count={postBank.current?.kind === 'prCelebration' ? postBank.current.count : 0}
+            previousBest={
+              postBank.current?.kind === 'prCelebration' ? postBank.current.previousBest : 0
+            }
+            displayName={profile?.display_name ?? ''}
+            onDismiss={postBank.advance}
+          />
+        </Suspense>
+      ) : null}
+
+      {nextSetSheetLatched ? (
+        <Suspense fallback={null}>
+          <NextSetSheet
+            open={postBank.current?.kind === 'nextSet'}
+            setNumber={postBank.current?.kind === 'nextSet' ? postBank.current.setNumber : 0}
+            setsPlanned={postBank.current?.kind === 'nextSet' ? postBank.current.setsPlanned : 0}
+            nextTarget={postBank.current?.kind === 'nextSet' ? postBank.current.nextTarget : 0}
+            reminderMinutes={getNextSetReminder()}
+            onDismiss={postBank.advance}
           />
         </Suspense>
       ) : null}
@@ -754,17 +884,17 @@ export function TodayPage() {
       {sorenessSheetLatched ? (
         <Suspense fallback={null}>
           <SorenessCheckInSheet
-            open={showSorenessSheet}
+            open={postBank.current?.kind === 'soreness'}
             saving={sorenessSaving}
             onSelect={(status) => {
               void saveStatus(status).then(() => {
                 setSorenessPromptedToday(true)
-                setShowSorenessSheet(false)
+                postBank.advance()
               })
             }}
             onSkip={() => {
               setSorenessPromptedToday(true)
-              setShowSorenessSheet(false)
+              postBank.advance()
             }}
           />
         </Suspense>
