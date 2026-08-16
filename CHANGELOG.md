@@ -20,6 +20,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Bank sets with no connection:** logging a set offline now saves it on the device and counts toward today straight away, then syncs itself when you're back online. Survives closing the app
+
 - **Personal-record card:** beat your biggest single set and PushUS says so, with a shareable image you can send to the group chat
 
 - **Android home-screen tiles:** long-press the PushUS icon for Log, Board and Feed — and drag any of them onto your home screen as its own tile
@@ -31,7 +33,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Export your log:** Settings → Your data downloads every push-up set and custom activity you have logged, across every group you are in, as a CSV. Dates use each group's timezone so they match what you saw when you banked them
 
 - **Android app:** PushUS now builds as an installable Android APK — a Trusted Web Activity wrapper around the same PWA, so there is one codebase and a web deploy updates the Android app immediately. Push reminders are delegated to the app so they carry the PushUS name and icon. Built by the new `Android APK` GitHub Action and attached to each GitHub Release. See [docs/android-apk.md](docs/android-apk.md)
-- **Works offline:** the service worker now caches the app shell and the fingerprinted JavaScript/CSS bundles. Reopening PushUS serves ~460 kB from disk instead of the network, and the app still opens with no connection (banking a set still needs one)
+- **Works offline:** the service worker now caches the app shell and the fingerprinted JavaScript/CSS bundles. Reopening PushUS serves ~460 kB from disk instead of the network, and the app still opens with no connection (and banking now works offline too)
 - **Group challenge push:** when an admin creates a group challenge, other active group members with social notifications on get a push that deep-links to the challenge so they can join
 
 ### Changed

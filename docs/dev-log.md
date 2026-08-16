@@ -34,6 +34,31 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-08-16c (post-bank coordinator consumers: F2, F6, F1)
+
+- **F2 next-set nudge** — shipped as an opt-in nudge on the member's own interval
+  rather than a rest timer. A 60-120s countdown contradicts `dailySetPlan.ts:102`
+  ("rest 30+ min between banks") which the day card prints on the same screen, and
+  a rest length is a signed-off training prescription. Test pins the 15-min floor.
+  Reliability is honest: no web API schedules a notification past page discard, so
+  it's a page-owned timer and Settings says so.
+- **F6 PR card** — canvas, not resvg-wasm: CSP has no `wasm-unsafe-eval` so wasm
+  cannot compile in the browser (and the payload is 2.4 MB). Rasterised through
+  the real path in a browser to verify, which caught the logo being off-centre —
+  text centres via text-anchor, a `<g>` transform does not.
+- **F1 offline queue** — deliberately does NOT go through `useBankPushups` when
+  offline. That hook writes optimistically to day total, entries, feed and
+  leaderboards; letting it run while the queue overlay counts the same reps shows
+  them twice. Skipping the mutation means nothing to reconcile and no rollback.
+  localStorage over IndexedDB (matches `guestLog.ts`, and synchronous reads keep
+  the first render's total honest). `logged_for` pinned at enqueue in the GROUP
+  timezone — recomputing at flush would move a 23:55 set into the next day.
+- **Known gap in F1:** `bank_pushups` has no idempotency key, so a flush whose
+  response is lost could double-bank. Mitigated by stopping the drain on the first
+  transport failure and capping attempts, not eliminated. Fixing properly needs a
+  `client_bank_id` migration.
+
+
 ### 2026-08-16b (post-bank coordinator)
 
 - **Why:** five features want the moment after a bank (effort ask, soreness

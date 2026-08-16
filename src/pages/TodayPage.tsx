@@ -45,6 +45,17 @@ import { useAuth } from '@/providers/AuthProvider'
 import { useTrainingPlan } from '@/hooks/useTrainingPlan'
 import { usePostBankQueue } from '@/hooks/usePostBankQueue'
 import { useMyBestSet } from '@/hooks/useBestSet'
+import {
+  isOnline,
+  notifyQueueChanged,
+  useOfflineBankQueue,
+} from '@/hooks/useOfflineBankQueue'
+import {
+  enqueueBank,
+  queuedDayTotal,
+  queuedForGroupDay,
+  removeQueued,
+} from '@/lib/offlineBankQueue'
 import { getNextSetReminder } from '@/lib/nextSetReminder'
 import {
   cancelNextSetReminder,
@@ -130,6 +141,15 @@ export function TodayPage() {
   const { data: dayTotal = 0, isLoading: totalLoading } = useDayTotal(activeGroup)
   const { data: entries = [] } = useDayEntries(activeGroup, user?.id)
   const { data: bestSet = 0 } = useMyBestSet(activeGroup, user?.id)
+  const offlineQueue = useOfflineBankQueue()
+
+  // Sets waiting to sync are real to the member — they must appear in today's
+  // total, or banking offline looks like it did nothing.
+  const todayIso = activeGroup ? getGroupLocalDateString(activeGroup.timezone) : ''
+  const pendingReps = activeGroup ? queuedDayTotal(offlineQueue, activeGroup.id, todayIso) : 0
+  const pendingCount = activeGroup
+    ? queuedForGroupDay(offlineQueue, activeGroup.id, todayIso).length
+    : 0
 
   const bankPushups = useBankPushups()
   const recordEntryEffort = useRecordEntryEffort()
@@ -301,6 +321,59 @@ export function TodayPage() {
       return
     }
 
+    // Offline: queue it and stop here, deliberately WITHOUT going through the
+    // mutation. useBankPushups writes optimistically to the day total, entries,
+    // feed and leaderboards; letting that run while the queue overlay also
+    // counts the same reps would show them twice. Skipping the mutation
+    // entirely means there is nothing to reconcile and no rollback path.
+    if (!isOnline()) {
+      const queued = enqueueBank({
+        groupId: activeGroup.id,
+        userId: user.id,
+        count: bankedCount,
+        // Pinned NOW, in the group's timezone. Recomputing at flush time would
+        // move a set banked at 23:55 into the next day.
+        loggedFor: getGroupLocalDateString(activeGroup.timezone),
+        isMaxCheckin,
+      })
+
+      notifyQueueChanged()
+      loggerRef.current?.unwind()
+      dismissHint()
+
+      postBank.start({
+        count: bankedCount,
+        // No server id yet, so the queue skips the effort ask (which writes
+        // against a real row) but still allows a record celebration.
+        entryId: null,
+        isTrainingDay,
+        wizardCompleted,
+        isRestDay: todayPrescription?.isRestDay ?? true,
+        dayType: todayPrescription?.dayType ?? 'rest',
+        banksLogged: entries.length + pendingCount + 1,
+        setsPlanned: todayPrescription?.sets ?? 0,
+        setSize: todayPrescription?.setSize ?? 0,
+        effortAskedToday,
+        alreadyCheckedInToday: sorenessStatus != null || sorenessPromptedToday,
+        previousBestSet: bestSet,
+        nextSetRemindersEnabled: true,
+      })
+
+      toast({
+        message: `${bankedCount} banked offline — syncs when you're back online.`,
+        variant: 'default',
+        durationMs: 6000,
+        actionLabel: 'Undo',
+        onAction: () => {
+          postBank.clear()
+          removeQueued(queued.id)
+          notifyQueueChanged()
+        },
+      })
+
+      return
+    }
+
     try {
       const entry = await bankPushups.mutateAsync({
         group: activeGroup,
@@ -414,6 +487,7 @@ export function TodayPage() {
     bankPushups,
     bestSet,
     canBank,
+    pendingCount,
     postBank,
     dailyTarget,
     dayTotal,
@@ -665,8 +739,8 @@ export function TodayPage() {
           <DayProgressCard
             variant="compact"
             className="w-full"
-            bankedToday={dayTotal}
-            banksLogged={entries.length}
+            bankedToday={dayTotal + pendingReps}
+            banksLogged={entries.length + pendingCount}
             loading={(totalLoading && dayTotal === 0) || planLoading}
             hasPlan={hasPlan}
             dailyTarget={dailyTarget}

@@ -1,6 +1,7 @@
 ﻿import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppUpdateChecker } from '@/components/AppUpdateChecker'
+import { OfflineBankFlusher } from '@/components/OfflineBankFlusher'
 import { ConfigErrorScreen } from '@/components/ConfigErrorScreen'
 import { RequireAuth } from '@/components/auth/RequireAuth'
 import { TabLayout } from '@/components/layout/TabLayout'
@@ -157,6 +158,7 @@ export default function App() {
   return (
     <>
       <AppServiceWorkerRegistration />
+      <OfflineBankFlusher />
       <StaleReminderCleanup />
       <PendingMateRedeemer />
       <PwaLaunchHandlerRegistration />
