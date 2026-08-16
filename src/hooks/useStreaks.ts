@@ -90,6 +90,45 @@ export function useGoalStreak(group: Group | null | undefined) {
   })
 }
 
+export type StreakFreezeState = {
+  /** This week's free entitlement is still unspent. */
+  weeklyAvailable: boolean
+  /** Extra freezes earned from clean-week runs (0049). */
+  bonusAvailable: number
+  /** Clean weeks needed to earn the next bonus. */
+  earnWeeks: number
+}
+
+/**
+ * Weekly entitlement + earned bonus balance, straight from the server.
+ *
+ * Granting is folded into the read: a bonus is earned by weeks that have
+ * already passed, so there is nothing to schedule — checking when the member
+ * looks is both sufficient and self-healing if a grant was ever missed.
+ */
+export function useStreakFreezeState(group: Group | null | undefined) {
+  return useQuery({
+    queryKey: ['streaks', 'freezeState', group?.id ?? ''],
+    queryFn: async (): Promise<StreakFreezeState> => {
+      await supabase.rpc('grant_earned_streak_freezes', { p_group_id: group!.id })
+
+      const { data, error } = await supabase.rpc('streak_freeze_state', {
+        p_group_id: group!.id,
+      })
+      if (error) throw error
+
+      const parsed = typeof data === 'string' ? JSON.parse(data) : data
+      return {
+        weeklyAvailable: Boolean(parsed?.weekly_available),
+        bonusAvailable: Number(parsed?.bonus_available ?? 0),
+        earnWeeks: Number(parsed?.earn_weeks ?? 2),
+      }
+    },
+    enabled: Boolean(group?.id),
+    staleTime: 60_000,
+  })
+}
+
 /** Consume this week's streak freeze. The server decides which day it covers. */
 export function useUseStreakFreeze(group: Group | null | undefined, userId: string | undefined) {
   const queryClient = useQueryClient()
@@ -117,6 +156,7 @@ export function useUseStreakFreeze(group: Group | null | undefined, userId: stri
     onSuccess: () => {
       if (group?.id && userId) {
         void queryClient.invalidateQueries({ queryKey: streakKeys.status(group.id, userId) })
+        void queryClient.invalidateQueries({ queryKey: ['streaks', 'freezeState', group.id] })
       }
     },
   })
