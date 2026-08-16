@@ -34,6 +34,25 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-08-16b (post-bank coordinator)
+
+- **Why:** five features want the moment after a bank (effort ask, soreness
+  check-in, next-set nudge, PR celebration, Undo toast) and three were designing
+  their own collision avoidance. The three existing sheets share `z-[45]` and
+  only avoid each other because their predicates happen not to overlap — nothing
+  enforced it.
+- `resolvePostBankSteps()` returns an ordered queue from a snapshot taken at bank
+  time; `usePostBankQueue` shows one step at a time. Snapshot = a refetch landing
+  mid-sheet can't change what's on screen. Everything that invalidates the bank
+  (Undo, activity switch, nose-tap) calls `clear()` on the whole queue.
+- Behaviour deliberately unchanged: the effort predicate, the "soreness only when
+  effort was NOT asked" branch and the hard-rating escalation are carried over
+  verbatim. Tests assert the combinations, including the load-bearing invariant —
+  effort fires when sets are done, next-set only while sets remain, never both.
+- The queue already handles a set with no server id (offline/optimistic): skips
+  the effort ask, still allows a PR celebration. F1 and F6 should not need to
+  touch TodayPage again.
+
 ### 2026-08-16 (CSV export, Android icon + asset links, manifest fix)
 
 - **Manifest had THREE sources and only two were pinned.** `public/manifest.json`
