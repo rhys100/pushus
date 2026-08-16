@@ -89,8 +89,29 @@ jobs:
         if: env.ANDROID_KEYSTORE_BASE64 == ''
         uses: actions/cache@v4
         with:
-          path: ~/.android/debug.keystore
-          key: pushus-android-debug-keystore-v1
+          # A directory, not ~/.android/debug.keystore: AGP does not reliably
+          # put the keystore there, so the first attempt at this cached nothing
+          # ("Path Validation Error ... no cache is being saved") and every
+          # build still had a new identity. The keystore is generated below at
+          # a path this workflow controls.
+          path: .ci-keystore
+          key: pushus-android-debug-keystore-v2
+
+      - name: Ensure a CI debug keystore exists
+        if: env.ANDROID_KEYSTORE_BASE64 == ''
+        run: |
+          mkdir -p .ci-keystore
+          STORE="$GITHUB_WORKSPACE/.ci-keystore/debug.keystore"
+          if [ ! -f "$STORE" ]; then
+            echo "No cached debug keystore — generating one (its fingerprint must be added to assetlinks.json)."
+            keytool -genkeypair -v -keystore "$STORE" \
+              -storepass android -keypass android -alias androiddebugkey \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=PushUS CI Debug, O=PushUS, C=AU"
+          else
+            echo "Reusing the cached debug keystore — signing identity is unchanged."
+          fi
+          echo "ANDROID_DEBUG_KEYSTORE_PATH=$STORE" >> "$GITHUB_ENV"
 
       - name: Decode release keystore
         if: env.ANDROID_KEYSTORE_BASE64 != ''
