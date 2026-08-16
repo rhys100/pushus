@@ -1,3 +1,11 @@
+---
+type: Note
+title: PushUS product decisions
+description: Knowledge page for push-ups-app/docs/product-decisions.md.
+tags: [push-ups-app]
+updated: 2026-07-20
+---
+
 # PushUS product decisions
 
 Locked product decisions from the planning Q&A. These are **business and UX rules**, not schema.
@@ -431,3 +439,27 @@ See [product-roadmap.md](./product-roadmap.md) for exploratory mate-graph ideas.
 When Rhys locks a new product rule, add a row here with status tag.
 
 When exploring new ideas without a decision, add to [product-roadmap.md](./product-roadmap.md) instead.
+
+## Streak freeze bonuses (2026-08-16)
+
+The locked row **"Streak freezes: default 1 per week"** is UNCHANGED. Migration
+0049 adds *earned bonus* freezes strictly on top of it: a run of clean weeks
+banks an extra freeze, capped by `groups.freeze_max_banked` (default 3), earned
+every `groups.freeze_earn_weeks` clean weeks (default 2).
+
+Because this is only ever more generous than the weekly entitlement, no locked
+rule needed amending. **Replacing** the weekly entitlement with an earned-only
+model would, and was deliberately not done.
+
+Decisions taken while implementing:
+
+- **Weekly entitlement is spent first.** A hard-earned bonus is never consumed
+  while the free one is still available.
+- **A clean week** is a complete Monday–Sunday week (group timezone) where every
+  non-rest day was logged, at least one day was logged, and no freeze was spent.
+- **Injury weeks are skipped neutrally** — neither clean nor breaking. Counting
+  them as clean would accrue rewards for time away; counting them as broken
+  would punish the injury. This follows "Injury pauses streaks — does not
+  silently break or fake progress".
+- **Freezes stay cosmetic.** Nothing writes a `pushup_entries` row or an XP
+  ledger entry, and neither streak walker was touched.

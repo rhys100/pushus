@@ -6,7 +6,12 @@ import {
   useUserAchievements,
   useXpTotal,
 } from '@/hooks/useGamification'
-import { useGoalStreak, useStreakStatus, useUseStreakFreeze } from '@/hooks/useStreaks'
+import {
+  useGoalStreak,
+  useStreakFreezeState,
+  useStreakStatus,
+  useUseStreakFreeze,
+} from '@/hooks/useStreaks'
 import { useMyCustomBadges } from '@/hooks/useCustomBadges'
 import { useAuth } from '@/providers/AuthProvider'
 
@@ -47,6 +52,7 @@ export function AchievementsPage() {
   const { data: goalStreak = 0 } = useGoalStreak(activeGroup)
   const { data: banterBadges = [] } = useMyCustomBadges(activeGroup?.id, user?.id)
   const useFreeze = useUseStreakFreeze(activeGroup, user?.id)
+  const { data: freezeState } = useStreakFreezeState(activeGroup)
 
   const unlockedIds = new Set(unlocked.map((item) => item.achievement_id))
   const unlockedAtById = new Map(unlocked.map((item) => [item.achievement_id, item.unlocked_at]))
@@ -55,6 +61,8 @@ export function AchievementsPage() {
   const statLoading = groupLoading || xpLoading
   const loading = statLoading || catalogLoading || unlockedLoading
   const loadError = catalogError || unlockedError || xpError || streakError
+
+  const bonusCount = freezeState?.bonusAvailable ?? 0
 
   function handleRetry() {
     void refetchCatalog()
@@ -69,10 +77,18 @@ export function AchievementsPage() {
     }
 
     try {
-      await useFreeze.mutateAsync(streak.freeze.protectableDate)
+      // The server picks the date from the group's timezone — passing one from
+      // here is what let the date be forged in the first place.
+      await useFreeze.mutateAsync()
       toast({ message: 'Streak freeze used — yesterday is protected.', variant: 'success' })
-    } catch {
-      toast({ message: 'Could not use the freeze. Try again.', variant: 'danger' })
+    } catch (error) {
+      toast({
+        message:
+          error instanceof Error && error.message
+            ? error.message
+            : 'Could not use the freeze. Try again.',
+        variant: 'danger',
+      })
     }
   }
 
@@ -141,22 +157,39 @@ export function AchievementsPage() {
                 <p className="text-sm font-medium text-text-primary">Streak freeze</p>
                 <p className="text-xs text-text-muted">
                   {streak.freeze.usedThisWeek
-                    ? 'Used this week — resets Monday.'
+                    ? bonusCount > 0
+                      ? `This week's is used — you have ${bonusCount} spare${bonusCount === 1 ? '' : 's'} banked.`
+                      : 'Used this week — resets Monday.'
                     : 'One per week. Protects a missed day without faking reps.'}
                 </p>
+                {freezeState ? (
+                  <p className="mt-0.5 text-2xs text-text-muted">
+                    {bonusCount > 0
+                      ? `Spares are earned by ${freezeState.earnWeeks} clean weeks in a row.`
+                      : `Log every training day for ${freezeState.earnWeeks} weeks in a row to bank a spare.`}
+                  </p>
+                ) : null}
               </div>
               {streak.freeze.protectableDate ? (
                 <Button
                   variant="secondary"
-                  className="min-h-9 shrink-0 px-3 text-sm"
+                  className="min-h-11 shrink-0 px-3 text-sm"
                   loading={useFreeze.isPending}
                   onClick={() => void handleUseFreeze()}
                 >
                   Protect yesterday
                 </Button>
               ) : (
-                <Badge variant={streak.freeze.usedThisWeek ? 'neutral' : 'success'}>
-                  {streak.freeze.usedThisWeek ? 'Used' : 'Available'}
+                <Badge
+                  variant={
+                    !streak.freeze.usedThisWeek || bonusCount > 0 ? 'success' : 'neutral'
+                  }
+                >
+                  {!streak.freeze.usedThisWeek
+                    ? 'Available'
+                    : bonusCount > 0
+                      ? `${bonusCount} spare${bonusCount === 1 ? '' : 's'}`
+                      : 'Used'}
                 </Badge>
               )}
             </div>

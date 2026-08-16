@@ -4,7 +4,6 @@ import { getZonedTimeParts } from '@/lib/notificationEligibility'
 import {
   computeStreakStatus,
   isoDateAddDays,
-  mondayOf,
   type StreakFreezeRow,
   type StreakStatus,
 } from '@/lib/gamification/streakStatus'
@@ -91,21 +90,63 @@ export function useGoalStreak(group: Group | null | undefined) {
   })
 }
 
-/** Consume this week's streak freeze to protect a specific (unlogged) date. */
+export type StreakFreezeState = {
+  /** This week's free entitlement is still unspent. */
+  weeklyAvailable: boolean
+  /** Extra freezes earned from clean-week runs (0049). */
+  bonusAvailable: number
+  /** Clean weeks needed to earn the next bonus. */
+  earnWeeks: number
+}
+
+/**
+ * Weekly entitlement + earned bonus balance, straight from the server.
+ *
+ * Granting is folded into the read: a bonus is earned by weeks that have
+ * already passed, so there is nothing to schedule — checking when the member
+ * looks is both sufficient and self-healing if a grant was ever missed.
+ */
+export function useStreakFreezeState(group: Group | null | undefined) {
+  return useQuery({
+    queryKey: ['streaks', 'freezeState', group?.id ?? ''],
+    queryFn: async (): Promise<StreakFreezeState> => {
+      await supabase.rpc('grant_earned_streak_freezes', { p_group_id: group!.id })
+
+      const { data, error } = await supabase.rpc('streak_freeze_state', {
+        p_group_id: group!.id,
+      })
+      if (error) throw error
+
+      const parsed = typeof data === 'string' ? JSON.parse(data) : data
+      return {
+        weeklyAvailable: Boolean(parsed?.weekly_available),
+        bonusAvailable: Number(parsed?.bonus_available ?? 0),
+        earnWeeks: Number(parsed?.earn_weeks ?? 2),
+      }
+    },
+    enabled: Boolean(group?.id),
+    staleTime: 60_000,
+  })
+}
+
+/** Consume this week's streak freeze. The server decides which day it covers. */
 export function useUseStreakFreeze(group: Group | null | undefined, userId: string | undefined) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (protectDate: string) => {
+    // Spending a freeze goes through a SECURITY DEFINER RPC (migration 0048).
+    // This used to be a direct table insert with the client choosing both
+    // `week_start` and `used_on`, which let any member protect arbitrary dates
+    // from a console — the one-per-week and yesterday-only rules lived only
+    // here in JS. The server now decides the date from the GROUP's timezone,
+    // so no date is accepted from the caller at all.
+    mutationFn: async () => {
       if (!group?.id || !userId) {
         throw new Error('No active group')
       }
 
-      const { error } = await supabase.from('streak_freezes').insert({
-        user_id: userId,
-        group_id: group.id,
-        week_start: mondayOf(protectDate),
-        used_on: protectDate,
+      const { error } = await supabase.rpc('use_streak_freeze', {
+        p_group_id: group.id,
       })
 
       if (error) {
@@ -115,6 +156,7 @@ export function useUseStreakFreeze(group: Group | null | undefined, userId: stri
     onSuccess: () => {
       if (group?.id && userId) {
         void queryClient.invalidateQueries({ queryKey: streakKeys.status(group.id, userId) })
+        void queryClient.invalidateQueries({ queryKey: ['streaks', 'freezeState', group.id] })
       }
     },
   })

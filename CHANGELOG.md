@@ -20,6 +20,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Earn spare streak freezes:** log every training day for a couple of weeks running and you bank an extra freeze on top of your weekly one, up to three. Your free weekly one is always spent first
+
 - **Bank sets with no connection:** logging a set offline now saves it on the device and counts toward today straight away, then syncs itself when you're back online. Survives closing the app
 
 - **Personal-record card:** beat your biggest single set and PushUS says so, with a shareable image you can send to the group chat
@@ -43,6 +45,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Sign-in email design:** Magic Link template restyled to match PushUS dark theme (orange accent, large mono code block, iOS Home Screen note). Plain-text version puts the code on its own line for easy copy.
 
 ### Fixed
+
+- **Streak freezes could be forged:** freezes were written straight from the browser with the client choosing which date to protect, so any member could protect any day, past or future. Spending one now goes through the server, which picks the date itself and enforces one per week
 
 - **Could not type your email on iPhone:** form fields were 14px, and iOS zooms the page in whenever a focused field is under 16px — which shoved the email box around under the keyboard and made it look like typing did nothing. Fields are now 16px on touch devices
 
