@@ -36,6 +36,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **Could not type your email on iPhone:** form fields were 14px, and iOS zooms the page in whenever a focused field is under 16px — which shoved the email box around under the keyboard and made it look like typing did nothing. Fields are now 16px on touch devices
+
 - **"Allow notifications" hung forever in the Android app:** the wrapper declared the notification delegation service but not the activity Android needs to show the permission dialog. Chrome asked for a prompt that could never appear and waited for a reply that never came, so the button span forever with no error. The permission flow also now times out instead of spinning indefinitely if anything else stalls
 
 - **Android app showed a browser URL bar:** the site's Digital Asset Links file still carried a placeholder fingerprint, so Android could not verify the app and fell back to showing browser chrome over it

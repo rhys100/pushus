@@ -5,6 +5,30 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  /**
+   * iOS Safari auto-zooms the whole page when a focused form control has a
+   * font-size below 16px, and there is no way to opt out (the viewport
+   * user-scalable=no escape hatch has been ignored since iOS 10). The app's
+   * inputs are `text-sm` (14px), so tapping the email field on an iPhone
+   * zoomed the page in, pushed the field around under the keyboard, and made
+   * it look like typing was not working at all.
+   *
+   * 16px is the exact threshold — this is the smallest change that stops it,
+   * and at these sizes the visual difference is barely perceptible.
+   *
+   * Scoped to touch devices without a fine pointer so desktop keeps the
+   * designed 14px density.
+   */
+  @media (hover: none) and (pointer: coarse) {
+    input:not([type='checkbox']):not([type='radio']):not([type='range']),
+    select,
+    textarea {
+      font-size: max(16px, 1em);
+    }
+  }
+}
+
 @keyframes logger-count-pulse {
   0% {
     transform: scale(1);
