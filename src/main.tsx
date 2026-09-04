@@ -33,9 +33,9 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
-        <BrowserRouter
-          future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-        >
+        {/* v7 makes startTransition and relative splat path resolution the
+            default, so the old `future` opt-in props are gone. */}
+        <BrowserRouter>
           <AuthProvider>
             <NotificationPreferencesProvider>
               <GroupProvider>
