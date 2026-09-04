@@ -277,10 +277,13 @@ self.addEventListener('notificationclick', (event) => {
   const rawUrl = event.notification.data?.url ?? '/today'
   let targetUrl = '/today'
 
+  // The push payload is not trusted input, so every candidate goes through a
+  // full parse and an origin check. A bare startsWith('/') test is not enough:
+  // '//evil.com' and '/\evil.com' both begin with a slash yet resolve to a
+  // foreign origin, which would hand an attacker-controlled payload an open
+  // redirect through client.navigate()/openWindow() and the in-app router.
   try {
-    if (typeof rawUrl === 'string' && rawUrl.startsWith('/')) {
-      targetUrl = rawUrl
-    } else if (typeof rawUrl === 'string') {
+    if (typeof rawUrl === 'string') {
       const parsed = new URL(rawUrl, self.location.origin)
       if (parsed.origin === self.location.origin) {
         targetUrl = `${parsed.pathname}${parsed.search}${parsed.hash}`
