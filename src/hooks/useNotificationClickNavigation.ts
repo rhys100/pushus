@@ -15,9 +15,18 @@ export function useNotificationClickNavigation() {
         return
       }
 
-      const url = typeof event.data.url === 'string' ? event.data.url : '/today'
-      if (url.startsWith('/')) {
-        navigate(url)
+      // Defence in depth: the service worker already origin-checks this, but
+      // the message arrives over postMessage, so re-derive a same-origin path
+      // here too. startsWith('/') alone would let '//evil.com' and
+      // '/\evil.com' through to an external navigation.
+      const raw = typeof event.data.url === 'string' ? event.data.url : '/today'
+      try {
+        const parsed = new URL(raw, window.location.origin)
+        if (parsed.origin === window.location.origin) {
+          navigate(`${parsed.pathname}${parsed.search}${parsed.hash}`)
+        }
+      } catch {
+        // Unparseable payload — ignore rather than navigate anywhere.
       }
     }
 

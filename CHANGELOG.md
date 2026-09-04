@@ -42,6 +42,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Release process:** cutting a version now requires a GitHub Release (not just a git tag) so GitHub Latest matches README; agent/versioning docs spell out the `gh release create` step
 - **Sign-in email design:** Magic Link template restyled to match PushUS dark theme (orange accent, large mono code block, iOS Home Screen note). Plain-text version puts the code on its own line for easy copy.
 
+### Security
+
+- **Push notifications can no longer send you off-site:** the tap handler accepted any target starting with a slash, so a payload of `//example.com` or `/\example.com` would have opened another site in the app window. Both the service worker and the in-app handler now resolve the target and check it belongs to this deployment before going anywhere
+
+- **react-router upgraded to 7.18.3:** closes three advisories with no fix available on the 6.x line (GHSA-337j-9hxr-rhxg, GHSA-wrjc-x8rr-h8h6, GHSA-jjmj-jmhj-qwj2)
+
 ### Fixed
 
 - **Could not type your email on iPhone:** form fields were 14px, and iOS zooms the page in whenever a focused field is under 16px — which shoved the email box around under the keyboard and made it look like typing did nothing. Fields are now 16px on touch devices
