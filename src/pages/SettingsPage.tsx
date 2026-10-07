@@ -385,7 +385,7 @@ export function SettingsPage() {
                 className={cn(
                   'w-full rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2.5',
                   'text-sm text-text-primary',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                  'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50',
                 )}
               />
             </div>
@@ -405,7 +405,7 @@ export function SettingsPage() {
                 className={cn(
                   'w-20 rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2.5',
                   'text-sm text-text-primary',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                  'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50',
                 )}
               />
             </div>
@@ -423,7 +423,7 @@ export function SettingsPage() {
                     className={cn(
                       'flex h-10 w-full items-center justify-center rounded-[var(--radius-md)] text-xl',
                       'border transition-colors',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                      'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50',
                       profileEmoji === option
                         ? 'border-accent bg-accent-muted'
                         : 'border-border bg-bg hover:border-accent/30',
@@ -446,7 +446,7 @@ export function SettingsPage() {
                 className={cn(
                   'w-full rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2.5',
                   'text-sm text-text-primary',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                  'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50',
                 )}
               >
                 {timezoneOptions().map((tz) => (
@@ -500,7 +500,7 @@ export function SettingsPage() {
               onClick={() => handleThemeChange(option.value)}
               className={cn(
                 'min-h-11 rounded-[var(--radius-md)] border px-3 py-2 text-sm font-medium transition-colors',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50',
                 themePreference === option.value
                   ? 'border-accent bg-accent-muted text-text-primary'
                   : 'border-border bg-bg text-text-muted hover:border-accent/30',

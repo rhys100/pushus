@@ -13,7 +13,7 @@ export const WizardStepHeader = forwardRef<HTMLParagraphElement, WizardStepHeade
         <p
           ref={ref}
           tabIndex={-1}
-          className="text-xs font-medium uppercase tracking-wide text-text-muted outline-none"
+          className="text-xs font-medium uppercase tracking-wide text-text-muted outline-hidden"
         >
           Step {step + 1} of {totalSteps} · {title}
         </p>

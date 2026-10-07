@@ -28,7 +28,7 @@ export function BillingPlanCard({
       onClick={onSelect}
       className={cn(
         'w-full rounded-[var(--radius-md)] border p-4 text-left transition-colors',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60',
+        'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/60',
         selected
           ? 'border-accent bg-accent/10'
           : 'border-border bg-surface hover:border-accent/40',

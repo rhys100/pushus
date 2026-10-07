@@ -31,7 +31,7 @@ export function AvatarChip({
           ? 'border-accent/40 bg-accent-muted text-text-primary'
           : 'border-border bg-surface text-text-primary',
         onClick &&
-          'cursor-pointer hover:border-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+          'cursor-pointer hover:border-accent/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50',
         className,
       )}
     >

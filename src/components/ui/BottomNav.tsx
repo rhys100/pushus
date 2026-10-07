@@ -165,7 +165,7 @@ export function BottomNav({ active, onNavigate, className }: BottomNavProps) {
                 className={cn(
                   'flex min-h-[var(--bottom-nav-content)] flex-col items-center justify-center gap-0.5 px-1 py-1.5',
                   'transition-colors duration-[var(--duration-fast)]',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50',
+                  'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50',
                   'active:scale-[0.97]',
                   isActive ? 'text-accent' : 'text-text-muted hover:text-text-primary',
                 )}

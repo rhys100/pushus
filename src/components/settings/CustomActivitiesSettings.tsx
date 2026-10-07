@@ -50,7 +50,7 @@ function IconPickerButton({
       className={cn(
         'flex h-10 w-full items-center justify-center rounded-[var(--radius-md)]',
         'border transition-colors',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+        'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50',
         selected
           ? 'border-accent bg-accent-muted text-accent'
           : 'border-border bg-surface text-text-muted hover:border-accent/30 hover:text-text-primary',
@@ -313,7 +313,7 @@ export function CustomActivitiesSettings() {
               className={cn(
                 'w-full rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2.5',
                 'text-sm text-text-primary placeholder:text-text-muted/70',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50',
               )}
             />
           </div>

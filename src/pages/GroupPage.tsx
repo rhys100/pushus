@@ -137,7 +137,7 @@ export function GroupPage() {
           padding="sm"
           role="button"
           tabIndex={0}
-          className="cursor-pointer transition-[border-color,transform] duration-[var(--duration-fast)] hover:border-accent/30 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+          className="cursor-pointer transition-[border-color,transform] duration-[var(--duration-fast)] hover:border-accent/30 active:scale-[0.97] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
           onClick={() => {
             tapHaptic()
             navigate('/mates')
@@ -157,7 +157,7 @@ export function GroupPage() {
           padding="sm"
           role="button"
           tabIndex={0}
-          className="cursor-pointer transition-[border-color,transform] duration-[var(--duration-fast)] hover:border-accent/30 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+          className="cursor-pointer transition-[border-color,transform] duration-[var(--duration-fast)] hover:border-accent/30 active:scale-[0.97] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
           onClick={() => {
             tapHaptic()
             navigate('/challenges')
@@ -177,7 +177,7 @@ export function GroupPage() {
           padding="sm"
           role="button"
           tabIndex={0}
-          className="cursor-pointer transition-[border-color,transform] duration-[var(--duration-fast)] hover:border-accent/30 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+          className="cursor-pointer transition-[border-color,transform] duration-[var(--duration-fast)] hover:border-accent/30 active:scale-[0.97] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
           onClick={() => {
             tapHaptic()
             navigate('/achievements')
@@ -254,7 +254,7 @@ export function GroupPage() {
                   padding="sm"
                   className={
                     canRename
-                      ? 'cursor-pointer transition-colors hover:border-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg'
+                      ? 'cursor-pointer transition-colors hover:border-accent/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg'
                       : undefined
                   }
                   onClick={canRename ? () => setAliasTarget(member) : undefined}

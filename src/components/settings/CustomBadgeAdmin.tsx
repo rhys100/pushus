@@ -15,7 +15,7 @@ import { useAuth } from '@/providers/AuthProvider'
 
 const BADGE_EMOJIS = ['🎖️', '🏅', '🥇', '💩', '🐐', '🔥', '😤', '🧱', '🦍', '🤡', '👑', '🫡']
 const inputClass =
-  'w-full rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-sm text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50'
+  'w-full rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-sm text-text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50'
 
 /** Owner/admin only: create banter badges and award them to members. */
 export function CustomBadgeAdmin() {
@@ -99,7 +99,7 @@ export function CustomBadgeAdmin() {
               onClick={() => setEmoji(option)}
               className={cn(
                 'flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] border text-lg transition-colors',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50',
                 emoji === option
                   ? 'border-accent bg-accent-muted'
                   : 'border-border bg-bg hover:border-accent/30',
@@ -146,7 +146,7 @@ export function CustomBadgeAdmin() {
                       : `Delete ${badge.name}`
                   }
                   className={cn(
-                    'rounded-[var(--radius-sm)] px-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                    'rounded-[var(--radius-sm)] px-1 text-xs transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50',
                     confirmDeleteId === badge.id
                       ? 'font-semibold text-danger'
                       : 'text-text-muted hover:text-danger',

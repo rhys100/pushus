@@ -18,6 +18,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Changed
+
+- **Tailwind CSS 4:** the styling toolchain moved from Tailwind 3.4 to 4.3. The app looks the same apart from primary buttons, which now show their intended orange glow. Supported browsers now start at Safari/iOS 16.4, Chrome 111 and Firefox 128
+
 ### Added
 
 - **Earn spare streak freezes:** log every training day for a couple of weeks running and you bank an extra freeze on top of your weekly one, up to three. Your free weekly one is always spent first

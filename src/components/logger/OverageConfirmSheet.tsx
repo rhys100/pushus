@@ -69,7 +69,7 @@ export function OverageConfirmSheet({
       ref={dialogRef}
       tabIndex={-1}
       className={cn(
-        'fixed inset-x-0 z-[45] outline-none',
+        'fixed inset-x-0 z-[45] outline-hidden',
         // Sits flush above the bottom nav — the Today logger banks inline (no
         // fixed bank dock), so there's no strip to clear.
         'bottom-[var(--bottom-nav-height)]',

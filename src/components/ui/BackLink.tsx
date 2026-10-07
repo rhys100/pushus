@@ -22,7 +22,7 @@ export function BackLink({ to, label, className }: BackLinkProps) {
       className={cn(
         '-ml-1 inline-flex items-center gap-1 rounded-[var(--radius-sm)] px-1 py-1 text-sm font-medium',
         'text-text-muted transition-colors hover:text-accent',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+        'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50',
         className,
       )}
     >

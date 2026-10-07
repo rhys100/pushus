@@ -472,7 +472,7 @@ export function TrainingWizard({
                         wizardSorenessLevel: value,
                       }))
                     }
-                    className={`min-h-11 rounded-[var(--radius-md)] border px-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50 transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] active:scale-[0.97] ${
+                    className={`min-h-11 rounded-[var(--radius-md)] border px-2 text-xs font-semibold focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50 transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] active:scale-[0.97] ${
                       (answers.wizardSorenessLevel ?? 'none') === value
                         ? 'border-accent bg-accent-muted text-accent'
                         : 'border-border bg-surface text-text-muted'
@@ -500,7 +500,7 @@ export function TrainingWizard({
                     role="radio"
                     aria-checked={answers.trainingLevel === level}
                     onClick={() => setAnswers((current) => ({ ...current, trainingLevel: level }))}
-                    className={`min-h-11 rounded-[var(--radius-md)] border px-2 text-xs font-semibold capitalize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50 transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] active:scale-[0.97] ${
+                    className={`min-h-11 rounded-[var(--radius-md)] border px-2 text-xs font-semibold capitalize focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50 transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] active:scale-[0.97] ${
                       answers.trainingLevel === level
                         ? 'border-accent bg-accent-muted text-accent'
                         : 'border-border bg-surface text-text-muted'
@@ -529,7 +529,7 @@ export function TrainingWizard({
                   type="button"
                   aria-pressed={answers.preferredTrainingDays.includes(index)}
                   onClick={() => toggleDay(index)}
-                  className={`flex min-h-11 flex-col items-center justify-center rounded-[var(--radius-md)] border text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50 transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] active:scale-[0.97] ${
+                  className={`flex min-h-11 flex-col items-center justify-center rounded-[var(--radius-md)] border text-xs font-semibold focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50 transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] active:scale-[0.97] ${
                     answers.preferredTrainingDays.includes(index)
                       ? 'border-accent bg-accent-muted text-accent'
                       : 'border-border bg-surface text-text-muted'
@@ -560,7 +560,7 @@ export function TrainingWizard({
                     onClick={() =>
                       setAnswers((current) => ({ ...current, challengeIntensity: intensity }))
                     }
-                    className={`min-h-11 rounded-[var(--radius-md)] border px-2 text-xs font-semibold capitalize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50 transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] active:scale-[0.97] ${
+                    className={`min-h-11 rounded-[var(--radius-md)] border px-2 text-xs font-semibold capitalize focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50 transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] active:scale-[0.97] ${
                       answers.challengeIntensity === intensity
                         ? 'border-accent bg-accent-muted text-accent'
                         : 'border-border bg-surface text-text-muted'
