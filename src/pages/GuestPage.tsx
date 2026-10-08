@@ -138,7 +138,7 @@ export function GuestPage() {
             type="button"
             aria-label="Dismiss guest warning"
             onClick={handleDismissWarning}
-            className="-my-2 -mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-lg leading-none text-text-muted transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+            className="-my-2 -mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-lg leading-none text-text-muted transition-colors hover:text-text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50"
           >
             ×
           </button>
@@ -195,7 +195,7 @@ export function GuestPage() {
                       confirmDeleteId === entry.id ? 'Confirm delete set' : 'Delete set'
                     }
                     className={cn(
-                      'rounded-[var(--radius-sm)] px-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                      'rounded-[var(--radius-sm)] px-1 text-xs transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50',
                       confirmDeleteId === entry.id
                         ? 'font-semibold text-danger'
                         : 'text-text-muted hover:text-danger',

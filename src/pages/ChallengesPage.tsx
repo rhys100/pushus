@@ -34,7 +34,7 @@ function CompetitionCard({
   return (
     <Link
       to={`/challenges/${competition.id}`}
-      className="block rounded-[var(--radius-lg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+      className="block rounded-[var(--radius-lg)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
     >
       <Card padding="md" className="space-y-2 transition-colors hover:border-accent/30">
         <div className="flex items-start justify-between gap-2">
@@ -64,7 +64,7 @@ function CompetitionCard({
 const selectClass =
   'w-full rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-sm text-text-primary'
 const inputClass =
-  'w-full rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-sm text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50'
+  'w-full rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-sm text-text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50'
 
 function CreateChallengeForm({ onDone }: { onDone: () => void }) {
   const { user } = useAuth()
@@ -267,7 +267,7 @@ function CreateChallengeForm({ onDone }: { onDone: () => void }) {
               className={cn(
                 'min-h-10 whitespace-nowrap rounded-[var(--radius-md)] border px-1 py-1.5 text-sm font-medium',
                 'transition-[color,background-color,border-color,transform] duration-[var(--duration-fast)] active:scale-95',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50',
+                'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/50',
                 intensity === option.value
                   ? cn('border-accent bg-accent-muted text-text-primary', intensityInteracted && 'motion-pop')
                   : 'border-border bg-bg text-text-muted hover:border-accent/30',
@@ -407,7 +407,7 @@ export function ChallengesPage() {
                   <button
                     type="button"
                     onClick={() => setShowAllEnded(true)}
-                    className="min-h-11 w-full rounded-[var(--radius-md)] text-sm font-medium text-text-muted transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+                    className="min-h-11 w-full rounded-[var(--radius-md)] text-sm font-medium text-text-muted transition-colors hover:text-accent focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50"
                   >
                     Show all {ended.length} past challenges
                   </button>

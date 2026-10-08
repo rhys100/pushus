@@ -905,7 +905,7 @@ export const CircularLogger = forwardRef<CircularLoggerHandle, CircularLoggerPro
             aria-disabled={disabled || undefined}
             viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
             className={cn(
-              'absolute inset-0 h-full w-full touch-none select-none outline-none',
+              'absolute inset-0 h-full w-full touch-none select-none outline-hidden',
               disabled ? 'cursor-not-allowed opacity-60' : '',
               'focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-4 focus-visible:ring-offset-bg',
             )}

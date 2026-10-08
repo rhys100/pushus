@@ -34,6 +34,19 @@ Maintenance rules: [docs-maintenance.md](./docs-maintenance.md).
 
 ## Daily notes
 
+### 2026-10-08 (Tailwind 3.4 → 4.3)
+
+- Closes the `braces` audit advisory, which had no fix while tailwind 3 pulled in chokidar/micromatch. CI audit is fully blocking again.
+- Config moved from `tailwind.config.js` into `@theme inline reference` in `src/index.css`; PostCSS uses `@tailwindcss/postcss` (autoprefixer dropped, v4 handles prefixes).
+- **Name collisions:** `tokens.css` defines `--radius-sm/md/lg`, `--ease-out`, `--shadow-*`, `--font-*`, which are also Tailwind 4 theme variables. A plain `@import "tailwindcss"` would let the tokens redefine utilities (`rounded-lg` 0.5rem → 1.375rem). Tailwind's theme is imported `theme(inline reference)` so utility values stay literal.
+- The official upgrade tool was **not** applied to templates: it rewrote `rounded-[var(--radius-md)]` → `rounded-md`, `ease-[var(--ease-out)]` → `ease-out`, and `ring` → `ring-3` inside What's New copy. Only `outline-none` → `outline-hidden` was applied.
+- Scan scope pinned to `index.html` + `src` via `source(none)` + `@source` (v4 otherwise scans docs, generating junk classes from AGENTS.md).
+- v3 preflight compat kept in `index.css`: default border colour `#e5e7eb`, `cursor: pointer` on buttons.
+- **Native cascade layers:** v4's `@layer base/components` are real layers, so every utility beats them regardless of specificity. That silently broke the iOS 16px input rule (iOS zoom-on-focus would have returned) and would have demoted `motion.css`. Both now sit in the `utilities` layer so specificity decides, as in v3.
+- **space-y / divide-y:** v4 moved the gap to `margin-bottom` on every child but the last, which does nothing on an inline `<label>` and collapsed form spacing by 6px. Compat rules in `index.css` restore v3's selectors and specificity.
+- **Arbitrary shadows now render:** v3 parsed `shadow-[var(--shadow-…)]` as a shadow *colour*, so those 7 usages (primary button glow, card, toast, popup) never drew. v4 renders them as written; the visible change is the orange glow under primary buttons.
+- Verified with Playwright pixel diffs of v3 vs v4 (`/dev/preview`, `/login`, `/about`, `/guest`; light + dark; mobile + desktop) plus a per-element computed-style diff. `/dev/preview` and `/about` are pixel-identical; `/login` and `/guest` differ only by the button glow (and a 2.8px taller email input on touch devices, from v4's relative `text-sm` line height under the 16px override).
+
 ### 2026-08-16c (post-bank coordinator consumers: F2, F6, F1)
 
 - **F2 next-set nudge** — shipped as an opt-in nudge on the member's own interval

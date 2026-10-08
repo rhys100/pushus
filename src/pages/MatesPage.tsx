@@ -225,7 +225,7 @@ function MateDetail({ mate, onClose }: { mate: MateListItem; onClose: () => void
           aria-pressed={pendingDestructive === 'remove'}
           className={cn(
             'min-h-9 rounded-[var(--radius-sm)] px-1 transition-colors',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/50',
+            'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-danger/50',
             pendingDestructive === 'remove'
               ? 'font-semibold text-danger'
               : 'text-text-muted hover:text-danger',
@@ -239,7 +239,7 @@ function MateDetail({ mate, onClose }: { mate: MateListItem; onClose: () => void
           aria-pressed={pendingDestructive === 'block'}
           className={cn(
             'min-h-9 rounded-[var(--radius-sm)] px-1 transition-colors',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/50',
+            'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-danger/50',
             pendingDestructive === 'block'
               ? 'font-semibold text-danger'
               : 'text-text-muted hover:text-danger',

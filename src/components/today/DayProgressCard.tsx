@@ -172,7 +172,7 @@ export const DayProgressCard = memo(function DayProgressCard({
                       'relative font-semibold text-accent underline underline-offset-2',
                       "before:absolute before:-inset-y-3 before:left-0 before:right-0 before:content-['']",
                       'transition-colors hover:text-text-primary',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60',
+                      'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/60',
                     )}
                   >
                     Why?

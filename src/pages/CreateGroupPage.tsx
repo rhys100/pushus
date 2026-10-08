@@ -149,7 +149,7 @@ export function CreateGroupPage() {
                 className={cn(
                   'w-full rounded-[var(--radius-md)] border border-border bg-bg px-4 py-3',
                   'text-sm text-text-primary placeholder:text-text-muted',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                  'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50',
                 )}
               />
             </div>
@@ -165,7 +165,7 @@ export function CreateGroupPage() {
                 className={cn(
                   'w-full rounded-[var(--radius-md)] border border-border bg-bg px-4 py-3',
                   'text-sm text-text-primary',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                  'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50',
                 )}
               >
                 {timezoneOptions().map((tz) => (
@@ -188,7 +188,7 @@ export function CreateGroupPage() {
         {/* Escape hatch: landing here doesn't mean you must create a group. */}
         <Link
           to="/join"
-          className="mt-4 block text-center text-sm font-medium text-text-muted transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 rounded-[var(--radius-sm)]"
+          className="mt-4 block text-center text-sm font-medium text-text-muted transition-colors hover:text-accent focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50 rounded-[var(--radius-sm)]"
         >
           Got an invite code? Join a mate&apos;s group instead →
         </Link>

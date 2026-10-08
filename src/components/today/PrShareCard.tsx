@@ -123,7 +123,7 @@ export function PrShareCard({
       ref={dialogRef}
       tabIndex={-1}
       className={cn(
-        'fixed inset-x-0 z-[45] outline-none',
+        'fixed inset-x-0 z-[45] outline-hidden',
         'bottom-[var(--bottom-nav-height)]',
         closing ? 'sheet-out' : 'sheet-in',
         className,

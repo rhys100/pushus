@@ -25,8 +25,13 @@ imported on signup.
 ## Stack
 
 - **React 18.3** + **TypeScript** (strict, `tsc -b`) + **Vite 6**.
-- **Tailwind 3.4** only — no CSS-in-JS, no component library. Design tokens are CSS
-  variables (see Styling below).
+- **Tailwind 4** only — no CSS-in-JS, no component library. Design tokens are CSS
+  variables (see Styling below). There is no `tailwind.config.js`: the theme lives
+  in the `@theme` block in `src/index.css`. Tailwind's theme is imported
+  `inline reference` on purpose — `tokens.css` reuses names like `--radius-lg` and
+  `--ease-out`, so do not switch to a plain `@import "tailwindcss"`. Do not run
+  `npx @tailwindcss/upgrade` over templates: it rewrites `rounded-[var(--radius-md)]`
+  to bare `rounded-md`.
 - **TanStack Query 5** for all server state; **react-router 6**.
 - **Supabase** (Postgres + Auth + Edge Functions) is the backend. RLS-enforced;
   writes go through `SECURITY DEFINER` RPCs.
@@ -119,7 +124,8 @@ scripts/           version + doc gates, asset generators, integration runner
   Tailwind: `bg-bg`, `bg-surface`, `text-accent`, `text-text-primary`,
   `text-text-muted`, `border-border`, `bg-success/…`, etc. Radii use
   `rounded-[var(--radius-sm|md|lg|full)]` — do **not** use Tailwind's bare
-  `rounded-md/lg` (they don't match the token scale).
+  `rounded-md/lg` (they don't match the token scale). Use `outline-hidden`, not
+  `outline-none` (v4 changed what `outline-none` does).
 - **Light + dark**: tokens are defined for `:root,[data-theme='dark']` and overridden
   under `[data-theme='light']` in `tokens.css`. Never hardcode a hex that only works
   in one theme; add/use a token. Immersive surfaces (nose-tap mode) pin themselves

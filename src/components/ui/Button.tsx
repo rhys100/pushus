@@ -55,7 +55,7 @@ function Spinner() {
 }
 
 const buttonBaseClass =
-  'inline-flex min-h-12 min-w-12 items-center justify-center gap-2 rounded-[var(--radius-full)] px-6 py-3 text-sm font-bold tracking-tight transition-[background-color,border-color,opacity,transform,box-shadow,filter] duration-[var(--duration-normal)] ease-[var(--ease-spring)] active:scale-[0.96] active:duration-[var(--duration-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg'
+  'inline-flex min-h-12 min-w-12 items-center justify-center gap-2 rounded-[var(--radius-full)] px-6 py-3 text-sm font-bold tracking-tight transition-[background-color,border-color,opacity,transform,box-shadow,filter] duration-[var(--duration-normal)] ease-[var(--ease-spring)] active:scale-[0.96] active:duration-[var(--duration-fast)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg'
 
 export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>(
   ({ variant = 'primary', fullWidth = false, className, children, onPointerDown, ...props }, ref) => {

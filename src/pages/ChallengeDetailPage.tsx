@@ -244,7 +244,7 @@ export function ChallengeDetailPage() {
               {confirmingJoinKey === SOLO_JOIN_KEY ? (
                 <button
                   type="button"
-                  className="mx-auto block min-h-9 rounded-[var(--radius-sm)] px-1 text-xs text-text-muted transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+                  className="mx-auto block min-h-9 rounded-[var(--radius-sm)] px-1 text-xs text-text-muted transition-colors hover:text-text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50"
                   onClick={() => setConfirmingJoinKey(null)}
                 >
                   Not now
@@ -260,7 +260,7 @@ export function ChallengeDetailPage() {
                 {confirmingLeave ? (
                   <button
                     type="button"
-                    className="min-h-9 rounded-[var(--radius-sm)] px-1 text-text-muted transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+                    className="min-h-9 rounded-[var(--radius-sm)] px-1 text-text-muted transition-colors hover:text-text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50"
                     onClick={() => setConfirmingLeave(false)}
                   >
                     Cancel
@@ -271,7 +271,7 @@ export function ChallengeDetailPage() {
                   aria-pressed={confirmingLeave}
                   className={cn(
                     'min-h-9 rounded-[var(--radius-sm)] px-1 transition-colors',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/50',
+                    'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-danger/50',
                     confirmingLeave
                       ? 'font-semibold text-danger'
                       : 'text-text-muted hover:text-danger',
@@ -414,7 +414,7 @@ export function ChallengeDetailPage() {
               aria-pressed={confirmingDelete}
               className={cn(
                 'min-h-9 rounded-[var(--radius-sm)] px-1 transition-colors',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/50',
+                'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-danger/50',
                 confirmingDelete
                   ? 'font-semibold text-danger'
                   : 'text-text-muted hover:text-danger',

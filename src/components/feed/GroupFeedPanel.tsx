@@ -212,7 +212,7 @@ export const ActivityFeedRow = memo(function ActivityFeedRow({
               className={cn(
                 'inline-flex items-center gap-1 rounded-[var(--radius-full)] border font-medium tabular-nums',
                 'transition-[background-color,border-color,transform] duration-[var(--duration-fast)]',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50',
                 canReact && 'active:scale-90',
                 canReact && reactionChipHitArea,
                 dense ? 'h-8 px-2 text-xs' : 'h-9 px-2.5 text-sm',
@@ -241,7 +241,7 @@ export const ActivityFeedRow = memo(function ActivityFeedRow({
                     className={cn(
                       'inline-flex items-center justify-center rounded-[var(--radius-full)] border',
                       'transition-[background-color,border-color,transform] duration-[var(--duration-fast)]',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 active:scale-90',
+                      'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50 active:scale-90',
                       dense ? 'h-10 w-10 text-lg' : 'h-11 w-11 text-xl',
                       mineSet.has(emoji)
                         ? 'motion-pop border-accent/50 bg-accent-muted'
@@ -257,7 +257,7 @@ export const ActivityFeedRow = memo(function ActivityFeedRow({
                   onClick={closePicker}
                   className={cn(
                     'inline-flex items-center justify-center rounded-[var(--radius-full)] text-text-muted',
-                    'transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                    'transition-colors hover:text-text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50',
                     dense ? 'h-10 w-10 text-base' : 'h-11 w-11 text-lg',
                   )}
                 >
@@ -275,7 +275,7 @@ export const ActivityFeedRow = memo(function ActivityFeedRow({
                 className={cn(
                   'inline-flex items-center gap-1 rounded-[var(--radius-full)] border border-border bg-bg text-text-muted',
                   'transition-colors hover:border-accent/30 hover:text-text-primary',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 active:scale-95',
+                  'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50 active:scale-95',
                   reactionChipHitArea,
                   dense ? 'h-8 px-2.5' : 'h-9 px-3',
                 )}
@@ -440,7 +440,7 @@ export function GroupFeedPanel() {
               onClick={toggleDense}
               aria-pressed={dense}
               aria-label={dense ? 'Switch to comfortable feed density' : 'Switch to compact feed density'}
-              className="inline-flex min-h-9 items-center gap-1 rounded-[var(--radius-full)] px-2.5 text-xs font-medium text-text-muted transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+              className="inline-flex min-h-9 items-center gap-1 rounded-[var(--radius-full)] px-2.5 text-xs font-medium text-text-muted transition-colors hover:text-accent focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/60"
             >
               {dense ? 'Comfortable' : 'Compact'}
             </button>

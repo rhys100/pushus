@@ -346,7 +346,7 @@ export function NoseTapMode({ open, banking = false, onBank, onExit }: NoseTapMo
       data-theme="dark"
       ref={dialogRef}
       tabIndex={-1}
-      className="fixed inset-0 z-50 flex flex-col bg-bg outline-none"
+      className="fixed inset-0 z-50 flex flex-col bg-bg outline-hidden"
       role="dialog"
       aria-modal="true"
       aria-label="Nose-tap logging mode"
@@ -399,7 +399,7 @@ export function NoseTapMode({ open, banking = false, onBank, onExit }: NoseTapMo
         onPointerDown={handleTap}
         disabled={banking}
         aria-label="Tap to count one push-up"
-        className="relative mx-4 mt-2 flex flex-1 select-none flex-col items-center justify-center overflow-hidden rounded-[2rem] border-2 border-accent/50 bg-surface/60 outline-none [touch-action:manipulation] active:border-accent"
+        className="relative mx-4 mt-2 flex flex-1 select-none flex-col items-center justify-center overflow-hidden rounded-[2rem] border-2 border-accent/50 bg-surface/60 outline-hidden [touch-action:manipulation] active:border-accent"
         style={{ WebkitTapHighlightColor: 'transparent' }}
       >
         {skin === 'bricks' ? <BricksSkin tap={tap} /> : null}

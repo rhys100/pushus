@@ -118,7 +118,7 @@ function ToastItem({
             toast.onAction?.()
             startDismiss()
           }}
-          className="flex min-h-9 shrink-0 items-center rounded-full border border-accent/50 px-3.5 text-sm font-semibold text-accent transition-colors hover:bg-accent-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+          className="flex min-h-9 shrink-0 items-center rounded-full border border-accent/50 px-3.5 text-sm font-semibold text-accent transition-colors hover:bg-accent-muted focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/60"
         >
           {toast.actionLabel}
         </button>
@@ -128,7 +128,7 @@ function ToastItem({
         type="button"
         aria-label="Dismiss"
         onClick={startDismiss}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-2xl leading-none text-text-muted transition-colors hover:bg-border/40 hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-2xl leading-none text-text-muted transition-colors hover:bg-border/40 hover:text-text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50"
       >
         ×
       </button>

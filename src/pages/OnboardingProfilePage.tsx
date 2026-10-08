@@ -176,7 +176,7 @@ export function OnboardingProfilePage() {
                 className={cn(
                   'w-full rounded-[var(--radius-md)] border border-border bg-bg px-4 py-3',
                   'text-sm text-text-primary placeholder:text-text-muted',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                  'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50',
                 )}
               />
             </div>
@@ -197,7 +197,7 @@ export function OnboardingProfilePage() {
                 className={cn(
                   'w-20 rounded-[var(--radius-md)] border border-border bg-bg px-4 py-3',
                   'text-sm text-text-primary placeholder:text-text-muted',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                  'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50',
                 )}
               />
               <p className="text-xs text-text-muted">
@@ -237,7 +237,7 @@ export function OnboardingProfilePage() {
                         'flex h-10 w-full items-center justify-center rounded-[var(--radius-md)] text-xl',
                         'border transition-[border-color,background-color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out)]',
                         'active:scale-90',
-                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/60',
+                        'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/60',
                         emoji === option
                           ? cn('border-accent bg-accent-muted', emojiInteracted && 'motion-pop')
                           : 'border-border bg-bg hover:border-accent/30',
@@ -261,7 +261,7 @@ export function OnboardingProfilePage() {
                 className={cn(
                   'w-full rounded-[var(--radius-md)] border border-border bg-bg px-4 py-3',
                   'text-sm text-text-primary',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                  'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50',
                 )}
               >
                 {timezoneOptions().map((tz) => (

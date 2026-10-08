@@ -44,7 +44,7 @@ export function AboutPage() {
         <button
           type="button"
           onClick={handleBack}
-          className="mb-6 inline-flex min-h-11 items-center rounded-[var(--radius-sm)] text-sm text-text-muted transition-colors hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+          className="mb-6 inline-flex min-h-11 items-center rounded-[var(--radius-sm)] text-sm text-text-muted transition-colors hover:text-text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50"
         >
           ← Back
         </button>

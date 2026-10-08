@@ -136,7 +136,7 @@ const EntryRow = memo(function EntryRow({ group, entry, canEdit, canDelete }: En
                 }
               }}
               autoFocus
-              className="w-20 rounded-[var(--radius-md)] border border-border bg-bg px-2 py-1.5 font-mono text-sm text-text-primary outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/30"
+              className="w-20 rounded-[var(--radius-md)] border border-border bg-bg px-2 py-1.5 font-mono text-sm text-text-primary outline-hidden focus:border-accent/50 focus:ring-2 focus:ring-accent/30"
               aria-label="Edit rep count"
             />
             <Button

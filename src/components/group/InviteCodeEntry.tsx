@@ -61,7 +61,7 @@ export function InviteCodeEntry({
         className={cn(
           'w-full rounded-[var(--radius-md)] border border-border bg-bg px-4 py-3',
           'font-mono text-sm text-text-primary placeholder:text-text-muted',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+          'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50',
         )}
       />
       {error ? (

@@ -23,15 +23,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Blocking gate: anything shipped to users must be clean.
-      - name: Dependency audit (production)
-        run: npm audit --omit=dev --audit-level=high
-
-      # Build-time tooling is reported but not blocking: tailwindcss 3 pulls in
-      # `braces`, which has no patched release. Make blocking again on tailwind 4.
-      - name: Dependency audit (all, non-blocking)
+      - name: Dependency audit
         run: npm audit --audit-level=high
-        continue-on-error: true
 
       - name: Build
         run: npm run build
